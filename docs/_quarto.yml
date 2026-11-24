@@ -26,7 +26,7 @@ book:
   - part: 'Reference: data functions'
     chapters: [reference.data_levels.qmd, reference.data_graphs_trees.qmd, reference.data_sets_series.qmd, reference.data_fields.qmd, reference.specific_cases.qmd]
   - part: Use cases
-    chapters: [use_cases.distribution.qmd, use_cases.colors.qmd, use_cases.evolution.qmd, use_cases.ranking.qmd, use_cases.part_of_a_whole.qmd, use_cases.correlation.qmd, use_cases.flow.qmd]
+    chapters: [use_cases.distribution.qmd, use_cases.correlation.qmd, use_cases.ranking.qmd, use_cases.part_of_a_whole.qmd, use_cases.evolution.qmd, use_cases.flow.qmd, use_cases.colors.qmd]
   - part: Galleries
     chapters: [galleries.cljplot_extras.qmd, galleries.lattice.qmd, galleries.vega.qmd]
   title: cljplot2

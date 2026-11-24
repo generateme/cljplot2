@@ -91,7 +91,7 @@
                      [:multi {:dispatch map?}
                       [true [:map {:closed true} [:at schema/finite]]]
                       [false (into [:enum] (sort named-places))]])
-    (schema/optional :width {:cljplot2/section :placement :description "fraction of the level's band (or of the panel for :center and :bottom) an item spans across the value axis"
+    (schema/optional :width {:cljplot2/section :placement :description "fraction an item spans across the value axis: of the level's band, of the panel for :center, of the room between the panel edge and 0 for :bottom"
                              :default 0.8}
                      schema/non-neg)
     (schema/optional :thickness {:cljplot2/section :placement :description "item thickness in pixels for :place {:at v} and :edge"

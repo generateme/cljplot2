@@ -4,8 +4,8 @@
 ;; waffles, Venn diagrams and UpSet plots (the [R Graph Gallery](https://r-graph-gallery.com/) part-of-a-whole pages,
 ;; the [data-to-viz](https://www.data-to-viz.com/) sunburst and the pie caveat).
 ;;
-;; Not here: dendrograms wait for hierarchical clustering in fastmath (backlog); the sunburst of flows belongs to the
-;; Flow chapter.
+;; Not here: dendrograms ([plot/dendrogram](reference.builders_trees.html#dendrogram)) and the sunburst of flows
+;; belong to the [Flow](use_cases.flow.html#dendrogram) chapter.
 
 (ns use-cases.part-of-a-whole
   (:require [clojure2d.color :as c]
@@ -53,8 +53,9 @@
 
 ;; ### Grouped, stacked, percent
 
-;; R Graph Gallery's specie × condition values (seeded): `:dodge` compares the groups, `:stack` the totals, `:normalize`
-;; the shares; facets give a panel per specie; negative values stack downward from 0.
+;; R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars_ranges.html#bar) `:position`
+;; `:dodge` compares the groups, `:stack` the totals, `:normalize` the shares; facets give a panel per specie; negative
+;; values stack downward from 0.
 
 (def species-conditions
   (let [rng (r/rng :mersenne 42)]
@@ -133,8 +134,8 @@
 
 ;; ### Basic, groups and subgroups
 
-;; One level (regions) and three (regions → subregions → countries); `:gap` frames the groups, a theme palette
-;; recolours the regions.
+;; One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_part_of_whole.html#treemap)
+;; `:gap` frames the groups, `:stroke-color` outlines the cells, a theme palette recolours the regions.
 
 (nu/source-note {:source "R Graph Gallery - Treemap; data-to-viz - Treemap"
                  :url ["https://r-graph-gallery.com/treemap.html" "https://www.data-to-viz.com/graph/treemap.html"]
@@ -153,7 +154,8 @@
 
 ;; ### Annotated treemap
 
-;; Label functions get the node's name, value, depth and shares: the countries with their population in millions.
+;; Label functions (`:leaf-labels`, `:group-labels`) get the node's name, value, depth and shares: the countries with
+;; their population in millions.
 
 (nu/source-note {:source "R Graph Gallery - Treemap (annotations, labels and colors)"
                  :url "https://r-graph-gallery.com/treemap.html"
@@ -258,7 +260,8 @@
 ;; ### One level
 
 ;; Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-;; by their subregion; wider gaps (`:gap`, pixels).
+;; by their subregion; wider gaps ([pack](reference.charts_part_of_whole.html#pack) `:gap`, pixels; `:leaf-labels false`
+;; hides the names).
 
 (nu/source-note {:source "R Graph Gallery - Circular packing; data-to-viz - Circular packing"
                  :url ["https://r-graph-gallery.com/circle-packing.html" "https://www.data-to-viz.com/graph/circularpacking.html"]
@@ -300,7 +303,7 @@
 
 ;; ## Sunburst
 
-;; The hierarchy as rings: a partition (an icicle in cartesian coordinates) under polar coordinates - regions inside,
+;; The hierarchy as rings: a [partition](reference.charts_part_of_whole.html#partition) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
 ;; subregions, then countries outward.
 
 (nu/source-note {:source "data-to-viz - Sunburst"
@@ -323,7 +326,8 @@
 
 ;; ### Basic, shapes, colours, groups
 
-;; The regions' shares; circle cells; a palette; subregions within each region (a facet per region, each region's
+;; The regions' shares; circle cells ([waffle](reference.charts_part_of_whole.html#waffle) `:cell-shape`, `:gap` - a
+;; fraction of a cell); a palette; subregions within each region (a facet per region, each region's
 ;; subregions in shades of one colour - 22 subregions are more than a palette's 20 colours).
 
 (nu/source-note {:source "R Graph Gallery - Waffle chart"
@@ -344,8 +348,8 @@
 
 (def subregion-colors
   "Each region's subregions in shades of the region's colour (darker to lighter)."
-  (into {} (for [[base [_ subregions]] (map vector (c/palette :category10)
-                                             (sort-by key (group-by :region (nu/dataset :world-population))))
+  (into {} (for [[base [_ subregions]] (map vector (plot/palette :category10)
+                                             (sort-by key (group-by :region world)))
                  :let [names (sort (distinct (map :subregion subregions)))]
                  [i subregion] (map-indexed vector names)]
              [subregion (c/brighten base (- (* 0.7 (double i)) 1.0))])))
@@ -364,8 +368,9 @@
 
 ;; ### Two and three sets
 
-;; Two artists: circle areas and the overlap proportional to the word counts. Three: the classic layout, counts and
-;; shares from a label function.
+;; Two artists (the [venn](reference.charts_part_of_whole.html#venn) `:sets`): circle areas and the overlap
+;; proportional to the word counts. Three: the classic layout, counts and shares from a label function
+;; (`:region-labels`).
 
 (nu/source-note {:source "R Graph Gallery - Venn diagram; data-to-viz - Venn diagram"
                  :url ["https://r-graph-gallery.com/venn-diagram.html" "https://www.data-to-viz.com/graph/venn.html"]

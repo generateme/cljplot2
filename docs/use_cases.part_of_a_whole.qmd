@@ -33,8 +33,8 @@ How a whole splits into parts: grouped and stacked bars, treemaps, donuts and pi
 waffles, Venn diagrams and UpSet plots (the [R Graph Gallery](https://r-graph-gallery.com/) part-of-a-whole pages,
 the [data-to-viz](https://www.data-to-viz.com/) sunburst and the pie caveat).
 
-Not here: dendrograms wait for hierarchical clustering in fastmath (backlog); the sunburst of flows belongs to the
-Flow chapter.
+Not here: dendrograms ([plot/dendrogram](reference.builders_trees.html#dendrogram)) and the sunburst of flows
+belong to the [Flow](use_cases.flow.html#dendrogram) chapter.
 
 
 ::: {.sourceClojure}
@@ -156,8 +156,9 @@ category.
 
 ### Grouped, stacked, percent
 
-R Graph Gallery's specie × condition values (seeded): `:dodge` compares the groups, `:stack` the totals, `:normalize`
-the shares; facets give a panel per specie; negative values stack downward from 0.
+R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars_ranges.html#bar) `:position`
+`:dodge` compares the groups, `:stack` the totals, `:normalize` the shares; facets give a panel per specie; negative
+values stack downward from 0.
 
 
 ::: {.sourceClojure}
@@ -295,8 +296,8 @@ Nested rectangles, areas proportional to the value: the world's population by re
 
 ### Basic, groups and subgroups
 
-One level (regions) and three (regions → subregions → countries); `:gap` frames the groups, a theme palette
-recolours the regions.
+One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_part_of_whole.html#treemap)
+`:gap` frames the groups, `:stroke-color` outlines the cells, a theme palette recolours the regions.
 
 Source: R Graph Gallery - Treemap; data-to-viz - Treemap ([1](https://r-graph-gallery.com/treemap.html), [2](https://www.data-to-viz.com/graph/treemap.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -325,7 +326,8 @@ Source: R Graph Gallery - Treemap; data-to-viz - Treemap ([1](https://r-graph-ga
 
 ### Annotated treemap
 
-Label functions get the node's name, value, depth and shares: the countries with their population in millions.
+Label functions (`:leaf-labels`, `:group-labels`) get the node's name, value, depth and shares: the countries with
+their population in millions.
 
 Source: [R Graph Gallery - Treemap (annotations, labels and colors)](https://r-graph-gallery.com/treemap.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -483,7 +485,8 @@ proportional to its value (packing leaves gaps), compare circles within a group.
 ### One level
 
 Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-by their subregion; wider gaps (`:gap`, pixels).
+by their subregion; wider gaps ([pack](reference.charts_part_of_whole.html#pack) `:gap`, pixels; `:leaf-labels false`
+hides the names).
 
 Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](https://r-graph-gallery.com/circle-packing.html), [2](https://www.data-to-viz.com/graph/circularpacking.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
 
@@ -554,7 +557,7 @@ Source: [R Graph Gallery - Circular packing (hide some levels)](https://r-graph-
 
 ## Sunburst
 
-The hierarchy as rings: a partition (an icicle in cartesian coordinates) under polar coordinates - regions inside,
+The hierarchy as rings: a [partition](reference.charts_part_of_whole.html#partition) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
 subregions, then countries outward.
 
 Source: [data-to-viz - Sunburst](https://www.data-to-viz.com/graph/sunburst.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -588,7 +591,8 @@ A grid of cells: by default 10 × 10, a cell per percent of the whole (largest-r
 
 ### Basic, shapes, colours, groups
 
-The regions' shares; circle cells; a palette; subregions within each region (a facet per region, each region's
+The regions' shares; circle cells ([waffle](reference.charts_part_of_whole.html#waffle) `:cell-shape`, `:gap` - a
+fraction of a cell); a palette; subregions within each region (a facet per region, each region's
 subregions in shades of one colour - 22 subregions are more than a palette's 20 colours).
 
 Source: [R Graph Gallery - Waffle chart](https://r-graph-gallery.com/waffle.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -619,8 +623,8 @@ Source: [R Graph Gallery - Waffle chart (groups and subgroups)](https://r-graph-
 ```clojure
 (def subregion-colors
   "Each region's subregions in shades of the region's colour (darker to lighter)."
-  (into {} (for [[base [_ subregions]] (map vector (c/palette :category10)
-                                             (sort-by key (group-by :region (nu/dataset :world-population))))
+  (into {} (for [[base [_ subregions]] (map vector (plot/palette :category10)
+                                             (sort-by key (group-by :region world)))
                  :let [names (sort (distinct (map :subregion subregions)))]
                  [i subregion] (map-indexed vector names)]
              [subregion (c/brighten base (- (* 0.7 (double i)) 1.0))])))
@@ -655,8 +659,9 @@ data-to-viz: no more than three sets in a Venn diagram, a number in every region
 
 ### Two and three sets
 
-Two artists: circle areas and the overlap proportional to the word counts. Three: the classic layout, counts and
-shares from a label function.
+Two artists (the [venn](reference.charts_part_of_whole.html#venn) `:sets`): circle areas and the overlap
+proportional to the word counts. Three: the classic layout, counts and shares from a label function
+(`:region-labels`).
 
 Source: R Graph Gallery - Venn diagram; data-to-viz - Venn diagram ([1](https://r-graph-gallery.com/venn-diagram.html), [2](https://www.data-to-viz.com/graph/venn.html)). Data: Words in the songs of three French artists, data-to-viz example dataset `14_SeveralIndepLists` (Yan Holtz); licence: MIT (data_to_viz repository).
 

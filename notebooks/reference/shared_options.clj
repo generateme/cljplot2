@@ -15,7 +15,7 @@
             [cljplot2.schema :as schema]
             [notebook-utils :as nu]))
 
-(def wave (for [t (range 30)] {:t t :v (Math/sin (* 0.3 t)) :g (if (< t 15) "early" "late")}))
+(def wave (for [t (range 30)] {:t t :v (m/sin (m/* 0.3 t)) :g (if (< t 15) "early" "late")}))
 
 (nu/data-table wave)
 
@@ -48,7 +48,7 @@
 (plot/render-image {:data wave
                     :mapping {:x :t :y :v}
                     :charts [(chart/scatter)
-                             (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (Math/sin (* 0.3 t))})})]}
+                             (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (m/sin (m/* 0.3 t))})})]}
                    {:width 500 :height 250})
 
 ;; ### Annotation options
@@ -107,8 +107,9 @@
                    {:width 1000 :height 260})
 
 ;; Every interpolation method (`schema/interpolation-methods`) through the same points, with default parameters -
-;; most pass through them or smooth them; `:cir` and `:pava` fit a monotone step, `:kriging` a constant, and `:gp` /
-;; `:rbf` use a kernel too narrow for points this far apart (their `:interpolator-params` set it):
+;; most pass through them or smooth them; `:pava` and `:cir` fit a monotone curve - `:pava` flat runs joined by a
+;; step, `:cir` flat, then sloping; `:kriging` stays near a constant, and `:gp` / `:rbf` use a kernel too narrow for
+;; points this far apart (their `:interpolator-params` set it):
 
 (plot/render-image (plot/arrange (for [interpolator (sort schema/interpolation-methods)]
                                    {:data points
@@ -171,23 +172,26 @@
                     :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
                    {:width 500 :height 280})
 
-;; Without levels an item sits by `:place`: across the panel's middle, below the data (`:bottom`), at the panel's
-;; edge, or at a value of the other axis (`{:at v}`) - here a box of the eruption times over the scatter, `:width`
-;; 0.15 of the panel:
+;; Without levels an item sits by `:place`: across the panel's middle (`:width` a fraction of the panel), below the
+;; data (`:bottom` - the y axis reaches below zero, `:width` a fraction of the room under zero), at the panel's edge
+;; or at a value of the other axis (`{:at v}`) - those two `:thickness` pixels thick. Here a box of the eruption
+;; times over the scatter:
 
-(plot/render-image (plot/arrange (for [place [:center :bottom :edge {:at 60}]]
+(plot/render-image (plot/arrange (for [[place opts] [[:center {:width 0.15}] [:bottom {:width 0.8}]
+                                                     [:edge {:thickness 12}] [{:at 60} {:thickness 20}]]]
                                    {:data faithful
                                     :mapping {:x :eruptions :y :waiting}
-                                    :charts [(chart/scatter {:size 4}) (chart/box {:place place :width 0.15 :mapping {:y nil}})]
-                                    :labels {:title (str ":place " place)}})
+                                    :charts [(chart/scatter {:size 4}) (chart/box (merge {:place place :mapping {:y nil}} opts))]
+                                    :labels {:title (str ":place " place " " opts)}})
                                  {:columns 2})
                    {:width 900 :height 600})
 
 ;; `:level-axis` names the axis of the levels - needed when both axes or neither are categorical; here the rounded
-;; petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each:
+;; petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each (points spread
+;; across the band by the [stripplot](reference.charts_strip_distributions.html#stripplot)'s seeded `:jitter`):
 
 (plot/render-image {:data iris
-                    :mapping {:x :sepal-length :y (levels/categorical #(Math/round (double (:petal-width %))))}
+                    :mapping {:x :sepal-length :y (levels/categorical #(m/round (:petal-width %)))}
                     :charts [(chart/stripplot {:level-axis :y :jitter 0.3 :rng (r/rng :mersenne 5)})]
                     :labels {:x "sepal length" :y "petal width, rounded"}}
                    {:width 500 :height 280})
@@ -300,7 +304,7 @@
 
 (nu/options-table (describe/fragment-rows :field) :grid)
 
-(plot/render-image {:charts [(chart/field {:f (fn [[x y]] (Math/sin (* x y))) :domain {:x [0 3] :y [0 3]} :n 12})]}
+(plot/render-image {:charts [(chart/field {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [0 3] :y [0 3]} :n 12})]}
                    {:width 450 :height 350})
 
 ;; ### Hierarchy labels
@@ -423,7 +427,8 @@
 
 ;; ### Graph
 
-;; The edge rows' ends, weight and node ids, optional node rows, directedness.
+;; The edge rows' ends, weight and node ids, optional node rows, directedness. A directed
+;; [network](reference.builders_graphs.html#network) with node labels (`:labels`) and a seeded layout (`:rng`):
 
 (nu/options-table (describe/fragment-rows :graph/graph))
 
@@ -523,7 +528,7 @@
 
 (nu/options-table (describe/fragment-rows :series/acf-rows))
 
-(plot/render-image (plot/acf (map #(Math/sin (* 0.5 (double %))) (range 100)) {:lags 30 :correlograms :pacf})
+(plot/render-image (plot/acf (map #(m/sin (m/* 0.5 %)) (range 100)) {:lags 30 :correlograms :pacf})
                    {:width 600 :height 300})
 
 ;; ### Horizon rows
@@ -533,7 +538,7 @@
 (nu/options-table (describe/fragment-rows :series/horizon-rows))
 
 (plot/render-image (plot/horizon (for [s ["a" "b"] t (range 60)]
-                                   {:x t :y (* (if (= s "a") 1 -1) (Math/sin (* 0.2 t)) t) :series s})
+                                   {:x t :y (* (if (= s "a") 1 -1) (m/sin (m/* 0.2 t)) t) :series s})
                                  {:series :series :bands 3})
                    {:width 600 :height 250})
 

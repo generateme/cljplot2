@@ -181,8 +181,16 @@ the theme: banned names, and one type family per name across all owners). One na
   heading per `:cljplot2/api` function, its full options table); the same coverage rule over a call's literal last
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
-  Conventions: a heading, 1-3 lines, `nu/source-note` with `:url`, code ending in `plot/render-image` at most
-  1000×800; every random value from a seeded rng (`(r/rng :mersenne n)`); no notebook plotting helpers.
+  Conventions: a heading, 1-3 lines, code ending in `plot/render-image`; every random value from a seeded rng
+  (`(r/rng :mersenne n)`); no notebook plotting helpers. `book-data-test` checks the rest:
+  - images at most 1000×800 - a bigger one states its reason in the prose and is listed in
+    `book-data-test/oversize-images`;
+  - source notes: an example from an outside source has a note with `:source` and its `:url` (`nu/source-note`
+    throws without it); examples written for cljplot2 have no `:source` - a note crediting their data, or none for
+    synthetic data; every dataset a page reads is credited by some note's `:dataset` (a key or a vector of keys);
+  - data shown: rows, columns and samples (more than 12 numbers or number vectors);
+  - use cases in the R Graph Gallery site order - distribution, correlation, ranking, part of a whole, evolution,
+    flow, colours - in `chapters.edn`, the index, `specific_cases` and the README.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks
   can't require `dev/` code.
 - Datasets: `notebooks/data/` + `datasets.edn` (source, licence, via); load with `(nu/dataset :key)`. A test checks
@@ -297,7 +305,7 @@ the theme: banned names, and one type family per name across all owners). One na
   `data/padding-stats`); an extent with `:companion? true` counts only beside another chart's extents.
 - Datasets: every file in `notebooks/data/` has an entry in `datasets.edn` (source, licence, via); scripts that make
   data are the only scripts kept in the repo; every book example drawn from an outside source credits it with
-  `nu/source-note` (`:url`).
+  `nu/source-note` (`:source` and `:url`).
 
 ## Related repositories
 

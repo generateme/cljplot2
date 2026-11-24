@@ -107,11 +107,19 @@ The flights as a directed graph with the airports as nodes - Krakow has no fligh
 ```
 
 
-Its edges, weights as numbers (an edge without a weight counts 1):
+The edges of the flights as an undirected graph, the weights from `:n` as numbers (`:value`):
 
 
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>src</th><th>dst</th><th>n</th><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>WAW</td><td>BER</td><td>12</td><td>WAW</td><td>BER</td><td>12.0</td></tr><tr><td>WAW</td><td>PRG</td><td>5</td><td>WAW</td><td>PRG</td><td>5.0</td></tr><tr><td>BER</td><td>PRG</td><td>8</td><td>BER</td><td>PRG</td><td>8.0</td></tr><tr><td>PRG</td><td>VIE</td><td>6</td><td>PRG</td><td>VIE</td><td>6.0</td></tr><tr><td>VIE</td><td>WAW</td><td>4</td><td>VIE</td><td>WAW</td><td>4.0</td></tr><tr><td>BER</td><td>VIE</td><td>3</td><td>BER</td><td>VIE</td><td>3.0</td></tr><tr><td>WAW</td><td>VIE</td><td>2</td><td>WAW</td><td>VIE</td><td>2.0</td></tr><tr><td>BUD</td><td>VIE</td><td>7</td><td>BUD</td><td>VIE</td><td>7.0</td></tr></tbody></table></div>
+```
+
+
+Without a `:value` accessor every edge weighs 1:
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>src</th><th>dst</th><th>n</th><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>WAW</td><td>BER</td><td>12</td><td>WAW</td><td>BER</td><td>1.0</td></tr><tr><td>WAW</td><td>PRG</td><td>5</td><td>WAW</td><td>PRG</td><td>1.0</td></tr><tr><td>BER</td><td>PRG</td><td>8</td><td>BER</td><td>PRG</td><td>1.0</td></tr><tr><td>PRG</td><td>VIE</td><td>6</td><td>PRG</td><td>VIE</td><td>1.0</td></tr><tr><td>VIE</td><td>WAW</td><td>4</td><td>VIE</td><td>WAW</td><td>1.0</td></tr><tr><td>BER</td><td>VIE</td><td>3</td><td>BER</td><td>VIE</td><td>1.0</td></tr><tr><td>WAW</td><td>VIE</td><td>2</td><td>WAW</td><td>VIE</td><td>1.0</td></tr><tr><td>BUD</td><td>VIE</td><td>7</td><td>BUD</td><td>VIE</td><td>1.0</td></tr></tbody></table></div>
 ```
 
 
@@ -587,7 +595,8 @@ The linkage methods of `hclust` (`:method`): `:single`, `:complete` (default), `
 
 ## tree/from-levels
 
-A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per row.
+A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per innermost level
+path (its `:value` the number of its rows).
 
 ::: {.clay-table}
 
@@ -614,12 +623,13 @@ A tree of rows grouped by level columns, outer level first: a group per level pa
 ```
 
 
-Its leaves (rows) in tree order, and the tree drawn by `tree/node-link-layout` below:
+Its leaves - the countries, each with its number of offices - in tree order (with the cities as a third level,
+the tree is drawn by `tree/node-link-layout` below):
 
 
 ::: {.sourceClojure}
 ```clojure
-(mapv :city (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
+(mapv (juxt :name :value) (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
 ```
 :::
 
@@ -627,7 +637,7 @@ Its leaves (rows) in tree order, and the tree drawn by `tree/node-link-layout` b
 
 ::: {.printedClojure}
 ```clojure
-[nil nil nil nil]
+[["Poland" 2.0] ["Czechia" 1.0] ["Japan" 2.0] ["India" 1.0]]
 
 ```
 :::
@@ -932,7 +942,7 @@ sequences summed; a final end marker is removed (or kept as a step).
 ```
 
 
-The step rows - the end marker dropped with `:keep-end false` (left), kept as a step by default (right):
+The step rows - the end marker dropped with `:keep-end false` (first table), kept as a step by default (second):
 
 
 ```{=html}

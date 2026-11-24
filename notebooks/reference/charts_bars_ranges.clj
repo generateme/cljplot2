@@ -46,7 +46,7 @@
 ;; ### Style
 
 ;; The fill and outline used when nothing is mapped, the opacity of overlaid groups, and the 0 line drawn over
-;; mirrored bars (`:mirror` - Mirrored strips):
+;; mirrored bars (`:mirror` - [Mirrored strips](reference.shared_options.html#mirrored-strips)):
 
 (nu/options-table (describe/own-rows (describe/options (chart/bar))) :style)
 
@@ -207,8 +207,8 @@
                                    :charts [(chart/bar {:stat :mean :value-label true :n-label true
                                                         :label-stack :vertical})]
                                    :labels {:title ":label-stack :vertical"}}]
-                                 {:columns 4})
-                   {:width 1000 :height 300})
+                                 {:columns 2})
+                   {:width 900 :height 560})
 
 ;; In a polar plot `:outer` puts the labels past the outer radius, with a leader line from each bar
 ;; (`:label-leader`):
@@ -286,16 +286,11 @@
                     :labels {:x "sepal length [cm]"}}
                    {:width 700 :height 600})
 
-;; The bootstrap resamples the mean unless `:statistic` names another function - here the median; `:center
-;; :method` (the default) marks the method's centre, here sized up with `:size`:
+;; The bootstrap resamples the mean unless `:statistic` names another function - here the median (the bootstrap
+;; of the mean is the "bootstrap mean" panel above); `:center :method` (the default) marks the method's centre, here
+;; sized up with `:size`:
 
 (plot/render-image (plot/arrange [{:data iris
-                                   :mapping {:x :sepal-length :y :species}
-                                   :charts [(chart/extent {:method :bootstrap-percentile :rng (r/rng :mersenne 3)
-                                                           :center :method :size 12})]
-                                   :scales {:y {:reverse true}}
-                                   :labels {:title "bootstrap of the mean, :size 12"}}
-                                  {:data iris
                                    :mapping {:x :sepal-length :y :species}
                                    :charts [(chart/extent {:method :bootstrap-percentile :rng (r/rng :mersenne 3)
                                                            :statistic stats/median :size 12})]
@@ -306,8 +301,8 @@
                                    :charts [(chart/extent {:padding {:x [0.5 0.5]}})]
                                    :scales {:y {:reverse true}}
                                    :labels {:title ":padding {:x [0.5 0.5]}"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 300})
+                                 {:columns 2})
+                   {:width 800 :height 300})
 
 (nu/shared-groups (describe/options (chart/extent)))
 

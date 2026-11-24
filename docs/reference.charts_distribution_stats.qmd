@@ -132,7 +132,7 @@ style and the zero line of mirrored groups:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69.0 117.0 180.0 255.0]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of grouped bars with :position :overlay (other bars are opaque)</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott :freedman-diaconis), a bin count or increasing breaks (values outside dropped)</td></tr><tr><td>:y</td><td>one of :cumulative :percent :count :pmf :density</td><td>:percent</td><td>bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)</td></tr><tr><td>:position</td><td>one of :dodge :mirror :normalize :overlay :stack</td><td>:overlay</td><td>grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, the second downward); ridgelines: :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the bars</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of grouped bars with :position :overlay (other bars are opaque)</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott :freedman-diaconis), a bin count or increasing breaks (values outside dropped)</td></tr><tr><td>:y</td><td>one of :cumulative :percent :count :pmf :density</td><td>:percent</td><td>bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)</td></tr><tr><td>:position</td><td>one of :dodge :mirror :normalize :overlay :stack</td><td>:overlay</td><td>grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, the second downward); ridgelines: :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the bars</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -407,7 +407,7 @@ reaches past the data:
 
 
 A bandwidth selector instead of a number, few evaluation points (the curve drawn through 8 points), and a curve
-reaching 3 bandwidths past the data:
+reaching 1 bandwidth past the data (3 by default):
 
 
 ::: {.sourceClojure}
@@ -422,8 +422,8 @@ reaching 3 bandwidths past the data:
                                    :labels {:title ":n 8"}}
                                   {:data faithful
                                    :mapping {:x :eruptions}
-                                   :charts [(chart/density {:cut 3})]
-                                   :labels {:title ":cut 3"}}]
+                                   :charts [(chart/density {:cut 1})]
+                                   :labels {:title ":cut 1"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
 ```
@@ -636,7 +636,7 @@ The point style and the reference line's width:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
 ```
 
 :::
@@ -647,7 +647,7 @@ The point style and the reference line's width:
 ```clojure
 (plot/render-image {:data (filter #(= "t(3)" (:sample %)) samples)
                     :mapping {:y :v}
-                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \s :color [200 80 40 120]
+                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \S :color [200 80 40 120]
                                         :stroke-color :black :stroke-width 0.5 :line-width 3})]
                     :labels {:title "squares, :line-width 3"}}
                    {:width 500 :height 350})
@@ -742,7 +742,7 @@ The point style and the reference line's width:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
 ```
 
 :::

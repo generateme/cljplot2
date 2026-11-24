@@ -5,7 +5,8 @@
 ;; and the shared option groups it takes (documented once in the Shared options chapter).
 
 (ns reference.charts-points-paths
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]
@@ -45,11 +46,11 @@
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :cyl :y :gear}
-                                   :charts [(chart/scatter {:size 10 :shape \s :color [200 80 40 150]})]
+                                   :charts [(chart/scatter {:size 10 :shape \S :color [200 80 40 150]})]
                                    :labels {:title "overplotted"}}
                                   {:data mtcars
                                    :mapping {:x :cyl :y :gear}
-                                   :charts [(chart/scatter {:size 10 :shape \s :color [200 80 40 150]
+                                   :charts [(chart/scatter {:size 10 :shape \S :color [200 80 40 150]
                                                            :stroke-color :black :stroke-width 0.5
                                                            :jitter [0.3 0.2] :rng (r/rng :mersenne 7)})]
                                    :labels {:title ":jitter [0.3 0.2]"}}]
@@ -94,7 +95,7 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/line))) :style)
 
-(def wave (for [t (range 40)] {:t t :v (+ 1.5 (Math/sin (* 0.25 t))) :w (+ 1 (mod t 10))}))
+(def wave (for [t (range 40)] {:t t :v (+ 1.5 (m/sin (* 0.25 t))) :w (+ 1 (mod t 10))}))
 
 (nu/data-table wave)
 
@@ -130,7 +131,7 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/line))) :path)
 
-(def spiral (for [t (range 0 12 0.25)] {:x (* t (Math/cos t)) :y (* t (Math/sin t)) :v (when-not (< 5 t 6) t)}))
+(def spiral (for [t (range 0 12 0.25)] {:x (* t (m/cos t)) :y (* t (m/sin t)) :v (when-not (< 5 t 6) t)}))
 
 (nu/data-table spiral)
 
@@ -152,7 +153,7 @@
 ;; Groups combined by `:position` (`:overlay`, the default, draws each line on its own):
 
 (def streams (for [series ["a" "b" "c"] t (range 25)]
-               {:series series :t t :v (+ 1.5 (Math/sin (+ (* 0.3 t) (* 2 (count series)) (int (first series)))))}))
+               {:series series :t t :v (+ 1.5 (m/sin (+ (* 0.3 t) (* 2 (count series)) (int (first series)))))}))
 
 (nu/data-table streams)
 
@@ -244,7 +245,7 @@
 (nu/options-table (describe/mapping (chart/polygon)))
 
 (def shapes (concat (for [a (range 0 360 60)]
-                      {:shape "hexagon" :x (Math/cos (Math/toRadians a)) :y (Math/sin (Math/toRadians a))})
+                      {:shape "hexagon" :x (m/cos (m/radians a)) :y (m/sin (m/radians a))})
                     (for [[x y] [[1.5 -1] [3 -1] [2.25 1]]] {:shape "triangle" :x x :y y})))
 
 (nu/data-table shapes)

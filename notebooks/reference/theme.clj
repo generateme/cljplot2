@@ -128,7 +128,8 @@
 
 ;; ## 3D frame
 
-;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`).
+;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). Here a
+;; [surface](reference.charts_multivariate_3d.html#surface) of a function over a domain:
 
 (nu/options-table (describe/theme-rows :frame-3d))
 
@@ -154,7 +155,8 @@
 ;; Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this
 ;; section). A label's `:role` may also name a role of your own added under `:text`. A role's `:color` may be
 ;; `:contrast` - black or white, whichever reads on what's behind: the fill under a chart's label, else the plot
-;; background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values) default to it.
+;; background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values, correlation and pairwise
+;; statistic numbers) default to it.
 
 ;; Titles, strips and axis texts:
 
@@ -193,8 +195,10 @@
                                    :treemap-leaf {:font-style :italic :color [255 220 120]}}}}
                    {:width 500 :height 300})
 
-;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, contours (bar values,
-;; Venn counts and tile values in the contrast colour of what's behind them by default):
+;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics,
+;; contours (bar values, Venn counts, tile values and the correlation and pairwise numbers in the contrast colour of
+;; what's behind them by default). The bars write their values in their middle
+;; ([bar](reference.charts_bars_ranges.html#bar) `:value-label`, `:label-position`):
 
 (nu/options-table (describe/theme-rows :text) :chart-text)
 

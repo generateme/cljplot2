@@ -25,14 +25,12 @@
 
 (nu/data-table members)
 
-;; A seeded autoregressive series with a weekly bump:
+;; An autoregressive series (fastmath `r/ar`, coefficient 0.6) over a weekly sine plus seeded white noise:
 
-(def weekly (let [g (r/rng :mersenne 8)]
-              (vec (reductions (fn [y t] (+ (* 0.6 (double y)) (* 2.0 (m/sin (* m/TWO_PI (/ (double t) 7.0))))
-                                            (r/grandom g)))
-                               0.0 (range 1 200)))))
+(def weekly (vec (take 200 (r/ar 0.6 (map (fn [t e] (+ (* 2.0 (m/sin (* m/TWO_PI (/ (double t) 7.0)))) (double e)))
+                                           (range) (r/white-noise (r/rng :mersenne 8) 1.0))))))
 
-(nu/data-table {:t (range (count weekly)) :y weekly})
+(nu/data-table weekly)
 
 ;; ## sets/upset-rows
 

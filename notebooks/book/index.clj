@@ -22,15 +22,15 @@
 ;;   * *data functions* - levels, graphs and trees, sets and series, fields, and specific cases.
 ;; * **Use cases** - one chapter per family of the [R Graph Gallery](https://r-graph-gallery.com/) merged with
 ;;   [From Data to Viz](https://www.data-to-viz.com/): distribution, correlation, ranking, part of a whole,
-;;   evolution, flow, and colours. Each use case has one canonical example here.
+;;   evolution, flow, and colours, in the gallery's order, each family with its variations.
 ;; * **Galleries** - figures replicated from other sources: cljplot extras, the
 ;;   [lattice book](http://lmdvr.r-forge.r-project.org/figures/figures.html),
 ;;   [Vega-Lite](https://vega.github.io/vega-lite/examples/) and [Vega](https://vega.github.io/vega/examples/)
-;;   galleries. Figures are reproduced by content (same data, same idea), not pixel by pixel, and link to the
-;;   use case they illustrate.
+;;   galleries. Figures are reproduced by content (same data, same idea), not pixel by pixel.
 
-;; Every example names its source and its dataset with the dataset's licence. All code is Clojure written for
-;; cljplot2; no code of the original sources is copied. The datasets are in `notebooks/data/` (listed in
+;; Every example taken from an outside source links to it, and every dataset is credited with its source and
+;; licence; examples written for this book credit only their data. All code is Clojure written for cljplot2; no
+;; code of the original sources is copied. The datasets are in `notebooks/data/` (listed in
 ;; `datasets.edn`), not in the library.
 
 ;; ## How to read an example
@@ -44,7 +44,9 @@
 ;; Waiting time between eruptions against eruption duration (left) and the distribution of eruption durations
 ;; (right). Two plots sharing one dataset, arranged side by side.
 
-(nu/source-note {:source "R Graph Gallery - Scatter, Density" :dataset :faithful})
+(nu/source-note {:source "R Graph Gallery - Scatter, Density"
+                 :url ["https://r-graph-gallery.com/scatterplot.html" "https://r-graph-gallery.com/density-plot.html"]
+                 :dataset :faithful})
 
 (def faithful (nu/dataset :faithful))
 

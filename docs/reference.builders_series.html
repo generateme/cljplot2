@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -510,428 +510,326 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Builders of time series plots: the autocorrelation correlogram of a series of values, and horizon charts of one or more series. Each takes its data and an options map and returns an ordinary plot map; the series functions it forwards to are shared groups (Shared options).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.builders-series</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.random <span class="at">:as</span> r]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>An autoregressive series AR(1) with coefficient 0.7, 200 values from a seeded generator:</p>
+<p>An autoregressive series AR(1) with coefficient 0.7, 200 values - fastmath <code>r/ar</code> over seeded white noise:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> ar1 </span>(<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">11</span>)]</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>           (<span class="kw">vec</span> (reductions (<span class="kw">fn</span> [x _] (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.7</span> x) (r/grandom g))) <span class="fl">0.0</span> (<span class="kw">range</span> <span class="dv">199</span>)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> ar1 </span>(<span class="kw">vec</span> (<span class="kw">take</span> <span class="dv">200</span> (r/ar <span class="fl">0.7</span> (r/white-noise (r/rng <span class="at">:mersenne</span> <span class="dv">11</span>) <span class="fl">1.0</span>)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th">t</th>
 <th data-quarto-table-cell-role="th">value</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>0</td>
-<td>0.0</td>
-</tr>
-<tr class="even">
-<td>1</td>
-<td>-1.9354135624386053</td>
-</tr>
-<tr class="odd">
-<td>2</td>
-<td>-2.3390693269827025</td>
-</tr>
-<tr class="even">
-<td>3</td>
 <td>-0.8681059991636939</td>
 </tr>
-<tr class="odd">
-<td>4</td>
+<tr class="even">
 <td>-0.13246657175036403</td>
 </tr>
-<tr class="even">
-<td>5</td>
+<tr class="odd">
 <td>-0.16733061455991885</td>
 </tr>
-<tr class="odd">
-<td>6</td>
+<tr class="even">
 <td>0.2694449098582038</td>
 </tr>
-<tr class="even">
-<td>7</td>
+<tr class="odd">
 <td>0.7626152170591383</td>
 </tr>
-<tr class="odd">
-<td>8</td>
+<tr class="even">
 <td>1.1643101963530955</td>
 </tr>
-<tr class="even">
-<td>9</td>
+<tr class="odd">
 <td>1.680869004658373</td>
 </tr>
-<tr class="odd">
-<td>10</td>
+<tr class="even">
 <td>0.5178927660569208</td>
 </tr>
-<tr class="even">
-<td>11</td>
+<tr class="odd">
 <td>1.560261885121078</td>
 </tr>
-<tr class="odd">
-<td>12</td>
+<tr class="even">
 <td>2.4418647463226844</td>
 </tr>
-<tr class="even">
-<td>13</td>
+<tr class="odd">
 <td>2.043455780603937</td>
 </tr>
-<tr class="odd">
-<td>14</td>
+<tr class="even">
 <td>1.3350134131667004</td>
 </tr>
-<tr class="even">
-<td>15</td>
+<tr class="odd">
 <td>1.354758198765417</td>
 </tr>
-<tr class="odd">
-<td>16</td>
+<tr class="even">
 <td>2.1640502223875067</td>
 </tr>
-<tr class="even">
-<td>17</td>
+<tr class="odd">
 <td>1.454799683098602</td>
 </tr>
-<tr class="odd">
-<td>18</td>
+<tr class="even">
 <td>1.3371138223355488</td>
 </tr>
-<tr class="even">
-<td>19</td>
+<tr class="odd">
 <td>-0.33367593984463084</td>
 </tr>
-<tr class="odd">
-<td>20</td>
+<tr class="even">
 <td>-0.005741120165596719</td>
 </tr>
-<tr class="even">
-<td>21</td>
+<tr class="odd">
 <td>0.7212290841961994</td>
 </tr>
-<tr class="odd">
-<td>22</td>
+<tr class="even">
 <td>-0.1195911846804324</td>
 </tr>
-<tr class="even">
-<td>23</td>
+<tr class="odd">
 <td>-0.6812899355665778</td>
 </tr>
-<tr class="odd">
-<td>24</td>
+<tr class="even">
 <td>-0.8392514895150631</td>
 </tr>
-<tr class="even">
-<td>25</td>
+<tr class="odd">
 <td>-0.9029773174253988</td>
 </tr>
-<tr class="odd">
-<td>26</td>
+<tr class="even">
 <td>1.2775138991235113</td>
 </tr>
-<tr class="even">
-<td>27</td>
+<tr class="odd">
 <td>1.3052496901727149</td>
 </tr>
-<tr class="odd">
-<td>28</td>
+<tr class="even">
 <td>0.10749064244688167</td>
 </tr>
-<tr class="even">
-<td>29</td>
+<tr class="odd">
 <td>2.182404272999568</td>
 </tr>
-<tr class="odd">
-<td>30</td>
+<tr class="even">
 <td>0.8020152567350689</td>
 </tr>
-<tr class="even">
-<td>31</td>
+<tr class="odd">
 <td>2.2480086429639803</td>
 </tr>
-<tr class="odd">
-<td>32</td>
+<tr class="even">
 <td>-0.5815891130571396</td>
 </tr>
-<tr class="even">
-<td>33</td>
+<tr class="odd">
 <td>-1.2200475860286044</td>
 </tr>
-<tr class="odd">
-<td>34</td>
+<tr class="even">
 <td>-0.9148598795692016</td>
 </tr>
-<tr class="even">
-<td>35</td>
+<tr class="odd">
 <td>-1.9929339785508062</td>
 </tr>
-<tr class="odd">
-<td>36</td>
+<tr class="even">
 <td>-1.167556833223004</td>
 </tr>
-<tr class="even">
-<td>37</td>
+<tr class="odd">
 <td>1.1831111606916571</td>
 </tr>
-<tr class="odd">
-<td>38</td>
+<tr class="even">
 <td>1.6305003825662951</td>
 </tr>
-<tr class="even">
-<td>39</td>
+<tr class="odd">
 <td>0.4225635017131969</td>
 </tr>
-<tr class="odd">
-<td>40</td>
+<tr class="even">
 <td>-1.070811370568912</td>
 </tr>
-<tr class="even">
-<td>41</td>
+<tr class="odd">
 <td>0.4073366876810065</td>
 </tr>
-<tr class="odd">
-<td>42</td>
+<tr class="even">
 <td>-0.07175255029977834</td>
 </tr>
-<tr class="even">
-<td>43</td>
+<tr class="odd">
 <td>0.7898405901980585</td>
 </tr>
-<tr class="odd">
-<td>44</td>
+<tr class="even">
 <td>0.8608244191036003</td>
 </tr>
-<tr class="even">
-<td>45</td>
+<tr class="odd">
 <td>-0.005997950498821458</td>
 </tr>
-<tr class="odd">
-<td>46</td>
+<tr class="even">
 <td>-0.5461824357074251</td>
 </tr>
-<tr class="even">
-<td>47</td>
+<tr class="odd">
 <td>2.655506073055612</td>
 </tr>
-<tr class="odd">
-<td>48</td>
+<tr class="even">
 <td>1.9812883429230417</td>
 </tr>
-<tr class="even">
-<td>49</td>
+<tr class="odd">
 <td>0.948280488545405</td>
 </tr>
-<tr class="odd">
-<td>50</td>
+<tr class="even">
 <td>0.9976731056744998</td>
 </tr>
-<tr class="even">
-<td>51</td>
+<tr class="odd">
 <td>-1.9587787208592302</td>
 </tr>
-<tr class="odd">
-<td>52</td>
+<tr class="even">
 <td>-3.5257537738930718</td>
 </tr>
-<tr class="even">
-<td>53</td>
+<tr class="odd">
 <td>-2.5932394631294877</td>
 </tr>
-<tr class="odd">
-<td>54</td>
+<tr class="even">
 <td>-1.249754246667226</td>
 </tr>
-<tr class="even">
-<td>55</td>
+<tr class="odd">
 <td>-2.1034623224484736</td>
 </tr>
-<tr class="odd">
-<td>56</td>
+<tr class="even">
 <td>-3.159937484622108</td>
 </tr>
-<tr class="even">
-<td>57</td>
+<tr class="odd">
 <td>-3.512030778343192</td>
 </tr>
-<tr class="odd">
-<td>58</td>
+<tr class="even">
 <td>-1.9824140637082557</td>
 </tr>
-<tr class="even">
-<td>59</td>
+<tr class="odd">
 <td>-2.7829299042529643</td>
 </tr>
-<tr class="odd">
-<td>60</td>
+<tr class="even">
 <td>-0.7251573880955828</td>
 </tr>
-<tr class="even">
-<td>61</td>
+<tr class="odd">
 <td>-2.072278723660861</td>
 </tr>
-<tr class="odd">
-<td>62</td>
+<tr class="even">
 <td>-1.0646342854393418</td>
 </tr>
-<tr class="even">
-<td>63</td>
+<tr class="odd">
 <td>-0.4425713020860106</td>
 </tr>
-<tr class="odd">
-<td>64</td>
+<tr class="even">
 <td>2.3819350973526423</td>
 </tr>
-<tr class="even">
-<td>65</td>
+<tr class="odd">
 <td>2.1408183231391726</td>
 </tr>
-<tr class="odd">
-<td>66</td>
+<tr class="even">
 <td>2.454973829360471</td>
 </tr>
-<tr class="even">
-<td>67</td>
+<tr class="odd">
 <td>1.4344731917553755</td>
 </tr>
-<tr class="odd">
-<td>68</td>
+<tr class="even">
 <td>1.125009999016245</td>
 </tr>
-<tr class="even">
-<td>69</td>
+<tr class="odd">
 <td>0.3900070091799304</td>
 </tr>
-<tr class="odd">
-<td>70</td>
+<tr class="even">
 <td>-0.7798167218950482</td>
 </tr>
-<tr class="even">
-<td>71</td>
+<tr class="odd">
 <td>-0.3342879904823223</td>
 </tr>
-<tr class="odd">
-<td>72</td>
+<tr class="even">
 <td>-1.2177391464355098</td>
 </tr>
-<tr class="even">
-<td>73</td>
+<tr class="odd">
 <td>0.830731254431112</td>
 </tr>
-<tr class="odd">
-<td>74</td>
+<tr class="even">
 <td>0.10821172392000628</td>
 </tr>
-<tr class="even">
-<td>75</td>
+<tr class="odd">
 <td>1.2554472029584907</td>
 </tr>
-<tr class="odd">
-<td>76</td>
+<tr class="even">
 <td>2.055272585431415</td>
 </tr>
-<tr class="even">
-<td>77</td>
+<tr class="odd">
 <td>1.9197473121469386</td>
 </tr>
-<tr class="odd">
-<td>78</td>
+<tr class="even">
 <td>1.5763890837670425</td>
 </tr>
-<tr class="even">
-<td>79</td>
+<tr class="odd">
 <td>0.23473624714674302</td>
 </tr>
-<tr class="odd">
-<td>80</td>
+<tr class="even">
 <td>-0.4411380370130055</td>
 </tr>
-<tr class="even">
-<td>81</td>
+<tr class="odd">
 <td>0.03595011068533288</td>
 </tr>
-<tr class="odd">
-<td>82</td>
+<tr class="even">
 <td>0.5780803296515352</td>
 </tr>
-<tr class="even">
-<td>83</td>
+<tr class="odd">
 <td>1.976207445760896</td>
 </tr>
-<tr class="odd">
-<td>84</td>
+<tr class="even">
 <td>1.2935392991386372</td>
 </tr>
-<tr class="even">
-<td>85</td>
+<tr class="odd">
 <td>0.8185818425230671</td>
 </tr>
-<tr class="odd">
-<td>86</td>
+<tr class="even">
 <td>1.3847837486133925</td>
 </tr>
-<tr class="even">
-<td>87</td>
+<tr class="odd">
 <td>0.5583438287031932</td>
 </tr>
-<tr class="odd">
-<td>88</td>
+<tr class="even">
 <td>0.7293396933606422</td>
 </tr>
-<tr class="even">
-<td>89</td>
+<tr class="odd">
 <td>1.0648721217498003</td>
 </tr>
-<tr class="odd">
-<td>90</td>
+<tr class="even">
 <td>0.9532085696520289</td>
 </tr>
-<tr class="even">
-<td>91</td>
+<tr class="odd">
 <td>-1.4352271508574979</td>
 </tr>
-<tr class="odd">
-<td>92</td>
+<tr class="even">
 <td>-1.2974772446685645</td>
 </tr>
-<tr class="even">
-<td>93</td>
+<tr class="odd">
 <td>-2.1190706412323617</td>
 </tr>
-<tr class="odd">
-<td>94</td>
+<tr class="even">
 <td>-1.1131573532939294</td>
 </tr>
-<tr class="even">
-<td>95</td>
+<tr class="odd">
 <td>-0.9832765035361701</td>
 </tr>
-<tr class="odd">
-<td>96</td>
+<tr class="even">
 <td>-2.403094269423963</td>
 </tr>
-<tr class="even">
-<td>97</td>
+<tr class="odd">
 <td>-0.5890607058790454</td>
 </tr>
-<tr class="odd">
-<td>98</td>
+<tr class="even">
 <td>-1.0802952423453056</td>
 </tr>
-<tr class="even">
-<td>99</td>
+<tr class="odd">
 <td>0.04424478384844799</td>
 </tr>
+<tr class="even">
+<td>0.26756324821161415</td>
+</tr>
 <tr class="odd">
-<td>…</td>
+<td>-0.8344349067989484</td>
+</tr>
+<tr class="even">
+<td>-1.0274184534958086</td>
+</tr>
+<tr class="odd">
 <td>…</td>
 </tr>
 </tbody>
@@ -940,7 +838,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="acf" class="level2" data-number="24.1">
 <h2 data-number="24.1" class="anchored" data-anchor-id="acf"><span class="header-section-number">24.1</span> acf</h2>
-<p>The autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag: a stem per lag, a significance band around zero, the lags outside it marked.</p>
+<p>The autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag: a stem per lag, a significance band around zero, the lags outside it marked (lag 0, always 1, is not marked).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -974,19 +872,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:colors :stem</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]</td>
+<td>[69 117 180]</td>
 <td>colour of the stems and points</td>
 </tr>
 <tr class="odd">
 <td>:colors :band</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]</td>
+<td>[69 117 180]</td>
 <td>colour of the significance band</td>
 </tr>
 <tr class="even">
 <td>:colors :significant</td>
 <td>a clojure2d color or :none</td>
-<td>[215.0 48.0 39.0 255.0]</td>
+<td>[215 48 39]</td>
 <td>colour of the points of lags outside the band</td>
 </tr>
 </tbody>
@@ -1002,7 +900,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>One correlogram - the ACF (<code>:acf</code>) or the PACF (<code>:pacf</code>) - and the band as a block per lag (<code>:stepped</code>); the default <code>:both</code> draws ACF above PACF, the band <code>:smooth</code>:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:band</span> <span class="at">:stepped</span> <span class="at">:title</span> <span class="st">":correlograms :acf, :band :stepped"</span>})</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:pacf</span> <span class="at">:band</span> <span class="at">:smooth</span> <span class="at">:title</span> <span class="st">":correlograms :pacf"</span>})]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:pacf</span> <span class="at">:title</span> <span class="st">":correlograms :pacf"</span>})]</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1041,7 +939,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 180.0]</td>
+<td>[69 117 180 180]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">
@@ -1122,7 +1020,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> waves </span>(<span class="kw">for</span> [[i series] (map-indexed <span class="kw">vector</span> [<span class="st">"north"</span> <span class="st">"south"</span> <span class="st">"east"</span>]) t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">100</span> <span class="dv">2</span>)]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:t</span> t <span class="at">:series</span> series</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">1.0</span> i) (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">0.05</span> (<span class="kw">*</span> <span class="fl">0.03</span> i)) t) (<span class="kw">*</span> <span class="fl">1.3</span> i))) (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">*</span> <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (m/* (m/inc i) (m/sin (m/+ (m/* (m/+ <span class="fl">0.05</span> (m/* <span class="fl">0.03</span> i)) t) (m/* <span class="fl">1.3</span> i))) (m/inc (m/* <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">

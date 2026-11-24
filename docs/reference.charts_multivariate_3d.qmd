@@ -38,7 +38,8 @@ it reads, its own options and the shared option groups it takes (documented once
 ::: {.sourceClojure}
 ```clojure
 (ns reference.charts-multivariate-3d
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -154,26 +155,30 @@ axes themselves and what a missing value does:
 
 The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
 scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
-the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range):
+the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range); short variable names let
+all four axis names fit:
 
 
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :center})]
                                    :labels {:title ":scaling :center" :x nil :y nil}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :robust :robust-center :median :robust-spread :mad})]
                                    :labels {:title ":robust, :median / :mad" :x nil :y nil}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :robust :robust-center :mean :robust-spread 0.25})]
                                    :labels {:title ":robust, :mean / 0.25" :x nil :y nil}}]
                                  {:columns 3 :widths [1 1 1.3]})
@@ -334,7 +339,7 @@ The point style used when nothing is mapped:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -345,7 +350,7 @@ The point style used when nothing is mapped:
 ```clojure
 (plot/render-image {:data quakes
                     :mapping {:x :long :y :lat :z :depth}
-                    :charts [(chart/cloud {:size 5 :shape \s :color [200 80 40 220] :stroke-color :black
+                    :charts [(chart/cloud {:size 5 :shape \S :color [200 80 40 220] :stroke-color :black
                                            :stroke-width 0.3 :domain {:z [690 40]}
                                            :axis-titles {:x "longitude" :y "latitude" :z "depth"}})]}
                    {:width 600 :height 480})
@@ -500,14 +505,14 @@ a parametric surface, or the 2D density of mapped points; heights coloured throu
 ::: {.sourceClojure}
 ```clojure
 (def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
-               {:x x :y y :z (* x (Math/exp (- (+ (* x x) (* y y)))))}))
+               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
 ```
 :::
 
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>-2</td><td>-2</td><td>-6.709252558050237E-4</td></tr><tr><td>-2</td><td>-1.75</td><td>-0.001713267660371881</td></tr><tr><td>-2</td><td>-1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>-1.25</td><td>-0.007678332948052327</td></tr><tr><td>-2</td><td>-1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>-0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>-0.5</td><td>-0.02852846781799851</td></tr><tr><td>-2</td><td>-0.25</td><td>-0.034411900851702766</td></tr><tr><td>-2</td><td>0.0</td><td>-0.03663127777746836</td></tr><tr><td>-2</td><td>0.25</td><td>-0.034411900851702766</td></tr><tr><td>-2</td><td>0.5</td><td>-0.02852846781799851</td></tr><tr><td>-2</td><td>0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>1.25</td><td>-0.007678332948052327</td></tr><tr><td>-2</td><td>1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>1.75</td><td>-0.001713267660371881</td></tr><tr><td>-2</td><td>2.0</td><td>-6.709252558050237E-4</td></tr><tr><td>-1.75</td><td>-2</td><td>-0.0014991092028253958</td></tr><tr><td>-1.75</td><td>-1.75</td><td>-0.003828109456820049</td></tr><tr><td>-1.75</td><td>-1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>-1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>-1.0</td><td>-0.03011041324523992</td></tr><tr><td>-1.75</td><td>-0.75</td><td>-0.0466359203386221</td></tr><tr><td>-1.75</td><td>-0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>-0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.0</td><td>-0.08184858917192822</td></tr><tr><td>-1.75</td><td>0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>0.75</td><td>-0.0466359203386221</td></tr><tr><td>-1.75</td><td>1.0</td><td>-0.03011041324523992</td></tr><tr><td>-1.75</td><td>1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>1.75</td><td>-0.003828109456820049</td></tr><tr><td>-1.75</td><td>2.0</td><td>-0.0014991092028253958</td></tr><tr><td>-1.5</td><td>-2</td><td>-0.002895681204341564</td></tr><tr><td>-1.5</td><td>-1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>-1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>-1.25</td><td>-0.03313931649759366</td></tr><tr><td>-1.5</td><td>-1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>-0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>-0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>-0.25</td><td>-0.14852011254573944</td></tr><tr><td>-1.5</td><td>0.0</td><td>-0.1580988368427965</td></tr><tr><td>-1.5</td><td>0.25</td><td>-0.14852011254573944</td></tr><tr><td>-1.5</td><td>0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>1.25</td><td>-0.03313931649759366</td></tr><tr><td>-1.5</td><td>1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>2.0</td><td>-0.002895681204341564</td></tr><tr><td>-1.25</td><td>-2</td><td>-0.0047989580925327045</td></tr><tr><td>-1.25</td><td>-1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>-1.5</td><td>-0.027616097081328055</td></tr><tr><td>-1.25</td><td>-1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>-1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>-0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>-0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>-0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.0</td><td>-0.26201423393887224</td></tr><tr><td>-1.25</td><td>0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>1.5</td><td>-0.027616097081328055</td></tr><tr><td>-1.25</td><td>1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>2.0</td><td>-0.0047989580925327045</td></tr><tr><td>-1.0</td><td>-2</td><td>-0.006737946999085467</td></tr><tr><td>-1.0</td><td>-1.75</td><td>-0.017205950425851383</td></tr><tr><td>-1.0</td><td>-1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>-1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>-1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>-0.75</td><td>-0.2096113871510978</td></tr><tr><td>-1.0</td><td>-0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>-0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.0</td><td>-0.36787944117144233</td></tr><tr><td>-1.0</td><td>0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>0.75</td><td>-0.2096113871510978</td></tr><tr><td>-1.0</td><td>1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>1.75</td><td>-0.017205950425851383</td></tr><tr><td>-1.0</td><td>2.0</td><td>-0.006737946999085467</td></tr><tr><td>-0.75</td><td>-2</td><td>-0.007826952347080878</td></tr><tr><td>-0.75</td><td>-1.75</td><td>-0.019986823002266615</td></tr><tr><td>-0.75</td><td>-1.5</td><td>-0.04504100092148096</td></tr><tr><td>-0.75</td><td>-1.25</td><td>-0.08957472620003971</td></tr><tr><td>-0.75</td><td>-1.0</td><td>-0.15720854036332335</td></tr><tr><td>-0.75</td><td>-0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>-0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>-0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.0</td><td>-0.42733711854819223</td></tr><tr><td>-0.75</td><td>0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>1.0</td><td>-0.15720854036332335</td></tr><tr><td>-0.75</td><td>1.25</td><td>-0.08957472620003971</td></tr><tr><td>-0.75</td><td>1.5</td><td>-0.04504100092148096</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>-2</td><td>-2</td><td>-6.709252558050237E-4</td></tr><tr><td>-2</td><td>-1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>-1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>-1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>-1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>-0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>-0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>-0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.0</td><td>-0.03663127777746836</td></tr><tr><td>-2</td><td>0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>2.0</td><td>-6.709252558050237E-4</td></tr><tr><td>-1.75</td><td>-2</td><td>-0.001499109202825396</td></tr><tr><td>-1.75</td><td>-1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>-1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>-1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>-1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>-0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>-0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>-0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.0</td><td>-0.08184858917192822</td></tr><tr><td>-1.75</td><td>0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>2.0</td><td>-0.001499109202825396</td></tr><tr><td>-1.5</td><td>-2</td><td>-0.002895681204341564</td></tr><tr><td>-1.5</td><td>-1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>-1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>-1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>-1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>-0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>-0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>-0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.0</td><td>-0.15809883684279652</td></tr><tr><td>-1.5</td><td>0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>2.0</td><td>-0.002895681204341564</td></tr><tr><td>-1.25</td><td>-2</td><td>-0.004798958092532704</td></tr><tr><td>-1.25</td><td>-1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>-1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>-1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>-1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>-0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>-0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>-0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.0</td><td>-0.2620142339388723</td></tr><tr><td>-1.25</td><td>0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>2.0</td><td>-0.004798958092532704</td></tr><tr><td>-1.0</td><td>-2</td><td>-0.006737946999085467</td></tr><tr><td>-1.0</td><td>-1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>-1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>-1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>-1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>-0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>-0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>-0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.0</td><td>-0.36787944117144233</td></tr><tr><td>-1.0</td><td>0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>2.0</td><td>-0.006737946999085467</td></tr><tr><td>-0.75</td><td>-2</td><td>-0.007826952347080878</td></tr><tr><td>-0.75</td><td>-1.75</td><td>-0.019986823002266618</td></tr><tr><td>-0.75</td><td>-1.5</td><td>-0.04504100092148096</td></tr><tr><td>-0.75</td><td>-1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>-1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>-0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>-0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>-0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.0</td><td>-0.42733711854819223</td></tr><tr><td>-0.75</td><td>0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>1.5</td><td>-0.04504100092148096</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
 ```
 
 
@@ -528,12 +533,12 @@ a parametric surface, or the 2D density of mapped points; heights coloured throu
 
 
 Its options: the source (`:f` with the 3D frame's `:domain`, `:fu` over `:u` / `:v`, or `:density`), the grid
-size, and the drawing - filled, wireframe or both, shaded, in one colour:
+size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded, in one colour:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>[60.0 60.0 60.0 255.0]</td><td>quad outline colour of :style :both</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>0.5</td><td>quad outline width in pixels (:style :both and :wireframe)</td></tr><tr><td>:style</td><td>one of :surface :wireframe :both</td><td>:surface</td><td>mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>each quad's mean height (or c of [z c]) through the plot's color scale</td><td>one colour for all quads (no color scale)</td></tr><tr><td>:shade</td><td>true or false or nil</td><td>true</td><td>shading of filled quads by their angle to the light (Lambert; false - the colour itself, as :ambient 1)</td></tr><tr><td>:f</td><td>a function</td><td></td><td>source: a function of [x y] returning z or [z c], sampled over :domain :x / :y</td></tr><tr><td>:density</td><td>true or false or nil</td><td>false</td><td>source: the 2D kernel density of the mapped :x, :y</td></tr><tr><td>:fu</td><td>a function</td><td></td><td>source: a parametric surface, a function of [u v] returning [x y z]</td></tr><tr><td>:u</td><td>[a finite number, a finite number]</td><td></td><td>the u range [lo hi] of :fu</td></tr><tr><td>:v</td><td>[a finite number, a finite number]</td><td></td><td>the v range [lo hi] of :fu</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>30</td><td>grid points per axis of :f, :fu, :density: n or [nx ny]</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3 (only with :density)</td><td>how many bandwidths the density domain extends past the points on each side</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>[60 60 60]</td><td>quad outline colour of :style :both</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>0.5</td><td>quad outline width in pixels (:style :both and :wireframe)</td></tr><tr><td>:style</td><td>one of :surface :wireframe :both</td><td>:surface</td><td>mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>each quad's mean height (or c of [z c]) through the plot's color scale</td><td>one colour for all quads (no color scale)</td></tr><tr><td>:shade</td><td>true or false or nil</td><td>true</td><td>shading of filled quads by their angle to the light (Lambert; false - the colour itself, as :ambient 1)</td></tr><tr><td>:f</td><td>a function</td><td></td><td>source: a function of [x y] returning z or [z c], sampled over :domain :x / :y</td></tr><tr><td>:density</td><td>true or false or nil</td><td>false</td><td>source: the 2D kernel density of the mapped :x, :y</td></tr><tr><td>:fu</td><td>a function</td><td></td><td>source: a parametric surface, a function of [u v] returning [x y z]</td></tr><tr><td>:u</td><td>[a finite number, a finite number]</td><td></td><td>the u range [lo hi] of :fu</td></tr><tr><td>:v</td><td>[a finite number, a finite number]</td><td></td><td>the v range [lo hi] of :fu</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>30</td><td>grid points per axis of :f, :fu, :density: n or [nx ny]</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3 (only with :density)</td><td>how many bandwidths the density domain extends past the points on each side</td></tr></tbody></table>
 ```
 
 :::
@@ -542,20 +547,19 @@ size, and the drawing - filled, wireframe or both, shaded, in one colour:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (Math/sin (Math/hypot x y)))
+(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/hypot x y)))
                                                             :domain {:x [-6 6] :y [-6 6]} :n 25 :style :both})]
                                    :labels {:title ":f, :style :both"}
                                    :legend false}
-                                  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (Math/cos v)) (Math/cos u))
-                                                                             (* (+ 2.0 (Math/cos v)) (Math/sin u))
-                                                                             (Math/sin v)])
-                                                            :u [0.0 (* 2 Math/PI)] :v [0.0 (* 2 Math/PI)] :n [36 18]
+                                  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (m/cos v)) (m/cos u))
+                                                                             (* (+ 2.0 (m/cos v)) (m/sin u))
+                                                                             (m/sin v)])
+                                                            :u [0.0 m/TWO_PI] :v [0.0 m/TWO_PI] :n [36 18]
                                                             :aspect [1 1 0.35] :color [120 170 210] :shade true})]
                                    :labels {:title ":fu (a torus), one colour"}}
                                   {:data iris
                                    :mapping {:x :sepal-length :y :sepal-width}
-                                   :charts [(chart/surface {:density true :n 30 :style :wireframe
-                                                            :stroke-color [40 40 40]})]
+                                   :charts [(chart/surface {:density true :n 30 :style :wireframe})]
                                    :labels {:title ":density, :wireframe"}
                                    :legend false}]
                                  {:columns 3})
@@ -570,7 +574,7 @@ size, and the drawing - filled, wireframe or both, shaded, in one colour:
 
 
 A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
-high), and the quad outlines' width:
+high), and the quad outlines' colour and width (outlines of `:style :both`):
 
 
 ::: {.sourceClojure}
@@ -587,8 +591,8 @@ high), and the quad outlines' width:
                                    :legend false}
                                   {:data lattice
                                    :mapping {:x :x :y :y :z :z}
-                                   :charts [(chart/surface {:style :both :stroke-width 2})]
-                                   :labels {:title ":style :both, :stroke-width 2"}}]
+                                   :charts [(chart/surface {:style :both :stroke-color [40 40 40] :stroke-width 2})]
+                                   :labels {:title ":stroke-color, :stroke-width 2"}}]
                                  {:columns 3 :widths [1 1 1.25]})
                    {:width 1000 :height 360})
 ```
@@ -600,7 +604,7 @@ high), and the quad outlines' width:
 :::
 
 
-The 3D frame (Shared options) on a surface: seen from another side and from above, and with y reversed:
+The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surface: seen from another side and from above, and with y reversed:
 
 
 ::: {.sourceClojure}

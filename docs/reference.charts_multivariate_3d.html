@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -520,10 +520,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Many variables at once: a line per row across one axis per variable (<code>parallel</code>, a radar in polar coordinates), points in a 3D box (<code>cloud</code>), surfaces over a grid (<code>surface</code>), and a matrix of plots of every pair of variables (scatter-plot matrix, at the end). Each chart lists the mapping keys it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-multivariate<span class="dv">-3</span>d</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -2126,27 +2127,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image1.png" class="img-fluid"></p>
 </div>
-<p>The scalings side by side: centred values (<code>:center</code>, original units less each variable’s mean) and the robust scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also the mean over a quantile spread (<code>:robust-spread 0.25</code> - the interquartile half-range):</p>
+<p>The scalings side by side: centred values (<code>:center</code>, original units less each variable’s mean) and the robust scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also the mean over a quantile spread (<code>:robust-spread 0.25</code> - the interquartile half-range); short variable names let all four axis names fit:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:center</span>})]</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":scaling :center"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:robust</span> <span class="at">:robust-center</span> <span class="at">:median</span> <span class="at">:robust-spread</span> <span class="at">:mad</span>})]</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":robust, :median / :mad"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:robust</span> <span class="at">:robust-center</span> <span class="at">:mean</span> <span class="at">:robust-spread</span> <span class="fl">0.25</span>})]</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":robust, :mean / 0.25"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">1.3</span>]})</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">340</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [[<span class="st">"sepal L"</span> <span class="at">:sepal-length</span>] [<span class="st">"sepal W"</span> <span class="at">:sepal-width</span>]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                                                         [<span class="st">"petal L"</span> <span class="at">:petal-length</span>] [<span class="st">"petal W"</span> <span class="at">:petal-width</span>]]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:center</span>})]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":scaling :center"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [[<span class="st">"sepal L"</span> <span class="at">:sepal-length</span>] [<span class="st">"sepal W"</span> <span class="at">:sepal-width</span>]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                                                         [<span class="st">"petal L"</span> <span class="at">:petal-length</span>] [<span class="st">"petal W"</span> <span class="at">:petal-width</span>]]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:robust</span> <span class="at">:robust-center</span> <span class="at">:median</span> <span class="at">:robust-spread</span> <span class="at">:mad</span>})]</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":robust, :median / :mad"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/parallel {<span class="at">:variables</span> [[<span class="st">"sepal L"</span> <span class="at">:sepal-length</span>] [<span class="st">"sepal W"</span> <span class="at">:sepal-width</span>]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                                                         [<span class="st">"petal L"</span> <span class="at">:petal-length</span>] [<span class="st">"petal W"</span> <span class="at">:petal-width</span>]]</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:scaling</span> <span class="at">:robust</span> <span class="at">:robust-center</span> <span class="at">:mean</span> <span class="at">:robust-spread</span> <span class="fl">0.25</span>})]</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":robust, :mean / 0.25"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">340</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image2.png" class="img-fluid"></p>
@@ -2427,7 +2431,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 180.0]</td>
+<td>[69 117 180 180]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">
@@ -2455,7 +2459,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> quakes</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:long</span> <span class="at">:y</span> <span class="at">:lat</span> <span class="at">:z</span> <span class="at">:depth</span>}</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/cloud {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">220</span>] <span class="at">:stroke-color</span> <span class="at">:black</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/cloud {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:shape</span> <span class="ch">\S</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">220</span>] <span class="at">:stroke-color</span> <span class="at">:black</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">:stroke-width</span> <span class="fl">0.3</span> <span class="at">:domain</span> {<span class="at">:z</span> [<span class="dv">690</span> <span class="dv">40</span>]}</span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">:axis-titles</span> {<span class="at">:x</span> <span class="st">"longitude"</span> <span class="at">:y</span> <span class="st">"latitude"</span> <span class="at">:z</span> <span class="st">"depth"</span>}})]}</span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -2677,7 +2681,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lattice </span>(<span class="kw">for</span> [x (<span class="kw">range</span> -<span class="dv">2</span> <span class="fl">2.01</span> <span class="fl">0.25</span>) y (<span class="kw">range</span> -<span class="dv">2</span> <span class="fl">2.01</span> <span class="fl">0.25</span>)]</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> x (Math/exp (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y)))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> x (m/exp (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y)))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2698,7 +2702,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-2</td>
 <td>-1.75</td>
-<td>-0.001713267660371881</td>
+<td>-0.0017132676603718812</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
@@ -2708,7 +2712,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-2</td>
 <td>-1.25</td>
-<td>-0.007678332948052327</td>
+<td>-0.007678332948052326</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
@@ -2723,12 +2727,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>-2</td>
 <td>-0.5</td>
-<td>-0.02852846781799851</td>
+<td>-0.028528467817998508</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>-0.25</td>
-<td>-0.034411900851702766</td>
+<td>-0.03441190085170276</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
@@ -2738,12 +2742,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-2</td>
 <td>0.25</td>
-<td>-0.034411900851702766</td>
+<td>-0.03441190085170276</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>0.5</td>
-<td>-0.02852846781799851</td>
+<td>-0.028528467817998508</td>
 </tr>
 <tr class="even">
 <td>-2</td>
@@ -2758,7 +2762,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-2</td>
 <td>1.25</td>
-<td>-0.007678332948052327</td>
+<td>-0.007678332948052326</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
@@ -2768,7 +2772,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-2</td>
 <td>1.75</td>
-<td>-0.001713267660371881</td>
+<td>-0.0017132676603718812</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
@@ -2778,12 +2782,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.75</td>
 <td>-2</td>
-<td>-0.0014991092028253958</td>
+<td>-0.001499109202825396</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-1.75</td>
-<td>-0.003828109456820049</td>
+<td>-0.0038281094568200498</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
@@ -2798,12 +2802,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.75</td>
 <td>-1.0</td>
-<td>-0.03011041324523992</td>
+<td>-0.030110413245239914</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-0.75</td>
-<td>-0.0466359203386221</td>
+<td>-0.04663592033862211</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
@@ -2833,12 +2837,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>-1.75</td>
 <td>0.75</td>
-<td>-0.0466359203386221</td>
+<td>-0.04663592033862211</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>1.0</td>
-<td>-0.03011041324523992</td>
+<td>-0.030110413245239914</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
@@ -2853,12 +2857,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>-1.75</td>
 <td>1.75</td>
-<td>-0.003828109456820049</td>
+<td>-0.0038281094568200498</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>2.0</td>
-<td>-0.0014991092028253958</td>
+<td>-0.001499109202825396</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
@@ -2878,7 +2882,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.5</td>
 <td>-1.25</td>
-<td>-0.03313931649759366</td>
+<td>-0.03313931649759367</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
@@ -2898,17 +2902,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.5</td>
 <td>-0.25</td>
-<td>-0.14852011254573944</td>
+<td>-0.14852011254573946</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>0.0</td>
-<td>-0.1580988368427965</td>
+<td>-0.15809883684279652</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>0.25</td>
-<td>-0.14852011254573944</td>
+<td>-0.14852011254573946</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
@@ -2928,7 +2932,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.5</td>
 <td>1.25</td>
-<td>-0.03313931649759366</td>
+<td>-0.03313931649759367</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
@@ -2948,7 +2952,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.25</td>
 <td>-2</td>
-<td>-0.0047989580925327045</td>
+<td>-0.004798958092532704</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
@@ -2958,7 +2962,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.25</td>
 <td>-1.5</td>
-<td>-0.027616097081328055</td>
+<td>-0.027616097081328058</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
@@ -2988,7 +2992,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.25</td>
 <td>0.0</td>
-<td>-0.26201423393887224</td>
+<td>-0.2620142339388723</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
@@ -3018,7 +3022,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.25</td>
 <td>1.5</td>
-<td>-0.027616097081328055</td>
+<td>-0.027616097081328058</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
@@ -3028,7 +3032,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.25</td>
 <td>2.0</td>
-<td>-0.0047989580925327045</td>
+<td>-0.004798958092532704</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
@@ -3038,7 +3042,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.0</td>
 <td>-1.75</td>
-<td>-0.017205950425851383</td>
+<td>-0.01720595042585138</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
@@ -3058,7 +3062,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.0</td>
 <td>-0.75</td>
-<td>-0.2096113871510978</td>
+<td>-0.20961138715109784</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
@@ -3088,7 +3092,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.0</td>
 <td>0.75</td>
-<td>-0.2096113871510978</td>
+<td>-0.20961138715109784</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
@@ -3108,7 +3112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-1.0</td>
 <td>1.75</td>
-<td>-0.017205950425851383</td>
+<td>-0.01720595042585138</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
@@ -3123,7 +3127,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>-0.75</td>
 <td>-1.75</td>
-<td>-0.019986823002266615</td>
+<td>-0.019986823002266618</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
@@ -3133,12 +3137,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>-0.75</td>
 <td>-1.25</td>
-<td>-0.08957472620003971</td>
+<td>-0.08957472620003973</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>-1.0</td>
-<td>-0.15720854036332335</td>
+<td>-0.15720854036332338</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
@@ -3178,12 +3182,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>-0.75</td>
 <td>1.0</td>
-<td>-0.15720854036332335</td>
+<td>-0.15720854036332338</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>1.25</td>
-<td>-0.08957472620003971</td>
+<td>-0.08957472620003973</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
@@ -3208,7 +3212,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Its options: the source (<code>:f</code> with the 3D frame’s <code>:domain</code>, <code>:fu</code> over <code>:u</code> / <code>:v</code>, or <code>:density</code>), the grid size, and the drawing - filled, wireframe or both, shaded, in one colour:</p>
+<p>Its options: the source (<code>:f</code> with the 3D frame’s <code>:domain</code>, <code>:fu</code> over <code>:u</code> / <code>:v</code>, or <code>:density</code>), the grid size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded, in one colour:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3224,7 +3228,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:stroke-color</td>
 <td>a clojure2d color or :none</td>
-<td>[60.0 60.0 60.0 255.0]</td>
+<td>[60 60 60]</td>
 <td>quad outline colour of :style :both</td>
 </tr>
 <tr class="even">
@@ -3298,29 +3302,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/surface {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (Math/sin (Math/hypot x y)))</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/surface {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (m/hypot x y)))</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]} <span class="at">:n</span> <span class="dv">25</span> <span class="at">:style</span> <span class="at">:both</span>})]</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":f, :style :both"</span>}</span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/surface {<span class="at">:fu</span> (<span class="kw">fn</span> [[u v]] [(<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">2.0</span> (Math/cos v)) (Math/cos u))</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                                                                             (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">2.0</span> (Math/cos v)) (Math/sin u))</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                                                                             (Math/sin v)])</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:u</span> [<span class="fl">0.0</span> (<span class="kw">*</span> <span class="dv">2</span> Math/PI)] <span class="at">:v</span> [<span class="fl">0.0</span> (<span class="kw">*</span> <span class="dv">2</span> Math/PI)] <span class="at">:n</span> [<span class="dv">36</span> <span class="dv">18</span>]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/surface {<span class="at">:fu</span> (<span class="kw">fn</span> [[u v]] [(<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">2.0</span> (m/cos v)) (m/cos u))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                                                                             (<span class="kw">*</span> (<span class="kw">+</span> <span class="fl">2.0</span> (m/cos v)) (m/sin u))</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                                                                             (m/sin v)])</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:u</span> [<span class="fl">0.0</span> m/TWO_PI] <span class="at">:v</span> [<span class="fl">0.0</span> m/TWO_PI] <span class="at">:n</span> [<span class="dv">36</span> <span class="dv">18</span>]</span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:aspect</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">0.35</span>] <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">170</span> <span class="dv">210</span>] <span class="at">:shade</span> <span class="va">true</span>})]</span>
 <span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":fu (a torus), one colour"</span>}}</span>
 <span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
 <span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface {<span class="at">:density</span> <span class="va">true</span> <span class="at">:n</span> <span class="dv">30</span> <span class="at">:style</span> <span class="at">:wireframe</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:stroke-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>]})]</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":density, :wireframe"</span>}</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}]</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface {<span class="at">:density</span> <span class="va">true</span> <span class="at">:n</span> <span class="dv">30</span> <span class="at">:style</span> <span class="at">:wireframe</span>})]</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":density, :wireframe"</span>}</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}]</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image12.png" class="img-fluid"></p>
 </div>
-<p>A density surface reaching past the points by <code>:cut</code> bandwidths (0 - the points’ range only, the edges cut off high), and the quad outlines’ width:</p>
+<p>A density surface reaching past the points by <code>:cut</code> bandwidths (0 - the points’ range only, the edges cut off high), and the quad outlines’ colour and width (outlines of <code>:style :both</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
@@ -3334,15 +3337,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> lattice</span>
 <span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:z</span> <span class="at">:z</span>}</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface {<span class="at">:style</span> <span class="at">:both</span> <span class="at">:stroke-width</span> <span class="dv">2</span>})]</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":style :both, :stroke-width 2"</span>}}]</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface {<span class="at">:style</span> <span class="at">:both</span> <span class="at">:stroke-color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">40</span>] <span class="at">:stroke-width</span> <span class="dv">2</span>})]</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stroke-color, :stroke-width 2"</span>}}]</span>
 <span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">1.25</span>]})</span>
 <span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image13.png" class="img-fluid"></p>
 </div>
-<p>The 3D frame (Shared options) on a surface: seen from another side and from above, and with y reversed:</p>
+<p>The <a href="reference.shared_options.html#d-frame">3D frame</a> (Shared options) on a surface: seen from another side and from above, and with y reversed:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> lattice</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:z</span> <span class="at">:z</span>}</span>

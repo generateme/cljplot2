@@ -8,8 +8,10 @@
 ;; accept, a few recipes and links to the use cases and galleries.
 
 (ns reference.specific-cases
-  (:require [fastmath.kernel :as kernel]
+  (:require [fastmath.core :as m]
+            [fastmath.kernel :as kernel]
             [fastmath.random :as r]
+            [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.dots :as dots]
@@ -32,6 +34,8 @@
   (let [d (r/distribution :exponential {:rate 0.5 :rng (r/rng :mersenne 11)})]
     (vec (repeatedly 40 #(r/sample d)))))
 
+(nu/data-table sample)
+
 ;; ## cljplot2.data.probability
 
 ;; Q-Q and P-P statistics (the `qq` and `pp` charts). The plotting positions `(i - 0.5) / n` of a data side:
@@ -44,16 +48,15 @@
 
 (def normal-side {:distribution (probability/distribution [:normal])})
 
-(nu/data-table (probability/quantile-pairs normal-side {:values sample} 100))
-
-(probability/quartile-line normal-side {:values sample})
-
-;; The same pairs drawn by hand - points and the quartile line - match the `qq` chart; the skewed sample bends away
-;; from the line at both ends:
-
 (def qq-pairs (probability/quantile-pairs normal-side {:values sample} 100))
 
 (nu/data-table qq-pairs)
+
+(probability/quartile-line normal-side {:values sample})
+
+;; The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#rule) by
+;; `:slope` and `:intercept`) - match the [qq](reference.charts_distribution_stats.html#qq) chart; the skewed sample
+;; bends away from the line at both ends:
 
 (plot/render-image (let [[slope intercept] (probability/quartile-line normal-side {:values sample})]
                      (plot/arrange [{:data qq-pairs
@@ -119,8 +122,9 @@
 
 (sort (:kde kernel/kernel-list))
 
-;; Four of them with the same `:bandwidth` - the curves differ in smoothness: the gaussian is the smoothest here,
-;; the uniform kernel's box shape makes its curve ragged:
+;; Four of them with the same `:bandwidth` ([density](reference.charts_distribution_stats.html#density)) - the
+;; curves differ in smoothness: the gaussian is the smoothest here, the uniform kernel's box shape makes its curve
+;; ragged:
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions}
                                    :charts [(chart/density {:kernel :gaussian :bandwidth 0.4})]
@@ -144,9 +148,15 @@
 
 (def eruption-xs (mapv :eruptions faithful))
 
+(nu/data-table eruption-xs)
+
 (def waiting-ys (mapv :waiting faithful))
 
+(nu/data-table waiting-ys)
+
 (def fit-xs (vec (range 1.6 5.2 0.1)))
+
+(nu/data-table fit-xs)
 
 (def quadratic (smooth/fit-curve {:method :lm :params {:degree 2} :band :prediction :levels [0.5 0.95]}
                                  eruption-xs waiting-ys fit-xs))
@@ -168,10 +178,12 @@
 
 ;; ## cljplot2.data.dots
 
-;; Dot plot bins (the `dotplot` chart) of sorted values - here the first 40 waiting times: Wilkinson's dot density bins - each starts at the first
-;; value not yet binned and is centred on its values - or fixed bins from an origin:
+;; Dot plot bins (the `dotplot` chart) of sorted values - here the first 40 waiting times: Wilkinson's dot density
+;; bins - each starts at the first value not yet binned and is centred on its values - or fixed bins from an origin:
 
 (def waits (sort (map :waiting (take 40 faithful))))
+
+(nu/data-table waits)
 
 (dots/dot-density-bins waits 4.0)
 
@@ -194,7 +206,8 @@
 ;; ## cljplot2.layout.pack
 
 ;; Circle packing (the `pack` chart): `pack` places a tree of values in a pixel box - every node gets `:x :y :r`;
-;; `pack-siblings` packs radii around the origin and `enclose` finds the smallest circle around circles:
+;; `pack-siblings` gives the centres of circles of the given radii packed side by side, and `enclose` finds the
+;; smallest circle around circles:
 
 (def packed (pack/pack {:value 20 :children [{:value 8} {:value 5} {:value 4} {:value 2} {:value 1}]}
                        {:x 0 :y 0 :w 100 :h 100} 2))
@@ -205,13 +218,14 @@
 
 (pack/enclose [{:x 0 :y 0 :r 1} {:x 3 :y 0 :r 1}])
 
-;; The packed circles drawn as polygons - the root's circle in grey, the children in colour:
+;; The packed circles drawn as [polygons](reference.charts_points_paths.html#polygon) outlined in their own colour
+;; (`:stroke-color :color`) - the root's circle in grey, the children in colour:
 
 (def circle-outlines (for [[i {:keys [x y r]}] (map-indexed vector (cons packed (:children packed)))
                            a (range 0 360 2)]
                        {:circle (if (zero? i) "root" (str "value " (:value (nth (:children packed) (dec i)))))
-                        :x (+ x (* r (Math/cos (Math/toRadians a))))
-                        :y (+ y (* r (Math/sin (Math/toRadians a))))}))
+                        :x (m/+ x (m/* r (m/cos (m/radians a))))
+                        :y (m/+ y (m/* r (m/sin (m/radians a))))}))
 
 (nu/data-table circle-outlines)
 
@@ -224,8 +238,9 @@
 
 ;; ## cljplot2.layout.treemap
 
-;; Treemap rectangles (the `treemap` chart) of values in a box: squarified (near-square rectangles, values in
-;; decreasing order) or slice-and-dice (strips along x at even depths, along y at odd ones):
+;; Treemap rectangles (the `treemap` chart) of values in a box: squarified (near-square rectangles in the given
+;; order, best with values in decreasing order, as here) or slice-and-dice (strips along x at even depths, along y at
+;; odd ones):
 
 (def shares [6 3 2 1 1])
 
@@ -233,7 +248,8 @@
 
 (nu/data-table (treemap/slice-dice shares {:x 0 :y 0 :w 100 :h 60} 0))
 
-;; Both layouts drawn with the `rect` chart (an annotation chart: its own data and mapping):
+;; Both layouts drawn with the [rect](reference.charts_annotations.html#rect) chart (an annotation chart: its own data
+;; and mapping), outlined in white:
 
 (plot/render-image (plot/arrange (for [[title rects] [["squarify" (treemap/squarify shares {:x 0 :y 0 :w 100 :h 60})]
                                                       ["slice-dice, depth 0" (treemap/slice-dice shares {:x 0 :y 0 :w 100 :h 60} 0)]]]
@@ -268,8 +284,8 @@
 (def venn-outlines (for [[i {:keys [x y r]}] (map-indexed vector two-circles)
                          a (range 0 360 2)]
                      {:set (nth ["A (10)" "B (6)"] i)
-                      :x (+ x (* r (Math/cos (Math/toRadians a))))
-                      :y (+ y (* r (Math/sin (Math/toRadians a))))}))
+                      :x (m/+ x (m/* r (m/cos (m/radians a))))
+                      :y (m/+ y (m/* r (m/sin (m/radians a))))}))
 
 (nu/data-table venn-outlines)
 
@@ -289,13 +305,12 @@
 
 ;; Short compositions of the pieces documented in this part.
 
-;; A reference curve over a histogram: the histogram on the density scale and the normal density with the data's
-;; mean and standard deviation as a `function` chart:
+;; A reference curve over a histogram: the [histogram](reference.charts_distribution_stats.html#histogram) on the
+;; density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
+;; [function](reference.charts_annotations.html#function) chart:
 
 (plot/render-image (let [xs (map :waiting faithful)
-                         mean (/ (reduce + xs) (count xs))
-                         sd (Math/sqrt (/ (reduce + (map #(Math/pow (- % mean) 2) xs)) (dec (count xs))))
-                         normal (r/distribution :normal {:mu mean :sd sd})]
+                         normal (r/distribution :normal {:mu (stats/mean xs) :sd (stats/stddev xs)})]
                      {:data faithful
                       :mapping {:x :waiting}
                       :charts [(chart/histogram {:y :density :bins 25})
@@ -303,7 +318,10 @@
                       :labels {:x "waiting [min]" :title "a normal curve fails a bimodal sample"}})
                    {:width 600 :height 320})
 
-;; A highlighted interval with an explanation: a band, a threshold and a note layered over a smoothed scatter:
+;; A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rect) over an x
+;; interval), a threshold ([rule](reference.charts_annotations.html#rule)) and a note
+;; ([text](reference.charts_annotations.html#text)) layered over a scatter with a loess
+;; [smooth](reference.charts_series.html#smooth):
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -326,17 +344,14 @@
                                  {:columns 2})
                    {:width 800 :height 260})
 
-;; Rendering to a file - `plot/save` writes the image and returns it, so it composes with `render-image`:
-
-(-> (plot/render-image {:data faithful :mapping {:x :eruptions :y :waiting} :charts [(chart/scatter)]}
-                       {:width 400 :height 260})
-    (plot/save (str (System/getProperty "java.io.tmpdir") "/cljplot2-recipe.png")))
+;; Rendering to a file - `plot/save` at the end of a `render-image` pipeline - is shown in
+;; [Render - Saving](reference.render.html#saving).
 
 ;; ## Links
 
 ;; The use cases show the charts at work, one family per chapter: [distribution](use_cases.distribution.html),
-;; [colours](use_cases.colors.html), [evolution](use_cases.evolution.html), [ranking](use_cases.ranking.html),
-;; [part of a whole](use_cases.part_of_a_whole.html), [correlation](use_cases.correlation.html) and
-;; [flow](use_cases.flow.html). The galleries reproduce other libraries' examples:
+;; [correlation](use_cases.correlation.html), [ranking](use_cases.ranking.html),
+;; [part of a whole](use_cases.part_of_a_whole.html), [evolution](use_cases.evolution.html),
+;; [flow](use_cases.flow.html) and [colours](use_cases.colors.html). The galleries reproduce other libraries' examples:
 ;; [cljplot extras](galleries.cljplot_extras.html), [lattice](galleries.lattice.html) and
 ;; [Vega-Lite](galleries.vega.html).

@@ -5,22 +5,22 @@
 ;; forwards to are shared groups (Shared options).
 
 (ns reference.builders-series
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
 
-;; An autoregressive series AR(1) with coefficient 0.7, 200 values from a seeded generator:
+;; An autoregressive series AR(1) with coefficient 0.7, 200 values - fastmath `r/ar` over seeded white noise:
 
-(def ar1 (let [g (r/rng :mersenne 11)]
-           (vec (reductions (fn [x _] (+ (* 0.7 x) (r/grandom g))) 0.0 (range 199)))))
+(def ar1 (vec (take 200 (r/ar 0.7 (r/white-noise (r/rng :mersenne 11) 1.0)))))
 
-(nu/data-table {:t (range (count ar1)) :value ar1})
+(nu/data-table ar1)
 
 ;; ## acf
 
 ;; The autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag: a stem per lag, a
-;; significance band around zero, the lags outside it marked.
+;; significance band around zero, the lags outside it marked (lag 0, always 1, is not marked).
 
 (nu/options-table (describe/own-rows (describe/options #'plot/acf)))
 
@@ -30,7 +30,7 @@
 ;; (`:stepped`); the default `:both` draws ACF above PACF, the band `:smooth`:
 
 (plot/render-image (plot/arrange [(plot/acf ar1 {:correlograms :acf :band :stepped :title ":correlograms :acf, :band :stepped"})
-                                  (plot/acf ar1 {:correlograms :pacf :band :smooth :title ":correlograms :pacf"})]
+                                  (plot/acf ar1 {:correlograms :pacf :title ":correlograms :pacf"})]
                                  {:columns 2})
                    {:width 1000 :height 300})
 
@@ -63,7 +63,7 @@
 
 (def waves (for [[i series] (map-indexed vector ["north" "south" "east"]) t (range 0 100 2)]
              {:t t :series series
-              :v (* (+ 1.0 i) (Math/sin (+ (* (+ 0.05 (* 0.03 i)) t) (* 1.3 i))) (+ 1 (* 0.01 t)))}))
+              :v (m/* (m/inc i) (m/sin (m/+ (m/* (m/+ 0.05 (m/* 0.03 i)) t) (m/* 1.3 i))) (m/inc (m/* 0.01 t)))}))
 
 (nu/data-table waves)
 

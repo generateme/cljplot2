@@ -10,12 +10,14 @@
 
 (ns use-cases.flow
   (:require [clojure.string :as str]
+            [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
             [fastmath.random :as r]
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.graph :as graph]
+            [cljplot2.data.levels :as levels]
             [cljplot2.data.tree :as tree]
             [notebook-utils :as nu]))
 
@@ -45,10 +47,9 @@
 
 (def standardized
   "mtcars columns as z-scores, one row vector per car."
-  (let [moments (into {} (for [k mtcars-variables :let [vs (map k mtcars)]] [k [(stats/mean vs) (stats/stddev vs)]]))]
-    (mapv (fn [car] (mapv (fn [k] (let [[mu sd] (moments k)] (/ (- (double (k car)) (double mu)) (double sd))))
-                          mtcars-variables))
-          mtcars)))
+  (apply mapv vector (map (fn [k] (stats/standardize (map k mtcars))) mtcars-variables)))
+
+(nu/data-table standardized)
 
 (def air-passengers (nu/dataset :air-passengers))
 
@@ -129,7 +130,7 @@
 (nu/source-note {:source "R Graph Gallery - Network layouts; data-to-viz - Network"
                  :url ["https://r-graph-gallery.com/247-network-chart-layouts.html"
                        "https://www.data-to-viz.com/graph/network.html"]
-                 :dataset :miserables-links})
+                 :dataset [:miserables-links :miserables-characters]})
 
 (plot/render-image
  (plot/arrange (vec (for [[layout title] [[:circle "circle layout"] [:force "force layout"]]]
@@ -149,7 +150,7 @@
                  :url ["https://r-graph-gallery.com/248-igraph-plotting-parameters.html"
                        "https://r-graph-gallery.com/249-igraph-network-map-a-color.html"
                        "https://r-graph-gallery.com/251-network-with-node-size-based-on-edges-number.html"]
-                 :dataset :miserables-links})
+                 :dataset [:miserables-links :miserables-characters]})
 
 (plot/render-image
  (plot/network co-occurrences {:nodes characters :rng (r/rng :mersenne 3)
@@ -171,8 +172,8 @@
 (def correlation-edges
   (let [names (mapv name mtcars-variables)
         r (stats/correlation-matrix (mapv (fn [k] (mapv k mtcars)) mtcars-variables))
-        strong (mapv (fn [row] (mapv #(if (> (Math/abs (double %)) 0.7) % 0) row)) r)]
-    (mapv #(assoc % :r (:value %) :value (Math/abs (double (:value %))))
+        strong (mapv (fn [row] (mapv #(if (> (m/abs (double %)) 0.7) % 0) row)) r)]
+    (mapv #(assoc % :r (:value %) :value (m/abs (double (:value %))))
           (graph/adjacency->edges strong names {:whole-matrix false}))))
 
 (nu/data-table correlation-edges)
@@ -246,17 +247,16 @@
 
 ;; ### Bump chart
 
-;; Ranks over time: the months ranked by passengers within each year. The summer months climb to the top as air
-;; travel grows; November stays near the bottom.
+;; Ranks over time: the months ranked by passengers within each year
+;; ([`levels/rank-rows`](reference.data_levels.html#levelsrank-rows), 1 - the busiest; ties by data order with
+;; `:ties :first`). July and August trade the top two places every year; June overtakes September for third and May
+;; climbs, while March falls; November stays near the bottom.
 
 (nu/source-note {:source "R Graph Gallery - Sankey diagram (bump chart section)"
                  :url "https://r-graph-gallery.com/sankey-diagram.html"
                  :dataset :air-passengers})
 
-(def month-ranks
-  (vec (for [[year rows] (group-by :year air-passengers)
-             [rank row] (map-indexed vector (sort-by :passengers > rows))]
-         (assoc row :rank (inc rank)))))
+(def month-ranks (levels/rank-rows air-passengers :year :passengers {:ties :first}))
 
 (nu/data-table month-ranks)
 
@@ -281,7 +281,7 @@
 
 (nu/source-note {:source "data-to-viz - Arc diagram"
                  :url "https://www.data-to-viz.com/graph/arc.html"
-                 :dataset :miserables-links})
+                 :dataset [:miserables-links :miserables-characters]})
 
 (plot/render-image
  (plot/arrange [(plot/arc co-occurrences {:nodes characters :mapping {:color :group}
@@ -305,7 +305,7 @@
                        "https://r-graph-gallery.com/310-custom-hierarchical-edge-bundling.html"
                        "https://r-graph-gallery.com/311-add-labels-to-hierarchical-edge-bundling.html"
                        "https://www.data-to-viz.com/graph/edge_bundling.html"]
-                 :dataset :flare})
+                 :dataset [:flare :flare-dependencies]})
 
 (nu/data-table (nu/dataset :flare))
 
@@ -326,7 +326,7 @@
 
 (nu/source-note {:source "R Graph Gallery - Custom hierarchical edge bundling"
                  :url "https://r-graph-gallery.com/310-custom-hierarchical-edge-bundling.html"
-                 :dataset :flare})
+                 :dataset [:flare :flare-dependencies]})
 
 (plot/render-image
  (plot/arrange (vec (for [beta [0.0 0.5 1.0]]
@@ -433,7 +433,9 @@
 
 ;; ### Chart types, several plots
 
-;; Points, a line per year and bars of the monthly totals in the same circle, and one circular plot per period.
+;; Points, a line per year and bars of the monthly totals in the same circle, and one circular plot per period. A
+;; year's line runs from January to December and stays open between them - the next January belongs to the next
+;; year's line.
 
 (nu/source-note {:source "R Graph Gallery - Plot types for circular plot, several circular plots in a figure"
                  :url ["https://r-graph-gallery.com/226-plot-types-for-circular-plot.html"

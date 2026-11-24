@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -508,11 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Invalid input fails before anything is computed. <code>plot/build</code> (and <code>render</code>, <code>render-image</code>) validates in three rounds, each throwing one <code>ex-info</code> listing all its errors:</p>
+<p>Invalid input fails before anything is computed. <code>plot/build</code> (and <code>render</code>, <code>render-image</code>) validates in two rounds, each throwing one <code>ex-info</code> listing all its errors:</p>
 <ol type="1">
-<li>the render options, the plot keys and the merged theme;</li>
-<li>when those hold, every chart’s options and mapping;</li>
-<li>when those hold, the rules across keys (e.g.&nbsp;<code>:flip</code> needs the generated grid, not <code>:arrange</code>).</li>
+<li>the render options, the plot keys and the merged theme - and, when the plot keys hold, every chart’s options and mapping (an invalid plot key hides the chart errors, as below);</li>
+<li>when all of those hold, the rules across keys (e.g.&nbsp;<code>:flip</code> needs the generated grid, not <code>:arrange</code>).</li>
 </ol>
 <p>Builders and data functions check their options before reading their data.</p>
 <div class="sourceClojure">
@@ -547,7 +546,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:message</span></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"should be either :bands, :datetime, :interpolated, :linear, :log, :pow, :radial or :symlog"</span>}]}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>With the scale fixed, the next round reports the chart’s misspelled option:</p>
+<p>With the scale fixed the plot keys hold, and the chart’s misspelled option is reported:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build (<span class="kw">assoc-in</span> bad-plot [<span class="at">:scales</span> <span class="at">:x</span> <span class="at">:kind</span>] <span class="at">:log</span>))</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">catch</span> clojure.lang.ExceptionInfo <span class="kw">e</span> (ex-data <span class="kw">e</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

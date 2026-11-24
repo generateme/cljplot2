@@ -6,7 +6,8 @@
 ;; The mapping is open: a chart of your own may read other keys.
 
 (ns reference.data-mapping
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as rows]
@@ -21,7 +22,7 @@
 
 (nu/options-table (describe/fragment-rows :common))
 
-(def columns {:t (range 20) :v (map #(Math/sin (* 0.4 (double %))) (range 20))})
+(def columns {:t (range 20) :v (map #(m/sin (m/* 0.4 %)) (range 20))})
 
 (nu/data-table columns)
 
@@ -56,10 +57,10 @@
 ;; as levels (right - one band each):
 
 (plot/render-image (plot/arrange [{:data iris
-                                   :mapping {:x #(Math/round (double (:petal-length %))) :y :sepal-length}
+                                   :mapping {:x #(m/round (:petal-length %)) :y :sepal-length}
                                    :charts [(chart/scatter)]}
                                   {:data iris
-                                   :mapping {:x (levels/categorical #(Math/round (double (:petal-length %))))
+                                   :mapping {:x (levels/categorical #(m/round (:petal-length %)))
                                              :y :sepal-length}
                                    :charts [(chart/box)]}]
                                  {:columns 2})
@@ -79,7 +80,8 @@
 ;; ## Intervals and segments
 
 ;; The other end of a mark spanning two values: a band from `:ymin` to `:ymax` (ribbons, error bars), a segment
-;; to `:xend` / `:yend`.
+;; to `:xend` / `:yend`. Below, every fifth point drops a segment to a literal end, the
+;; [segment](reference.charts_points_paths.html#segment) option `:yend 0`.
 
 (nu/options-table (describe/options rows/mapping-schema) :interval)
 

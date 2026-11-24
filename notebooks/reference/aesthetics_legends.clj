@@ -6,7 +6,8 @@
 ;; scale uses every key, the others differ only in their `:range`.
 
 (ns reference.aesthetics-legends
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -75,7 +76,8 @@
 
 (plot/find-palette #"tableau")
 
-;; Swatches of a few palettes (an `:identity` colour scale reads the colours from the data):
+;; Swatches of a few palettes, a [tile](reference.charts_grids_fields.html#tile) per colour (an `:identity` colour
+;; scale reads the colours from the data):
 
 (def palettes (plot/find-palette #"^:(rcartocolor/(Bold|Pastel|Vivid|Prism)|tableau-10)$"))
 
@@ -92,7 +94,8 @@
                              :x {:ticks 12}}}
                    {:width 700 :height 280})
 
-;; Gradients, each sampled at 32 points:
+;; Gradients, each sampled at 32 points (tiles without outlines, `:stroke-color :none` -
+;; [Cell style](reference.shared_options.html#cell-style)):
 
 (def gradients (plot/find-gradient "viridis" #".*"))
 
@@ -142,7 +145,7 @@
 (nu/data-table ramp)
 
 (plot/render-image (plot/arrange (for [[title transform] [["none" nil] [":sqrt" :sqrt] [":log" :log]
-                                                         [":sq" :sq] [":exp" :exp] ["cube root (fn)" #(Math/cbrt %)]]]
+                                                         [":sq" :sq] [":exp" :exp] ["cube root (fn)" #(m/cbrt %)]]]
                                    {:data ramp
                                     :mapping {:x :i :y :row :color (if (= :exp transform) :tenth :i)}
                                     :charts [(chart/tile)]
@@ -286,7 +289,8 @@
 
 (nu/options-table (describe/options (aesthetic/scale-spec-schema :dash)) :range)
 
-;; Every named style, and two dash arrays (an `:identity` scale draws the data's dashes):
+;; Every named style, and two dash arrays (an `:identity` scale draws the data's dashes; the names are a
+;; [text](reference.charts_annotations.html#text) chart anchored right of its point and moved left by `:offset`):
 
 (def dashes (concat (for [[i d] (map-indexed vector (:dash describe/attribute-values)) x [0 10]]
                       {:i i :x x :dash d :name (str d)})
@@ -319,7 +323,8 @@
 
 (nu/options-table (describe/options (aesthetic/scale-spec-schema :pattern)) :range)
 
-;; Every named pattern and two pattern maps:
+;; Every named pattern and two pattern maps (white bars outlined in black, the pattern in black -
+;; [Fill patterns](reference.shared_options.html#fill-patterns)):
 
 (def patterns (concat (for [p (:pattern describe/attribute-values)] {:name (name p) :pattern p :v 1})
                       [{:name "lines 135, spacing 8" :pattern {:kind :lines :angle 135 :spacing 8 :width 2} :v 1}

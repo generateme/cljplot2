@@ -1,11 +1,11 @@
 ;; # Errors
 
-;; Invalid input fails before anything is computed. `plot/build` (and `render`, `render-image`) validates in three
+;; Invalid input fails before anything is computed. `plot/build` (and `render`, `render-image`) validates in two
 ;; rounds, each throwing one `ex-info` listing all its errors:
 ;;
-;; 1. the render options, the plot keys and the merged theme;
-;; 2. when those hold, every chart's options and mapping;
-;; 3. when those hold, the rules across keys (e.g. `:flip` needs the generated grid, not `:arrange`).
+;; 1. the render options, the plot keys and the merged theme - and, when the plot keys hold, every chart's options
+;;    and mapping (an invalid plot key hides the chart errors, as below);
+;; 2. when all of those hold, the rules across keys (e.g. `:flip` needs the generated grid, not `:arrange`).
 ;;
 ;; Builders and data functions check their options before reading their data.
 
@@ -28,7 +28,7 @@
 (try (plot/build bad-plot)
      (catch clojure.lang.ExceptionInfo e {:message (ex-message e) :data (ex-data e)}))
 
-;; With the scale fixed, the next round reports the chart's misspelled option:
+;; With the scale fixed the plot keys hold, and the chart's misspelled option is reported:
 
 (try (plot/build (assoc-in bad-plot [:scales :x :kind] :log))
      (catch clojure.lang.ExceptionInfo e (ex-data e)))

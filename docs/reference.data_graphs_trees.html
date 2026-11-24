@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -759,7 +759,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Its edges, weights as numbers (an edge without a weight counts 1):</p>
+<p>The edges of the flights as an undirected graph, the weights from <code>:n</code> as numbers (<code>:value</code>):</p>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -837,6 +837,89 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>BUD</td>
 <td>VIE</td>
 <td>7.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Without a <code>:value</code> accessor every edge weighs 1:</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">src</th>
+<th data-quarto-table-cell-role="th">dst</th>
+<th data-quarto-table-cell-role="th">n</th>
+<th data-quarto-table-cell-role="th">from</th>
+<th data-quarto-table-cell-role="th">to</th>
+<th data-quarto-table-cell-role="th">value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>WAW</td>
+<td>BER</td>
+<td>12</td>
+<td>WAW</td>
+<td>BER</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>WAW</td>
+<td>PRG</td>
+<td>5</td>
+<td>WAW</td>
+<td>PRG</td>
+<td>1.0</td>
+</tr>
+<tr class="odd">
+<td>BER</td>
+<td>PRG</td>
+<td>8</td>
+<td>BER</td>
+<td>PRG</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>PRG</td>
+<td>VIE</td>
+<td>6</td>
+<td>PRG</td>
+<td>VIE</td>
+<td>1.0</td>
+</tr>
+<tr class="odd">
+<td>VIE</td>
+<td>WAW</td>
+<td>4</td>
+<td>VIE</td>
+<td>WAW</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>BER</td>
+<td>VIE</td>
+<td>3</td>
+<td>BER</td>
+<td>VIE</td>
+<td>1.0</td>
+</tr>
+<tr class="odd">
+<td>WAW</td>
+<td>VIE</td>
+<td>2</td>
+<td>WAW</td>
+<td>VIE</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>BUD</td>
+<td>VIE</td>
+<td>7</td>
+<td>BUD</td>
+<td>VIE</td>
+<td>1.0</td>
 </tr>
 </tbody>
 </table>
@@ -2766,7 +2849,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="treefrom-levels" class="level2" data-number="26.9">
 <h2 data-number="26.9" class="anchored" data-anchor-id="treefrom-levels"><span class="header-section-number">26.9</span> tree/from-levels</h2>
-<p>A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per row.</p>
+<p>A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per innermost level path (its <code>:value</code> the number of its rows).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -2839,12 +2922,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Its leaves (rows) in tree order, and the tree drawn by <code>tree/node-link-layout</code> below:</p>
+<p>Its leaves - the countries, each with its number of offices - in tree order (with the cities as a third level, the tree is drawn by <code>tree/node-link-layout</code> below):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">mapv</span> <span class="at">:city</span> (tree/leaves (tree/from-levels offices {<span class="at">:hierarchy</span> [<span class="at">:region</span> <span class="at">:country</span>]})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">mapv</span> (<span class="kw">juxt</span> <span class="at">:name</span> <span class="at">:value</span>) (tree/leaves (tree/from-levels offices {<span class="at">:hierarchy</span> [<span class="at">:region</span> <span class="at">:country</span>]})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>[<span class="va">nil</span> <span class="va">nil</span> <span class="va">nil</span> <span class="va">nil</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>[[<span class="st">"Poland"</span> <span class="fl">2.0</span>] [<span class="st">"Czechia"</span> <span class="fl">1.0</span>] [<span class="st">"Japan"</span> <span class="fl">2.0</span>] [<span class="st">"India"</span> <span class="fl">1.0</span>]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="treefrom-parents" class="level2" data-number="26.10">
@@ -4700,7 +4783,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The step rows - the end marker dropped with <code>:keep-end false</code> (left), kept as a step by default (right):</p>
+<p>The step rows - the end marker dropped with <code>:keep-end false</code> (first table), kept as a step by default (second):</p>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">

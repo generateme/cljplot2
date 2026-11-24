@@ -23,11 +23,9 @@
 
 ;; The cars' variables as z-scores, a row vector per car, clustered with complete linkage (fastmath `hclust`):
 
-(def standardized
-  (let [moments (into {} (for [k variables :let [vs (map k mtcars)]] [k [(stats/mean vs) (stats/stddev vs)]]))]
-    (mapv (fn [car] (mapv (fn [k] (let [[mu sd] (moments k)] (/ (- (double (k car)) (double mu)) (double sd))))
-                          variables))
-          mtcars)))
+(def standardized (apply mapv vector (map (fn [k] (stats/standardize (map k mtcars))) variables)))
+
+(nu/data-table standardized)
 
 (def car-clustering (cl/hclust standardized {:method :complete}))
 
@@ -188,14 +186,12 @@
 
 (plot/render-image (plot/bundle calls office-tree {}) {:width 500 :height 500})
 
-;; One edge colour, more opaque, without leaf names (left); coloured by group with the default translucency and
-;; names (right):
+;; One edge colour, more opaque, without leaf names (left); coloured by group (the default) and fainter (right):
 
 (plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :none :edge-color [120 60 160]
                                                                   :alpha 0.8 :labels false
                                                                   :title ":color-by :none, :alpha 0.8"})
-                                  (plot/bundle calls office-tree {:color-by :group :alpha 0.4 :labels true
-                                                                  :title ":color-by :group"})]
+                                  (plot/bundle calls office-tree {:alpha 0.15 :title ":alpha 0.15"})]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 

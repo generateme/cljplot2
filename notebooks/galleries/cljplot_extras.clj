@@ -247,29 +247,29 @@
 
 ;; ### MA(2)
 
-;; A moving-average series: each value mixes three consecutive Gaussian shocks.
+;; A moving-average series (fastmath `r/ma` over seeded white noise): each value mixes three consecutive Gaussian
+;; shocks.
 
 (nu/source-note {:source "cljplot - MA(2)" :url examples-url})
 
-(def ma2
-  (let [g (r/rng :mersenne 9)
-        e (vec (repeatedly 502 #(r/grandom g)))]
-    (mapv (fn [i] (+ (- (double (e (+ i 2)))) (* 0.8 (double (e (inc i)))) (* -0.9 (double (e i))))) (range 500))))
+(def ma2 (vec (take 500 (r/ma [-0.8 0.9] (r/white-noise (r/rng :mersenne 9) 1.0)))))
+
+(nu/data-table ma2)
 
 (plot/render-image
  {:data (map-indexed (fn [t y] {:t t :y y}) ma2) :mapping {:x :t :y :y}
   :charts [(chart/line)]
-  :labels {:title "MA(2): -e(t) + 0.8 e(t-1) - 0.9 e(t-2)" :x "t" :y nil}}
+  :labels {:title "MA(2): e(t) - 0.8 e(t-1) + 0.9 e(t-2)" :x "t" :y nil}}
  {:width 800 :height 280})
 
 ;; ### Lag plot
 
-;; Each value against the one seven steps later: an AR(1) series with rare jumps.
+;; Each value against the one seven steps later: an AR(1) series (`r/ar`) driven by Gaussian noise with rare jumps.
 
 (nu/source-note {:source "cljplot - lag" :url examples-url})
 
 (let [g (r/rng :mersenne 10)
-      ar (take 10000 (iterate #(+ (* 0.95 (double %)) (r/grandom g) (if (< (r/drandom g) 0.01) 10.0 0.0)) 0.0))]
+      ar (take 10000 (r/ar 0.95 (repeatedly #(+ (r/grandom g) (if (< (r/drandom g) 0.01) 10.0 0.0)))))]
   (plot/render-image
    {:data (series/lag-rows ar 7) :mapping {:x :x :y :y}
     :charts [(chart/scatter {:size 3 :color [0 0 0 30]})]
@@ -289,9 +289,9 @@
 ;; ## Functions and fields
 
 (defn fn2d
-  [[x y]]
-  (let [x (double x) y (double y)]
-    (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y)))))
+  "Gives -(x^2 + y^2) sin x sin y sin xy at the point `[x y]`."
+  [[^double x ^double y]]
+  (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y))))
 
 (def fn2d-domain {:x [(- m/PI) m/PI] :y [(- m/PI) m/PI]})
 
@@ -329,15 +329,17 @@
 ;; ### A complex function
 
 ;; Domain colouring: the hue is the argument of f(z), the brightness its magnitude wrapped into bands (`:log2` -
-;; where |f| + 1 doubles), every pixel computed (`:pixel-color`).
+;; where |f| + 1 doubles), every pixel computed (`:pixel-color`). The three zeros (the cube roots of 1) and the two
+;; poles (the square roots of -i) are the points every hue meets at.
 
 (nu/source-note {:source "cljplot - complex" :url examples-url})
 
 (plot/render-image
- {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z))))
-                         :domain {:x [-6 6] :y [-6 6]}})]
+ {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/sub (cx/mult z (cx/mult z z)) cx/ONE)
+                                                                             (cx/add (cx/mult z z) cx/I))))
+                         :domain {:x [-2 2] :y [-2 2]}})]
   :aspect :iso
-  :labels {:title "log(z) / sin(z)" :x "re" :y "im"}}
+  :labels {:title "(z^3 - 1) / (z^2 + i)" :x "re" :y "im"}}
  {:width 650 :height 600})
 
 ;; ### Field mapping
@@ -415,8 +417,6 @@
 
 ;; The same kind of cloud drawn by a `chart/image` callback: it gets the panel's scales and size and returns an image -
 ;; here 200 000 translucent pixels.
-
-(nu/source-note {:source "cljplot2 - chart/image"})
 
 (plot/render-image
  {:charts [(chart/image {:domain {:x [-4 4] :y [-4 4]}
@@ -544,7 +544,7 @@
                   (strip [(chart/violin)])
                   (strip [(chart/density {:fill :color})])
                   (strip [(chart/histogram {:bins 150})])]
-                 {:columns 1 :heights [1 1 1 1 1 3 1.5 1.5]})
+                 {:columns 1 :heights [1 1 1 1.5 1 3 1.5 1.5]})
    {:width 800 :height 800}))
 
 ;; ### Bubble chart
@@ -559,7 +559,7 @@
  {:data (nu/dataset :seattle-weather)
   :mapping {:x :temp_min :y :temp_max :color :wind :size :precipitation}
   :charts [(chart/scatter {:stroke-color :none})]
-  :scales {:color {:range (mapv #(c/set-alpha (c/darken (c/color %)) 200) (c/palette :gnbu-9)) :title "wind [m/s]"}
+  :scales {:color {:range (mapv #(c/set-alpha (c/darken (c/color %)) 200) (plot/palette :gnbu-9)) :title "wind [m/s]"}
            :size {:range [2 40] :area true :title "precipitation [mm]"}}
   :labels {:title "Seattle weather 2012-2015" :x "minimal temperature [°C]" :y "maximal temperature [°C]"}}
  {:width 750 :height 600})

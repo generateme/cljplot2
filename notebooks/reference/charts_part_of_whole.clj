@@ -67,11 +67,12 @@
                    {:width 1000 :height 420})
 
 ;; Its options: borders, the order of siblings, how nodes are coloured (by their top-level node, lighter by depth,
-;; or each by its name) and whether the root is drawn:
+;; or each by its name) and whether the root is drawn. `:order :data` keeps the rows' order - here the budget
+;; reversed, so sport comes first and the teams go from the cheapest up (by value, the default above, science leads):
 
 (nu/options-table (describe/own-rows (describe/options (chart/partition))))
 
-(plot/render-image (plot/arrange [{:data budget
+(plot/render-image (plot/arrange [{:data (reverse budget)
                                    :mapping {:hierarchy [:dept :team] :value :cost}
                                    :charts [(chart/partition {:order :data :root true})]
                                    :coord {:kind :polar}
@@ -85,18 +86,13 @@
                                  {:columns 2})
                    {:width 1000 :height 460})
 
-;; The borders in an icicle: the default thin white lines, and thick dark ones:
+;; The borders in an icicle: thick dark lines instead of the default thin white ones (the icicle above):
 
-(plot/render-image (plot/arrange [{:data budget
-                                   :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:order :value})]
-                                   :labels {:title ":order :value (default)"}}
-                                  {:data budget
-                                   :mapping {:hierarchy [:dept :team] :value :cost}
-                                   :charts [(chart/partition {:stroke-color [40 40 40] :stroke-width 3})]
-                                   :labels {:title ":stroke-color, :stroke-width 3"}}]
-                                 {:columns 2})
-                   {:width 1000 :height 360})
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/partition {:stroke-color [40 40 40] :stroke-width 3})]
+                    :labels {:title ":stroke-color, :stroke-width 3"}}
+                   {:width 600 :height 360})
 
 (nu/shared-groups (describe/options (chart/partition)))
 

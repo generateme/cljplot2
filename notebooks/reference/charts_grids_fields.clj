@@ -5,7 +5,8 @@
 ;; other statistic of two variables as one cell (`pairwise`).
 
 (ns reference.charts-grids-fields
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -47,7 +48,7 @@
                    {:width 600 :height 300})
 
 ;; Its own option writes the value in each cell (black or white by the fill, the `:tile-value` text role); the cell
-;; shape and outline are the Cell style group:
+;; shape and outline are the [Cell style](reference.shared_options.html#cell-style) group:
 
 (nu/options-table (describe/own-rows (describe/options (chart/tile))))
 
@@ -157,7 +158,7 @@
 ;; ## field
 
 ;; A raster of a scalar field: the density of mapped points, gridded `:value`s interpolated, or a function of a
-;; point (the Fields group).
+;; point (the [Fields](reference.shared_options.html#fields) group).
 
 (nu/options-table (describe/mapping (chart/field)))
 
@@ -192,14 +193,14 @@
 
 ;; ### Field sources
 
-;; The Fields group gives the field. A function of a point `[x y]` sampled over a `:domain` on a grid of `:n`
-;; points per axis (a coarse grid shows its cells):
+;; The [Fields](reference.shared_options.html#fields) group gives the field. A function of a point `[x y]` sampled
+;; over a `:domain` on a grid of `:n` points per axis (a coarse grid shows its cells):
 
-(plot/render-image (plot/arrange [{:charts [(chart/field {:f (fn [[x y]] (Math/sin (+ (* x x) (* y y))))
+(plot/render-image (plot/arrange [{:charts [(chart/field {:f (fn [[x y]] (m/sin (+ (* x x) (* y y))))
                                                           :domain {:x [-2 2] :y [-2 2]}})]
                                    :labels {:title ":f over :domain"}
                                    :legend false}
-                                  {:charts [(chart/field {:f (fn [[x y]] (Math/sin (+ (* x x) (* y y))))
+                                  {:charts [(chart/field {:f (fn [[x y]] (m/sin (+ (* x x) (* y y))))
                                                           :domain {:x [-2 2] :y [-2 2]} :n 12})]
                                    :labels {:title ":n 12"}}]
                                  {:columns 2 :widths [1 1.2]})
@@ -207,7 +208,7 @@
 
 ;; Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:
 
-(def lattice (for [x (range 5) y (range 5)] {:x x :y y :z (* (Math/sin x) (Math/cos (* 0.8 y)))}))
+(def lattice (for [x (range 5) y (range 5)] {:x x :y y :z (* (m/sin x) (m/cos (* 0.8 y)))}))
 
 (nu/data-table lattice)
 
@@ -360,7 +361,7 @@
                                   {:data iris :mapping {:x :sepal-length :y :petal-width}
                                    :charts [(chart/correlation {:glyph :circle :glyph-size 0.6 :color [120 160 90]
                                                                 :stroke-color :black :stroke-width 3})]
-                                   :labels {:title ":glyph-size 0.6, :stroke-width 3"}}]
+                                   :labels {:title ":glyph-size 0.6"}}]
                                  {:columns 4})
                    {:width 1000 :height 280})
 
@@ -379,8 +380,8 @@
 ;; ## pairwise
 
 ;; Any statistic of two variables drawn as one cell filling the panel: an error, an association, an effect size,
-;; a distance (the keys of `cljplot2.data.pairwise/statistics`, listed with `pairwise/matrix-rows` in the Data
-;; functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the
+;; a distance (the keys of `cljplot2.data.pairwise/statistics`, listed with
+;; [`pairwise/matrix-rows`](reference.data_sets_series.html#pairwisematrix-rows) in the Data functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the
 ;; values have no fixed range. Alone it writes the value, one line per group.
 
 (nu/options-table (describe/mapping (chart/pairwise)))

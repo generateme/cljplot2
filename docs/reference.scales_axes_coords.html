@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -525,14 +525,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Position scales map <code>:x</code> and <code>:y</code> data to the panel; their kind follows the data (numbers, levels, dates) unless set. Each position scale draws an axis and grid lines. A plot is cartesian unless <code>:coord</code> is polar; <code>:flip</code> swaps the directions and <code>:aspect :iso</code> keeps data units square.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.scales-axes-coords</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.coord <span class="at">:as</span> coord]</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.position <span class="at">:as</span> position]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.schema <span class="at">:as</span> schema]</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> LocalDate]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.coord <span class="at">:as</span> coord]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.position <span class="at">:as</span> position]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [cljplot2.schema <span class="at">:as</span> schema]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> LocalDate]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset <code>4_ThreeNum</code> (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -2171,7 +2172,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Ticks are powers of the base and their subdivisions (d3 style, one tick per power by default) or, with <code>:ticks-method :pretty</code>, the grid with the tick count closest to the requested one (5 by default). <code>nice</code> extends the domain to the outer ticks.</p>
 <p>A domain containing or crossing zero throws <code>ex-info</code> with <code>{:domain domain}</code>. A degenerate domain behaves as for the <code>:linear</code> kind.</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">11</span>)] {<span class="at">:x</span> (Math/pow <span class="dv">2</span> i) <span class="at">:y</span> i})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">11</span>)] {<span class="at">:x</span> (m/pow <span class="dv">2</span> i) <span class="at">:y</span> i})</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line) (chart/scatter)]</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:base</span> <span class="dv">2</span>}}}</span>
@@ -2357,9 +2358,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a> <span class="at">:step-after</span></span>
 <span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a> <span class="at">:step-before</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Here the middle of the domain, 40 to 60, gets half of the axis:</p>
+<p>Here the domain values 1, 40, 60 and 100 sit at evenly spaced stops, so each of the three segments gets a third of the axis - 40 to 60 is stretched, 1 to 40 and 60 to 100 are squeezed:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">101</span>)] {<span class="at">:x</span> i <span class="at">:y</span> (Math/log i)})</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">101</span>)] {<span class="at">:x</span> i <span class="at">:y</span> (m/log i)})</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)]</span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:interpolated</span> <span class="at">:domain</span> [<span class="dv">1</span> <span class="dv">40</span> <span class="dv">60</span> <span class="dv">100</span>] <span class="at">:ticks</span> [<span class="dv">1</span> <span class="dv">20</span> <span class="dv">40</span> <span class="dv">50</span> <span class="dv">60</span> <span class="dv">80</span> <span class="dv">100</span>]}}}</span>
@@ -2565,14 +2566,287 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.scales_axes_coords_files/image14.png" class="img-fluid"></p>
 </div>
-<p><code>:aspect :iso</code> - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it:</p>
+<p><code>:aspect :iso</code> - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the points joined in data order, <a href="reference.charts_points_paths.html#line">line</a> <code>:order :data</code>):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">63</span>)] {<span class="at">:x</span> (Math/cos (<span class="kw">*</span> <span class="fl">0.1</span> t)) <span class="at">:y</span> (<span class="kw">*</span> <span class="fl">0.5</span> (Math/sin (<span class="kw">*</span> <span class="fl">0.1</span> t)))})</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)]</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":aspect :iso"</span>}}</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> ellipse </span>(<span class="kw">for</span> [t (m/slice-range <span class="dv">0</span> m/TWO_PI <span class="dv">64</span>)] {<span class="at">:x</span> (m/cos t) <span class="at">:y</span> (m/* <span class="fl">0.5</span> (m/sin t))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1.0</td>
+<td>0.0</td>
+</tr>
+<tr class="even">
+<td>0.9950307753654014</td>
+<td>0.049783923297908324</td>
+</tr>
+<tr class="odd">
+<td>0.9801724878485438</td>
+<td>0.09907307159969878</td>
+</tr>
+<tr class="even">
+<td>0.9555728057861408</td>
+<td>0.14737758720545208</td>
+</tr>
+<tr class="odd">
+<td>0.9214762118704076</td>
+<td>0.19421739813734734</td>
+</tr>
+<tr class="even">
+<td>0.8782215733702285</td>
+<td>0.2391269893106591</td>
+</tr>
+<tr class="odd">
+<td>0.8262387743159949</td>
+<td>0.281660029031811</td>
+</tr>
+<tr class="even">
+<td>0.766044443118978</td>
+<td>0.3213938048432696</td>
+</tr>
+<tr class="odd">
+<td>0.6982368180860729</td>
+<td>0.35793342462985916</td>
+</tr>
+<tr class="even">
+<td>0.6234898018587336</td>
+<td>0.3909157412340149</td>
+</tr>
+<tr class="odd">
+<td>0.5425462638657594</td>
+<td>0.4200129615753857</td>
+</tr>
+<tr class="even">
+<td>0.4562106573531631</td>
+<td>0.4449359044057343</td>
+</tr>
+<tr class="odd">
+<td>0.3653410243663952</td>
+<td>0.46543687432210207</td>
+</tr>
+<tr class="even">
+<td>0.27084046814300516</td>
+<td>0.481312123475006</td>
+</tr>
+<tr class="odd">
+<td>0.17364817766693041</td>
+<td>0.492403876506104</td>
+</tr>
+<tr class="even">
+<td>0.07473009358642439</td>
+<td>0.49860189859059006</td>
+</tr>
+<tr class="odd">
+<td>-0.02493069173807269</td>
+<td>0.4998445910004081</td>
+</tr>
+<tr class="even">
+<td>-0.12434370464748494</td>
+<td>0.49611960330008603</td>
+</tr>
+<tr class="odd">
+<td>-0.22252093395631434</td>
+<td>0.4874639560909118</td>
+</tr>
+<tr class="even">
+<td>-0.3184866502516843</td>
+<td>0.4739636730835659</td>
+</tr>
+<tr class="odd">
+<td>-0.4112871031306114</td>
+<td>0.4557529261558366</td>
+</tr>
+<tr class="even">
+<td>-0.4999999999999998</td>
+<td>0.43301270189221935</td>
+</tr>
+<tr class="odd">
+<td>-0.5837436722347896</td>
+<td>0.4059690028579283</td>
+</tr>
+<tr class="even">
+<td>-0.6616858375968592</td>
+<td>0.3748906014838672</td>
+</tr>
+<tr class="odd">
+<td>-0.7330518718298261</td>
+<td>0.34008636888545984</td>
+</tr>
+<tr class="even">
+<td>-0.7971325072229222</td>
+<td>0.30190220516273886</td>
+</tr>
+<tr class="odd">
+<td>-0.8532908816321556</td>
+<td>0.26071760168974906</td>
+</tr>
+<tr class="even">
+<td>-0.900968867902419</td>
+<td>0.21694186955877912</td>
+</tr>
+<tr class="odd">
+<td>-0.9396926207859083</td>
+<td>0.17101007166283444</td>
+</tr>
+<tr class="even">
+<td>-0.9690772862290778</td>
+<td>0.12337869884514692</td>
+</tr>
+<tr class="odd">
+<td>-0.9888308262251285</td>
+<td>0.07452113308808736</td>
+</tr>
+<tr class="even">
+<td>-0.9987569212189223</td>
+<td>0.02492294283034874</td>
+</tr>
+<tr class="odd">
+<td>-0.9987569212189223</td>
+<td>-0.024922942830348398</td>
+</tr>
+<tr class="even">
+<td>-0.9888308262251285</td>
+<td>-0.07452113308808724</td>
+</tr>
+<tr class="odd">
+<td>-0.9690772862290781</td>
+<td>-0.12337869884514659</td>
+</tr>
+<tr class="even">
+<td>-0.9396926207859084</td>
+<td>-0.17101007166283433</td>
+</tr>
+<tr class="odd">
+<td>-0.9009688679024191</td>
+<td>-0.216941869558779</td>
+</tr>
+<tr class="even">
+<td>-0.8532908816321557</td>
+<td>-0.26071760168974895</td>
+</tr>
+<tr class="odd">
+<td>-0.7971325072229226</td>
+<td>-0.3019022051627386</td>
+</tr>
+<tr class="even">
+<td>-0.7330518718298262</td>
+<td>-0.34008636888545973</td>
+</tr>
+<tr class="odd">
+<td>-0.6616858375968597</td>
+<td>-0.374890601483867</td>
+</tr>
+<tr class="even">
+<td>-0.5837436722347898</td>
+<td>-0.40596900285792825</td>
+</tr>
+<tr class="odd">
+<td>-0.5000000000000004</td>
+<td>-0.4330127018922192</td>
+</tr>
+<tr class="even">
+<td>-0.4112871031306116</td>
+<td>-0.45575292615583657</td>
+</tr>
+<tr class="odd">
+<td>-0.318486650251685</td>
+<td>-0.4739636730835658</td>
+</tr>
+<tr class="even">
+<td>-0.2225209339563146</td>
+<td>-0.4874639560909118</td>
+</tr>
+<tr class="odd">
+<td>-0.12434370464748584</td>
+<td>-0.496119603300086</td>
+</tr>
+<tr class="even">
+<td>-0.024930691738073156</td>
+<td>-0.4998445910004081</td>
+</tr>
+<tr class="odd">
+<td>0.07473009358642348</td>
+<td>-0.4986018985905901</td>
+</tr>
+<tr class="even">
+<td>0.17364817766692997</td>
+<td>-0.49240387650610407</td>
+</tr>
+<tr class="odd">
+<td>0.2708404681430043</td>
+<td>-0.4813121234750062</td>
+</tr>
+<tr class="even">
+<td>0.36534102436639454</td>
+<td>-0.46543687432210223</td>
+</tr>
+<tr class="odd">
+<td>0.45621065735316285</td>
+<td>-0.44493590440573433</td>
+</tr>
+<tr class="even">
+<td>0.5425462638657597</td>
+<td>-0.42001296157538565</td>
+</tr>
+<tr class="odd">
+<td>0.6234898018587334</td>
+<td>-0.39091574123401496</td>
+</tr>
+<tr class="even">
+<td>0.698236818086073</td>
+<td>-0.35793342462985916</td>
+</tr>
+<tr class="odd">
+<td>0.7660444431189778</td>
+<td>-0.3213938048432698</td>
+</tr>
+<tr class="even">
+<td>0.8262387743159949</td>
+<td>-0.281660029031811</td>
+</tr>
+<tr class="odd">
+<td>0.8782215733702283</td>
+<td>-0.2391269893106593</td>
+</tr>
+<tr class="even">
+<td>0.9214762118704076</td>
+<td>-0.19421739813734737</td>
+</tr>
+<tr class="odd">
+<td>0.9555728057861406</td>
+<td>-0.14737758720545235</td>
+</tr>
+<tr class="even">
+<td>0.9801724878485438</td>
+<td>-0.09907307159969886</td>
+</tr>
+<tr class="odd">
+<td>0.9950307753654013</td>
+<td>-0.04978392329790864</td>
+</tr>
+<tr class="even">
+<td>1.0</td>
+<td>-1.2246467991473532E-16</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> ellipse</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span>})]</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":aspect :iso"</span>}}</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.scales_axes_coords_files/image15.png" class="img-fluid"></p>

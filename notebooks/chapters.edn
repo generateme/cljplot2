@@ -1,7 +1,8 @@
 ;; Book chapters in reading order (paths relative to notebooks/); the first one becomes the index page.
 ;; Reference: four parts - concepts, charts, builders, data functions (with specific cases); Quarto books allow
 ;; one level of parts, so they're consecutive parts named "Reference: ..."; use case sections follow the R Graph
-;; Gallery site order; galleries: cljplot extras, lattice, vega.
+;; Gallery site order (distribution, correlation, ranking, part of a whole, evolution, flow, then colours from its
+;; general knowledge part); galleries: cljplot extras, lattice, vega.
 ;; Parts without chapters are left out of the book.
 ["book/index.clj"
  {:part "Reference: concepts" :chapters ["reference/intro.clj" "reference/render.clj" "reference/data_mapping.clj"
@@ -19,5 +20,7 @@
  {:part "Reference: data functions" :chapters ["reference/data_levels.clj" "reference/data_graphs_trees.clj"
                                 "reference/data_sets_series.clj" "reference/data_fields.clj"
                                 "reference/specific_cases.clj"]}
- {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/colors.clj" "use_cases/evolution.clj" "use_cases/ranking.clj" "use_cases/part_of_a_whole.clj" "use_cases/correlation.clj" "use_cases/flow.clj"]}
+ {:part "Use cases" :chapters ["use_cases/distribution.clj" "use_cases/correlation.clj" "use_cases/ranking.clj"
+                               "use_cases/part_of_a_whole.clj" "use_cases/evolution.clj" "use_cases/flow.clj"
+                               "use_cases/colors.clj"]}
  {:part "Galleries" :chapters ["galleries/cljplot_extras.clj" "galleries/lattice.clj" "galleries/vega.clj"]}]

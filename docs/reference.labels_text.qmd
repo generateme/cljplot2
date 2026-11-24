@@ -167,7 +167,8 @@ Text style keys in a label map override its role's style for this label only:
 ## Text in the panel
 
 The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,
-`:select :last` labels the end of each group (e.g. line ends). Its full table is on the chart's page.
+`:select :last` labels the end of each group (e.g. line ends). Its full table is on the chart's page
+([text](reference.charts_annotations.html#text)).
 
 
 ::: {.sourceClojure}
@@ -224,7 +225,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x49592e87 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
+#object[java.awt.Font 0x5bfb7bc2 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
 
 ```
 :::
@@ -241,7 +242,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0xdc0ae85 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
+#object[java.awt.Font 0x6e2c97e "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
 
 ```
 :::

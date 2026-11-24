@@ -2,7 +2,8 @@
 
 ;; Functions turning values into levels before plotting: numbers binned into intervals, numbers or dates read as
 ;; levels, levels ordered by a statistic, rows ranked within each x, and overlapping intervals (shingles) for
-;; conditioning. Each returns rows (or a marker) for an ordinary plot; options are checked against the table shown.
+;; conditioning. Each returns rows, a vector of levels (`order-levels`) or a mapping marker (`categorical`) for an
+;; ordinary plot; options are checked against the table shown.
 
 (ns reference.data-levels
   (:require [fastmath.stats :as stats]
@@ -37,8 +38,9 @@
 
 (nu/data-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
 
-;; Bins are levels: counted by a bar chart, in interval order. Explicit breaks (left), quantile bins of equal counts
-;; (middle), and the series name printed in every bin (right):
+;; Bins are levels: counted by a [bar](reference.charts_bars_ranges.html#bar) chart (`:stat :count`), in interval
+;; order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin
+;; (right):
 
 (plot/render-image (plot/arrange [{:data (levels/bin mtcars :hp {:as :bin :bins [50 100 150 200 350]})
                                    :mapping {:x :bin}
@@ -84,12 +86,12 @@
 
 (levels/order-levels iris :species :petal-length stats/median {:descending true})
 
-;; The descending order as the domain of the level axis:
+;; The descending order as the domain of the level axis - the cars' carburettor counts, highest median mpg first:
 
 (plot/render-image {:data mtcars
                     :mapping {:x (levels/categorical :carb) :y :mpg}
                     :charts [(chart/box)]
-                    :scales {:x {:domain (levels/order-levels mtcars :carb :mpg stats/median {:descending false})}}
+                    :scales {:x {:domain (levels/order-levels mtcars :carb :mpg stats/median {:descending true})}}
                     :labels {:title "carburettors by median mpg"}}
                    {:width 600 :height 320})
 
@@ -110,18 +112,20 @@
 
 (nu/data-table (levels/rank-rows sales :year :amount {:as :place :ties :min}))
 
-;; A bump chart of the ranks (left), and ranks counted from the lowest amount with average ties (right):
+;; A bump chart of the ranks (left; rank 1 on top with the y scale's `:reverse true`, see
+;; [Order and direction](reference.scales_axes_coords.html#order-and-direction)), and ranks counted from the lowest
+;; amount with average ties (right):
 
 (plot/render-image (plot/arrange [{:data (levels/rank-rows sales :year :amount)
                                    :mapping {:x :year :y :rank :color :product}
                                    :charts [(chart/line {:line-width 3}) (chart/scatter {:size 12})]
-                                   :scales {:y {:domain [3.3 0.7] :ticks [1 2 3]}}
+                                   :scales {:y {:domain [0.7 3.3] :reverse true :ticks [1 2 3]}}
                                    :labels {:title "ranks, highest first" :y "rank"}
                                    :legend false}
                                   {:data (levels/rank-rows sales :year :amount {:descending false :ties :average})
                                    :mapping {:x :year :y :rank :color :product}
                                    :charts [(chart/line {:line-width 3}) (chart/scatter {:size 12})]
-                                   :scales {:y {:domain [3.3 0.7] :ticks [1 1.5 2 2.5 3]}}
+                                   :scales {:y {:domain [0.7 3.3] :reverse true :ticks [1 1.5 2 2.5 3]}}
                                    :labels {:title ":descending false, :ties :average" :y "rank"}}]
                                  {:columns 2 :widths [1 1.25]})
                    {:width 900 :height 320})
@@ -134,7 +138,8 @@
 (nu/options-table (describe/options #'shingle/shingle))
 
 ;; Equal-count intervals of the cars' weight - 3 of them, neighbours sharing a quarter of their points - as a facet
-;; of mpg against horsepower; the series name is printed in every strip:
+;; of mpg against horsepower ([facets](reference.data_mapping.html#facets)); the series name is printed in every
+;; strip:
 
 (plot/render-image {:data (shingle/shingle mtcars :wt {:as :weight :n 3 :overlap 0.25 :label true})
                     :mapping {:x :hp :y :mpg :facet-col :weight}

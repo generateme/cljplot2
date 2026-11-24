@@ -180,7 +180,9 @@ Source: [R Graph Gallery - Violin plot](https://r-graph-gallery.com/95-violin-pl
 
 ### Ordered violins
 
-`levels/order-levels` orders the levels by any statistic of a value; the result is the scale's `:domain`.
+[`levels/order-levels`](reference.data_levels.html#levelsorder-levels) orders the levels by any statistic of a
+value; the result is the scale's `:domain`, its first level at the bottom (y grows upward) - ascending medians put
+the largest on top (setosa, first in the data and at the bottom by default).
 
 Source: [R Graph Gallery - Violin plot (reorder)](https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html). Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
@@ -189,10 +191,10 @@ Source: [R Graph Gallery - Violin plot (reorder)](https://r-graph-gallery.com/26
 ```clojure
 (plot/render-image
  {:data iris
-  :mapping {:x :petal-width :y :species}
-  :scales {:y {:domain (levels/order-levels iris :species :petal-width stats/median {:descending true})}}
+  :mapping {:x :sepal-width :y :species}
+  :scales {:y {:domain (levels/order-levels iris :species :sepal-width stats/median)}}
   :charts [(chart/violin {:inner :quartiles})]
-  :labels {:title "Petal width, species by descending median" :x "petal width [cm]" :y nil}}
+  :labels {:title "Sepal width, species by median (largest on top)" :x "sepal width [cm]" :y nil}}
  {:width 800 :height 450})
 ```
 :::
@@ -814,6 +816,9 @@ Source: [R Graph Gallery - Boxplot with jitter](https://r-graph-gallery.com/96-b
 
 ### Group order
 
+The band scale's `:order-by` orders the levels by a function of each level's rows, from the bottom up;
+`:descending true` reverses it.
+
 Source: [R Graph Gallery - Reorder boxplot](https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
 
 
@@ -821,13 +826,13 @@ Source: [R Graph Gallery - Reorder boxplot](https://r-graph-gallery.com/267-reor
 ```clojure
 (plot/render-image
  (plot/arrange [{:data barley :mapping {:x :yield :y :variety}
-                 :scales {:y {:domain (levels/order-levels barley :variety :yield stats/median)}}
+                 :scales {:y {:order-by #(stats/median (map :yield %))}}
                  :charts [(chart/box)]
-                 :labels {:title "by median" :x "yield" :y nil}}
+                 :labels {:title "by median (largest on top)" :x "yield" :y nil}}
                 {:data barley :mapping {:x :yield :y :variety}
-                 :scales {:y {:domain (levels/order-levels barley :variety :yield stats/mean {:descending true})}}
+                 :scales {:y {:order-by #(stats/mean (map :yield %)) :descending true}}
                  :charts [(chart/box)]
-                 :labels {:title "by mean, descending" :x "yield" :y nil}}]
+                 :labels {:title "by mean, :descending (largest at the bottom)" :x "yield" :y nil}}]
                {:columns 2})
  {:width 1000 :height 500})
 ```
@@ -842,9 +847,8 @@ Source: [R Graph Gallery - Reorder boxplot](https://r-graph-gallery.com/267-reor
 
 ### Highlight a group
 
-A derived column and an explicit colour scale: grey for the rest, red for the group in focus. A colour mapping
-makes groups, and groups inside a band dodge by default; `:position :overlay` keeps every box on its band's
-centre line (each band holds one group anyway).
+A derived column and an explicit colour scale: grey for the rest, red for the group in focus. Each band holds one
+colour group, so every box stays on its band's centre line.
 
 Source: [R Graph Gallery - Highlight a group in boxplot](https://r-graph-gallery.com/23-add-colors-to-specific-groups-of-a-boxplot.html). Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -856,7 +860,7 @@ Source: [R Graph Gallery - Highlight a group in boxplot](https://r-graph-gallery
   :mapping {:x :hp :y :cyl :color :focus}
   :scales {:y {:type :categorical}
            :color {:domain ["other" "6 cylinders"] :range [[190 190 190] [215 48 39]]}}
-  :charts [(chart/box {:position :overlay})]
+  :charts [(chart/box)]
   :labels {:title "Horse power, 6 cylinders highlighted" :x "horse power" :y "cylinders"}}
  {:width 800 :height 400})
 ```
@@ -1049,7 +1053,7 @@ Source: [R Graph Gallery - Horizontal boxplot](https://r-graph-gallery.com/boxpl
 `chart/extent` draws an interval per group from fastmath.stats: here the 95% confidence interval of the mean,
 mean ± standard deviation and a bootstrap percentile interval.
 
-Source: [cljplot extents](https://seaborn.pydata.org/generated/seaborn.pointplot.html). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
+Source: seaborn - pointplot (confidence intervals); cljplot - extents ([1](https://seaborn.pydata.org/generated/seaborn.pointplot.html), [2](https://github.com/generateme/cljplot/blob/master/sketches/examples.clj)). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
 
 
 ::: {.sourceClojure}
@@ -1098,7 +1102,7 @@ Source: [R Graph Gallery - Ridgeline chart](https://r-graph-gallery.com/294-basi
 (plot/render-image
  {:data lincoln
   :mapping {:x :mean-temp :y :month}
-  :scales {:y {:domain (vec (reverse months))}}
+  :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5})]
   :labels {:title "Mean temperature in Lincoln, 2016" :x "mean temperature [F]" :y nil}}
  {:width 800 :height 650})
@@ -1153,7 +1157,7 @@ Source: [R Graph Gallery - Ridgeline with gradient](https://r-graph-gallery.com/
 (plot/render-image
  {:data lincoln
   :mapping {:x :max-temp :y :month}
-  :scales {:y {:domain (vec (reverse months))}}
+  :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5 :fill-gradient :mpl/plasma})]
   :labels {:title "Daily maximum temperature" :x "max temperature [F]" :y nil}}
  {:width 800 :height 650})
@@ -1196,9 +1200,8 @@ Source: [R Graph Gallery - Ridgeline (two groups)](https://r-graph-gallery.com/w
 ## Beeswarm
 
 Points packed across their band so none overlap (`:fit` squeezes a swarm that is too wide into its band).
-A colour mapping makes groups; inside a band groups dodge by default, so the coloured beeswarm sets
-`:position :overlay` (each species is alone in its band anyway), and the box opts out of the colour with
-`:mapping {:color nil}`.
+A colour mapping makes groups - here each species is alone in its band, so the swarm stays centred - and the box
+opts out of the colour with `:mapping {:color nil}`.
 
 Source: R Graph Gallery - Beeswarm ([1](https://r-graph-gallery.com/370-basic-beeswarm-plot.html), [2](https://r-graph-gallery.com/371-custom-dots-beeswarm.html), [3](https://r-graph-gallery.com/372-grouped-beeswarm.html)). Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
@@ -1217,7 +1220,7 @@ Source: R Graph Gallery - Beeswarm ([1](https://r-graph-gallery.com/370-basic-be
                  :labels {:title "dot style (:shape, :size)" :x "mpg" :y "cylinders"}}
                 {:data iris :mapping {:x :petal-length :y :species :color :species}
                  :charts [(chart/box {:outliers false :color [235 235 240] :width 0.6 :mapping {:color nil}})
-                          (chart/beeswarm {:size 5 :position :overlay})]
+                          (chart/beeswarm {:size 5})]
                  :labels {:title "coloured, over boxes" :x "petal length" :y nil}}]
                {:columns 2})
  {:width 1000 :height 700})
@@ -1238,7 +1241,7 @@ Source: R Graph Gallery - Beeswarm ([1](https://r-graph-gallery.com/370-basic-be
 
 Jittered points; `:rng` makes the jitter reproducible.
 
-Source: lattice stripplot; cljplot strips ([1](http://lmdvr.r-forge.r-project.org/figures/figures.html), [2](https://seaborn.pydata.org/generated/seaborn.stripplot.html)). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
+Source: lattice stripplot; seaborn stripplot ([1](http://lmdvr.r-forge.r-project.org/figures/figures.html), [2](https://seaborn.pydata.org/generated/seaborn.stripplot.html)). Data: Barley yields, Minnesota 1931-1932, R lattice package `barley` (Immer et al. 1934; Fisher 1971; Cleveland 1993); licence: GPL (>= 2) (lattice).
 
 
 ::: {.sourceClojure}
@@ -1264,7 +1267,7 @@ Source: lattice stripplot; cljplot strips ([1](http://lmdvr.r-forge.r-project.or
 
 One line per value along the panel edge (`:edge`, the default without `:y`) or below y = 0 (`:bottom`).
 
-Source: cljplot rug; lattice densityplot ([1](https://seaborn.pydata.org/generated/seaborn.rugplot.html), [2](http://lmdvr.r-forge.r-project.org/figures/figures.html)). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
+Source: seaborn rugplot; lattice densityplot ([1](https://seaborn.pydata.org/generated/seaborn.rugplot.html), [2](http://lmdvr.r-forge.r-project.org/figures/figures.html)). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
@@ -1288,10 +1291,10 @@ Source: cljplot rug; lattice densityplot ([1](https://seaborn.pydata.org/generat
 
 ## 1d strips
 
-Every strip chart also works on one variable alone: without `:y` it is placed in the middle of the panel and
-the plot has no y axis.
+Every strip chart also works on one variable alone: without `:y` it is placed in the middle of the panel (the
+rug, on the panel's edge by default, takes `:place :center`) and the plot has no y axis.
 
-Source: seaborn 1d plots; cljplot strips ([1](https://seaborn.pydata.org/generated/seaborn.boxplot.html), [2](https://seaborn.pydata.org/generated/seaborn.swarmplot.html)). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
+Source: seaborn boxplot, swarmplot (1d) ([1](https://seaborn.pydata.org/generated/seaborn.boxplot.html), [2](https://seaborn.pydata.org/generated/seaborn.swarmplot.html)). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
@@ -1321,7 +1324,7 @@ Source: seaborn 1d plots; cljplot strips ([1](https://seaborn.pydata.org/generat
 
 ## Empirical cumulative distribution
 
-Source: lattice ecdfplot ([1](http://lmdvr.r-forge.r-project.org/figures/figures.html), [2](https://seaborn.pydata.org/generated/seaborn.ecdfplot.html)). Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+Source: lattice ecdfplot; seaborn ecdfplot ([1](http://lmdvr.r-forge.r-project.org/figures/figures.html), [2](https://seaborn.pydata.org/generated/seaborn.ecdfplot.html)). Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}

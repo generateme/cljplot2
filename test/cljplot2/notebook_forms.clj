@@ -60,28 +60,44 @@
 (def ^:private data-table 'notebook-utils/data-table)
 (def ^:private dataset 'notebook-utils/dataset)
 
-(def ^:private min-column-rows
+(def ^{:private true :const true :tag 'long} min-column-rows
   "The fewest values of a columns map counted as data - fewer is a spec or a domain (`{:domain [a b] :range [c d]}`,
   `{:x [lo hi] :y [lo hi]}`), not a table."
   3)
 
+(def ^{:private true :const true :tag 'long} max-non-sample-size
+  "The most numbers in a sequence not counted as data - a list of breaks, ticks or a domain, not a sample."
+  12)
+
 (defn- scalar?
-  "Is `v` a table cell value - a number, string, keyword, boolean, `java.time` value or `nil` (not a collection)?"
+  "Tests whether `v` is a table cell value - a number, string, keyword, boolean, `java.time` value or `nil` (not a
+  collection)."
   [v]
   (or (nil? v) (number? v) (string? v) (keyword? v) (boolean? v) (instance? java.time.temporal.Temporal v)))
 
 (defn- column?
-  "Can `v` be a column - a sequential collection, not a fastmath vector (a colour or a point, e.g. `Vec4`)?"
+  "Tests whether `v` can be a column - a sequential collection, not a fastmath vector (a colour or a point, e.g.
+  `Vec4`)."
   [v]
   (and (sequential? v) (not (instance? Vec2 v)) (not (instance? Vec3 v)) (not (instance? Vec4 v))))
 
+(defn- number-row?
+  "Tests whether `v` is a number or a non-empty sequential of numbers (one observation of a sample or a matrix row),
+  not a fastmath vector - as `nu/data-table` accepts in a sample."
+  [v]
+  (or (number? v) (and (column? v) (seq v) (every? number? v))))
+
 (defn data-value?
-  "Is `v` data a page shows - rows (a non-empty sequence of maps) or columns (a map of equal-length sequences of at
-  least [[min-column-rows]] scalar values; scale specs, domain maps and maps of colours aren't)?"
+  "Tests whether `v` is data a page shows - rows (a non-empty sequence of maps), columns (a map of equal-length
+  sequences of at least [[min-column-rows]] scalar values; scale specs, domain maps and maps of colours aren't) or a
+  sample (a sequence of more than [[max-non-sample-size]] numbers or number vectors; breaks, ticks and domains are
+  shorter)."
   [v]
   (or (and (sequential? v) (seq v) (every? map? (take nu/data-table-rows v)))
+      (and (column? v) (< max-non-sample-size (count (take (inc max-non-sample-size) v)))
+           (every? number-row? (take nu/data-table-rows v)))
       (and (map? v) (seq v) (every? column? (vals v))
-           (<= (long min-column-rows) (count (first (vals v))))
+           (<= min-column-rows (count (first (vals v))))
            (apply = (map count (vals v)))
            (every? #(every? scalar? (take nu/data-table-rows %)) (vals v)))))
 
@@ -117,3 +133,36 @@
                                  (if (symbol? arg) (def-reads arg) (datasets-read arg)))))
                            forms))]
     (vec (sort (remove shown (datasets-read forms))))))
+
+;; book conventions
+
+(def ^:private source-note 'notebook-utils/source-note)
+(def ^:private render-image 'cljplot2.core/render-image)
+
+(defn source-notes
+  "The literal option maps of every `(nu/source-note {...})` in `forms`."
+  [forms]
+  (filter map? (map second (calls forms source-note))))
+
+(defn notes-without-url
+  "The literal source notes in `forms` naming an outside example (`:source`) without its `:url`."
+  [forms]
+  (vec (filter #(and (:source %) (nil? (:url %))) (source-notes forms))))
+
+(defn datasets-uncredited
+  "Dataset keys the `forms` read that no literal source note's `:dataset` (a key or a vector of keys; anything else
+  credits nothing) credits, sorted."
+  [forms]
+  (let [credited (set (mapcat #(let [d (:dataset %)] (cond (keyword? d) [d] (vector? d) (filter keyword? d))) (source-notes forms)))]
+    (vec (sort (remove credited (datasets-read forms))))))
+
+(defn image-sizes
+  "`[width height]` of every `plot/render-image` call in `forms` given a literal size map (a missing size - `nil`);
+  calls whose size is computed (a symbol or a call) are skipped."
+  [forms]
+  (vec (for [call (calls forms render-image)
+             :let [size (nth call 2 nil)]
+             :when (map? size)
+             :let [{:keys [width height]} size]
+             :when (or width height)]
+         [width height])))

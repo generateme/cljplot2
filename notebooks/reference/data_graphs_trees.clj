@@ -40,9 +40,13 @@
 
 (nu/data-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed true})))
 
-;; Its edges, weights as numbers (an edge without a weight counts 1):
+;; The edges of the flights as an undirected graph, the weights from `:n` as numbers (`:value`):
 
 (nu/data-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed false})))
+
+;; Without a `:value` accessor every edge weighs 1:
+
+(nu/data-table (:edges (graph/graph flights {:from :src :to :dst})))
 
 ;; ## graph/layout
 
@@ -297,7 +301,8 @@
 
 ;; ## tree/from-levels
 
-;; A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per row.
+;; A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per innermost level
+;; path (its `:value` the number of its rows).
 
 (nu/options-table (describe/options #'tree/from-levels))
 
@@ -307,9 +312,10 @@
 
 (nu/data-table offices)
 
-;; Its leaves (rows) in tree order, and the tree drawn by `tree/node-link-layout` below:
+;; Its leaves - the countries, each with its number of offices - in tree order (with the cities as a third level,
+;; the tree is drawn by `tree/node-link-layout` below):
 
-(mapv :city (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
+(mapv (juxt :name :value) (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
 
 ;; ## tree/from-parents
 
@@ -455,7 +461,7 @@
 
 (nu/data-table visits)
 
-;; The step rows - the end marker dropped with `:keep-end false` (left), kept as a step by default (right):
+;; The step rows - the end marker dropped with `:keep-end false` (first table), kept as a step by default (second):
 
 (nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end false})))
 

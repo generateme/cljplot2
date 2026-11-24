@@ -204,7 +204,7 @@
                    {:width 1000 :height 300})
 
 ;; A bandwidth selector instead of a number, few evaluation points (the curve drawn through 8 points), and a curve
-;; reaching 3 bandwidths past the data:
+;; reaching 1 bandwidth past the data (3 by default):
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions}
@@ -216,8 +216,8 @@
                                    :labels {:title ":n 8"}}
                                   {:data faithful
                                    :mapping {:x :eruptions}
-                                   :charts [(chart/density {:cut 3})]
-                                   :labels {:title ":cut 3"}}]
+                                   :charts [(chart/density {:cut 1})]
+                                   :labels {:title ":cut 1"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
 
@@ -326,7 +326,7 @@
 
 (plot/render-image {:data (filter #(= "t(3)" (:sample %)) samples)
                     :mapping {:y :v}
-                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \s :color [200 80 40 120]
+                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \S :color [200 80 40 120]
                                         :stroke-color :black :stroke-width 0.5 :line-width 3})]
                     :labels {:title "squares, :line-width 3"}}
                    {:width 500 :height 350})

@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -1284,7 +1284,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:plot :background</td>
 <td>a clojure2d color or :none</td>
-<td>[236.0 236.0 243.0 255.0]</td>
+<td>[236 236 243]</td>
 <td>canvas background colour</td>
 </tr>
 <tr class="odd">
@@ -1329,7 +1329,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:panel :alternate-fill</td>
 <td>a clojure2d color or :none</td>
-<td>[0.0 0.0 0.0 12.0]</td>
+<td>[0 0 0 12]</td>
 <td>drawn over odd facet panels (row + column odd); :none - off</td>
 </tr>
 <tr class="odd">
@@ -1381,25 +1381,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:panel :grid :x</td>
 <td>:none or a line {:color :line-width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :line-width 0.5, :dash [4.0]}</td>
+<td>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</td>
 <td>grid lines of the x scale</td>
 </tr>
 <tr class="odd">
 <td>:panel :grid :y</td>
 <td>:none or a line {:color :line-width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :line-width 0.5, :dash [4.0]}</td>
+<td>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</td>
 <td>grid lines of the y scale</td>
 </tr>
 <tr class="even">
 <td>:panel :grid :bands</td>
 <td>:none or a line {:color :line-width :dash}</td>
-<td>{:color [180.0 180.0 180.0 255.0], :line-width 1, :dash [1.0 2.0]}</td>
+<td>{:color [180 180 180], :line-width 1, :dash [1.0 2.0]}</td>
 <td>grid lines of a bands scale, instead of :x / :y</td>
 </tr>
 <tr class="odd">
 <td>:panel :grid :bands-fill</td>
 <td>a clojure2d color or :none</td>
-<td>[0.0 0.0 0.0 8.0]</td>
+<td>[0 0 0 8]</td>
 <td>fill of every second band of a bands scale; :none - off</td>
 </tr>
 <tr class="even">
@@ -1651,13 +1651,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:strip :fill</td>
 <td>a clojure2d color or :none</td>
-<td>[255.0 255.0 255.0 150.0]</td>
+<td>[255 255 255 150]</td>
 <td>strip background colour</td>
 </tr>
 <tr class="odd">
 <td>:strip :border-color</td>
 <td>a clojure2d color or :none</td>
-<td>[0.0 0.0 0.0 100.0]</td>
+<td>[0 0 0 100]</td>
 <td>strip border colour</td>
 </tr>
 <tr class="even">
@@ -1669,7 +1669,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:strip :shingle-fill</td>
 <td>a clojure2d color or :none</td>
-<td>[255.0 165.0 0.0 110.0]</td>
+<td>[255 165 0 110]</td>
 <td>colour of the bar marking a shingle level</td>
 </tr>
 </tbody>
@@ -1872,7 +1872,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="d-frame" class="level2" data-number="9.9">
 <h2 data-number="9.9" class="anchored" data-anchor-id="d-frame"><span class="header-section-number">9.9</span> 3D frame</h2>
-<p>The dash of a 3D box’s hidden edges; the box edges and axes take the x axis style (<code>[:axis :x]</code>).</p>
+<p>The dash of a 3D box’s hidden edges; the box edges and axes take the x axis style (<code>[:axis :x]</code>). Here a <a href="reference.charts_multivariate_3d.html#surface">surface</a> of a function over a domain:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -1941,7 +1941,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:palette :gradient</td>
 <td>a function or a palette name or a non-empty sequence of colors</td>
-<td>[[255.0 255.0 255.0 255.0] [127.0 192.0 236.0 255.0] [56.0 133.0 201.0 255.0] [14.0 83.0 161.0 255.0] [0.0 63.0 143.0 255.0] [0.0 1.0 11.0 255.0]]</td>
+<td>[[255 255 255] [127 192 236] [56 133 201] [14 83 161] [0 63 143] [0 1 11]]</td>
 <td>linear and binned colours: colours or a palette name</td>
 </tr>
 <tr class="even">
@@ -1971,7 +1971,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:palette :na</td>
 <td>a clojure2d color</td>
-<td>[150.0 150.0 150.0 255.0]</td>
+<td>[150 150 150]</td>
 <td>colour of NA values</td>
 </tr>
 </tbody>
@@ -1990,7 +1990,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="text" class="level2" data-number="9.11">
 <h2 data-number="9.11" class="anchored" data-anchor-id="text"><span class="header-section-number">9.11</span> Text</h2>
-<p>Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this section). A label’s <code>:role</code> may also name a role of your own added under <code>:text</code>. A role’s <code>:color</code> may be <code>:contrast</code> - black or white, whichever reads on what’s behind: the fill under a chart’s label, else the plot background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values) default to it.</p>
+<p>Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this section). A label’s <code>:role</code> may also name a role of your own added under <code>:text</code>. A role’s <code>:color</code> may be <code>:contrast</code> - black or white, whichever reads on what’s behind: the fill under a chart’s label, else the plot background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values, correlation and pairwise statistic numbers) default to it.</p>
 <p>Titles, strips and axis texts:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2183,7 +2183,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.theme_files/image14.png" class="img-fluid"></p>
 </div>
-<p>Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, contours (bar values, Venn counts and tile values in the contrast colour of what’s behind them by default):</p>
+<p>Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics, contours (bar values, Venn counts, tile values and the correlation and pairwise numbers in the contrast colour of what’s behind them by default). The bars write their values in their middle (<a href="reference.charts_bars_ranges.html#bar">bar</a> <code>:value-label</code>, <code>:label-position</code>):</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -2211,7 +2211,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:text :contour-label</td>
 <td>a text style (:font :size :font-style :color :inset :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 180.0]}</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 180]}</td>
 <td>contour level labels</td>
 </tr>
 <tr class="even">
@@ -2279,19 +2279,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:text :alluvial-label</td>
 <td>a text style (:font :size :font-style :color :inset :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 190.0]}</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 190]}</td>
 <td>alluvial stratum labels</td>
 </tr>
 <tr class="even">
 <td>:text :dendrogram-group-label</td>
 <td>a text style (:font :size :font-style :color :inset :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td>
 <td>dendrogram group (inner node) labels</td>
 </tr>
 <tr class="odd">
 <td>:text :network-label</td>
 <td>a text style (:font :size :font-style :color :inset :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td>
 <td>network node labels</td>
 </tr>
 <tr class="even">
@@ -2309,7 +2309,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:text :sankey-label</td>
 <td>a text style (:font :size :font-style :color :inset :align :background)</td>
-<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255.0 255.0 255.0 170.0]}</td>
+<td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td>
 <td>sankey node labels</td>
 </tr>
 <tr class="odd">

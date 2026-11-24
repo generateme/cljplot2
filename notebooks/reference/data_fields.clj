@@ -6,6 +6,7 @@
 
 (ns reference.data-fields
   (:require [fastmath.complex :as cx]
+            [fastmath.core :as m]
             [fastmath.fields :as f]
             [fastmath.random :as r]
             [fastmath.vector :as v]
@@ -88,22 +89,27 @@
 
 (def grid-xs (range -3.0 3.01 0.25))
 
+(nu/data-table grid-xs)
+
 (def grid {:xs (double-array grid-xs) :ys (double-array grid-xs) :nx (count grid-xs) :ny (count grid-xs)
-           :values (double-array (for [y grid-xs x grid-xs] (+ (Math/sin x) (Math/cos (* 1.3 y)))))})
+           :values (double-array (for [y grid-xs x grid-xs] (m/+ (m/sin x) (m/cos (m/* 1.3 y)))))})
 
-;; The lines at level 1 - a closed ring and open lines leaving the grid:
+;; The lines at levels 1 and 1.5 (their number of points) - an open line leaving the grid and a closed ring around
+;; the field's peak:
 
-(nu/data-table (map #(update % :points count) (contour/isolines grid 1.0)))
+(nu/data-table (for [level [1.0 1.5] line (contour/isolines grid level)]
+                 (assoc (update line :points count) :level level)))
 
-;; Drawn as lines - every point row with its level and line number - for five levels:
+;; Drawn as lines - every point row with its level and line number, a closed line's first point repeated at its
+;; end - for six levels:
 
-(plot/render-image {:data (for [level [-1.0 -0.5 0.0 0.5 1.0]
+(plot/render-image {:data (for [level [-1.0 -0.5 0.0 0.5 1.0 1.5]
                                 [i {:keys [points closed?]}] (map-indexed vector (contour/isolines grid level))
                                 [x y] (cond-> points closed? (conj (first points)))]
                             {:level level :line (str level "/" i) :x x :y y})
                     :mapping {:x :x :y :y :color #(str (:level %)) :group :line}
                     :charts [(chart/line {:order :data :line-width 2})]
-                    :scales {:color {:title "level" :domain ["-1.0" "-0.5" "0.0" "0.5" "1.0"]}}
+                    :scales {:color {:title "level" :domain ["-1.0" "-0.5" "0.0" "0.5" "1.0" "1.5"]}}
                     :aspect :iso}
                    {:width 600 :height 480})
 
@@ -148,7 +154,7 @@
 
 (def seeds (for [x (range -2.0 2.01 0.5) y (range -2.0 2.01 0.5)] [x y]))
 
-(nu/data-table (map (fn [[x y]] {:x x :y y}) seeds))
+(nu/data-table seeds)
 
 (nu/data-table (vf/traces (fn [[x y]] (v/vec2 (- y (* 0.3 x)) (- (- x) (* 0.3 y)))) seeds {:steps 5 :step 0.1}))
 
@@ -170,7 +176,7 @@
                                    :aspect :iso
                                    :labels {:title ":steps 400"}}
                                   {:data (let [g (r/rng :mersenne 12)]
-                                           (vf/traces (fn [[x y]] (v/vec2 (Math/sin y) (Math/sin x)))
+                                           (vf/traces (fn [[x y]] (v/vec2 (m/sin y) (m/sin x)))
                                                       (repeatedly 300 #(vector (r/drandom g -4 4) (r/drandom g -4 4)))
                                                       {:steps 60 :step 0.05}))
                                    :mapping {:x :x :y :y :group :id}

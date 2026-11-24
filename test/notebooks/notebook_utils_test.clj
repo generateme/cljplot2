@@ -4,6 +4,9 @@
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [notebook-utils :as nu]
+            [cljplot2.data.shingle :as shingle]
+            [clojure2d.color :as c]
+            [fastmath.vector :as v]
             [cljplot2.test-util :refer [error-data]]))
 
 (deftest dataset-test
@@ -81,17 +84,22 @@
 (deftest source-note-test
   (let [text (fn [note] (apply str (if (string? note) [note] note)))]
     (testing "markdown with hidden code"
-      (let [note (nu/source-note {:source "R Graph Gallery - Histogram" :dataset :faithful})]
+      (let [note (nu/source-note {:source "R Graph Gallery - Histogram" :url "https://r-graph-gallery.com/histogram.html"
+                                  :dataset :faithful})]
         (is (= :kind/md (:kindly/kind (meta note))))
         (is (true? (:kindly/hide-code (meta note))))
-        (is (= (str "Source: R Graph Gallery - Histogram. Data: Old Faithful geyser eruptions, "
+        (is (= (str "Source: [R Graph Gallery - Histogram](https://r-graph-gallery.com/histogram.html). "
+                    "Data: Old Faithful geyser eruptions, "
                     "R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); "
                     "licence: Part of R (GPL-2 | GPL-3).")
                (text note)))
         (is (not (re-find #"via|dev/resources" (text note))))))
-    (testing "source or dataset alone"
-      (is (= "Source: Lattice Fig 1.1." (text (nu/source-note {:source "Lattice Fig 1.1"}))))
-      (is (re-matches #"Data: Old Faithful.*" (text (nu/source-note {:dataset :faithful})))))
+    (testing "data alone; several datasets, each credited in order"
+      (is (re-matches #"Data: Old Faithful.*" (text (nu/source-note {:dataset :faithful}))))
+      (is (re-matches #"Data: Old Faithful.*\. Data: Edgar Anderson.*" (text (nu/source-note {:dataset [:faithful :iris]})))))
+    (testing "an outside source needs its :url"
+      (is (= {:key :url :value "Lattice Fig 1.1"} (error-data #(nu/source-note {:source "Lattice Fig 1.1"}))))
+      (is (= :url (:key (error-data #(nu/source-note {:source "x" :dataset :faithful}))))))
     (testing "links: one URL links the source, several are numbered, a URL alone links itself"
       (is (= "Source: [RGG - Violin](https://r-graph-gallery.com/violin.html)."
              (text (nu/source-note {:source "RGG - Violin" :url "https://r-graph-gallery.com/violin.html"}))))
@@ -105,7 +113,10 @@
         (is (= :url (:key (error-data #(nu/source-note {:source "x" :url bad})))) (pr-str bad))))
     (testing "neither, or an unknown dataset, throws"
       (is (= {:key :source-note} (error-data #(nu/source-note {}))))
-      (is (= :dataset (:key (error-data #(nu/source-note {:source "x" :dataset :nope}))))))))
+      (is (= :dataset (:key (error-data #(nu/source-note {:dataset :nope}))))))
+    (testing "boundary: :dataset not a key or a non-empty vector of keys throws"
+      (doseq [bad [[] "iris" [:iris "x"] '(:iris)]]
+        (is (= :dataset (:key (error-data #(nu/source-note {:dataset bad})))) (pr-str bad))))))
 
 (deftest levels-test
   (testing "R factor order, not alphabetical or first appearance"
@@ -129,3 +140,24 @@
   (testing "unknown dataset or column - {:key :levels}"
     (is (= :levels (:key (ex-data (try (nu/levels :barley :nope) (catch clojure.lang.ExceptionInfo e e))))))
     (is (= :levels (:key (ex-data (try (nu/levels :faithful :eruptions) (catch clojure.lang.ExceptionInfo e e))))))))
+
+(deftest data-table-test
+  (let [table-of (fn [data] (last (nu/data-table data)))
+        rows-of (comp :row-vectors table-of)
+        names-of (comp :column-names table-of)]
+    (testing "rows, columns, a sample of values (one value column)"
+      (is (= ["a" "b"] (names-of [{:a 1 :b 2}])))
+      (is (= [["1" "x"] ["2" "y"]] (rows-of {:a [1 2] :b ["x" "y"]})))
+      (is (= ["value"] (names-of [1.5 2.5])))
+      (is (= [["1.5"] ["2.5"]] (rows-of [1.5 2.5])))
+      (is (= [["[1 2]"] ["[3 4]"]] (rows-of [[1 2] [3 4]])) "matrix rows print as vectors"))
+    (testing "a colour prints as its channels, opaque ones without alpha"
+      (is (= [["[255 0 0]"]] (rows-of [{:c (c/color 255 0 0)}])))
+      (is (= [["[255 0 0 128]"]] (rows-of [{:c (c/color 255 0 0 128)}]))))
+    (testing "a shingle interval prints as its label"
+      (let [i (shingle/interval 1.0 2.0)]
+        (is (= [[(str i)]] (rows-of [{:i i}])))
+        (is (not (str/includes? (str i) "Interval")))))
+    (testing "boundary: empty data, maps mixed with values, a scalar, keywords, an empty row, mixed values, colours, points throw"
+      (doseq [bad [[] {} [{:a 1} 2] 7 [:a :b] [[]] [1 "a"] (c/palette :category10) [(v/vec2 1 2) (v/vec2 3 4)]]]
+        (is (= :data (:key (error-data #(nu/data-table bad)))) (pr-str bad))))))

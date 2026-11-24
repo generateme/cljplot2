@@ -131,12 +131,12 @@ them; vertical bars take the levels on x, horizontal ones on y.
 ### Style
 
 The fill and outline used when nothing is mapped, the opacity of overlaid groups, and the 0 line drawn over
-mirrored bars (`:mirror` - Mirrored strips):
+mirrored bars (`:mirror` - [Mirrored strips](reference.shared_options.html#mirrored-strips)):
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69.0 117.0 180.0 255.0]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of overlaid groups sharing a level</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the 0 line drawn over mirrored bars</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the 0 line drawn over mirrored bars</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of overlaid groups sharing a level</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the 0 line drawn over mirrored bars</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the 0 line drawn over mirrored bars</td></tr></tbody></table>
 ```
 
 :::
@@ -404,8 +404,8 @@ stacked); with the value and the row count (`:n-label`) the two texts join side 
                                    :charts [(chart/bar {:stat :mean :value-label true :n-label true
                                                         :label-stack :vertical})]
                                    :labels {:title ":label-stack :vertical"}}]
-                                 {:columns 4})
-                   {:width 1000 :height 300})
+                                 {:columns 2})
+                   {:width 900 :height 560})
 ```
 :::
 
@@ -482,7 +482,7 @@ bootstrap's statistic and random generator (seeded here), the centre mark and th
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>interval colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>2</td><td>interval line width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>shape of the centre mark (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>size of the centre mark in pixels (a mapped :size wins)</td></tr><tr><td>:method</td><td>one of :adjacent :bootstrap-basic :bootstrap-bc :bootstrap-bca :bootstrap-mad-median :bootstrap-normal :bootstrap-percentile :bootstrap-studentized :bootstrap-t :ci :hpdi :inner-fence :mad :min-max :outer-fence :percentile :percentile-bc :percentile-bca :pi :quantile :sem :stddev or a function</td><td>:min-max</td><td>interval of the values: a fastmath extent or bootstrap method keyword, or a function of the values returning [lo hi] or [lo hi centre]</td></tr><tr><td>:statistic</td><td>a function or nil</td><td>fastmath mean</td><td>statistic of the values resampled by the bootstrap methods</td></tr><tr><td>:method-args</td><td>sequential of any value or nil</td><td></td><td>extra arguments passed to the method after the values (e.g. [10.0 90.0] for :percentile)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh generator every build</td><td>fastmath random generator of the bootstrap methods, copied per build (every build draws the same samples)</td></tr><tr><td>:center</td><td>one of :method :none</td><td>:method</td><td>centre mark: :method (the method's centre) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>interval colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>2</td><td>interval line width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>shape of the centre mark (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>size of the centre mark in pixels (a mapped :size wins)</td></tr><tr><td>:method</td><td>one of :adjacent :bootstrap-basic :bootstrap-bc :bootstrap-bca :bootstrap-mad-median :bootstrap-normal :bootstrap-percentile :bootstrap-studentized :bootstrap-t :ci :hpdi :inner-fence :mad :min-max :outer-fence :percentile :percentile-bc :percentile-bca :pi :quantile :sem :stddev or a function</td><td>:min-max</td><td>interval of the values: a fastmath extent or bootstrap method keyword, or a function of the values returning [lo hi] or [lo hi centre]</td></tr><tr><td>:statistic</td><td>a function or nil</td><td>fastmath mean</td><td>statistic of the values resampled by the bootstrap methods</td></tr><tr><td>:method-args</td><td>sequential of any value or nil</td><td></td><td>extra arguments passed to the method after the values (e.g. [10.0 90.0] for :percentile)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh generator every build</td><td>fastmath random generator of the bootstrap methods, copied per build (every build draws the same samples)</td></tr><tr><td>:center</td><td>one of :method :none</td><td>:method</td><td>centre mark: :method (the method's centre) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -560,19 +560,14 @@ the mean (`:bootstrap-*`, 500 resamples, seeded):
 :::
 
 
-The bootstrap resamples the mean unless `:statistic` names another function - here the median; `:center
-:method` (the default) marks the method's centre, here sized up with `:size`:
+The bootstrap resamples the mean unless `:statistic` names another function - here the median (the bootstrap
+of the mean is the "bootstrap mean" panel above); `:center :method` (the default) marks the method's centre, here
+sized up with `:size`:
 
 
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data iris
-                                   :mapping {:x :sepal-length :y :species}
-                                   :charts [(chart/extent {:method :bootstrap-percentile :rng (r/rng :mersenne 3)
-                                                           :center :method :size 12})]
-                                   :scales {:y {:reverse true}}
-                                   :labels {:title "bootstrap of the mean, :size 12"}}
-                                  {:data iris
                                    :mapping {:x :sepal-length :y :species}
                                    :charts [(chart/extent {:method :bootstrap-percentile :rng (r/rng :mersenne 3)
                                                            :statistic stats/median :size 12})]
@@ -583,8 +578,8 @@ The bootstrap resamples the mean unless `:statistic` names another function - he
                                    :charts [(chart/extent {:padding {:x [0.5 0.5]}})]
                                    :scales {:y {:reverse true}}
                                    :labels {:title ":padding {:x [0.5 0.5]}"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 300})
+                                 {:columns 2})
+                   {:width 800 :height 300})
 ```
 :::
 
@@ -651,7 +646,7 @@ markers' colour, width and length, and the padding (left: 20% past the largest v
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[204.0 204.0 204.0 255.0] [238.0 238.0 238.0 255.0]]</td><td>[first last] colours shading the ranges from the smallest to the largest</td></tr><tr><td>:measure-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[70.0 130.0 180.0 255.0] [176.0 196.0 222.0 255.0]]</td><td>[first last] colours shading the measures from the first (the current value) to the last</td></tr><tr><td>:measure-fraction</td><td>a number in [0 1]</td><td>0.35</td><td>measure bar width, a fraction of the item slot</td></tr><tr><td>:marker-color</td><td>a clojure2d color or :none</td><td>:black</td><td>marker line colour</td></tr><tr><td>:marker-width</td><td>a non-negative number</td><td>2</td><td>marker line width in pixels (0 - no markers)</td></tr><tr><td>:marker-length</td><td>a number in [0 1]</td><td>0.7</td><td>marker line length, a fraction of the item slot</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05 on a side holding values, 0 on the side of 0</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[204 204 204] [238 238 238]]</td><td>[first last] colours shading the ranges from the smallest to the largest</td></tr><tr><td>:measure-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[70 130 180] [176 196 222]]</td><td>[first last] colours shading the measures from the first (the current value) to the last</td></tr><tr><td>:measure-fraction</td><td>a number in [0 1]</td><td>0.35</td><td>measure bar width, a fraction of the item slot</td></tr><tr><td>:marker-color</td><td>a clojure2d color or :none</td><td>:black</td><td>marker line colour</td></tr><tr><td>:marker-width</td><td>a non-negative number</td><td>2</td><td>marker line width in pixels (0 - no markers)</td></tr><tr><td>:marker-length</td><td>a number in [0 1]</td><td>0.7</td><td>marker line length, a fraction of the item slot</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05 on a side holding values, 0 on the side of 0</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
 ```
 
 :::

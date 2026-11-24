@@ -6,7 +6,8 @@
 ;; groups it takes (documented once in the Shared options chapter).
 
 (ns reference.charts-annotations
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu])
@@ -185,15 +186,17 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; The labels' style is a theme text role, `:annotation` by default; `:role` picks another - a role the theme adds,
-;; or a builder's (here `:network-label`, small names on white boxes), the inline style keys still over it:
+;; The labels' style is a [theme text role](reference.theme.html#text), `:annotation` by default; `:role` picks
+;; another - a role the theme adds (here `:callout`, in the bottom right corner), or a builder's (here
+;; `:network-label`, small names on white boxes), the inline style keys still over it:
 
 (plot/render-image {:data cities
                     :mapping {:x :lon :y :lat}
                     :charts [(chart/scatter)
                              (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
                                           :role :network-label})
-                             (chart/text {:x [:panel 0.5] :y [:panel 0.95] :text "European cities" :role :callout})]
+                             (chart/text {:x [:panel 0.98] :y [:panel 0.03] :anchor [:right :bottom] :text "European cities"
+                                          :role :callout})]
                     :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
                                              :inset 2}}}
                     :labels {:x "longitude" :y "latitude"}}
@@ -211,7 +214,7 @@
                                                 (let [w (int w) h (int h)
                                                       img (BufferedImage. w h BufferedImage/TYPE_INT_RGB)]
                                                   (doseq [i (range w) j (range h)
-                                                          :let [d (Math/hypot (- (/ (* 2.0 i) w) 1) (- (/ (* 2.0 j) h) 1))
+                                                          :let [d (m/hypot (- (/ (* 2.0 i) w) 1) (- (/ (* 2.0 j) h) 1))
                                                                 c (int (* 255 (max 0.0 (- 1.0 (* 0.7 d)))))]]
                                                     (.setRGB img i j (+ (* 65536 c) (* 256 (quot c 2)) 80)))
                                                   img))})]}
@@ -241,8 +244,8 @@
 
 (nu/options-table (describe/mapping (chart/function)))
 
-(plot/render-image {:charts [(chart/function {:f {"sin" #(Math/sin %) "cos" #(Math/cos %)}
-                                              :domain [0 (* 2 Math/PI)]
+(plot/render-image {:charts [(chart/function {:f {"sin" #(m/sin %) "cos" #(m/cos %)}
+                                              :domain [0 m/TWO_PI]
                                               :mapping {:color :function :dash :function}})]}
                    {:width 600 :height 320})
 
@@ -255,11 +258,11 @@
 
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(* % % 0.5) :domain [-2 2] :fill [69 117 180 60]})]
                                    :labels {:title ":f, :fill"}}
-                                  {:charts [(chart/function {:parametric (fn [t] [(Math/sin (* 3 t)) (Math/sin (* 4 t))])
-                                                             :t [0 (* 2 Math/PI)] :fill [200 80 40 60]})]
+                                  {:charts [(chart/function {:parametric (fn [t] [(m/sin (* 3 t)) (m/sin (* 4 t))])
+                                                             :t [0 m/TWO_PI] :fill [200 80 40 60]})]
                                    :aspect :iso
                                    :labels {:title ":parametric (Lissajous)"}}
-                                  {:charts [(chart/function {:f #(Math/sin %) :domain [0 10] :sample-step 25})]
+                                  {:charts [(chart/function {:f #(m/sin %) :domain [0 10] :sample-step 25})]
                                    :labels {:title ":sample-step 25 px"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})
@@ -270,9 +273,9 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/function))) :gaps)
 
-(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(Math/sqrt (- 1 (* % %))) :domain [-2 2]})]
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/sqrt (- 1 (* % %))) :domain [-2 2]})]
                                    :labels {:title ":gaps :break (default)"}}
-                                  {:charts [(chart/function {:f #(when-not (< 1 % 2) (Math/sin %)) :domain [0 6]
+                                  {:charts [(chart/function {:f #(when-not (< 1 % 2) (m/sin %)) :domain [0 6]
                                                              :gaps :bridge :bridge {:alpha-factor 0.6 :dash :dotted}})]
                                    :labels {:title ":gaps :bridge"}}]
                                  {:columns 2})
@@ -285,11 +288,11 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/function))) :extent)
 
-(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(Math/tan %) :domain [0 3]})]
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/tan %) :domain [0 3]})]
                                    :labels {:title ":y-extent :quantiles (default)"}}
-                                  {:charts [(chart/function {:f #(Math/tan %) :domain [0 3] :y-extent :min-max})]
+                                  {:charts [(chart/function {:f #(m/tan %) :domain [0 3] :y-extent :min-max})]
                                    :labels {:title ":y-extent :min-max"}}
-                                  {:charts [(chart/function {:f #(Math/tan %) :domain [0 3] :y-limits [-5 5]})]
+                                  {:charts [(chart/function {:f #(m/tan %) :domain [0 3] :y-limits [-5 5]})]
                                    :labels {:title ":y-limits [-5 5]"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
@@ -297,7 +300,7 @@
 
 ;; The padding of the sampled span: none on x (the curve meets the panel's sides), a quarter of the span on y:
 
-(plot/render-image {:charts [(chart/function {:f #(Math/sin %) :domain [0 6.3] :padding {:x [0 0] :y [0.25 0.25]}})]
+(plot/render-image {:charts [(chart/function {:f #(m/sin %) :domain [0 6.3] :padding {:x [0 0] :y [0.25 0.25]}})]
                     :labels {:title ":padding {:x [0 0] :y [0.25 0.25]}"}}
                    {:width 500 :height 280})
 

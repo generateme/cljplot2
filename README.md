@@ -60,12 +60,12 @@ Use cases after the
 [R Graph Gallery](https://r-graph-gallery.com/) and [data-to-viz](https://www.data-to-viz.com/):
 
 - [Distribution](https://generateme.github.io/cljplot2/use_cases.distribution.html)
-- [Colors](https://generateme.github.io/cljplot2/use_cases.colors.html)
-- [Evolution](https://generateme.github.io/cljplot2/use_cases.evolution.html)
+- [Correlation](https://generateme.github.io/cljplot2/use_cases.correlation.html)
 - [Ranking](https://generateme.github.io/cljplot2/use_cases.ranking.html)
 - [Part of a whole](https://generateme.github.io/cljplot2/use_cases.part_of_a_whole.html)
-- [Correlation](https://generateme.github.io/cljplot2/use_cases.correlation.html)
+- [Evolution](https://generateme.github.io/cljplot2/use_cases.evolution.html)
 - [Flow](https://generateme.github.io/cljplot2/use_cases.flow.html)
+- [Colours](https://generateme.github.io/cljplot2/use_cases.colors.html)
 
 Galleries:
 

@@ -63,7 +63,9 @@
 
 ;; ### Ordered violins
 
-;; `levels/order-levels` orders the levels by any statistic of a value; the result is the scale's `:domain`.
+;; [`levels/order-levels`](reference.data_levels.html#levelsorder-levels) orders the levels by any statistic of a
+;; value; the result is the scale's `:domain`, its first level at the bottom (y grows upward) - ascending medians put
+;; the largest on top (setosa, first in the data and at the bottom by default).
 
 (nu/source-note {:source "R Graph Gallery - Violin plot (reorder)"
                  :url "https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html"
@@ -71,10 +73,10 @@
 
 (plot/render-image
  {:data iris
-  :mapping {:x :petal-width :y :species}
-  :scales {:y {:domain (levels/order-levels iris :species :petal-width stats/median {:descending true})}}
+  :mapping {:x :sepal-width :y :species}
+  :scales {:y {:domain (levels/order-levels iris :species :sepal-width stats/median)}}
   :charts [(chart/violin {:inner :quartiles})]
-  :labels {:title "Petal width, species by descending median" :x "petal width [cm]" :y nil}}
+  :labels {:title "Sepal width, species by median (largest on top)" :x "sepal width [cm]" :y nil}}
  {:width 800 :height 450})
 
 ;; ### Horizontal and vertical
@@ -474,27 +476,29 @@
 
 ;; ### Group order
 
+;; The band scale's `:order-by` orders the levels by a function of each level's rows, from the bottom up;
+;; `:descending true` reverses it.
+
 (nu/source-note {:source "R Graph Gallery - Reorder boxplot"
                  :url "https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html"
                  :dataset :barley})
 
 (plot/render-image
  (plot/arrange [{:data barley :mapping {:x :yield :y :variety}
-                 :scales {:y {:domain (levels/order-levels barley :variety :yield stats/median)}}
+                 :scales {:y {:order-by #(stats/median (map :yield %))}}
                  :charts [(chart/box)]
-                 :labels {:title "by median" :x "yield" :y nil}}
+                 :labels {:title "by median (largest on top)" :x "yield" :y nil}}
                 {:data barley :mapping {:x :yield :y :variety}
-                 :scales {:y {:domain (levels/order-levels barley :variety :yield stats/mean {:descending true})}}
+                 :scales {:y {:order-by #(stats/mean (map :yield %)) :descending true}}
                  :charts [(chart/box)]
-                 :labels {:title "by mean, descending" :x "yield" :y nil}}]
+                 :labels {:title "by mean, :descending (largest at the bottom)" :x "yield" :y nil}}]
                {:columns 2})
  {:width 1000 :height 500})
 
 ;; ### Highlight a group
 
-;; A derived column and an explicit colour scale: grey for the rest, red for the group in focus. A colour mapping
-;; makes groups, and groups inside a band dodge by default; `:position :overlay` keeps every box on its band's
-;; centre line (each band holds one group anyway).
+;; A derived column and an explicit colour scale: grey for the rest, red for the group in focus. Each band holds one
+;; colour group, so every box stays on its band's centre line.
 
 (nu/source-note {:source "R Graph Gallery - Highlight a group in boxplot"
                  :url "https://r-graph-gallery.com/23-add-colors-to-specific-groups-of-a-boxplot.html"
@@ -505,7 +509,7 @@
   :mapping {:x :hp :y :cyl :color :focus}
   :scales {:y {:type :categorical}
            :color {:domain ["other" "6 cylinders"] :range [[190 190 190] [215 48 39]]}}
-  :charts [(chart/box {:position :overlay})]
+  :charts [(chart/box)]
   :labels {:title "Horse power, 6 cylinders highlighted" :x "horse power" :y "cylinders"}}
  {:width 800 :height 400})
 
@@ -619,8 +623,9 @@
 ;; `chart/extent` draws an interval per group from fastmath.stats: here the 95% confidence interval of the mean,
 ;; mean ± standard deviation and a bootstrap percentile interval.
 
-(nu/source-note {:source "cljplot extents"
-                 :url "https://seaborn.pydata.org/generated/seaborn.pointplot.html"
+(nu/source-note {:source "seaborn - pointplot (confidence intervals); cljplot - extents"
+                 :url ["https://seaborn.pydata.org/generated/seaborn.pointplot.html"
+                       "https://github.com/generateme/cljplot/blob/master/sketches/examples.clj"]
                  :dataset :barley})
 
 (plot/render-image
@@ -650,7 +655,7 @@
 (plot/render-image
  {:data lincoln
   :mapping {:x :mean-temp :y :month}
-  :scales {:y {:domain (vec (reverse months))}}
+  :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5})]
   :labels {:title "Mean temperature in Lincoln, 2016" :x "mean temperature [F]" :y nil}}
  {:width 800 :height 650})
@@ -685,7 +690,7 @@
 (plot/render-image
  {:data lincoln
   :mapping {:x :max-temp :y :month}
-  :scales {:y {:domain (vec (reverse months))}}
+  :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5 :fill-gradient :mpl/plasma})]
   :labels {:title "Daily maximum temperature" :x "max temperature [F]" :y nil}}
  {:width 800 :height 650})
@@ -709,9 +714,8 @@
 ;; ## Beeswarm
 
 ;; Points packed across their band so none overlap (`:fit` squeezes a swarm that is too wide into its band).
-;; A colour mapping makes groups; inside a band groups dodge by default, so the coloured beeswarm sets
-;; `:position :overlay` (each species is alone in its band anyway), and the box opts out of the colour with
-;; `:mapping {:color nil}`.
+;; A colour mapping makes groups - here each species is alone in its band, so the swarm stays centred - and the box
+;; opts out of the colour with `:mapping {:color nil}`.
 
 (nu/source-note {:source "R Graph Gallery - Beeswarm"
                  :url ["https://r-graph-gallery.com/370-basic-beeswarm-plot.html" "https://r-graph-gallery.com/371-custom-dots-beeswarm.html" "https://r-graph-gallery.com/372-grouped-beeswarm.html"]
@@ -729,7 +733,7 @@
                  :labels {:title "dot style (:shape, :size)" :x "mpg" :y "cylinders"}}
                 {:data iris :mapping {:x :petal-length :y :species :color :species}
                  :charts [(chart/box {:outliers false :color [235 235 240] :width 0.6 :mapping {:color nil}})
-                          (chart/beeswarm {:size 5 :position :overlay})]
+                          (chart/beeswarm {:size 5})]
                  :labels {:title "coloured, over boxes" :x "petal length" :y nil}}]
                {:columns 2})
  {:width 1000 :height 700})
@@ -740,7 +744,7 @@
 
 ;; Jittered points; `:rng` makes the jitter reproducible.
 
-(nu/source-note {:source "lattice stripplot; cljplot strips"
+(nu/source-note {:source "lattice stripplot; seaborn stripplot"
                  :url ["http://lmdvr.r-forge.r-project.org/figures/figures.html" "https://seaborn.pydata.org/generated/seaborn.stripplot.html"]
                  :dataset :barley})
 
@@ -756,7 +760,7 @@
 
 ;; One line per value along the panel edge (`:edge`, the default without `:y`) or below y = 0 (`:bottom`).
 
-(nu/source-note {:source "cljplot rug; lattice densityplot"
+(nu/source-note {:source "seaborn rugplot; lattice densityplot"
                  :url ["https://seaborn.pydata.org/generated/seaborn.rugplot.html" "http://lmdvr.r-forge.r-project.org/figures/figures.html"]
                  :dataset :faithful})
 
@@ -770,10 +774,10 @@
 
 ;; ## 1d strips
 
-;; Every strip chart also works on one variable alone: without `:y` it is placed in the middle of the panel and
-;; the plot has no y axis.
+;; Every strip chart also works on one variable alone: without `:y` it is placed in the middle of the panel (the
+;; rug, on the panel's edge by default, takes `:place :center`) and the plot has no y axis.
 
-(nu/source-note {:source "seaborn 1d plots; cljplot strips"
+(nu/source-note {:source "seaborn boxplot, swarmplot (1d)"
                  :url ["https://seaborn.pydata.org/generated/seaborn.boxplot.html"
                        "https://seaborn.pydata.org/generated/seaborn.swarmplot.html"]
                  :dataset :faithful})
@@ -794,7 +798,7 @@
 
 ;; ## Empirical cumulative distribution
 
-(nu/source-note {:source "lattice ecdfplot"
+(nu/source-note {:source "lattice ecdfplot; seaborn ecdfplot"
                  :url ["http://lmdvr.r-forge.r-project.org/figures/figures.html" "https://seaborn.pydata.org/generated/seaborn.ecdfplot.html"]
                  :dataset :iris})
 

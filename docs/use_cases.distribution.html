@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./use_cases.colors.html" rel="next">
+<link href="./use_cases.correlation.html" rel="next">
 <link href="./reference.specific_cases.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -5840,15 +5840,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="ordered-violins" class="level3" data-number="30.1.2">
 <h3 data-number="30.1.2" class="anchored" data-anchor-id="ordered-violins"><span class="header-section-number">30.1.2</span> Ordered violins</h3>
-<p><code>levels/order-levels</code> orders the levels by any statistic of a value; the result is the scale’s <code>:domain</code>.</p>
+<p><a href="reference.data_levels.html#levelsorder-levels"><code>levels/order-levels</code></a> orders the levels by any statistic of a value; the result is the scale’s <code>:domain</code>, its first level at the bottom (y grows upward) - ascending medians put the largest on top (setosa, first in the data and at the bottom by default).</p>
 <p>Source: <a href="https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html">R Graph Gallery - Violin plot (reorder)</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> iris</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-width</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (levels/order-levels iris <span class="at">:species</span> <span class="at">:petal-width</span> stats/median {<span class="at">:descending</span> <span class="va">true</span>})}}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-width</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (levels/order-levels iris <span class="at">:species</span> <span class="at">:sepal-width</span> stats/median)}}</span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/violin {<span class="at">:inner</span> <span class="at">:quartiles</span>})]</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Petal width, species by descending median"</span> <span class="at">:x</span> <span class="st">"petal width [cm]"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Sepal width, species by median (largest on top)"</span> <span class="at">:x</span> <span class="st">"sepal width [cm]"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -7289,17 +7289,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="group-order" class="level3" data-number="30.4.3">
 <h3 data-number="30.4.3" class="anchored" data-anchor-id="group-order"><span class="header-section-number">30.4.3</span> Group order</h3>
+<p>The band scale’s <code>:order-by</code> orders the levels by a function of each level’s rows, from the bottom up; <code>:descending true</code> reverses it.</p>
 <p>Source: <a href="https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html">R Graph Gallery - Reorder boxplot</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange [{<span class="at">:data</span> barley <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:yield</span> <span class="at">:y</span> <span class="at">:variety</span>}</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (levels/order-levels barley <span class="at">:variety</span> <span class="at">:yield</span> stats/median)}}</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:order-by</span> #(stats/median (<span class="kw">map</span> <span class="at">:yield</span> <span class="va">%</span>))}}</span>
 <span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/box)]</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"by median"</span> <span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"by median (largest on top)"</span> <span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
 <span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> barley <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:yield</span> <span class="at">:y</span> <span class="at">:variety</span>}</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (levels/order-levels barley <span class="at">:variety</span> <span class="at">:yield</span> stats/mean {<span class="at">:descending</span> <span class="va">true</span>})}}</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:order-by</span> #(stats/mean (<span class="kw">map</span> <span class="at">:yield</span> <span class="va">%</span>)) <span class="at">:descending</span> <span class="va">true</span>}}</span>
 <span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/box)]</span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"by mean, descending"</span> <span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"by mean, :descending (largest at the bottom)"</span> <span class="at">:x</span> <span class="st">"yield"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
 <span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -7309,7 +7310,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="highlight-a-group" class="level3" data-number="30.4.4">
 <h3 data-number="30.4.4" class="anchored" data-anchor-id="highlight-a-group"><span class="header-section-number">30.4.4</span> Highlight a group</h3>
-<p>A derived column and an explicit colour scale: grey for the rest, red for the group in focus. A colour mapping makes groups, and groups inside a band dodge by default; <code>:position :overlay</code> keeps every box on its band’s centre line (each band holds one group anyway).</p>
+<p>A derived column and an explicit colour scale: grey for the rest, red for the group in focus. Each band holds one colour group, so every box stays on its band’s centre line.</p>
 <p>Source: <a href="https://r-graph-gallery.com/23-add-colors-to-specific-groups-of-a-boxplot.html">R Graph Gallery - Highlight a group in boxplot</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7317,7 +7318,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:cyl</span> <span class="at">:color</span> <span class="at">:focus</span>}</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:type</span> <span class="at">:categorical</span>}</span>
 <span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"other"</span> <span class="st">"6 cylinders"</span>] <span class="at">:range</span> [[<span class="dv">190</span> <span class="dv">190</span> <span class="dv">190</span>] [<span class="dv">215</span> <span class="dv">48</span> <span class="dv">39</span>]]}}</span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box {<span class="at">:position</span> <span class="at">:overlay</span>})]</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/box)]</span>
 <span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Horse power, 6 cylinders highlighted"</span> <span class="at">:x</span> <span class="st">"horse power"</span> <span class="at">:y</span> <span class="st">"cylinders"</span>}}</span>
 <span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -7442,7 +7443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="intervals" class="level3" data-number="30.4.12">
 <h3 data-number="30.4.12" class="anchored" data-anchor-id="intervals"><span class="header-section-number">30.4.12</span> Intervals</h3>
 <p><code>chart/extent</code> draws an interval per group from fastmath.stats: here the 95% confidence interval of the mean, mean ± standard deviation and a bootstrap percentile interval.</p>
-<p>Source: <a href="https://seaborn.pydata.org/generated/seaborn.pointplot.html">cljplot extents</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
+<p>Source: seaborn - pointplot (confidence intervals); cljplot - extents (<a href="https://seaborn.pydata.org/generated/seaborn.pointplot.html">1</a>, <a href="https://github.com/generateme/cljplot/blob/master/sketches/examples.clj">2</a>). Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange (<span class="kw">for</span> [[title opts] [[<span class="st">":ci"</span> {<span class="at">:method</span> <span class="at">:ci</span>}]</span>
@@ -7473,7 +7474,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> lincoln</span>
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:mean-temp</span> <span class="at">:y</span> <span class="at">:month</span>}</span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (<span class="kw">vec</span> (<span class="kw">reverse</span> months))}}</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> months <span class="at">:reverse</span> <span class="va">true</span>}}</span>
 <span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density {<span class="at">:overlap</span> <span class="fl">1.5</span>})]</span>
 <span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Mean temperature in Lincoln, 2016"</span> <span class="at">:x</span> <span class="st">"mean temperature [F]"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
 <span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -7510,7 +7511,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> lincoln</span>
 <span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:max-temp</span> <span class="at">:y</span> <span class="at">:month</span>}</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (<span class="kw">vec</span> (<span class="kw">reverse</span> months))}}</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> months <span class="at">:reverse</span> <span class="va">true</span>}}</span>
 <span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/density {<span class="at">:overlap</span> <span class="fl">1.5</span> <span class="at">:fill-gradient</span> <span class="at">:mpl/plasma</span>})]</span>
 <span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Daily maximum temperature"</span> <span class="at">:x</span> <span class="st">"max temperature [F]"</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
 <span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">650</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -7539,7 +7540,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="beeswarm" class="level2" data-number="30.6">
 <h2 data-number="30.6" class="anchored" data-anchor-id="beeswarm"><span class="header-section-number">30.6</span> Beeswarm</h2>
-<p>Points packed across their band so none overlap (<code>:fit</code> squeezes a swarm that is too wide into its band). A colour mapping makes groups; inside a band groups dodge by default, so the coloured beeswarm sets <code>:position :overlay</code> (each species is alone in its band anyway), and the box opts out of the colour with <code>:mapping {:color nil}</code>.</p>
+<p>Points packed across their band so none overlap (<code>:fit</code> squeezes a swarm that is too wide into its band). A colour mapping makes groups - here each species is alone in its band, so the swarm stays centred - and the box opts out of the colour with <code>:mapping {:color nil}</code>.</p>
 <p>Source: R Graph Gallery - Beeswarm (<a href="https://r-graph-gallery.com/370-basic-beeswarm-plot.html">1</a>, <a href="https://r-graph-gallery.com/371-custom-dots-beeswarm.html">2</a>, <a href="https://r-graph-gallery.com/372-grouped-beeswarm.html">3</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7554,7 +7555,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"dot style (:shape, :size)"</span> <span class="at">:x</span> <span class="st">"mpg"</span> <span class="at">:y</span> <span class="st">"cylinders"</span>}}</span>
 <span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-length</span> <span class="at">:y</span> <span class="at">:species</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
 <span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/box {<span class="at">:outliers</span> <span class="va">false</span> <span class="at">:color</span> [<span class="dv">235</span> <span class="dv">235</span> <span class="dv">240</span>] <span class="at">:width</span> <span class="fl">0.6</span> <span class="at">:mapping</span> {<span class="at">:color</span> <span class="va">nil</span>}})</span>
-<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>                          (chart/beeswarm {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:position</span> <span class="at">:overlay</span>})]</span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>                          (chart/beeswarm {<span class="at">:size</span> <span class="dv">5</span>})]</span>
 <span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"coloured, over boxes"</span> <span class="at">:x</span> <span class="st">"petal length"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
 <span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:columns</span> <span class="dv">2</span>})</span>
 <span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">700</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -7568,7 +7569,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="strip-plot" class="level3" data-number="30.7.1">
 <h3 data-number="30.7.1" class="anchored" data-anchor-id="strip-plot"><span class="header-section-number">30.7.1</span> Strip plot</h3>
 <p>Jittered points; <code>:rng</code> makes the jitter reproducible.</p>
-<p>Source: lattice stripplot; cljplot strips (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.stripplot.html">2</a>). Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
+<p>Source: lattice stripplot; seaborn stripplot (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.stripplot.html">2</a>). Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> barley</span>
@@ -7585,7 +7586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="rug" class="level3" data-number="30.7.2">
 <h3 data-number="30.7.2" class="anchored" data-anchor-id="rug"><span class="header-section-number">30.7.2</span> Rug</h3>
 <p>One line per value along the panel edge (<code>:edge</code>, the default without <code>:y</code>) or below y = 0 (<code>:bottom</code>).</p>
-<p>Source: cljplot rug; lattice densityplot (<a href="https://seaborn.pydata.org/generated/seaborn.rugplot.html">1</a>, <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<p>Source: seaborn rugplot; lattice densityplot (<a href="https://seaborn.pydata.org/generated/seaborn.rugplot.html">1</a>, <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange [{<span class="at">:data</span> faithful <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:waiting</span>} <span class="at">:charts</span> [(chart/density) (chart/rug)]</span>
@@ -7602,8 +7603,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="d-strips" class="level2" data-number="30.8">
 <h2 data-number="30.8" class="anchored" data-anchor-id="d-strips"><span class="header-section-number">30.8</span> 1d strips</h2>
-<p>Every strip chart also works on one variable alone: without <code>:y</code> it is placed in the middle of the panel and the plot has no y axis.</p>
-<p>Source: seaborn 1d plots; cljplot strips (<a href="https://seaborn.pydata.org/generated/seaborn.boxplot.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.swarmplot.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
+<p>Every strip chart also works on one variable alone: without <code>:y</code> it is placed in the middle of the panel (the rug, on the panel’s edge by default, takes <code>:place :center</code>) and the plot has no y axis.</p>
+<p>Source: seaborn boxplot, swarmplot (1d) (<a href="https://seaborn.pydata.org/generated/seaborn.boxplot.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.swarmplot.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a> (plot/arrange (<span class="kw">for</span> [[title c] [[<span class="st">"box"</span> (chart/box)]</span>
@@ -7625,7 +7626,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="empirical-cumulative-distribution" class="level2" data-number="30.9">
 <h2 data-number="30.9" class="anchored" data-anchor-id="empirical-cumulative-distribution"><span class="header-section-number">30.9</span> Empirical cumulative distribution</h2>
-<p>Source: lattice ecdfplot (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.ecdfplot.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
+<p>Source: lattice ecdfplot; seaborn ecdfplot (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.ecdfplot.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> iris</span>
@@ -8051,8 +8052,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./use_cases.colors.html" class="pagination-link" aria-label="Colors">
-        <span class="nav-page-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./use_cases.correlation.html" class="pagination-link" aria-label="Correlation">
+        <span class="nav-page-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

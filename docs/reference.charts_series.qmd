@@ -37,7 +37,8 @@ shared option groups it takes (documented once in the Shared options chapter).
 ::: {.sourceClojure}
 ```clojure
 (ns reference.charts-series
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
@@ -96,7 +97,7 @@ A band per group between a lower and an upper bound at each x - an interval, a r
 ::: {.sourceClojure}
 ```clojure
 (def bands (for [g ["low" "high"] t (range 0 25)]
-             (let [c (+ (if (= g "low") 1.0 4.0) (Math/sin (* 0.3 t)))
+             (let [c (+ (if (= g "low") 1.0 4.0) (m/sin (* 0.3 t)))
                    w (+ 0.4 (* 0.04 t))]
                {:group g :t t :lo (- c w) :mid c :hi (+ c w)})))
 ```
@@ -130,7 +131,7 @@ Its options: the band's colour and fill, its edges, and a gradient instead of a 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>band colour (a mapped :color wins)</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:color</td><td>band fill: :color (the band colour at :alpha), a colour or :none</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.3</td><td>fill opacity of :fill :color</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>colour of both bounds' edges: a colour, :none or :color (the band colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>edge width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the edges (a mapped :dash wins)</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x</td><td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>band colour (a mapped :color wins)</td></tr><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:color</td><td>band fill: :color (the band colour at :alpha), a colour or :none</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.3</td><td>fill opacity of :fill :color</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>colour of both bounds' edges: a colour, :none or :color (the band colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>edge width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the edges (a mapped :dash wins)</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x</td><td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -337,14 +338,15 @@ its fill:
 :::
 
 
-The default band of a fitted method, given explicitly (`:band :confidence`), and no band (`:band :none`):
+The confidence band (`:band :confidence`, the default of `:loess`, `:lm`, `:glm` and `:gp`) at a higher level - a
+wider band, in its own fill - and no band (`:band :none`):
 
 
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :confidence})]
-                                   :labels {:title ":band :confidence"}}
+                                   :charts [(chart/scatter) (chart/smooth {:band :confidence :level 0.999 :fill [200 80 40 90]})]
+                                   :labels {:title ":band :confidence, :level 0.999"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:band :none})]
                                    :labels {:title ":band :none"}}]
@@ -398,7 +400,7 @@ Its options: the up and down colours and patterns, body and wick widths, and the
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:up-color</td><td>a clojure2d color or :none</td><td>[26.0 152.0 80.0 255.0]</td><td>colour of a candle closing at or above its open</td></tr><tr><td>:down-color</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of a candle closing below its open</td></tr><tr><td>:width</td><td>a number in [0 1]</td><td>0.7</td><td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>wick (and OHLC bar) line width in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>body outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>body outline width in pixels</td></tr><tr><td>:up-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of up candles</td></tr><tr><td>:down-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of down candles</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened body colour)</td></tr><tr><td>:style</td><td>one of :candle :ohlc</td><td>:candle</td><td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:up-color</td><td>a clojure2d color or :none</td><td>[26 152 80]</td><td>colour of a candle closing at or above its open</td></tr><tr><td>:down-color</td><td>a clojure2d color or :none</td><td>[215 48 39]</td><td>colour of a candle closing below its open</td></tr><tr><td>:width</td><td>a number in [0 1]</td><td>0.7</td><td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>wick (and OHLC bar) line width in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>body outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>body outline width in pixels</td></tr><tr><td>:up-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of up candles</td></tr><tr><td>:down-pattern</td><td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td><td>:solid</td><td>pattern drawn over the bodies of down candles</td></tr><tr><td>:pattern-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>pattern ink: a colour, :none or :darker (the darkened body colour)</td></tr><tr><td>:style</td><td>one of :candle :ohlc</td><td>:candle</td><td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::

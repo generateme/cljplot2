@@ -37,7 +37,8 @@ forwards to are shared groups (Shared options).
 ::: {.sourceClojure}
 ```clojure
 (ns reference.builders-series
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -45,20 +46,19 @@ forwards to are shared groups (Shared options).
 :::
 
 
-An autoregressive series AR(1) with coefficient 0.7, 200 values from a seeded generator:
+An autoregressive series AR(1) with coefficient 0.7, 200 values - fastmath `r/ar` over seeded white noise:
 
 
 ::: {.sourceClojure}
 ```clojure
-(def ar1 (let [g (r/rng :mersenne 11)]
-           (vec (reductions (fn [x _] (+ (* 0.7 x) (r/grandom g))) 0.0 (range 199)))))
+(def ar1 (vec (take 200 (r/ar 0.7 (r/white-noise (r/rng :mersenne 11) 1.0)))))
 ```
 :::
 
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>value</th></tr></thead><tbody><tr><td>0</td><td>0.0</td></tr><tr><td>1</td><td>-1.9354135624386053</td></tr><tr><td>2</td><td>-2.3390693269827025</td></tr><tr><td>3</td><td>-0.8681059991636939</td></tr><tr><td>4</td><td>-0.13246657175036403</td></tr><tr><td>5</td><td>-0.16733061455991885</td></tr><tr><td>6</td><td>0.2694449098582038</td></tr><tr><td>7</td><td>0.7626152170591383</td></tr><tr><td>8</td><td>1.1643101963530955</td></tr><tr><td>9</td><td>1.680869004658373</td></tr><tr><td>10</td><td>0.5178927660569208</td></tr><tr><td>11</td><td>1.560261885121078</td></tr><tr><td>12</td><td>2.4418647463226844</td></tr><tr><td>13</td><td>2.043455780603937</td></tr><tr><td>14</td><td>1.3350134131667004</td></tr><tr><td>15</td><td>1.354758198765417</td></tr><tr><td>16</td><td>2.1640502223875067</td></tr><tr><td>17</td><td>1.454799683098602</td></tr><tr><td>18</td><td>1.3371138223355488</td></tr><tr><td>19</td><td>-0.33367593984463084</td></tr><tr><td>20</td><td>-0.005741120165596719</td></tr><tr><td>21</td><td>0.7212290841961994</td></tr><tr><td>22</td><td>-0.1195911846804324</td></tr><tr><td>23</td><td>-0.6812899355665778</td></tr><tr><td>24</td><td>-0.8392514895150631</td></tr><tr><td>25</td><td>-0.9029773174253988</td></tr><tr><td>26</td><td>1.2775138991235113</td></tr><tr><td>27</td><td>1.3052496901727149</td></tr><tr><td>28</td><td>0.10749064244688167</td></tr><tr><td>29</td><td>2.182404272999568</td></tr><tr><td>30</td><td>0.8020152567350689</td></tr><tr><td>31</td><td>2.2480086429639803</td></tr><tr><td>32</td><td>-0.5815891130571396</td></tr><tr><td>33</td><td>-1.2200475860286044</td></tr><tr><td>34</td><td>-0.9148598795692016</td></tr><tr><td>35</td><td>-1.9929339785508062</td></tr><tr><td>36</td><td>-1.167556833223004</td></tr><tr><td>37</td><td>1.1831111606916571</td></tr><tr><td>38</td><td>1.6305003825662951</td></tr><tr><td>39</td><td>0.4225635017131969</td></tr><tr><td>40</td><td>-1.070811370568912</td></tr><tr><td>41</td><td>0.4073366876810065</td></tr><tr><td>42</td><td>-0.07175255029977834</td></tr><tr><td>43</td><td>0.7898405901980585</td></tr><tr><td>44</td><td>0.8608244191036003</td></tr><tr><td>45</td><td>-0.005997950498821458</td></tr><tr><td>46</td><td>-0.5461824357074251</td></tr><tr><td>47</td><td>2.655506073055612</td></tr><tr><td>48</td><td>1.9812883429230417</td></tr><tr><td>49</td><td>0.948280488545405</td></tr><tr><td>50</td><td>0.9976731056744998</td></tr><tr><td>51</td><td>-1.9587787208592302</td></tr><tr><td>52</td><td>-3.5257537738930718</td></tr><tr><td>53</td><td>-2.5932394631294877</td></tr><tr><td>54</td><td>-1.249754246667226</td></tr><tr><td>55</td><td>-2.1034623224484736</td></tr><tr><td>56</td><td>-3.159937484622108</td></tr><tr><td>57</td><td>-3.512030778343192</td></tr><tr><td>58</td><td>-1.9824140637082557</td></tr><tr><td>59</td><td>-2.7829299042529643</td></tr><tr><td>60</td><td>-0.7251573880955828</td></tr><tr><td>61</td><td>-2.072278723660861</td></tr><tr><td>62</td><td>-1.0646342854393418</td></tr><tr><td>63</td><td>-0.4425713020860106</td></tr><tr><td>64</td><td>2.3819350973526423</td></tr><tr><td>65</td><td>2.1408183231391726</td></tr><tr><td>66</td><td>2.454973829360471</td></tr><tr><td>67</td><td>1.4344731917553755</td></tr><tr><td>68</td><td>1.125009999016245</td></tr><tr><td>69</td><td>0.3900070091799304</td></tr><tr><td>70</td><td>-0.7798167218950482</td></tr><tr><td>71</td><td>-0.3342879904823223</td></tr><tr><td>72</td><td>-1.2177391464355098</td></tr><tr><td>73</td><td>0.830731254431112</td></tr><tr><td>74</td><td>0.10821172392000628</td></tr><tr><td>75</td><td>1.2554472029584907</td></tr><tr><td>76</td><td>2.055272585431415</td></tr><tr><td>77</td><td>1.9197473121469386</td></tr><tr><td>78</td><td>1.5763890837670425</td></tr><tr><td>79</td><td>0.23473624714674302</td></tr><tr><td>80</td><td>-0.4411380370130055</td></tr><tr><td>81</td><td>0.03595011068533288</td></tr><tr><td>82</td><td>0.5780803296515352</td></tr><tr><td>83</td><td>1.976207445760896</td></tr><tr><td>84</td><td>1.2935392991386372</td></tr><tr><td>85</td><td>0.8185818425230671</td></tr><tr><td>86</td><td>1.3847837486133925</td></tr><tr><td>87</td><td>0.5583438287031932</td></tr><tr><td>88</td><td>0.7293396933606422</td></tr><tr><td>89</td><td>1.0648721217498003</td></tr><tr><td>90</td><td>0.9532085696520289</td></tr><tr><td>91</td><td>-1.4352271508574979</td></tr><tr><td>92</td><td>-1.2974772446685645</td></tr><tr><td>93</td><td>-2.1190706412323617</td></tr><tr><td>94</td><td>-1.1131573532939294</td></tr><tr><td>95</td><td>-0.9832765035361701</td></tr><tr><td>96</td><td>-2.403094269423963</td></tr><tr><td>97</td><td>-0.5890607058790454</td></tr><tr><td>98</td><td>-1.0802952423453056</td></tr><tr><td>99</td><td>0.04424478384844799</td></tr><tr><td>…</td><td>…</td></tr></tbody></table></div>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>-0.8681059991636939</td></tr><tr><td>-0.13246657175036403</td></tr><tr><td>-0.16733061455991885</td></tr><tr><td>0.2694449098582038</td></tr><tr><td>0.7626152170591383</td></tr><tr><td>1.1643101963530955</td></tr><tr><td>1.680869004658373</td></tr><tr><td>0.5178927660569208</td></tr><tr><td>1.560261885121078</td></tr><tr><td>2.4418647463226844</td></tr><tr><td>2.043455780603937</td></tr><tr><td>1.3350134131667004</td></tr><tr><td>1.354758198765417</td></tr><tr><td>2.1640502223875067</td></tr><tr><td>1.454799683098602</td></tr><tr><td>1.3371138223355488</td></tr><tr><td>-0.33367593984463084</td></tr><tr><td>-0.005741120165596719</td></tr><tr><td>0.7212290841961994</td></tr><tr><td>-0.1195911846804324</td></tr><tr><td>-0.6812899355665778</td></tr><tr><td>-0.8392514895150631</td></tr><tr><td>-0.9029773174253988</td></tr><tr><td>1.2775138991235113</td></tr><tr><td>1.3052496901727149</td></tr><tr><td>0.10749064244688167</td></tr><tr><td>2.182404272999568</td></tr><tr><td>0.8020152567350689</td></tr><tr><td>2.2480086429639803</td></tr><tr><td>-0.5815891130571396</td></tr><tr><td>-1.2200475860286044</td></tr><tr><td>-0.9148598795692016</td></tr><tr><td>-1.9929339785508062</td></tr><tr><td>-1.167556833223004</td></tr><tr><td>1.1831111606916571</td></tr><tr><td>1.6305003825662951</td></tr><tr><td>0.4225635017131969</td></tr><tr><td>-1.070811370568912</td></tr><tr><td>0.4073366876810065</td></tr><tr><td>-0.07175255029977834</td></tr><tr><td>0.7898405901980585</td></tr><tr><td>0.8608244191036003</td></tr><tr><td>-0.005997950498821458</td></tr><tr><td>-0.5461824357074251</td></tr><tr><td>2.655506073055612</td></tr><tr><td>1.9812883429230417</td></tr><tr><td>0.948280488545405</td></tr><tr><td>0.9976731056744998</td></tr><tr><td>-1.9587787208592302</td></tr><tr><td>-3.5257537738930718</td></tr><tr><td>-2.5932394631294877</td></tr><tr><td>-1.249754246667226</td></tr><tr><td>-2.1034623224484736</td></tr><tr><td>-3.159937484622108</td></tr><tr><td>-3.512030778343192</td></tr><tr><td>-1.9824140637082557</td></tr><tr><td>-2.7829299042529643</td></tr><tr><td>-0.7251573880955828</td></tr><tr><td>-2.072278723660861</td></tr><tr><td>-1.0646342854393418</td></tr><tr><td>-0.4425713020860106</td></tr><tr><td>2.3819350973526423</td></tr><tr><td>2.1408183231391726</td></tr><tr><td>2.454973829360471</td></tr><tr><td>1.4344731917553755</td></tr><tr><td>1.125009999016245</td></tr><tr><td>0.3900070091799304</td></tr><tr><td>-0.7798167218950482</td></tr><tr><td>-0.3342879904823223</td></tr><tr><td>-1.2177391464355098</td></tr><tr><td>0.830731254431112</td></tr><tr><td>0.10821172392000628</td></tr><tr><td>1.2554472029584907</td></tr><tr><td>2.055272585431415</td></tr><tr><td>1.9197473121469386</td></tr><tr><td>1.5763890837670425</td></tr><tr><td>0.23473624714674302</td></tr><tr><td>-0.4411380370130055</td></tr><tr><td>0.03595011068533288</td></tr><tr><td>0.5780803296515352</td></tr><tr><td>1.976207445760896</td></tr><tr><td>1.2935392991386372</td></tr><tr><td>0.8185818425230671</td></tr><tr><td>1.3847837486133925</td></tr><tr><td>0.5583438287031932</td></tr><tr><td>0.7293396933606422</td></tr><tr><td>1.0648721217498003</td></tr><tr><td>0.9532085696520289</td></tr><tr><td>-1.4352271508574979</td></tr><tr><td>-1.2974772446685645</td></tr><tr><td>-2.1190706412323617</td></tr><tr><td>-1.1131573532939294</td></tr><tr><td>-0.9832765035361701</td></tr><tr><td>-2.403094269423963</td></tr><tr><td>-0.5890607058790454</td></tr><tr><td>-1.0802952423453056</td></tr><tr><td>0.04424478384844799</td></tr><tr><td>0.26756324821161415</td></tr><tr><td>-0.8344349067989484</td></tr><tr><td>-1.0274184534958086</td></tr><tr><td>…</td></tr></tbody></table></div>
 ```
 
 
@@ -66,12 +66,12 @@ An autoregressive series AR(1) with coefficient 0.7, 200 values from a seeded ge
 ## acf
 
 The autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag: a stem per lag, a
-significance band around zero, the lags outside it marked.
+significance band around zero, the lags outside it marked (lag 0, always 1, is not marked).
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:correlograms</td><td>one of :both :acf :pacf or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or :pacf</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215.0 48.0 39.0 255.0]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:correlograms</td><td>one of :both :acf :pacf or nil</td><td>:both</td><td>the correlograms drawn: :both (ACF above PACF), :acf or :pacf</td></tr><tr><td>:band</td><td>one of :smooth :stepped or nil</td><td>:smooth</td><td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td></tr><tr><td>:colors</td><td>map</td><td></td><td>colours of the stems and points, the band and the significant lags' points</td></tr><tr><td>:colors :stem</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>colour of the stems and points</td></tr><tr><td>:colors :band</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>colour of the significance band</td></tr><tr><td>:colors :significant</td><td>a clojure2d color or :none</td><td>[215 48 39]</td><td>colour of the points of lags outside the band</td></tr></tbody></table>
 ```
 
 :::
@@ -97,7 +97,7 @@ One correlogram - the ACF (`:acf`) or the PACF (`:pacf`) - and the band as a blo
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [(plot/acf ar1 {:correlograms :acf :band :stepped :title ":correlograms :acf, :band :stepped"})
-                                  (plot/acf ar1 {:correlograms :pacf :band :smooth :title ":correlograms :pacf"})]
+                                  (plot/acf ar1 {:correlograms :pacf :title ":correlograms :pacf"})]
                                  {:columns 2})
                    {:width 1000 :height 300})
 ```
@@ -133,7 +133,7 @@ colours are the `:colors` option):
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -178,7 +178,7 @@ with x, y and (several series) a series column.
 ```clojure
 (def waves (for [[i series] (map-indexed vector ["north" "south" "east"]) t (range 0 100 2)]
              {:t t :series series
-              :v (* (+ 1.0 i) (Math/sin (+ (* (+ 0.05 (* 0.03 i)) t) (* 1.3 i))) (+ 1 (* 0.01 t)))}))
+              :v (m/* (m/inc i) (m/sin (m/+ (m/* (m/+ 0.05 (m/* 0.03 i)) t) (m/* 1.3 i))) (m/inc (m/* 0.01 t)))}))
 ```
 :::
 

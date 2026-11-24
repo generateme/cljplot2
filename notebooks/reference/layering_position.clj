@@ -4,16 +4,18 @@
 ;; Grouped marks of one chart are placed by its `:position` option: side by side, stacked, normalized or overlaid.
 
 (ns reference.layering-position
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
 
 ;; ## Layers
 
-;; A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions
-;; instead of data and inherit only the plot's facet keys. Their extent counts for the scales unless
-;; `:extent false` (the Annotation options group):
+;; A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions or
+;; a function instead of data and inherit only the plot's facet keys. The positions of `rule`, `rect` and `text`
+;; count for the scales unless `:extent false` (the Annotation options group, shown at work in
+;; [Shared options](reference.shared_options.html#annotation-options)):
 
 (nu/options-table (describe/fragment-rows :annotation))
 
@@ -22,6 +24,10 @@
 (def faithful (nu/dataset :faithful))
 
 (nu/data-table faithful)
+
+;; The layers bottom to top: a shaded x range ([rect](reference.charts_annotations.html#rect) `:x [lo hi]`,
+;; `:fill`), the points, a smooth curve, a dashed [rule](reference.charts_annotations.html#rule) at 70 minutes and
+;; a [text](reference.charts_annotations.html#text) note at a literal position:
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -32,18 +38,6 @@
                              (chart/text {:x 4.5 :y 97 :text "long eruptions"})]
                     :labels {:x "eruptions [min]" :y "waiting [min]"}}
                    {:width 600 :height 400})
-
-;; `:extent` decides whether an annotation's positions count for the scales: a rule at 110 minutes stretches the
-;; y axis to reach it (left); with `:extent false` the axis keeps the data's range and the rule is off the panel
-;; (right):
-
-(plot/render-image (plot/arrange (for [extent [true false]]
-                                   {:data faithful
-                                    :mapping {:x :eruptions :y :waiting}
-                                    :charts [(chart/scatter) (chart/rule {:y 110 :extent extent :dash :dashed})]
-                                    :labels {:title (str ":extent " extent)}})
-                                 {:columns 2})
-                   {:width 800 :height 300})
 
 ;; ## Position of groups
 
@@ -83,10 +77,10 @@
                    {:width 900 :height 320})
 
 ;; Streamgraphs: the stack shifted around a centre line - `:silhouette` symmetric, `:wiggle` with the least
-;; movement:
+;; movement (lines filled in their colour, [line](reference.charts_points_paths.html#line) `:fill :color`):
 
 (def streams (for [series ["a" "b" "c" "d"] t (range 30)]
-               {:series series :t t :v (+ 2 (Math/sin (+ (* 0.3 t) (count series) (* 1.7 (int (first series))))))}))
+               {:series series :t t :v (+ 2 (m/sin (+ (* 0.3 t) (count series) (* 1.7 (int (first series))))))}))
 
 (nu/data-table streams)
 

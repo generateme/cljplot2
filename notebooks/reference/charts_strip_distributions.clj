@@ -2,8 +2,8 @@
 
 ;; Strip charts showing the distribution of each level's values: summaries (`box`, `violin`) and the values
 ;; themselves (`stripplot`, `beeswarm`, `dotplot`, `rug`). Placement, width and grouping across the strip are the
-;; Strip options group every one of them takes. Each chart lists the mapping keys it reads, its own options and the
-;; shared option groups it takes.
+;; [Strip options](reference.shared_options.html#strip-options) group every one of them takes. Each chart lists the
+;; mapping keys it reads, its own options and the shared option groups it takes.
 
 (ns reference.charts-strip-distributions
   (:require [fastmath.random :as r]
@@ -57,23 +57,24 @@
                    {:width 600 :height 280})
 
 ;; Its options: the box and outlier style, the statistics, outliers on or off, the mean marker, widths by count and
-;; the Tufte variant (whisker lines and a median point):
+;; the Tufte variant (whisker lines and a median point) - here on rear axle ratios, with outliers in the 4- and
+;; 8-cylinder groups:
 
 (nu/options-table (describe/own-rows (describe/options (chart/box))))
 
 (plot/render-image (plot/arrange [{:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:color [230 160 60] :stroke-color :black :stroke-width 2 :shape \x :size 9
                                                         :mean true})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title "style, :mean true"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:outliers false :varwidth true})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":outliers false, :varwidth"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:variant :tufte})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":variant :tufte"}}]
@@ -83,12 +84,12 @@
 ;; `:padding` - space past the values along the value axis, fractions of their span (default 5% each side):
 
 (plot/render-image (plot/arrange [{:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box)]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title "default padding"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:padding {:x [0.4 0.4]}})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":padding {:x [0.4 0.4]}"}}]
@@ -129,6 +130,24 @@
                                    :labels {:title ":scale :count, :inner :points"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})
+
+;; The inner marks' sizes and the quartile dash are theme keys of `[:chart :violin]`, not options:
+
+(nu/options-table (describe/style-rows :violin [:inner-box-width :inner-median-size :inner-quartile-dash
+                                                :inner-rug-width :inner-point-size]))
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin)]
+                                   :theme {:chart {:violin {:inner-box-width 10 :inner-median-size 8}}}
+                                   :labels {:title "wider inner box, bigger median"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :quartiles})]
+                                   :theme {:chart {:violin {:inner-quartile-dash [1.0 2.0]}}}
+                                   :labels {:title "dotted quartiles"}}]
+                                 {:columns 2})
+                   {:width 800 :height 320})
 
 ;; The fill and outline, and the density estimate: another kernel, few evaluation points (a coarse outline),
 ;; widths by count (`:varwidth`) and the padding:
@@ -211,7 +230,7 @@
                                    :labels {:title ":jitter 0"}}
                                   {:data iris
                                    :mapping {:x :sepal-length :y :species}
-                                   :charts [(chart/stripplot {:jitter 0.8 :size 8 :shape \s :color [200 80 40 90]
+                                   :charts [(chart/stripplot {:jitter 0.8 :size 8 :shape \S :color [200 80 40 90]
                                                               :stroke-color [120 40 20] :stroke-width 1.5
                                                               :rng (r/rng :mersenne 1)})]
                                    :scales {:y {:reverse true}}
@@ -305,24 +324,19 @@
                                  {:columns 3})
                    {:width 1000 :height 280})
 
-;; The defaults spelled out (`:dot-density` binning, dots at the bin `:center`, stacked `:up`), then a style - a
-;; fixed dot size, outlined squares - and the padding:
+;; A style - a fixed dot size, outlined squares - and the padding:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg}
-                                   :charts [(chart/dotplot {:binwidth 1.5 :method :dot-density :at :center :stack-dir :up})]
-                                   :labels {:title "defaults"}}
-                                  {:data mtcars
-                                   :mapping {:x :mpg}
-                                   :charts [(chart/dotplot {:binwidth 1.5 :size 7 :shape \s :color [230 160 60]
+                                   :charts [(chart/dotplot {:binwidth 1.5 :size 7 :shape \S :color [230 160 60]
                                                             :stroke-color :black :stroke-width 1})]
                                    :labels {:title ":size 7, outlined squares"}}
                                   {:data mtcars
                                    :mapping {:x :mpg}
                                    :charts [(chart/dotplot {:binwidth 1.5 :padding {:x [0.3 0.3]}})]
                                    :labels {:title ":padding {:x [0.3 0.3]}"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 280})
+                                 {:columns 2})
+                   {:width 800 :height 280})
 
 (nu/shared-groups (describe/options (chart/dotplot)))
 

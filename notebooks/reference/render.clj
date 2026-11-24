@@ -40,11 +40,12 @@
 ;; ## Inspection
 
 ;; Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
-;; content - panel, axes, axis titles, legend:
+;; content - panel, axes, axis titles, legend (axis titles added here):
 
 (nu/options-table (describe/options pipeline/options-schema) :inspection)
 
-(plot/render-image iris-plot {:width 500 :height 300 :debug true})
+(plot/render-image (assoc iris-plot :labels {:x "sepal length" :y "petal length"})
+                   {:width 500 :height 300 :debug true})
 
 ;; `:until` stops the build after a stage; the built plot is data. Here the build stops after `:extents` - the
 ;; extent of each mapped dimension:

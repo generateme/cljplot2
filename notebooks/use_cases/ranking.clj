@@ -6,7 +6,9 @@
 ;;
 ;; Bars are a strip chart: the levels sit on the categorical axis - `{:x :country :y :value}` draws vertical bars,
 ;; `{:x :value :y :country}` horizontal ones (`:level-axis` decides when both or neither axis is categorical). Order
-;; comes from the data (levels in first-appearance order: left to right, bottom to top) or an explicit `:domain`.
+;; comes from the data (levels in first-appearance order: left to right, bottom to top), the band scale's `:order-by`
+;; (a statistic of each level's rows, `:descending` reverses it; see [Order and
+;; direction](reference.scales_axes_coords.html#order-and-direction)) or an explicit `:domain`.
 
 (ns use-cases.ranking
   (:require [clojure.string :as str]
@@ -31,15 +33,11 @@
 
 (nu/data-table top-10)
 
-(defn- ascending
-  "Countries of `rows` in increasing value - as the domain of horizontal bars the largest one ends on top."
+(defn- level-value
+  "A country's value - the `:value` of its one row: the score of a band scale's `:order-by` (ascending - on
+  horizontal bars the largest ends on top)."
   [rows]
-  (mapv :country (sort-by :value rows)))
-
-(defn- alphabetical
-  "`rows` in reverse alphabetical order - horizontal bars stack levels upward, so A reads first from the top."
-  [rows]
-  (reverse (sort-by :country rows)))
+  (:value (first rows)))
 
 (def iris (nu/dataset :iris))
 
@@ -123,8 +121,8 @@
 
 ;; ### Order by value
 
-;; Levels follow the data (the first level at the bottom of horizontal bars); an explicit `:y` `:domain` orders them
-;; - here by value, so the ranking reads from the top.
+;; Levels follow the data (the first level at the bottom of horizontal bars - `:reverse true` turns the axis, so the
+;; alphabetical data reads from the top); `:order-by` orders them by value, so the ranking reads from the top.
 
 (nu/source-note {:source "R Graph Gallery - Reorder a variable with ggplot2"
                  :url "https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html"
@@ -132,13 +130,14 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data (alphabetical top-20) :mapping {:x :value :y :country}
+  [{:data (sort-by :country top-20) :mapping {:x :value :y :country}
+    :scales {:y {:reverse true}}
     :charts [(chart/bar)]
-    :labels {:title "Alphabetical (data order)" :x "exports" :y nil}}
+    :labels {:title "Alphabetical (data order, :reverse)" :x "exports" :y nil}}
    {:data top-20 :mapping {:x :value :y :country}
-    :scales {:y {:domain (ascending top-20)}}
+    :scales {:y {:order-by level-value}}
     :charts [(chart/bar)]
-    :labels {:title "By value (:domain)" :x "exports" :y nil}}]
+    :labels {:title "By value (:order-by)" :x "exports" :y nil}}]
   {:columns 2})
  {:width 1000 :height 500})
 
@@ -161,7 +160,7 @@
 
 ;; ### Error bars
 
-;; `chart/extent` with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
+;; [`chart/extent`](reference.charts_bars_ranges.html#extent) with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
 
 (nu/source-note {:source "R Graph Gallery - Barplot with error bars"
                  :url "https://r-graph-gallery.com/4-barplot-with-error-bar.html"
@@ -180,8 +179,8 @@
 ;; ### Black-and-white bars
 
 ;; Patterns tell groups apart without colour: `:pattern` maps a variable to the theme's pattern set (a legend
-;; included); a literal `:pattern` textures every bar. Histograms, densities, areas, ribbons, rects, boxes,
-;; violins, treemaps and candlesticks take patterns too.
+;; included); a literal `:pattern` textures every bar. Histograms, densities, areas, ribbons, smooth bands, rects,
+;; boxes, violins, candlesticks, treemaps, partitions, packs, waffles and radar fills take patterns too.
 
 (nu/source-note {:source "R Graph Gallery - Black and white barchart"
                  :url "https://r-graph-gallery.com/368-black-and-white-barchart.html"
@@ -259,7 +258,7 @@
 
 ;; ### Mirrored bars
 
-;; `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
+;; The [bar](reference.charts_bars_ranges.html#bar) `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
 ;; as magnitudes. Answers for and against eight proposals, stacked by how sure people were: the mirror on `:group`
 ;; (for / against), four colours - two blues, two reds - on `:color`.
 
@@ -306,7 +305,7 @@
   (plot/render-image
    {:data rows
     :mapping {:x :value :y :country}
-    :scales {:y {:domain (ascending rows) :axis false} :x {:axis false}}
+    :scales {:y {:order-by level-value :axis false} :x {:axis false}}
     :theme {:panel {:grid {:x :none :y :none :bands-fill :none}}}
     :charts [(chart/bar {:color [0 104 139] :stroke-color :none :width 0.7})
              (text (filterv fits? rows) (constantly 0) [:left :middle] :white)
@@ -316,8 +315,8 @@
 
 ;; ## Lollipop and dot plots
 
-;; A thin stem and a point carry the value with less ink than a bar: `chart/segment` from the baseline under a
-;; `chart/scatter`.
+;; A thin stem and a point carry the value with less ink than a bar:
+;; [`chart/segment`](reference.charts_points_paths.html#segment) from the baseline under a `chart/scatter`.
 
 ;; ### Lollipop
 
@@ -331,7 +330,7 @@
                  :dataset :weapons})
 
 (let [mean (stats/mean (map :value top-20))
-      base {:data top-20 :mapping {:x :value :y :country} :scales {:y {:domain (ascending top-20)}}}]
+      base {:data top-20 :mapping {:x :value :y :country} :scales {:y {:order-by level-value}}}]
   (plot/render-image
    (plot/arrange
     [(assoc base :charts [(chart/segment {:xend 0}) (chart/scatter)]
@@ -363,14 +362,14 @@
 (nu/source-note {:source "R Graph Gallery - Lollipop chart with 2 values"
                  :url "https://r-graph-gallery.com/303-lollipop-plot-with-2-values.html"})
 
-(let [order (mapv :team (sort-by :season-2 scores))
+(let [by-season-2 {:y {:order-by #(:season-2 (first %))}}
       dots (fn [k color] (chart/scatter {:mapping {:x k :y :team} :size 8 :color color}))]
   (plot/render-image
    (plot/arrange
-    [{:data scores :scales {:y {:domain order}}
+    [{:data scores :scales by-season-2
       :charts [(dots :season-2 [33 102 172])]
       :labels {:title "Cleveland dot plot: season 2" :x "score" :y nil}}
-     {:data scores :scales {:y {:domain order}}
+     {:data scores :scales by-season-2
       :charts [(chart/segment {:mapping {:x :season-1 :xend :season-2 :y :team} :color [170 170 170] :line-width 2})
                (dots :season-1 [150 150 150]) (dots :season-2 [33 102 172])]
       :labels {:title "Dumbbell: season 1 (grey) to season 2 (blue)" :x "score" :y nil}}]
@@ -390,7 +389,7 @@
       rows (mapv #(assoc % :side (if (> (double (:value %)) mean) "above the mean" "below the mean")
                          :highlight (if (= "Germany (FRG)" (:country %)) "Germany (FRG)" "others"))
                  top-20)
-      base {:data rows :scales {:y {:domain (ascending rows)}}}]
+      base {:data rows :scales {:y {:order-by level-value}}}]
   (plot/render-image
    (plot/arrange
     [(assoc base :mapping {:x :value :y :country :color :side}
@@ -457,7 +456,7 @@
    (plot/arrange
     [{:data top-20 :mapping {:x :country :y :value}
       :coord {:kind :polar :inner 0.3}
-      :scales {:x {:domain (ascending top-20) :axis false} :y {:axis false :domain [0 26000]}}
+      :scales {:x {:order-by level-value :axis false} :y {:axis false :domain [0 26000]}}
       :charts [(chart/bar {:color [33 102 172] :stroke-color :none})
                (chart/text {:mapping {:x :country :y :value :label :country} :rotation :radial :size 8})]
       :labels {:title "Ordered, radial labels" :x nil :y nil}}
@@ -503,18 +502,18 @@
                  :url "https://r-graph-gallery.com/circular-barplot.html"
                  :dataset :weapons})
 
-(let [order (rseq (ascending top-20))]
-  (plot/render-image
-   {:data top-20 :mapping {:x :country :y :value}
-    :coord {:kind :polar :start -9}
-    :scales {:x {:domain (vec order)} :y {:kind :log}}
-    :charts [(chart/segment {:yend 50 :color [150 150 150]}) (chart/scatter {:size 8 :color [215 48 39]})]
-    :labels {:title "Weapon exports, top 20" :x nil :y nil}}
-   {:width 600 :height 600}))
+(plot/render-image
+ {:data top-20 :mapping {:x :country :y :value}
+  :coord {:kind :polar :start -9}
+  :scales {:x {:order-by level-value :descending true} :y {:kind :log}}
+  :charts [(chart/segment {:yend 50 :color [150 150 150]}) (chart/scatter {:size 8 :color [215 48 39]})]
+  :labels {:title "Weapon exports, top 20" :x nil :y nil}}
+ {:width 600 :height 600})
 
 ;; ## Parallel coordinates
 
-;; Each row a line across one axis per variable (`chart/parallel` over `:variables`); every axis has its own scale
+;; Each row a line across one axis per variable ([`chart/parallel`](reference.charts_multivariate_3d.html#parallel)
+;; over `:variables`); every axis has its own scale
 ;; in the variable's units, drawn by the chart.
 
 (def iris-variables [:sepal-length :sepal-width :petal-length :petal-width])
@@ -664,7 +663,7 @@
 ;; ### Order the data
 
 ;; Unordered categories make the reader sort them; ordered by value, the ranking is read at a glance - here all 38
-;; countries with a value, as lollipops on a log scale (exports from 2 to 12394; the stems start at 1, as log 0 is
+;; rows with a value (36 countries, "Others" and "Unknown supplier(s)"), as lollipops on a log scale (exports from 2 to 12394; the stems start at 1, as log 0 is
 ;; undefined).
 
 (nu/source-note {:source "data-to-viz - Order your data"
@@ -673,8 +672,8 @@
 
 (plot/render-image
  (plot/arrange
-  (vec (for [[title y-scale] [["Alphabetical" {}] ["Ordered by value" {:domain (ascending weapons)}]]]
-         {:data (alphabetical weapons) :mapping {:x :value :y :country}
+  (vec (for [[title y-scale] [["Alphabetical" {:reverse true}] ["Ordered by value" {:order-by level-value}]]]
+         {:data (sort-by :country weapons) :mapping {:x :value :y :country}
           :scales {:x {:kind :log} :y y-scale}
           :theme {:axis {:y {:label-gap 1}}}
           :charts [(chart/segment {:xend 1 :color [150 150 150]}) (chart/scatter {:size 5 :color [33 102 172]})]
@@ -728,10 +727,10 @@
 
 (plot/render-image
  (plot/arrange
-  [{:data top-10 :mapping {:x :country :y :value} :scales {:x {:domain (ascending top-10)}}
+  [{:data top-10 :mapping {:x :country :y :value} :scales {:x {:order-by level-value}}
     :coord {:kind :polar :inner 0.2}
     :charts [(chart/bar)] :labels {:title "Circular" :x nil :y nil}}
-   {:data top-10 :mapping {:x :country :y :value} :scales {:x {:domain (ascending top-10)}}
+   {:data top-10 :mapping {:x :country :y :value} :scales {:x {:order-by level-value}}
     :theme {:axis {:x {:label-rotation -45}}}
     :charts [(chart/bar)] :labels {:title "Straight" :x nil :y "exports"}}]
   {:columns 2})

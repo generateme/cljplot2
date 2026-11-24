@@ -2272,10 +2272,11 @@ Source: [Vega-Lite - Line Chart with Varying Size (using the trail mark)](https:
 
 
 
-### A comet chart showing changes between between two states
+### A comet chart showing changes between two states
 
-Barley yields from 1931 (thin) to 1932 (wide) per variety and site, coloured by the direction of the change (the
-original colours by the change's size; a trail has one colour per group).
+Barley yields per variety and site as trails from 1931 to 1932, the width following the yield - a blue comet
+widens (an increase), a red one narrows (a decrease); coloured by the direction of the change (the original colours
+by the change's size; a trail has one colour per group).
 
 Source: [Vega-Lite - A comet chart showing changes between two states](https://vega.github.io/vega-lite/examples/trail_comet.html). Data: Minnesota barley yields by variety and trial site, vega-datasets 3.3.1 `barley.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/barley.json); original: The Design of Experiments Reference, Wiebe, G. A., Reinbach-Welch, L., Cowan, P. R. (1940). Yields of Barley Varieties in the United States and Canada, 1932-36. United States: U.S. Department of Agriculture.; licence: notspecified (vega-datasets `datapackage.json`).
 
@@ -2358,7 +2359,7 @@ Source: [Vega-Lite - Carbon Dioxide in the Atmosphere](https://vega.github.io/ve
                           :size 9 :anchor [:center :top] :offset [0 -4]})
              (chart/text {:data (map #(apply max-key :t %) decades) :mapping {:x :t :y :co2 :label :year :color :decade}
                           :size 9 :anchor [:center :bottom] :offset [0 4]})]
-    :scales {:color {:range (mapv (c/gradient :viridis/magma) (map #(* 0.8 (/ (double %) (dec (count decades)))) (range (count decades)))) :legend false}
+    :scales {:color {:range (mapv (plot/gradient :viridis/magma) (map #(* 0.8 (/ (double %) (dec (count decades)))) (range (count decades)))) :legend false}
              :x {:ticks (vec (range 11))}}
     :labels {:x "Year into Decade" :y "CO2 concentration in ppm"}}
    {:width 800 :height 500}))
@@ -2596,7 +2597,7 @@ Source: Vega-Lite - Stacked Area Chart ([1](https://vega.github.io/vega-lite/exa
 
 ::: {.sourceClojure}
 ```clojure
-(def industry-colors {:range (c/palette :category20b) :title "series"})
+(def industry-colors {:range (plot/palette :category20b) :title "series"})
 ```
 :::
 
@@ -2964,7 +2965,7 @@ Source: Vega-Lite - Wind Vector Map ([1](https://vega.github.io/vega-lite/exampl
   :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
   :charts [(chart/segment {:line-width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
   :scales {:x {:nice false} :y {:nice false}
-           :color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
+           :color {:domain [0 360] :range (mapv (plot/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
                    :legend false}}
   :aspect :iso
   :labels {:x "longitude" :y "latitude"}}
@@ -3406,7 +3407,7 @@ Source: Vega-Lite - Top-K Plot with "Others" ([1](https://vega.github.io/vega-li
 
 Mean age per group: people's ages joined into the group list by name (Vega-Lite's `lookup`).
 
-Source: [Vega-Lite - Using the lookup transform to combine data](https://vega.github.io/vega-lite/examples/lookup.html). Data: Synthetic group memberships for lookup examples, vega-datasets 3.3.1 `lookup_groups.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/lookup_groups.csv); original: Generated Data; licence: BSD-3-Clause (vega-datasets `datapackage.json`).
+Source: [Vega-Lite - Using the lookup transform to combine data](https://vega.github.io/vega-lite/examples/lookup.html). Data: Synthetic group memberships for lookup examples, vega-datasets 3.3.1 `lookup_groups.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/lookup_groups.csv); original: Generated Data; licence: BSD-3-Clause (vega-datasets `datapackage.json`). Data: Synthetic people with ages and heights, vega-datasets 3.3.1 `lookup_people.csv` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/lookup_people.csv); original: Generated Data; licence: BSD-3-Clause (vega-datasets `datapackage.json`).
 
 
 ```{=html}
@@ -3599,6 +3600,12 @@ Source: [Vega-Lite - Line Chart to Show Benchmarking Results](https://vega.githu
 
 
 
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>16.82</td></tr><tr><td>19.76</td></tr><tr><td>16.08</td></tr><tr><td>19.58</td></tr><tr><td>16.42</td></tr><tr><td>16.2</td></tr><tr><td>16.02</td></tr><tr><td>15.94</td></tr><tr><td>16.28</td></tr><tr><td>16.12</td></tr><tr><td>16.16</td></tr><tr><td>16.12</td></tr><tr><td>16.14</td></tr><tr><td>16.1</td></tr><tr><td>16.2</td></tr><tr><td>16.26</td></tr><tr><td>19.36</td></tr><tr><td>19.7</td></tr><tr><td>15.94</td></tr><tr><td>19.14</td></tr><tr><td>16.2</td></tr><tr><td>16.12</td></tr><tr><td>19.52</td></tr><tr><td>19.7</td></tr><tr><td>16.2</td></tr><tr><td>20.98</td></tr><tr><td>16.3</td></tr><tr><td>16.42</td></tr><tr><td>16.82</td></tr><tr><td>16.5</td></tr><tr><td>16.56</td></tr><tr><td>16.18</td></tr><tr><td>16.08</td></tr><tr><td>16.24</td></tr><tr><td>16.04</td></tr><tr><td>16.3</td></tr><tr><td>19.4</td></tr><tr><td>15.7</td></tr><tr><td>16.24</td></tr><tr><td>15.92</td></tr><tr><td>16.26</td></tr><tr><td>16.22</td></tr><tr><td>16.52</td></tr><tr><td>16.46</td></tr><tr><td>16.36</td></tr><tr><td>15.72</td></tr><tr><td>16.06</td></tr><tr><td>15.96</td></tr><tr><td>16.48</td></tr><tr><td>16.6</td></tr><tr><td>16.24</td></tr><tr><td>16.94</td></tr><tr><td>16.22</td></tr><tr><td>15.96</td></tr><tr><td>15.9</td></tr><tr><td>16.48</td></tr><tr><td>16.32</td></tr><tr><td>15.76</td></tr><tr><td>16</td></tr><tr><td>16.18</td></tr><tr><td>16.22</td></tr><tr><td>15.8</td></tr><tr><td>16.14</td></tr><tr><td>16.3</td></tr><tr><td>16.36</td></tr><tr><td>16.26</td></tr><tr><td>15.96</td></tr><tr><td>15.94</td></tr><tr><td>16.54</td></tr><tr><td>16.14</td></tr><tr><td>16.26</td></tr><tr><td>16.2</td></tr><tr><td>15.9</td></tr><tr><td>16.08</td></tr><tr><td>16.08</td></tr><tr><td>15.7</td></tr><tr><td>15.66</td></tr><tr><td>16.14</td></tr><tr><td>23.1</td></tr><tr><td>16.6</td></tr><tr><td>16.42</td></tr><tr><td>16.02</td></tr><tr><td>15.62</td></tr><tr><td>16.36</td></tr><tr><td>15.72</td></tr><tr><td>15.92</td></tr><tr><td>15.56</td></tr><tr><td>16.34</td></tr><tr><td>22.82</td></tr><tr><td>15.66</td></tr><tr><td>15.56</td></tr><tr><td>16</td></tr><tr><td>16</td></tr><tr><td>15.82</td></tr><tr><td>16.4</td></tr><tr><td>16.46</td></tr><tr><td>16.06</td></tr><tr><td>16.24</td></tr><tr><td>15.8</td></tr><tr><td>16.16</td></tr><tr><td>…</td></tr></tbody></table></div>
+```
+
+
+
 ::: {.sourceClojure}
 ```clojure
 (def square-ms
@@ -3614,6 +3621,12 @@ Source: [Vega-Lite - Line Chart to Show Benchmarking Results](https://vega.githu
    17.5 32.3 22.6 16.6 17.9 25.6 17.5 20.3 25.2 18.6 17.7])
 ```
 :::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>24.2</td></tr><tr><td>17.9</td></tr><tr><td>15.8</td></tr><tr><td>58.4</td></tr><tr><td>151</td></tr><tr><td>2523.1</td></tr><tr><td>245.3</td></tr><tr><td>136</td></tr><tr><td>72.3</td></tr><tr><td>55.7</td></tr><tr><td>42.4</td></tr><tr><td>37.7</td></tr><tr><td>30.1</td></tr><tr><td>30.1</td></tr><tr><td>21.8</td></tr><tr><td>20.6</td></tr><tr><td>21.8</td></tr><tr><td>17.6</td></tr><tr><td>18.2</td></tr><tr><td>21</td></tr><tr><td>941.7</td></tr><tr><td>177.4</td></tr><tr><td>2821.8</td></tr><tr><td>359.2</td></tr><tr><td>318</td></tr><tr><td>217.1</td></tr><tr><td>126</td></tr><tr><td>69</td></tr><tr><td>57.8</td></tr><tr><td>45.3</td></tr><tr><td>35.6</td></tr><tr><td>29.1</td></tr><tr><td>23.8</td></tr><tr><td>44.2</td></tr><tr><td>17.7</td></tr><tr><td>17.7</td></tr><tr><td>15.7</td></tr><tr><td>27.8</td></tr><tr><td>22.8</td></tr><tr><td>3853.6</td></tr><tr><td>91.6</td></tr><tr><td>181.4</td></tr><tr><td>476.3</td></tr><tr><td>265.9</td></tr><tr><td>254.6</td></tr><tr><td>2583.2</td></tr><tr><td>124.8</td></tr><tr><td>73.2</td></tr><tr><td>56.4</td></tr><tr><td>48.7</td></tr><tr><td>41.6</td></tr><tr><td>21.1</td></tr><tr><td>20.3</td></tr><tr><td>21.3</td></tr><tr><td>18.3</td></tr><tr><td>17.1</td></tr><tr><td>19.5</td></tr><tr><td>828.2</td></tr><tr><td>162.2</td></tr><tr><td>217.9</td></tr><tr><td>205.5</td></tr><tr><td>197.6</td></tr><tr><td>2249.8</td></tr><tr><td>103.1</td></tr><tr><td>71.7</td></tr><tr><td>57.6</td></tr><tr><td>41.4</td></tr><tr><td>34.5</td></tr><tr><td>22</td></tr><tr><td>20.5</td></tr><tr><td>21.7</td></tr><tr><td>18.3</td></tr><tr><td>17.3</td></tr><tr><td>19.4</td></tr><tr><td>666.8</td></tr><tr><td>214.9</td></tr><tr><td>212.3</td></tr><tr><td>125.8</td></tr><tr><td>67.7</td></tr><tr><td>56.1</td></tr><tr><td>45.8</td></tr><tr><td>38.3</td></tr><tr><td>33</td></tr><tr><td>35.4</td></tr><tr><td>22.7</td></tr><tr><td>19.4</td></tr><tr><td>19.9</td></tr><tr><td>24.1</td></tr><tr><td>19.3</td></tr><tr><td>21.3</td></tr><tr><td>3508.7</td></tr><tr><td>204.1</td></tr><tr><td>125.4</td></tr><tr><td>65.3</td></tr><tr><td>60.8</td></tr><tr><td>44.1</td></tr><tr><td>36.3</td></tr><tr><td>30.5</td></tr><tr><td>28.6</td></tr><tr><td>16.5</td></tr><tr><td>…</td></tr></tbody></table></div>
+```
 
 
 
@@ -4121,29 +4134,34 @@ Source: [Vega-Lite - Distributions and Medians of Likert Scale Ratings](https://
 ```clojure
 (def likert
   "Questions: name, the 17 ratings, the median and the scale's end labels."
-  [["Identify Errors:" [2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3] 2.0 "Easy" "Hard"]
-   ["Fix Errors:" [2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2] 2.0 "Easy" "Hard"]
-   ["Easier to Fix:" [3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2] 2.0 "Toolbar" "Gesture"]
-   ["Faster to Fix:" [4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2] 2.5 "Toolbar" "Gesture"]
-   ["Easier on Phone:" [2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1] 1.5 "Toolbar" "Gesture"]
-   ["Easier on Tablet:" [5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3] 3.0 "Toolbar" "Gesture"]
-   ["Device Preference:" [5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2] 4.5 "Phone" "Tablet"]])
+  [{:question "Identify Errors:" :ratings [2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3] :median 2.0 :lo "Easy" :hi "Hard"}
+   {:question "Fix Errors:" :ratings [2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2] :median 2.0 :lo "Easy" :hi "Hard"}
+   {:question "Easier to Fix:" :ratings [3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2] :median 2.0 :lo "Toolbar" :hi "Gesture"}
+   {:question "Faster to Fix:" :ratings [4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2] :median 2.5 :lo "Toolbar" :hi "Gesture"}
+   {:question "Easier on Phone:" :ratings [2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1] :median 1.5 :lo "Toolbar" :hi "Gesture"}
+   {:question "Easier on Tablet:" :ratings [5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3] :median 3.0 :lo "Toolbar" :hi "Gesture"}
+   {:question "Device Preference:" :ratings [5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2] :median 4.5 :lo "Phone" :hi "Tablet"}])
 ```
 :::
 
 
 
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>question</th><th>ratings</th><th>median</th><th>lo</th><th>hi</th></tr></thead><tbody><tr><td>Identify Errors:</td><td>[2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3]</td><td>2.0</td><td>Easy</td><td>Hard</td></tr><tr><td>Fix Errors:</td><td>[2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2]</td><td>2.0</td><td>Easy</td><td>Hard</td></tr><tr><td>Easier to Fix:</td><td>[3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2]</td><td>2.0</td><td>Toolbar</td><td>Gesture</td></tr><tr><td>Faster to Fix:</td><td>[4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2]</td><td>2.5</td><td>Toolbar</td><td>Gesture</td></tr><tr><td>Easier on Phone:</td><td>[2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1]</td><td>1.5</td><td>Toolbar</td><td>Gesture</td></tr><tr><td>Easier on Tablet:</td><td>[5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3]</td><td>3.0</td><td>Toolbar</td><td>Gesture</td></tr><tr><td>Device Preference:</td><td>[5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2]</td><td>4.5</td><td>Phone</td><td>Tablet</td></tr></tbody></table></div>
+```
+
+
+
 ::: {.sourceClojure}
 ```clojure
-(let [questions (mapv first likert)
-      ends (for [[question _ median lo hi] likert] {:question question :median median :lo lo :hi hi})]
+(let [questions (mapv :question likert)]
   (plot/render-image
-   {:data (for [[question ratings] likert [rating n] (frequencies ratings)] {:question question :rating rating :n n})
+   {:data (for [{:keys [question ratings]} likert [rating n] (frequencies ratings)] {:question question :rating rating :n n})
     :mapping {:x :rating :y :question :size :n}
     :charts [(chart/scatter {:color [110 180 253]})
-             (chart/rug {:data ends :mapping {:x :median :size nil} :color :black :line-width 2 :thickness 0.4})
-             (chart/text {:data ends :mapping {:x (constantly 0.4) :y :question :label :lo :size nil} :anchor [:right :middle]})
-             (chart/text {:data ends :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
+             (chart/rug {:data likert :mapping {:x :median :size nil} :color :black :line-width 2 :thickness 0.4})
+             (chart/text {:data likert :mapping {:x (constantly 0.4) :y :question :label :lo :size nil} :anchor [:right :middle]})
+             (chart/text {:data likert :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
     :scales {:y {:domain questions :reverse true} :x {:domain [-1.2 7.2] :ticks [1 2 3 4 5] :nice false}
              :size {:range [3 16] :area true :title "Number of Ratings"}}
     :labels {:title "Questionnaire Ratings" :x nil :y nil}}
@@ -4368,7 +4386,7 @@ W. Playfair's chart of the price of wheat (bars, shillings per quarter) and week
 1565-1821, with the monarchs' reigns along the top (Cromwell's Commonwealth white), the names above the upper
 reigns and below the lower ones.
 
-Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lite/examples/wheat_wages.html), [2](https://vega.github.io/vega/examples/wheat-and-wages/)). Data: Playfair's wheat prices and wages from 1565–1820, vega-datasets 3.3.1 `wheat.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/wheat.json); original: 1822 Playfair Chart; licence: other-pd (vega-datasets `datapackage.json`).
+Source: Vega-Lite - Wheat and Wages Example ([1](https://vega.github.io/vega-lite/examples/wheat_wages.html), [2](https://vega.github.io/vega/examples/wheat-and-wages/)). Data: Playfair's wheat prices and wages from 1565–1820, vega-datasets 3.3.1 `wheat.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/wheat.json); original: 1822 Playfair Chart; licence: other-pd (vega-datasets `datapackage.json`). Data: English and British rulers for Wheat and Wages, vega-datasets 3.3.1 `monarchs.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/monarchs.json); original: The Royal Family - Kings & Queens, The Royal Family - Interregnum; licence: OGL-UK-3.0 (vega-datasets `datapackage.json`).
 
 
 ```{=html}
@@ -4570,7 +4588,7 @@ Source: Vega-Lite - Becker's Barley Trellis Plot ([1](https://vega.github.io/veg
             {:site site :variety variety :year (str year) :yield (stats/median (map :yield rows))})
     :mapping {:x :yield :y :variety :color :year :facet :site}
     :charts [(chart/scatter {:shape \o :size 7 :stroke-width 1.5})]
-    :scales {:facet {:domain (vec (sort-by site-medians (keys site-medians)))} :color {:range (c/palette :category10)}
+    :scales {:facet {:domain (vec (sort-by site-medians (keys site-medians)))} :color {:range (plot/palette :category10)}
              :y {:domain (vec (sort-by (comp - variety-medians) (keys variety-medians))) :reverse true}}
     :facets {:columns 2}
     :labels {:x "Median of yield" :y "variety"}}
@@ -4598,7 +4616,7 @@ Source: [Vega-Lite - Trellis Area](https://vega.github.io/vega-lite/examples/tre
   (plot/render-image
    {:data rows :mapping {:x :date :y :price :color :symbol :facet-row :symbol}
     :charts [(chart/line {:fill :color})]
-    :scales {:y {:domain [0 (reduce max (map :price rows))]} :color {:range (c/palette :category10) :legend false}}
+    :scales {:y {:domain [0 (reduce max (map :price rows))]} :color {:range (plot/palette :category10) :legend false}}
     :theme {:panel {:grid {:x :none :y :none}}}
     :labels {:x "Time" :y "Price"}}
    {:width 600 :height 500}))
@@ -4769,7 +4787,7 @@ Source: [Vega-Lite - Horizontally Repeated Charts](https://vega.github.io/vega-l
                              [:acceleration "Acceleration" (range 8 27 2)] [:displacement "Displacement" (range 50 501 50)]]]
          {:data (filter k cars) :mapping {:x k :color :origin}
           :charts [(chart/histogram {:bins (vec bins) :y :count :position :stack})]
-          :scales {:color {:range (c/palette :category10)}}
+          :scales {:color {:range (plot/palette :category10)}}
           :labels {:x (str title " (binned)") :y "Count of Records"}}))
   {:columns 2})
  {:width 900 :height 600})
@@ -4799,7 +4817,7 @@ Source: [Vega-Lite - Interactive Scatterplot Matrix](https://vega.github.io/vega
     (vec (for [[row-k row-title] (reverse columns) [col-k col-title] columns]
            {:data (filter #(and (row-k %) (col-k %)) cars) :mapping {:x col-k :y row-k :color :origin}
             :charts [(chart/scatter {:shape \o :size 5})]
-            :scales {:color {:range (c/palette :category10)}}
+            :scales {:color {:range (plot/palette :category10)}}
             :legend (= [row-k col-k] [:horsepower :horsepower])
             :labels {:x col-title :y row-title}}))
     {:columns 3 :equal-panels true})
@@ -4975,7 +4993,7 @@ Source: Vega-Lite - Interactive Legend ([1](https://vega.github.io/vega-lite/exa
 ```clojure
 (let [industries (vec (sort (distinct (map :series unemployment))))
       colors (map (fn [industry color] (if (= "Finance" industry) color (c/lerp color [236 236 243] 0.8)))
-                  industries (cycle (c/palette :category20b)))]
+                  industries (cycle (plot/palette :category20b)))]
   (plot/render-image
    {:data unemployment :mapping {:x :date :y :count :color :series}
     :charts [(chart/line {:fill :color :position :silhouette :line-width 0 :alpha 1.0})]
@@ -5050,7 +5068,8 @@ Source: [Vega - Job voyager](https://vega.github.io/vega/examples/job-voyager/).
  {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
   :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :line-width 0.2})]
   :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title nil}
-           :x {:formatter #(str (m/round (double %)))} :y {:formatter #(str (m/round (* 100.0 (double %))) "%")}}
+           :x {:domain [1850 2000] :expand [0 0] :nice false :formatter #(str (m/round (double %)))}
+           :y {:domain [0 1] :expand [0 0] :formatter #(str (m/round (* 100.0 (double %))) "%")}}
   :labels {:x "year" :y "share of the labour force"}}
  {:width 900 :height 500})
 ```
@@ -5083,7 +5102,7 @@ Source: [Vega - Radar chart](https://vega.github.io/vega/examples/radar-chart/).
   :coord {:kind :polar}
   :charts [(chart/parallel {:variables [:key-0 :key-1 :key-2 :key-3 :key-4 :key-5 :key-6] :scaling :globalminmax
                             :fill :color :alpha 0.5 :axes false})]
-  :scales {:color {:range (c/palette :category10)}}
+  :scales {:color {:range (plot/palette :category10)}}
   :labels {:x nil :y nil}}
  {:width 500 :height 450})
 ```
@@ -5178,7 +5197,7 @@ Source: [Vega - Contour plot](https://vega.github.io/vega/examples/contour-plot/
  {:data (filter #(and (:horsepower %) (:miles-per-gallon %)) cars)
   :mapping {:x :horsepower :y :miles-per-gallon :color :origin}
   :charts [(chart/scatter {:size 4}) (chart/contour {:levels 3 :line-width 1.5})]
-  :scales {:color {:range (c/palette :category10)}}
+  :scales {:color {:range (plot/palette :category10)}}
   :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
  {:width 600 :height 450})
 ```
@@ -5511,7 +5530,7 @@ Source: [Vega - Sunburst](https://vega.github.io/vega/examples/sunburst/). Data:
 Dependencies between Flare classes routed along the class tree (hierarchical edge bundling), coloured by the
 source's top-level package.
 
-Source: [Vega - Edge bundling](https://vega.github.io/vega/examples/edge-bundling/). Data: Flare class dependency network, vega-datasets 3.3.1 `flare-dependencies.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare-dependencies.json); licence: none listed - see vega-datasets (cite Vega as the source).
+Source: [Vega - Edge bundling](https://vega.github.io/vega/examples/edge-bundling/). Data: Flare class dependency network, vega-datasets 3.3.1 `flare-dependencies.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare-dependencies.json); licence: none listed - see vega-datasets (cite Vega as the source). Data: Flare package and class hierarchy, vega-datasets 3.3.1 `flare.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/flare.json); licence: none listed - see vega-datasets (cite Vega as the source).
 
 
 ```{=html}
@@ -5524,7 +5543,7 @@ Source: [Vega - Edge bundling](https://vega.github.io/vega/examples/edge-bundlin
 ```clojure
 (plot/render-image
  (plot/bundle (nu/dataset :flare-dependencies-vega) flare-tree {:from :source :to :target :scales {:color {:legend false}}})
- {:width 900 :height 900})
+ {:width 800 :height 800})
 ```
 :::
 
@@ -5540,7 +5559,7 @@ Source: [Vega - Edge bundling](https://vega.github.io/vega/examples/edge-bundlin
 Les Misérables characters linked by co-occurrence, laid out by forces (seeded), coloured by group, edge widths by
 the number of shared chapters.
 
-Source: [Vega - Force directed layout](https://vega.github.io/vega/examples/force-directed-layout/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
+Source: [Vega - Force directed layout](https://vega.github.io/vega/examples/force-directed-layout/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
 
 ::: {.sourceClojure}
@@ -5594,7 +5613,7 @@ The co-occurrence matrix of the characters ordered by group: a cell per pair of 
 their group when both share it (grey across groups), every name on the axes (x labels vertical) - the original
 reorders by dragging.
 
-Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorderable-matrix/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
+Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorderable-matrix/). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`). Data: Les Misérables character coappearance network, vega-datasets 3.3.1 `miserables.json` (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/miserables.json); original: D. E. Knuth, The Stanford GraphBase: A Platform for Combinatorial Computing, Addison-Wesley, Reading, MA (1993).; licence: notspecified (vega-datasets `datapackage.json`).
 
 
 ::: {.sourceClojure}
@@ -5610,10 +5629,10 @@ Source: [Vega - Reorderable matrix](https://vega.github.io/vega/examples/reorder
     :charts [(chart/tile)]
     :scales {:x {:domain order} :y {:domain order :reverse true}
              :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
-                     :range (conj (vec (take 11 (cycle (c/palette :category10)))) [190 190 190]) :legend false}}
-    :theme {:text {:tick-label {:size 8}} :axis {:x {:label-rotation -90}}}
+                     :range (conj (vec (take 11 (cycle (plot/palette :category10)))) [190 190 190]) :legend false}}
+    :theme {:text {:tick-label {:size 7}} :axis {:x {:label-rotation -90}}}
     :labels {:x nil :y nil}}
-   {:width 1000 :height 1000}))
+   {:width 1000 :height 800}))
 ```
 :::
 

@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -520,10 +520,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Charts colouring a plane: a cell per row (<code>tile</code>), a 2D histogram (<code>bin2d</code>), a scalar field drawn as a raster (<code>field</code>) or as level lines (<code>contour</code>), the correlation of two variables as one glyph (<code>correlation</code>), and any other statistic of two variables as one cell (<code>pairwise</code>).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-grids-fields</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -2522,7 +2523,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image0.png" class="img-fluid"></p>
 </div>
-<p>Its own option writes the value in each cell (black or white by the fill, the <code>:tile-value</code> text role); the cell shape and outline are the Cell style group:</p>
+<p>Its own option writes the value in each cell (black or white by the fill, the <code>:tile-value</code> text role); the cell shape and outline are the <a href="reference.shared_options.html#cell-style">Cell style</a> group:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -2579,7 +2580,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:size-key-fill</td>
 <td>a clojure2d color or :none</td>
-<td>[110.0 110.0 110.0 255.0]</td>
+<td>[110 110 110]</td>
 <td>fill of a size legend key without a colour (theme only, not an option)</td>
 </tr>
 </tbody>
@@ -2756,7 +2757,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="field" class="level2" data-number="19.3">
 <h2 data-number="19.3" class="anchored" data-anchor-id="field"><span class="header-section-number">19.3</span> field</h2>
-<p>A raster of a scalar field: the density of mapped points, gridded <code>:value</code>s interpolated, or a function of a point (the Fields group).</p>
+<p>A raster of a scalar field: the density of mapped points, gridded <code>:value</code>s interpolated, or a function of a point (the <a href="reference.shared_options.html#fields">Fields</a> group).</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -2861,13 +2862,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="field-sources" class="level3" data-number="19.3.1">
 <h3 data-number="19.3.1" class="anchored" data-anchor-id="field-sources"><span class="header-section-number">19.3.1</span> Field sources</h3>
-<p>The Fields group gives the field. A function of a point <code>[x y]</code> sampled over a <code>:domain</code> on a grid of <code>:n</code> points per axis (a coarse grid shows its cells):</p>
+<p>The <a href="reference.shared_options.html#fields">Fields</a> group gives the field. A function of a point <code>[x y]</code> sampled over a <code>:domain</code> on a grid of <code>:n</code> points per axis (a coarse grid shows its cells):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))))</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))))</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":f over :domain"</span>}</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (Math/sin (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))))</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))))</span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">12</span>})]</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":n 12"</span>}}]</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
@@ -2878,7 +2879,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lattice </span>(<span class="kw">for</span> [x (<span class="kw">range</span> <span class="dv">5</span>) y (<span class="kw">range</span> <span class="dv">5</span>)] {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> (Math/sin x) (Math/cos (<span class="kw">*</span> <span class="fl">0.8</span> y)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lattice </span>(<span class="kw">for</span> [x (<span class="kw">range</span> <span class="dv">5</span>) y (<span class="kw">range</span> <span class="dv">5</span>)] {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> (m/sin x) (m/cos (<span class="kw">*</span> <span class="fl">0.8</span> y)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3154,7 +3155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td>
+<td>[69 117 180]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td>
 <td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td>
 </tr>
 <tr class="even">
@@ -3300,7 +3301,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]; grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the :correlation text role's colour, group lines mapped or black</td>
+<td>[69 117 180]; grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the :correlation text role's colour, group lines mapped or black</td>
 <td>one fixed glyph colour, the :number text's too</td>
 </tr>
 <tr class="even">
@@ -3368,7 +3369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:glyph</span> <span class="at">:circle</span> <span class="at">:glyph-size</span> <span class="fl">0.6</span> <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">90</span>]</span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="dv">3</span>})]</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph-size 0.6, :stroke-width 3"</span>}}]</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph-size 0.6"</span>}}]</span>
 <span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">4</span>})</span>
 <span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -3391,7 +3392,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="pairwise" class="level2" data-number="19.6">
 <h2 data-number="19.6" class="anchored" data-anchor-id="pairwise"><span class="header-section-number">19.6</span> pairwise</h2>
-<p>Any statistic of two variables drawn as one cell filling the panel: an error, an association, an effect size, a distance (the keys of <code>cljplot2.data.pairwise/statistics</code>, listed with <code>pairwise/matrix-rows</code> in the Data functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the values have no fixed range. Alone it writes the value, one line per group.</p>
+<p>Any statistic of two variables drawn as one cell filling the panel: an error, an association, an effect size, a distance (the keys of <code>cljplot2.data.pairwise/statistics</code>, listed with <a href="reference.data_sets_series.html#pairwisematrix-rows"><code>pairwise/matrix-rows</code></a> in the Data functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the values have no fixed range. Alone it writes the value, one line per group.</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3457,7 +3458,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td>
+<td>[69 117 180]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td>
 <td>one fixed colour: the shade's (text over it by contrast), the :number text's</td>
 </tr>
 <tr class="even">

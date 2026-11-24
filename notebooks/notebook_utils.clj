@@ -12,8 +12,9 @@
             [scicloj.kindly.v4.api :as kindly]
             [scicloj.kindly.v4.kind :as kind]
             [wadogo.scale :as ws]
+            [cljplot2.data.shingle :as shingle]
             [cljplot2.describe :as describe])
-  (:import [fastmath.vector Vec4]))
+  (:import [fastmath.vector Vec2 Vec3 Vec4]))
 
 (def ^:private data-folder "data/")
 
@@ -141,7 +142,6 @@
   alone are linked as they are."
   [source urls]
   (cond
-    (empty? urls) (str "Source: " source ".")
     (nil? source) (str "Source: " (str/join ", " (map #(str "[" % "](" % ")") urls)) ".")
     (= 1 (count urls)) (str "Source: [" source "](" (first urls) ").")
     :else (str "Source: " source " (" (str/join ", " (map-indexed (fn [i u] (str "[" (inc i) "](" u ")")) urls)) ").")))
@@ -150,22 +150,33 @@
   "Attribution line of an example (Markdown, its own code hidden on the page):
   `:source` - where the use case or figure comes from (e.g. \"R Graph Gallery - Histogram\", \"Lattice Fig 1.1\"),
   `:url` - the original example's page: a URL string or a non-empty vector of them (linked from the source text),
-  `:dataset` - manifest key of the data (its title, original source and licence are read from the manifest).
-  `:source`, `:url` or `:dataset` is required; an unknown dataset throws like [[dataset]], a `:url` that isn't a
-  string or a non-empty vector of strings throws `ex-info {:key :url}`."
+  `:dataset` - manifest key of the data, or a non-empty vector of keys for several datasets (each one's title,
+  original source and licence are read from the manifest).
+  `:source` names an outside example, so it needs `:url`; a note may credit only data (`:dataset`); examples written
+  for cljplot2 carry no source, only their data's credit. `:url` or `:dataset` is required.
+  Throws `ex-info {:key :url}` for `:source` without `:url` or a `:url` that isn't a string or a non-empty vector of
+  strings, `ex-info {:key :dataset}` for a `:dataset` that isn't a key or a non-empty vector of keys, and like
+  [[dataset]] for an unknown dataset."
   [{:keys [source url dataset]}]
-  (when-not (or source url dataset)
-    (throw (ex-info "source-note needs :source, :url or :dataset." {:key :source-note})))
+  (when (and source (nil? url))
+    (throw (ex-info "source-note :source names an outside example: give its :url." {:key :url :value source})))
+  (when-not (or url dataset)
+    (throw (ex-info "source-note needs :url or :dataset." {:key :source-note})))
   (let [urls (cond (nil? url) []
                    (string? url) [url]
                    (and (vector? url) (seq url) (every? string? url)) url
                    :else (throw (ex-info "source-note :url should be a URL string or a non-empty vector of them."
                                          {:key :url :value url})))
-        data-text (when dataset
-                    (let [{:keys [title licence] data-source :source} (manifest-entry dataset)]
-                      (str "Data: " title ", " data-source "; licence: " licence ".")))]
+        dataset-keys (cond (nil? dataset) []
+                           (keyword? dataset) [dataset]
+                           (and (vector? dataset) (seq dataset) (every? keyword? dataset)) dataset
+                           :else (throw (ex-info "source-note :dataset should be a manifest key or a non-empty vector of them."
+                                                 {:key :dataset :value dataset})))
+        data-texts (for [k dataset-keys
+                         :let [{:keys [title licence] data-source :source} (manifest-entry k)]]
+                     (str "Data: " title ", " data-source "; licence: " licence "."))]
     (kindly/hide-code
-     (kind/md (str/join " " (remove nil? [(when (or source (seq urls)) (source-text source urls)) data-text]))))))
+     (kind/md (str/join " " (remove nil? (cons (when (seq urls) (source-text source urls)) data-texts)))))))
 
 ;; option tables (reference part)
 
@@ -189,12 +200,12 @@
   "`v` with colours and functions readable when printed: a `Vec4` colour as [[readable-color]], an integer under a
   colour key as `0xrrggbb`, a function as `fn`."
   [v]
-  (walk/postwalk (fn [x]
-                   (cond (instance? Vec4 x) (readable-color x)
-                         (fn? x) 'fn
-                         (and (map-entry? x) (color-key? (key x)) (integer? (val x))) [(key x) (hex-color (val x))]
-                         :else x))
-                 v))
+  (walk/prewalk (fn [x]
+                  (cond (instance? Vec4 x) (readable-color x)
+                        (fn? x) 'fn
+                        (and (map-entry? x) (color-key? (key x)) (integer? (val x))) [(key x) (hex-color (val x))]
+                        :else x))
+                v))
 
 (defn- default-text
   "Default cell of option `row`: its printed `:default` (an integer colour of a colour key as `0xrrggbb`) and its
@@ -285,25 +296,36 @@
   "The text of every cell of the row [[data-table]] adds below the shown rows of longer data."
   "…")
 
+(defn- number-row?
+  "Tests whether `v` is a number or a non-empty sequential of numbers (an observation of a sample, a matrix row) - not
+  a fastmath point or colour (`Vec2`, `Vec3`, `Vec4`)."
+  [v]
+  (or (number? v)
+      (and (sequential? v) (not (instance? Vec2 v)) (not (instance? Vec3 v)) (not (instance? Vec4 v))
+           (seq v) (every? number? v))))
+
 (defn- data-rows
   "Rows of `data`: rows (a non-empty sequence of maps) as they are, columns (a map of equal-length non-empty
-  sequences) as rows; `nil` for anything else."
+  sequences) as rows, a sample (a non-empty sequence of numbers or number vectors) as rows `{:value v}`; `nil` for
+  anything else."
   [data]
   (cond
     (and (sequential? data) (seq data) (every? map? (take data-table-rows data))) data
+    (and (sequential? data) (seq data) (every? number-row? (take data-table-rows data))) (map (fn [v] {:value v}) data)
     (and (map? data) (seq data) (every? sequential? (vals data)) (pos? (count (first (vals data))))
          (apply = (map count (vals data))))
     (let [ks (keys data)] (apply map (fn [& vs] (zipmap ks vs)) (map data ks)))
     :else nil))
 
 (defn- cell-text
-  "Text of a table cell: empty for a missing value, a string as it is, a `java.time` value as its ISO text, else
-  printed (colours and functions readable, see [[readable-value]])."
+  "Text of a table cell: empty for a missing value, a string as it is, a `java.time` value as its ISO text, a shingle
+  interval as its label text, else printed (colours and functions readable, see [[readable-value]])."
   [v]
   (cond
     (nil? v) ""
     (string? v) v
     (instance? java.time.temporal.Temporal v) (str v)
+    (shingle/interval? v) (str v)
     :else (pr-str (readable-value v))))
 
 (def data-table-class
@@ -312,16 +334,17 @@
   "data-table")
 
 (defn data-table
-  "The first 100 rows ([[data-table-rows]]) of `data` - rows (maps) or columns (a map of equal-length sequences) - as
-  a table in a box of class [[data-table-class]], its code hidden: a column per key of the shown rows
-  (first-appearance order), cells as [[cell-text]]; longer data gets a last row of [[truncation-mark]] cells (the
-  data is cut there). Throws `ex-info {:key :data}` for empty data or data that isn't rows or columns."
+  "The first 100 rows ([[data-table-rows]]) of `data` - rows (maps), columns (a map of equal-length sequences) or a
+  sample of numbers or number vectors (one `value` column) - as a table in a box of class [[data-table-class]], its
+  code hidden: a column per key of the shown rows (first-appearance order), cells as [[cell-text]]; longer data gets
+  a last row of [[truncation-mark]] cells (the data is cut there). Throws `ex-info {:key :data}` for empty data or
+  data that is none of these."
   [data]
   (let [taken (some->> (data-rows data) (take (inc (long data-table-rows))) vec)
         rows (vec (take data-table-rows taken))
         truncated? (< (long data-table-rows) (count taken))]
     (when (empty? rows)
-      (throw (ex-info "data-table needs rows (maps) or columns (a map of sequences)." {:key :data :value data})))
+      (throw (ex-info "data-table needs rows (maps), columns (a map of sequences) or a sample (numbers or number vectors)." {:key :data :value data})))
     (let [ks (vec (distinct (mapcat keys rows)))]
       (kindly/hide-code
        (kind/hiccup

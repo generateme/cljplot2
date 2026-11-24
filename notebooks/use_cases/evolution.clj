@@ -11,6 +11,7 @@
   (:require [fastmath.core :as m]
             [fastmath.kernel :as kernel]
             [fastmath.random :as r]
+            [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.levels :as levels]
@@ -100,8 +101,8 @@
 
 ;; ### Log scale
 
-;; Growth at a steady rate is a straight line on a log axis; `:sqrt`, `:pow` and `:symlog` are the other
-;; continuous transforms (wadogo scales).
+;; Growth at a steady rate is a straight line on a log axis; `:pow`, `:symlog` and `:radial` (square-root like) are
+;; the other continuous transforms ([scale kinds](reference.scales_axes_coords.html#scale-kinds)).
 
 (nu/source-note {:source "R Graph Gallery - Line plot with log scale"
                  :url "https://r-graph-gallery.com/line-plot-log-scale.html"
@@ -156,7 +157,7 @@
 ;; An interpolated line is evaluated every `:sample-step` pixels (default 1) or at `{:count n}` positions per run - a
 ;; coarse count shows the polyline behind a curve.
 
-(nu/source-note {:source "cljplot2 - line :sample-step" :dataset :air-passengers})
+(nu/source-note {:dataset :air-passengers})
 
 (let [years (filter #(<= 1958 (:year %)) air)
       panel (fn [title step] {:data years :mapping {:x :date :y :passengers}
@@ -171,7 +172,7 @@
 ;; A missing (`nil`) value breaks the line (`:gaps :break`, default); `:gaps :bridge` joins the ends with a dimmed
 ;; segment, so the gap stays visible.
 
-(nu/source-note {:source "cljplot2 - line :gaps" :dataset :economics})
+(nu/source-note {:dataset :economics})
 
 (let [gappy (map (fn [row] (if (<= 1990 (.getYear ^LocalDate (:date row)) 1992) (assoc row :psavert nil) row))
                  (filter #(<= 1985 (.getYear ^LocalDate (:date %)) 1997) economics))
@@ -244,22 +245,21 @@
 
 ;; ### Time heatmap
 
-;; Year × month as two categorical axes, the value as a linear colour: seasonality and growth at once. A rect whose
-;; ends are levels covers the level's band.
+;; Year × month as two categorical axes, the value as a linear colour: seasonality and growth at once - a
+;; [tile](reference.charts_grids_fields.html#tile) per month (categories in data order: January to December, the
+;; years upward).
 
 (nu/source-note {:source "R Graph Gallery - The hourly heatmap"
                  :url "https://r-graph-gallery.com/283-the-hourly-heatmap.html"
                  :dataset :air-passengers})
 
-(let [months ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"]
-      rows (map #(assoc % :year-level (str (:year %))) air)]
-  (plot/render-image
-   {:data rows
-    :scales {:x {:domain months} :color {:range :viridis/viridis :title "passengers"}}
-    :charts [(chart/rect {:mapping {:x0 :month :x1 :month :y0 :year-level :y1 :year-level :color :passengers}
-                          :stroke-color :white})]
-    :labels {:title "Airline passengers by month (thousands)" :x nil :y nil}}
-   {:width 800 :height 500}))
+(plot/render-image
+ {:data air
+  :mapping {:x :month :y #(str (:year %)) :color :passengers}
+  :scales {:color {:range :viridis/viridis :title "passengers"}}
+  :charts [(chart/tile {:stroke-color :white})]
+  :labels {:title "Airline passengers by month (thousands)" :x nil :y nil}}
+ {:width 800 :height 500})
 
 ;; ## Smoothing and uncertainty
 
@@ -431,8 +431,8 @@
 
 (def diet-means
   "Mean chick weight per diet and day."
-  (vec (for [[[diet time] rows] (sort-by key (group-by (juxt :diet :time) chicks))]
-         {:diet diet :time time :weight (/ (double (reduce + (map :weight rows))) (count rows))})))
+  (vec (for [[[diet day] rows] (sort-by key (group-by (juxt :diet :time) chicks))]
+         {:diet diet :time day :weight (stats/mean (map :weight rows))})))
 
 (nu/data-table diet-means)
 
@@ -510,28 +510,27 @@
 ;; ### Lollipop
 
 ;; A segment from zero to each value (`(chart/segment {:yend 0})`) under a point, on any x: car models (flipped for
-;; readable labels) or dates.
+;; readable labels, ordered by the band scale's `:order-by` - each model's mpg) or dates.
 
 (nu/source-note {:source "R Graph Gallery - Basic lollipop plot; data-to-viz - Lollipop"
                  :url ["https://r-graph-gallery.com/300-basic-lollipop-plot.html"
                        "https://www.data-to-viz.com/graph/lollipop.html"]
                  :dataset :mtcars})
 
-(let [ordered (sort-by :mpg mtcars)]
-  (plot/render-image
-   (plot/arrange
-    [{:data ordered
-      :mapping {:x :model :y :mpg}
-      :scales {:x {:domain (mapv :model ordered)}}
-      :flip true
-      :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
-      :labels {:title "Fuel economy of 32 cars" :x nil :y "miles per gallon"}}
-     {:data (filter #(= 1959 (:year %)) air)
-      :mapping {:x :date :y :passengers}
-      :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
-      :labels {:title "Passengers in 1959" :x nil :y "thousands"}}]
-    {:columns 2})
-   {:width 1000 :height 700}))
+(plot/render-image
+ (plot/arrange
+  [{:data mtcars
+    :mapping {:x :model :y :mpg}
+    :scales {:x {:order-by #(:mpg (first %))}}
+    :flip true
+    :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
+    :labels {:title "Fuel economy of 32 cars" :x nil :y "miles per gallon"}}
+   {:data (filter #(= 1959 (:year %)) air)
+    :mapping {:x :date :y :passengers}
+    :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
+    :labels {:title "Passengers in 1959" :x nil :y "thousands"}}]
+  {:columns 2})
+ {:width 1000 :height 700})
 
 ;; ### Candlestick
 
@@ -564,7 +563,8 @@
 
 ;; ### Line coloured by its value
 
-;; A linear `:color` colours the line along its length; binned, it shows ranges (see also the Colors chapter).
+;; A linear `:color` colours the line along its length; binned, it shows ranges (see also the
+;; [Colours](use_cases.colors.html) chapter).
 
 (nu/source-note {:source "R Graph Gallery - Line plot colour following y value"
                  :url "https://r-graph-gallery.com/200-change-color-in-lineplot-following-y-value.html"
@@ -580,40 +580,40 @@
   {:columns 2})
  {:width 1000 :height 400})
 
-;; ### Connected scatter
+;; ### Connected scatter coloured by time
 
-;; Two variables against each other, joined in time order (`:order :data`); `:curve :bezier` passes a smooth path
-;; through the points, labels mark some years.
+;; Two variables against each other, joined in time order (`:order :data`): the
+;; [Correlation](use_cases.correlation.html#connected-scatter-with-dates) chapter labels some years on the path; here
+;; the time itself colours the line along its length - quarterly means through the 2008 crisis: unemployment spells
+;; grow longer while people save more; later the spells shorten again, while saving stays about twice its 2005
+;; level.
 
 (nu/source-note {:source "R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter"
                  :url ["https://r-graph-gallery.com/connected_scatterplot_ggplot2.html"
                        "https://www.data-to-viz.com/graph/connectedscatter.html"]
                  :dataset :economics})
 
-(let [yearly (vec (for [[year rows] (sort-by key (group-by #(.getYear ^LocalDate (:date %)) economics))
-                        :when (<= 2000 year 2014)]
-                    {:year year
-                     :uempmed (/ (double (reduce + (map :uempmed rows))) (count rows))
-                     :psavert (/ (double (reduce + (map :psavert rows))) (count rows))}))]
+(let [quarter-of (fn [{:keys [^LocalDate date]}] (+ (.getYear date) (/ (quot (dec (.getMonthValue date)) 3) 4.0)))
+      quarterly (vec (for [[quarter rows] (sort-by key (group-by quarter-of economics))
+                           :when (<= 2005.0 (double quarter) 2014.75)]
+                       {:quarter quarter :uempmed (stats/mean (map :uempmed rows)) :psavert (stats/mean (map :psavert rows))}))]
   (plot/render-image
-   {:data yearly
-    :mapping {:x :uempmed :y :psavert}
-    :charts [(chart/line {:order :data :curve :bezier :color [33 102 172]})
-             (chart/scatter {:size 6 :color [33 102 172]})
-             (chart/text {:data (filter #(#{2000 2003 2006 2009 2012 2014} (:year %)) yearly) :mapping {:x :uempmed :y :psavert :label :year}
-                          :anchor [:left :bottom] :offset [4 4]})]
-    :labels {:title "Unemployment duration vs savings rate, 2000-2014" :x "median unemployment, weeks" :y "savings rate, %"}}
+   {:data quarterly
+    :mapping {:x :uempmed :y :psavert :color :quarter}
+    :scales {:color {:range :viridis/viridis :title "year" :formatter #(str (long %))}}
+    :charts [(chart/line {:order :data :line-width 2.5})]
+    :labels {:title "Unemployment duration vs savings rate, quarterly 2005-2014" :x "median unemployment, weeks"
+             :y "savings rate, %"}}
    {:width 800 :height 550}))
 
 ;; ## Functions
 
 ;; `chart/function` samples functions across the panel. Several functions - a vector, `[label f]` pairs or a map -
 ;; are one group each: `{:mapping {:color :function}}` colours them and gives the legend, labels in the given
-;; order. `:y-limits` keeps asymptotes from flattening the curve (segments across a limit are cut).
+;; order. `:y-limits` keeps asymptotes from flattening the curve: samples outside the limits don't count for the y
+;; extent; a jump between opposite panel edges cuts the curve.
 
 ;; ### Many functions with a legend
-
-(nu/source-note {:source "cljplot2 - chart/function"})
 
 (plot/render-image
  (plot/arrange

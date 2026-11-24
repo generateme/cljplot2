@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>35&nbsp; Correlation – cljplot2</title>
+<title>31&nbsp; Correlation – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -68,8 +68,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./use_cases.flow.html" rel="next">
-<link href="./use_cases.part_of_a_whole.html" rel="prev">
+<link href="./use_cases.ranking.html" rel="next">
+<link href="./use_cases.distribution.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -127,7 +127,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.correlation.html"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.correlation.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -468,61 +468,61 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#scatter" id="toc-scatter" class="nav-link active" data-scroll-target="#scatter"><span class="header-section-number">35.1</span> Scatter</a>
+  <li><a href="#scatter" id="toc-scatter" class="nav-link active" data-scroll-target="#scatter"><span class="header-section-number">31.1</span> Scatter</a>
   <ul>
-  <li><a href="#basic-scatter-styled-points" id="toc-basic-scatter-styled-points" class="nav-link" data-scroll-target="#basic-scatter-styled-points"><span class="header-section-number">35.1.1</span> Basic scatter, styled points</a></li>
-  <li><a href="#colour-and-shape-by-group" id="toc-colour-and-shape-by-group" class="nav-link" data-scroll-target="#colour-and-shape-by-group"><span class="header-section-number">35.1.2</span> Colour and shape by group</a></li>
-  <li><a href="#text-labels-in-boxes" id="toc-text-labels-in-boxes" class="nav-link" data-scroll-target="#text-labels-in-boxes"><span class="header-section-number">35.1.3</span> Text labels in boxes</a></li>
-  <li><a href="#rugs-and-marginal-distributions" id="toc-rugs-and-marginal-distributions" class="nav-link" data-scroll-target="#rugs-and-marginal-distributions"><span class="header-section-number">35.1.4</span> Rugs and marginal distributions</a></li>
-  <li><a href="#linear-fit-with-a-confidence-band" id="toc-linear-fit-with-a-confidence-band" class="nav-link" data-scroll-target="#linear-fit-with-a-confidence-band"><span class="header-section-number">35.1.5</span> Linear fit with a confidence band</a></li>
-  <li><a href="#a-scatter-per-group" id="toc-a-scatter-per-group" class="nav-link" data-scroll-target="#a-scatter-per-group"><span class="header-section-number">35.1.6</span> A scatter per group</a></li>
-  <li><a href="#size-by-overlap-count" id="toc-size-by-overlap-count" class="nav-link" data-scroll-target="#size-by-overlap-count"><span class="header-section-number">35.1.7</span> Size by overlap count</a></li>
-  <li><a href="#manhattan-plot" id="toc-manhattan-plot" class="nav-link" data-scroll-target="#manhattan-plot"><span class="header-section-number">35.1.8</span> Manhattan plot</a></li>
-  <li><a href="#simpsons-paradox" id="toc-simpsons-paradox" class="nav-link" data-scroll-target="#simpsons-paradox"><span class="header-section-number">35.1.9</span> Simpson’s paradox</a></li>
+  <li><a href="#basic-scatter-styled-points" id="toc-basic-scatter-styled-points" class="nav-link" data-scroll-target="#basic-scatter-styled-points"><span class="header-section-number">31.1.1</span> Basic scatter, styled points</a></li>
+  <li><a href="#colour-and-shape-by-group" id="toc-colour-and-shape-by-group" class="nav-link" data-scroll-target="#colour-and-shape-by-group"><span class="header-section-number">31.1.2</span> Colour and shape by group</a></li>
+  <li><a href="#text-labels-in-boxes" id="toc-text-labels-in-boxes" class="nav-link" data-scroll-target="#text-labels-in-boxes"><span class="header-section-number">31.1.3</span> Text labels in boxes</a></li>
+  <li><a href="#rugs-and-marginal-distributions" id="toc-rugs-and-marginal-distributions" class="nav-link" data-scroll-target="#rugs-and-marginal-distributions"><span class="header-section-number">31.1.4</span> Rugs and marginal distributions</a></li>
+  <li><a href="#linear-fit-with-a-confidence-band" id="toc-linear-fit-with-a-confidence-band" class="nav-link" data-scroll-target="#linear-fit-with-a-confidence-band"><span class="header-section-number">31.1.5</span> Linear fit with a confidence band</a></li>
+  <li><a href="#a-scatter-per-group" id="toc-a-scatter-per-group" class="nav-link" data-scroll-target="#a-scatter-per-group"><span class="header-section-number">31.1.6</span> A scatter per group</a></li>
+  <li><a href="#size-by-overlap-count" id="toc-size-by-overlap-count" class="nav-link" data-scroll-target="#size-by-overlap-count"><span class="header-section-number">31.1.7</span> Size by overlap count</a></li>
+  <li><a href="#manhattan-plot" id="toc-manhattan-plot" class="nav-link" data-scroll-target="#manhattan-plot"><span class="header-section-number">31.1.8</span> Manhattan plot</a></li>
+  <li><a href="#simpsons-paradox" id="toc-simpsons-paradox" class="nav-link" data-scroll-target="#simpsons-paradox"><span class="header-section-number">31.1.9</span> Simpson’s paradox</a></li>
   </ul></li>
-  <li><a href="#heatmap" id="toc-heatmap" class="nav-link" data-scroll-target="#heatmap"><span class="header-section-number">35.2</span> Heatmap</a>
+  <li><a href="#heatmap" id="toc-heatmap" class="nav-link" data-scroll-target="#heatmap"><span class="header-section-number">31.2</span> Heatmap</a>
   <ul>
-  <li><a href="#basic-heatmap-square-and-hexagon-cells" id="toc-basic-heatmap-square-and-hexagon-cells" class="nav-link" data-scroll-target="#basic-heatmap-square-and-hexagon-cells"><span class="header-section-number">35.2.1</span> Basic heatmap, square and hexagon cells</a></li>
-  <li><a href="#palettes-normalized-columns" id="toc-palettes-normalized-columns" class="nav-link" data-scroll-target="#palettes-normalized-columns"><span class="header-section-number">35.2.2</span> Palettes, normalized columns</a></li>
-  <li><a href="#side-colour-bar" id="toc-side-colour-bar" class="nav-link" data-scroll-target="#side-colour-bar"><span class="header-section-number">35.2.3</span> Side colour bar</a></li>
-  <li><a href="#values-in-cells-the-correlation-matrix" id="toc-values-in-cells-the-correlation-matrix" class="nav-link" data-scroll-target="#values-in-cells-the-correlation-matrix"><span class="header-section-number">35.2.4</span> Values in cells: the correlation matrix</a></li>
-  <li><a href="#calendar-heatmap" id="toc-calendar-heatmap" class="nav-link" data-scroll-target="#calendar-heatmap"><span class="header-section-number">35.2.5</span> Calendar heatmap</a></li>
-  <li><a href="#row-and-column-order" id="toc-row-and-column-order" class="nav-link" data-scroll-target="#row-and-column-order"><span class="header-section-number">35.2.6</span> Row and column order</a></li>
-  <li><a href="#smoothed-heatmap" id="toc-smoothed-heatmap" class="nav-link" data-scroll-target="#smoothed-heatmap"><span class="header-section-number">35.2.7</span> Smoothed heatmap</a></li>
+  <li><a href="#basic-heatmap-square-and-hexagon-cells" id="toc-basic-heatmap-square-and-hexagon-cells" class="nav-link" data-scroll-target="#basic-heatmap-square-and-hexagon-cells"><span class="header-section-number">31.2.1</span> Basic heatmap, square and hexagon cells</a></li>
+  <li><a href="#palettes-normalized-columns" id="toc-palettes-normalized-columns" class="nav-link" data-scroll-target="#palettes-normalized-columns"><span class="header-section-number">31.2.2</span> Palettes, normalized columns</a></li>
+  <li><a href="#side-colour-bar" id="toc-side-colour-bar" class="nav-link" data-scroll-target="#side-colour-bar"><span class="header-section-number">31.2.3</span> Side colour bar</a></li>
+  <li><a href="#values-in-cells-the-correlation-matrix" id="toc-values-in-cells-the-correlation-matrix" class="nav-link" data-scroll-target="#values-in-cells-the-correlation-matrix"><span class="header-section-number">31.2.4</span> Values in cells: the correlation matrix</a></li>
+  <li><a href="#calendar-heatmap" id="toc-calendar-heatmap" class="nav-link" data-scroll-target="#calendar-heatmap"><span class="header-section-number">31.2.5</span> Calendar heatmap</a></li>
+  <li><a href="#row-and-column-order" id="toc-row-and-column-order" class="nav-link" data-scroll-target="#row-and-column-order"><span class="header-section-number">31.2.6</span> Row and column order</a></li>
+  <li><a href="#smoothed-heatmap" id="toc-smoothed-heatmap" class="nav-link" data-scroll-target="#smoothed-heatmap"><span class="header-section-number">31.2.7</span> Smoothed heatmap</a></li>
   </ul></li>
-  <li><a href="#correlogram" id="toc-correlogram" class="nav-link" data-scroll-target="#correlogram"><span class="header-section-number">35.3</span> Correlogram</a>
+  <li><a href="#correlogram" id="toc-correlogram" class="nav-link" data-scroll-target="#correlogram"><span class="header-section-number">31.3</span> Correlogram</a>
   <ul>
-  <li><a href="#scatter-plot-matrix-by-group" id="toc-scatter-plot-matrix-by-group" class="nav-link" data-scroll-target="#scatter-plot-matrix-by-group"><span class="header-section-number">35.3.1</span> Scatter-plot matrix by group</a></li>
-  <li><a href="#correlation-glyphs" id="toc-correlation-glyphs" class="nav-link" data-scroll-target="#correlation-glyphs"><span class="header-section-number">35.3.2</span> Correlation glyphs</a></li>
+  <li><a href="#scatter-plot-matrix-by-group" id="toc-scatter-plot-matrix-by-group" class="nav-link" data-scroll-target="#scatter-plot-matrix-by-group"><span class="header-section-number">31.3.1</span> Scatter-plot matrix by group</a></li>
+  <li><a href="#correlation-glyphs" id="toc-correlation-glyphs" class="nav-link" data-scroll-target="#correlation-glyphs"><span class="header-section-number">31.3.2</span> Correlation glyphs</a></li>
   </ul></li>
-  <li><a href="#bubble" id="toc-bubble" class="nav-link" data-scroll-target="#bubble"><span class="header-section-number">35.4</span> Bubble</a>
+  <li><a href="#bubble" id="toc-bubble" class="nav-link" data-scroll-target="#bubble"><span class="header-section-number">31.4</span> Bubble</a>
   <ul>
-  <li><a href="#bubble-chart-area-size-range-colours-and-legend" id="toc-bubble-chart-area-size-range-colours-and-legend" class="nav-link" data-scroll-target="#bubble-chart-area-size-range-colours-and-legend"><span class="header-section-number">35.4.1</span> Bubble chart: area, size range, colours and legend</a></li>
+  <li><a href="#bubble-chart-area-size-range-colours-and-legend" id="toc-bubble-chart-area-size-range-colours-and-legend" class="nav-link" data-scroll-target="#bubble-chart-area-size-range-colours-and-legend"><span class="header-section-number">31.4.1</span> Bubble chart: area, size range, colours and legend</a></li>
   </ul></li>
-  <li><a href="#connected-scatter" id="toc-connected-scatter" class="nav-link" data-scroll-target="#connected-scatter"><span class="header-section-number">35.5</span> Connected scatter</a>
+  <li><a href="#connected-scatter" id="toc-connected-scatter" class="nav-link" data-scroll-target="#connected-scatter"><span class="header-section-number">31.5</span> Connected scatter</a>
   <ul>
-  <li><a href="#connected-scatter-with-dates" id="toc-connected-scatter-with-dates" class="nav-link" data-scroll-target="#connected-scatter-with-dates"><span class="header-section-number">35.5.1</span> Connected scatter with dates</a></li>
+  <li><a href="#connected-scatter-with-dates" id="toc-connected-scatter-with-dates" class="nav-link" data-scroll-target="#connected-scatter-with-dates"><span class="header-section-number">31.5.1</span> Connected scatter with dates</a></li>
   </ul></li>
-  <li><a href="#d-density" id="toc-d-density" class="nav-link" data-scroll-target="#d-density"><span class="header-section-number">35.6</span> 2D density</a>
+  <li><a href="#d-density" id="toc-d-density" class="nav-link" data-scroll-target="#d-density"><span class="header-section-number">31.6</span> 2D density</a>
   <ul>
-  <li><a href="#d-histogram-and-hexbin" id="toc-d-histogram-and-hexbin" class="nav-link" data-scroll-target="#d-histogram-and-hexbin"><span class="header-section-number">35.6.1</span> 2D histogram and hexbin</a></li>
-  <li><a href="#d-kernel-density-and-contours" id="toc-d-kernel-density-and-contours" class="nav-link" data-scroll-target="#d-kernel-density-and-contours"><span class="header-section-number">35.6.2</span> 2D kernel density and contours</a></li>
-  <li><a href="#points-over-a-density" id="toc-points-over-a-density" class="nav-link" data-scroll-target="#points-over-a-density"><span class="header-section-number">35.6.3</span> Points over a density</a></li>
+  <li><a href="#d-histogram-and-hexbin" id="toc-d-histogram-and-hexbin" class="nav-link" data-scroll-target="#d-histogram-and-hexbin"><span class="header-section-number">31.6.1</span> 2D histogram and hexbin</a></li>
+  <li><a href="#d-kernel-density-and-contours" id="toc-d-kernel-density-and-contours" class="nav-link" data-scroll-target="#d-kernel-density-and-contours"><span class="header-section-number">31.6.2</span> 2D kernel density and contours</a></li>
+  <li><a href="#points-over-a-density" id="toc-points-over-a-density" class="nav-link" data-scroll-target="#points-over-a-density"><span class="header-section-number">31.6.3</span> Points over a density</a></li>
   </ul></li>
-  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions"><span class="header-section-number">35.7</span> Functions</a>
+  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions"><span class="header-section-number">31.7</span> Functions</a>
   <ul>
-  <li><a href="#a-function-as-a-raster" id="toc-a-function-as-a-raster" class="nav-link" data-scroll-target="#a-function-as-a-raster"><span class="header-section-number">35.7.1</span> A function as a raster</a></li>
-  <li><a href="#a-function-with-contour-lines" id="toc-a-function-with-contour-lines" class="nav-link" data-scroll-target="#a-function-with-contour-lines"><span class="header-section-number">35.7.2</span> A function with contour lines</a></li>
+  <li><a href="#a-function-as-a-raster" id="toc-a-function-as-a-raster" class="nav-link" data-scroll-target="#a-function-as-a-raster"><span class="header-section-number">31.7.1</span> A function as a raster</a></li>
+  <li><a href="#a-function-with-contour-lines" id="toc-a-function-with-contour-lines" class="nav-link" data-scroll-target="#a-function-with-contour-lines"><span class="header-section-number">31.7.2</span> A function with contour lines</a></li>
   </ul></li>
-  <li><a href="#overplotting" id="toc-overplotting" class="nav-link" data-scroll-target="#overplotting"><span class="header-section-number">35.8</span> Overplotting</a>
+  <li><a href="#overplotting" id="toc-overplotting" class="nav-link" data-scroll-target="#overplotting"><span class="header-section-number">31.8</span> Overplotting</a>
   <ul>
-  <li><a href="#size-transparency-sampling-binning-facets-margins" id="toc-size-transparency-sampling-binning-facets-margins" class="nav-link" data-scroll-target="#size-transparency-sampling-binning-facets-margins"><span class="header-section-number">35.8.1</span> Size, transparency, sampling, binning, facets, margins</a></li>
-  <li><a href="#jitter" id="toc-jitter" class="nav-link" data-scroll-target="#jitter"><span class="header-section-number">35.8.2</span> Jitter</a></li>
+  <li><a href="#size-transparency-sampling-binning-facets-margins" id="toc-size-transparency-sampling-binning-facets-margins" class="nav-link" data-scroll-target="#size-transparency-sampling-binning-facets-margins"><span class="header-section-number">31.8.1</span> Size, transparency, sampling, binning, facets, margins</a></li>
+  <li><a href="#jitter" id="toc-jitter" class="nav-link" data-scroll-target="#jitter"><span class="header-section-number">31.8.2</span> Jitter</a></li>
   </ul></li>
-  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">35.9</span> Caveats</a>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats"><span class="header-section-number">31.9</span> Caveats</a>
   <ul>
-  <li><a href="#anscombes-quartet" id="toc-anscombes-quartet" class="nav-link" data-scroll-target="#anscombes-quartet"><span class="header-section-number">35.9.1</span> Anscombe’s quartet</a></li>
-  <li><a href="#other-caveats" id="toc-other-caveats" class="nav-link" data-scroll-target="#other-caveats"><span class="header-section-number">35.9.2</span> Other caveats</a></li>
+  <li><a href="#anscombes-quartet" id="toc-anscombes-quartet" class="nav-link" data-scroll-target="#anscombes-quartet"><span class="header-section-number">31.9.1</span> Anscombe’s quartet</a></li>
+  <li><a href="#other-caveats" id="toc-other-caveats" class="nav-link" data-scroll-target="#other-caveats"><span class="header-section-number">31.9.2</span> Other caveats</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -530,9 +530,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.correlation.html"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.correlation.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></h1>
+<h1 class="title"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></h1>
 </div>
 
 
@@ -562,7 +562,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
 <p>How two or more variables move together: scatter plots, heatmaps, correlograms, bubble charts, connected scatter plots, 2D densities, functions of two variables and the ways out of overplotting (the <a href="https://r-graph-gallery.com/">R Graph Gallery</a> correlation pages and <a href="https://www.data-to-viz.com/">data-to-viz</a>).</p>
-<p>Not here: labels along a trend line and label repel, clustered heatmap order with dendrograms (waits for hierarchical clustering in fastmath), arrows on connected scatter plots (backlog), 3D densities and interactivity.</p>
+<p>Not here: labels along a trend line and label repel, 3D densities and interactivity; a heatmap in clustered order with its dendrograms (<a href="reference.builders_trees.html#clustered-heatmap">plot/clustered-heatmap</a>) is in the <a href="use_cases.flow.html">Flow</a> chapter.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> use-cases.correlation</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -570,9 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [fastmath.stats <span class="at">:as</span> stats]</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> DayOfWeek LocalDate]</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>           [java.<span class="kw">time</span>.temporal IsoFields]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.pairwise <span class="at">:as</span> pairwise]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> DayOfWeek LocalDate]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>           [java.<span class="kw">time</span>.temporal IsoFields]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> houses </span>(nu/dataset <span class="at">:house-prices</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -7188,11 +7189,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="printedClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="va">#'use-cases.correlation/z-scores</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="scatter" class="level2" data-number="35.1">
-<h2 data-number="35.1" class="anchored" data-anchor-id="scatter"><span class="header-section-number">35.1</span> Scatter</h2>
+<section id="scatter" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="scatter"><span class="header-section-number">31.1</span> Scatter</h2>
 <p>One point per observation at its two values; colour, shape and size carry more variables.</p>
-<section id="basic-scatter-styled-points" class="level3" data-number="35.1.1">
-<h3 data-number="35.1.1" class="anchored" data-anchor-id="basic-scatter-styled-points"><span class="header-section-number">35.1.1</span> Basic scatter, styled points</h3>
+<section id="basic-scatter-styled-points" class="level3" data-number="31.1.1">
+<h3 data-number="31.1.1" class="anchored" data-anchor-id="basic-scatter-styled-points"><span class="header-section-number">31.1.1</span> Basic scatter, styled points</h3>
 <p>Living area against sale price of 1460 houses: the default points, then a translucent fill with an outline and another shape.</p>
 <p>Source: R Graph Gallery - Basic scatterplot with ggplot2; data-to-viz - Scatter (<a href="https://r-graph-gallery.com/272-basic-scatterplot-with-ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/scatter.html">2</a>). Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -7210,8 +7211,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image0.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="colour-and-shape-by-group" class="level3" data-number="35.1.2">
-<h3 data-number="35.1.2" class="anchored" data-anchor-id="colour-and-shape-by-group"><span class="header-section-number">35.1.2</span> Colour and shape by group</h3>
+<section id="colour-and-shape-by-group" class="level3" data-number="31.1.2">
+<h3 data-number="31.1.2" class="anchored" data-anchor-id="colour-and-shape-by-group"><span class="header-section-number">31.1.2</span> Colour and shape by group</h3>
 <p>Mapping <code>:color</code> and <code>:shape</code> to the same variable gives every species its colour and shape, and one legend.</p>
 <p>Source: <a href="https://r-graph-gallery.com/274-map-a-variable-to-ggplot2-scatterplot.html">R Graph Gallery - Map a variable to a ggplot2 scatterplot</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7225,9 +7226,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image1.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="text-labels-in-boxes" class="level3" data-number="35.1.3">
-<h3 data-number="35.1.3" class="anchored" data-anchor-id="text-labels-in-boxes"><span class="header-section-number">35.1.3</span> Text labels in boxes</h3>
-<p>A text chart names some cars; <code>:background</code> puts each label on a semi-transparent box, so the points it covers stay visible and the text stays readable over them.</p>
+<section id="text-labels-in-boxes" class="level3" data-number="31.1.3">
+<h3 data-number="31.1.3" class="anchored" data-anchor-id="text-labels-in-boxes"><span class="header-section-number">31.1.3</span> Text labels in boxes</h3>
+<p>A <a href="reference.charts_annotations.html#text">text</a> chart names some cars; <code>:background</code> puts each label on a semi-transparent box, so the points it covers stay visible and the text stays readable over them.</p>
 <p>Source: <a href="https://r-graph-gallery.com/275-add-text-labels-with-ggplot2.html">R Graph Gallery - Add text labels with ggplot2</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [label-box {<span class="at">:size</span> <span class="dv">9</span> <span class="at">:background</span> [<span class="dv">255</span> <span class="dv">255</span> <span class="dv">255</span> <span class="dv">200</span>] <span class="at">:inset</span> <span class="dv">2</span> <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:label</span> <span class="at">:model</span>}}]</span>
@@ -7245,9 +7246,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="rugs-and-marginal-distributions" class="level3" data-number="35.1.4">
-<h3 data-number="35.1.4" class="anchored" data-anchor-id="rugs-and-marginal-distributions"><span class="header-section-number">35.1.4</span> Rugs and marginal distributions</h3>
-<p>Margins share the panel’s axes: rugs (one line per value) beside both axes, or the densities of both variables.</p>
+<section id="rugs-and-marginal-distributions" class="level3" data-number="31.1.4">
+<h3 data-number="31.1.4" class="anchored" data-anchor-id="rugs-and-marginal-distributions"><span class="header-section-number">31.1.4</span> Rugs and marginal distributions</h3>
+<p><a href="reference.facets_arrange.html#margins">Margins</a> share the panel’s axes: rugs (one line per value) beside both axes, or the densities of both variables.</p>
 <p>Source: <a href="https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html">R Graph Gallery - Marginal distribution with ggplot2</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7270,9 +7271,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="linear-fit-with-a-confidence-band" class="level3" data-number="35.1.5">
-<h3 data-number="35.1.5" class="anchored" data-anchor-id="linear-fit-with-a-confidence-band"><span class="header-section-number">35.1.5</span> Linear fit with a confidence band</h3>
-<p><code>chart/smooth {:method :lm}</code> adds the least-squares line and its 95 % confidence band.</p>
+<section id="linear-fit-with-a-confidence-band" class="level3" data-number="31.1.5">
+<h3 data-number="31.1.5" class="anchored" data-anchor-id="linear-fit-with-a-confidence-band"><span class="header-section-number">31.1.5</span> Linear fit with a confidence band</h3>
+<p><a href="reference.charts_series.html#smooth"><code>chart/smooth {:method :lm}</code></a> adds the least-squares line and its 95 % confidence band.</p>
 <p>Source: <a href="https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html">R Graph Gallery - Scatterplot with a regression line</a>. Data: House prices: living area and sale price, data-to-viz example dataset <code>2_TwoNum</code> (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7285,8 +7286,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image5.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="a-scatter-per-group" class="level3" data-number="35.1.6">
-<h3 data-number="35.1.6" class="anchored" data-anchor-id="a-scatter-per-group"><span class="header-section-number">35.1.6</span> A scatter per group</h3>
+<section id="a-scatter-per-group" class="level3" data-number="31.1.6">
+<h3 data-number="31.1.6" class="anchored" data-anchor-id="a-scatter-per-group"><span class="header-section-number">31.1.6</span> A scatter per group</h3>
 <p>A facet mapping draws one panel per species on shared scales.</p>
 <p>Source: <a href="https://r-graph-gallery.com/223-faceting-with-ggplot2.html">R Graph Gallery - Faceting with ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7300,8 +7301,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image6.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="size-by-overlap-count" class="level3" data-number="35.1.7">
-<h3 data-number="35.1.7" class="anchored" data-anchor-id="size-by-overlap-count"><span class="header-section-number">35.1.7</span> Size by overlap count</h3>
+<section id="size-by-overlap-count" class="level3" data-number="31.1.7">
+<h3 data-number="31.1.7" class="anchored" data-anchor-id="size-by-overlap-count"><span class="header-section-number">31.1.7</span> Size by overlap count</h3>
 <p>Integer data puts many cars on one point; counting the cars per point and mapping the count to the point’s area (<code>:area true</code> on the size scale) shows how many sit there.</p>
 <p>Source: <a href="https://r-graph-gallery.com/scatterplot.html">R Graph Gallery - Scatterplot</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7318,8 +7319,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image7.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="manhattan-plot" class="level3" data-number="35.1.8">
-<h3 data-number="35.1.8" class="anchored" data-anchor-id="manhattan-plot"><span class="header-section-number">35.1.8</span> Manhattan plot</h3>
+<section id="manhattan-plot" class="level3" data-number="31.1.8">
+<h3 data-number="31.1.8" class="anchored" data-anchor-id="manhattan-plot"><span class="header-section-number">31.1.8</span> Manhattan plot</h3>
 <p>A genome-wide association plot (seeded data): one point per marker at its position along the chromosomes and its −log10 p-value, chromosomes in alternating colours and numbered at their centres (explicit <code>:ticks</code> with a <code>:formatter</code>), the significance threshold 5·10⁻⁸ as a rule.</p>
 <p>Source: <a href="https://r-graph-gallery.com/101_Manhattan_plot.html">R Graph Gallery - Manhattan plot</a>.</p>
 <div class="sourceClojure">
@@ -7876,8 +7877,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="simpsons-paradox" class="level3" data-number="35.1.9">
-<h3 data-number="35.1.9" class="anchored" data-anchor-id="simpsons-paradox"><span class="header-section-number">35.1.9</span> Simpson’s paradox</h3>
+<section id="simpsons-paradox" class="level3" data-number="31.1.9">
+<h3 data-number="31.1.9" class="anchored" data-anchor-id="simpsons-paradox"><span class="header-section-number">31.1.9</span> Simpson’s paradox</h3>
 <p>Three groups (seeded): within each group y grows with x, across all of them it falls. One fit for everything points the wrong way; a fit per group shows the relation inside the groups.</p>
 <p>Source: <a href="https://www.data-to-viz.com/caveat/simpson.html">data-to-viz - Simpson’s paradox</a>.</p>
 <div class="sourceClojure">
@@ -8426,12 +8427,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="heatmap" class="level2" data-number="35.2">
-<h2 data-number="35.2" class="anchored" data-anchor-id="heatmap"><span class="header-section-number">35.2</span> Heatmap</h2>
+<section id="heatmap" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="heatmap"><span class="header-section-number">31.2</span> Heatmap</h2>
 <p>A grid of cells coloured by a value: rows and columns are categories (or binned numbers).</p>
-<section id="basic-heatmap-square-and-hexagon-cells" class="level3" data-number="35.2.1">
-<h3 data-number="35.2.1" class="anchored" data-anchor-id="basic-heatmap-square-and-hexagon-cells"><span class="header-section-number">35.2.1</span> Basic heatmap, square and hexagon cells</h3>
-<p>European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across columns of different units; <code>:cell :pointy-hex</code> draws the same grid as a honeycomb.</p>
+<section id="basic-heatmap-square-and-hexagon-cells" class="level3" data-number="31.2.1">
+<h3 data-number="31.2.1" class="anchored" data-anchor-id="basic-heatmap-square-and-hexagon-cells"><span class="header-section-number">31.2.1</span> Basic heatmap, square and hexagon cells</h3>
+<p>European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across columns of different units; the <a href="reference.charts_grids_fields.html#tile">tile</a> <code>:cell :pointy-hex</code> draws the same grid as a honeycomb.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> europe </span>(<span class="kw">filterv</span> #(<span class="kw">=</span> <span class="st">"Europe"</span> (<span class="at">:continent</span> <span class="va">%</span>)) countries))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -8996,8 +8997,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image10.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="palettes-normalized-columns" class="level3" data-number="35.2.2">
-<h3 data-number="35.2.2" class="anchored" data-anchor-id="palettes-normalized-columns"><span class="header-section-number">35.2.2</span> Palettes, normalized columns</h3>
+<section id="palettes-normalized-columns" class="level3" data-number="31.2.2">
+<h3 data-number="31.2.2" class="anchored" data-anchor-id="palettes-normalized-columns"><span class="header-section-number">31.2.2</span> Palettes, normalized columns</h3>
 <p>Raw values put every indicator on one colour scale, so life expectancy (around 80) drowns the rates (0-20); standardizing each column first gives every indicator the full palette. Any palette or gradient works: viridis on the left, a diverging RdBu around 0 on the right.</p>
 <p>Source: <a href="https://r-graph-gallery.com/79-levelplot-with-ggplot2.html">R Graph Gallery - Heatmap with the levelplot function</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -9018,8 +9019,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image11.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="side-colour-bar" class="level3" data-number="35.2.3">
-<h3 data-number="35.2.3" class="anchored" data-anchor-id="side-colour-bar"><span class="header-section-number">35.2.3</span> Side colour bar</h3>
+<section id="side-colour-bar" class="level3" data-number="31.2.3">
+<h3 data-number="31.2.3" class="anchored" data-anchor-id="side-colour-bar"><span class="header-section-number">31.2.3</span> Side colour bar</h3>
 <p>A category of the columns as a one-row tile above the heatmap: both plots share the column order (<code>:domain</code>), <code>plot/arrange</code> aligns the cells. Here: up to six of the most populous countries of each continent (the dataset has two in North America), grouped by continent.</p>
 <p>Source: <a href="https://r-graph-gallery.com/215-the-heatmap-function.html">R Graph Gallery - The heatmap function (side colours)</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -9044,29 +9045,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image12.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="values-in-cells-the-correlation-matrix" class="level3" data-number="35.2.4">
-<h3 data-number="35.2.4" class="anchored" data-anchor-id="values-in-cells-the-correlation-matrix"><span class="header-section-number">35.2.4</span> Values in cells: the correlation matrix</h3>
-<p><code>fastmath.stats/correlation-matrix</code> gives r of every pair of variables; one tile per pair, coloured on a diverging scale over [-1 1] and labelled with its value (<code>:value-label</code>, text in a contrasting colour).</p>
+<section id="values-in-cells-the-correlation-matrix" class="level3" data-number="31.2.4">
+<h3 data-number="31.2.4" class="anchored" data-anchor-id="values-in-cells-the-correlation-matrix"><span class="header-section-number">31.2.4</span> Values in cells: the correlation matrix</h3>
+<p><a href="reference.data_sets_series.html#pairwisematrix-rows"><code>pairwise/matrix-rows</code></a> gives r of every pair of variables, here the lower triangle with the diagonal, each pair once; one tile per pair, coloured on a diverging scale over [-1 1] and labelled with its value (<code>:value-label</code>, text in a contrasting colour). The y scale’s <code>:reverse</code> puts the first variable on top.</p>
 <p>Source: <a href="https://r-graph-gallery.com/199-correlation-matrix-with-ggally.html">R Graph Gallery - Correlation matrix with ggally (heatmap)</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [variables [<span class="at">:mpg</span> <span class="at">:cyl</span> <span class="at">:disp</span> <span class="at">:hp</span> <span class="at">:drat</span> <span class="at">:wt</span> <span class="at">:qsec</span> <span class="at">:gear</span> <span class="at">:carb</span>]</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>      names (<span class="kw">mapv</span> <span class="kw">name</span> variables)</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>      r (stats/correlation-matrix (<span class="kw">mapv</span> (<span class="kw">fn</span> [k] (<span class="kw">mapv</span> k mtcars)) variables))]</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> (<span class="kw">vec</span> (<span class="kw">for</span> [i (<span class="kw">range</span> (<span class="kw">count</span> names)) j (<span class="kw">range</span> (<span class="kw">count</span> names))]</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>                 {<span class="at">:x</span> (names i) <span class="at">:y</span> (names j) <span class="at">:r</span> (<span class="kw">nth</span> (<span class="kw">nth</span> r i) j)}))</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:r</span>}</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (<span class="kw">vec</span> (<span class="kw">reverse</span> names))} <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">1</span> <span class="dv">1</span>] <span class="at">:title</span> <span class="st">"r"</span>}}</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/tile {<span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:value-label</span> (<span class="kw">fn</span> [{<span class="at">:keys</span> [value]}] (<span class="kw">format</span> <span class="st">"%.2f"</span> (<span class="kw">double</span> value)))})]</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"mtcars: correlation of every pair"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:data</span> (pairwise/matrix-rows mtcars {<span class="at">:variables</span> [<span class="at">:mpg</span> <span class="at">:cyl</span> <span class="at">:disp</span> <span class="at">:hp</span> <span class="at">:drat</span> <span class="at">:wt</span> <span class="at">:qsec</span> <span class="at">:gear</span> <span class="at">:carb</span>]</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">:triangle</span> <span class="at">:lower</span> <span class="at">:self-pairs</span> <span class="va">true</span>})</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>} <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">1</span> <span class="dv">1</span>] <span class="at">:title</span> <span class="st">"r"</span>}}</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">:charts</span> [(chart/tile {<span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"mtcars: correlation of every pair"</span> <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.correlation_files/image13.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="calendar-heatmap" class="level3" data-number="35.2.5">
-<h3 data-number="35.2.5" class="anchored" data-anchor-id="calendar-heatmap"><span class="header-section-number">35.2.5</span> Calendar heatmap</h3>
+<section id="calendar-heatmap" class="level3" data-number="31.2.5">
+<h3 data-number="31.2.5" class="anchored" data-anchor-id="calendar-heatmap"><span class="header-section-number">31.2.5</span> Calendar heatmap</h3>
 <p>Daily bitcoin price changes on a calendar: ISO week across, weekday down, a row of panels per year; the colour is the day’s change, capped at ±10 % so a few extreme days don’t flatten the rest.</p>
 <p>Source: <a href="https://r-graph-gallery.com/283-the-hourly-heatmap.html">R Graph Gallery - The hourly heatmap (calendar layout)</a>. Data: Bitcoin daily price, 2013-2018, data-to-viz example dataset <code>3_TwoNumOrdered</code> (Yan Holtz; CoinMarketCap via JesseVent/crypto); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -9079,7 +9077,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">:change</span> (m/constrain (<span class="kw">-</span> (<span class="kw">/</span> (<span class="kw">double</span> (<span class="at">:value</span> day)) (<span class="kw">double</span> (<span class="at">:value</span> <span class="kw">prev</span>))) <span class="fl">1.0</span>) -<span class="fl">0.1</span> <span class="fl">0.1</span>)}))]</span>
 <span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> days <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:week</span> <span class="at">:y</span> <span class="at">:weekday</span> <span class="at">:color</span> <span class="at">:change</span> <span class="at">:facet-row</span> <span class="at">:year</span>}</span>
-<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> (<span class="kw">vec</span> (<span class="kw">reverse</span> weekdays))}</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:domain</span> weekdays <span class="at">:reverse</span> <span class="va">true</span>}</span>
 <span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>             <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdYlGn</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:domain</span> [-<span class="fl">0.1</span> <span class="fl">0.1</span>] <span class="at">:title</span> <span class="st">"daily change"</span></span>
 <span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:formatter</span> #(<span class="kw">format</span> <span class="st">"%+.0f%%"</span> (<span class="kw">*</span> <span class="fl">100.0</span> (<span class="kw">double</span> <span class="va">%</span>)))}}</span>
 <span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/tile {<span class="at">:stroke-color</span> <span class="at">:white</span>})]</span>
@@ -9090,30 +9088,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image14.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="row-and-column-order" class="level3" data-number="35.2.6">
-<h3 data-number="35.2.6" class="anchored" data-anchor-id="row-and-column-order"><span class="header-section-number">35.2.6</span> Row and column order</h3>
-<p>The order of the categories is the scale’s <code>:domain</code>: the data order (the default; here the dataset’s subregions) hides structure that a meaningful order shows - countries sorted by life expectancy.</p>
+<section id="row-and-column-order" class="level3" data-number="31.2.6">
+<h3 data-number="31.2.6" class="anchored" data-anchor-id="row-and-column-order"><span class="header-section-number">31.2.6</span> Row and column order</h3>
+<p>Categories come in data order by default (here the dataset’s subregions), which hides structure that a meaningful order shows: the band scale’s <code>:order-by</code> sorts the countries by a function of each one’s rows - its life expectancy.</p>
 <p>Source: <a href="https://r-graph-gallery.com/heatmap.html">R Graph Gallery - Heatmap</a>. Data: Countries: demographic indicators, data-to-viz example dataset <code>multivariate</code> (Yan Holtz; original source not documented); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [rows (z-scores europe)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>      by-life (<span class="kw">mapv</span> <span class="at">:country</span> (<span class="kw">sort-by</span> <span class="at">:life-expectancy</span> europe))</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>      heatmap (<span class="kw">fn</span> [order title legend?]</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>      life-expectancy (<span class="kw">fn</span> [country-rows] (<span class="kw">some</span> #(<span class="kw">when</span> (<span class="kw">=</span> <span class="st">"life-expectancy"</span> (<span class="at">:indicator</span> <span class="va">%</span>)) (<span class="at">:value</span> <span class="va">%</span>)) country-rows))</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>      heatmap (<span class="kw">fn</span> [order-by title legend?]</span>
 <span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> rows <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:country</span> <span class="at">:y</span> <span class="at">:indicator</span> <span class="at">:color</span> <span class="at">:z</span>} <span class="at">:legend</span> legend?</span>
 <span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> (cond-&gt; {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>                           order (<span class="kw">assoc</span> <span class="at">:x</span> {<span class="at">:domain</span> order}))</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>                           order-by (<span class="kw">assoc</span> <span class="at">:x</span> {<span class="at">:order-by</span> order-by}))</span>
 <span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">90</span>}}}</span>
 <span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/tile)]</span>
 <span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}})]</span>
 <span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(heatmap <span class="va">nil</span> <span class="st">"data order"</span> <span class="va">false</span>) (heatmap by-life <span class="st">"by life expectancy"</span> <span class="va">true</span>)] {<span class="at">:columns</span> <span class="dv">1</span>})</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>   (plot/arrange [(heatmap <span class="va">nil</span> <span class="st">"data order"</span> <span class="va">false</span>) (heatmap life-expectancy <span class="st">"by life expectancy (:order-by)"</span> <span class="va">true</span>)] {<span class="at">:columns</span> <span class="dv">1</span>})</span>
 <span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">800</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.correlation_files/image15.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="smoothed-heatmap" class="level3" data-number="35.2.7">
-<h3 data-number="35.2.7" class="anchored" data-anchor-id="smoothed-heatmap"><span class="header-section-number">35.2.7</span> Smoothed heatmap</h3>
+<section id="smoothed-heatmap" class="level3" data-number="31.2.7">
+<h3 data-number="31.2.7" class="anchored" data-anchor-id="smoothed-heatmap"><span class="header-section-number">31.2.7</span> Smoothed heatmap</h3>
 <p>Measurements on a coarse lattice (seeded: two bumps and noise) as tiles, and the same values interpolated bicubically into a smooth field with contour lines.</p>
 <p>Source: <a href="https://r-graph-gallery.com/2d-density-chart.html">R Graph Gallery - 2D density chart (raster smoothing)</a>.</p>
 <div class="sourceClojure">
@@ -9660,11 +9658,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="correlogram" class="level2" data-number="35.3">
-<h2 data-number="35.3" class="anchored" data-anchor-id="correlogram"><span class="header-section-number">35.3</span> Correlogram</h2>
+<section id="correlogram" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="correlogram"><span class="header-section-number">31.3</span> Correlogram</h2>
 <p>All pairs of several variables at once: <code>plot/pairs</code> lays out a matrix of cells sharing the variables’ scales.</p>
-<section id="scatter-plot-matrix-by-group" class="level3" data-number="35.3.1">
-<h3 data-number="35.3.1" class="anchored" data-anchor-id="scatter-plot-matrix-by-group"><span class="header-section-number">35.3.1</span> Scatter-plot matrix by group</h3>
+<section id="scatter-plot-matrix-by-group" class="level3" data-number="31.3.1">
+<h3 data-number="31.3.1" class="anchored" data-anchor-id="scatter-plot-matrix-by-group"><span class="header-section-number">31.3.1</span> Scatter-plot matrix by group</h3>
 <p>Scatter plots below the diagonal, densities on it, the correlation per species above it, coloured by species.</p>
 <p>Source: R Graph Gallery - Correlogram; data-to-viz - Correlogram (<a href="https://r-graph-gallery.com/correlogram.html">1</a>, <a href="https://www.data-to-viz.com/graph/correlogram.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -9677,8 +9675,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image17.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="correlation-glyphs" class="level3" data-number="35.3.2">
-<h3 data-number="35.3.2" class="anchored" data-anchor-id="correlation-glyphs"><span class="header-section-number">35.3.2</span> Correlation glyphs</h3>
+<section id="correlation-glyphs" class="level3" data-number="31.3.2">
+<h3 data-number="31.3.2" class="anchored" data-anchor-id="correlation-glyphs"><span class="header-section-number">31.3.2</span> Correlation glyphs</h3>
 <p><code>chart/correlation</code> draws r of its cell as a glyph: ellipses (the shape of a bivariate normal with that r) below, pies (|r| as a filled angle) above, the variable names on the diagonal; the r colour bar on the side.</p>
 <p>Source: <a href="https://r-graph-gallery.com/97-correlation-ellipses.html">R Graph Gallery - Correlation ellipses</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -9693,19 +9691,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="bubble" class="level2" data-number="35.4">
-<h2 data-number="35.4" class="anchored" data-anchor-id="bubble"><span class="header-section-number">35.4</span> Bubble</h2>
+<section id="bubble" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="bubble"><span class="header-section-number">31.4</span> Bubble</h2>
 <p>A scatter plot with a third variable as the point’s size - by area, so a point twice the value has twice the ink.</p>
-<section id="bubble-chart-area-size-range-colours-and-legend" class="level3" data-number="35.4.1">
-<h3 data-number="35.4.1" class="anchored" data-anchor-id="bubble-chart-area-size-range-colours-and-legend"><span class="header-section-number">35.4.1</span> Bubble chart: area, size range, colours and legend</h3>
-<p>Gapminder 2007: income (log axis) against life expectancy, population as the bubble’s area (<code>:area true</code>, size range 1-40 px), continent as colour. The left panel maps population linearly to the diameter: large countries look far larger than they are.</p>
+<section id="bubble-chart-area-size-range-colours-and-legend" class="level3" data-number="31.4.1">
+<h3 data-number="31.4.1" class="anchored" data-anchor-id="bubble-chart-area-size-range-colours-and-legend"><span class="header-section-number">31.4.1</span> Bubble chart: area, size range, colours and legend</h3>
+<p>Gapminder 2007: income (log axis) against life expectancy, population as the bubble’s area (<code>:area true</code>, size range 1-40 px), continent as colour; the <code>:order</code> mapping with <code>:descending true</code> draws the largest bubbles first, so the small ones stay on top. The left panel maps population linearly to the diameter: large countries look far larger than they are.</p>
 <p>Source: R Graph Gallery - Bubble chart; data-to-viz - Bubble (<a href="https://r-graph-gallery.com/320-the-basis-of-bubble-plot.html">1</a>, <a href="https://www.data-to-viz.com/graph/bubble.html">2</a>). Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset <code>4_ThreeNum</code> (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [bubbles (<span class="kw">fn</span> [area? title legend?]</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> (<span class="kw">sort-by</span> #(<span class="kw">-</span> (<span class="kw">double</span> (<span class="at">:pop</span> <span class="va">%</span>))) gapminder) <span class="at">:legend</span> legend?</span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:size</span> #(<span class="kw">/</span> (<span class="kw">double</span> (<span class="at">:pop</span> <span class="va">%</span>)) <span class="fl">1.0e6</span>) <span class="at">:color</span> <span class="at">:continent</span>}</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>                {<span class="at">:data</span> gapminder <span class="at">:legend</span> legend?</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:size</span> #(<span class="kw">/</span> (<span class="kw">double</span> (<span class="at">:pop</span> <span class="va">%</span>)) <span class="fl">1.0e6</span>) <span class="at">:color</span> <span class="at">:continent</span> <span class="at">:order</span> <span class="at">:pop</span>}</span>
 <span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span>} <span class="at">:size</span> (cond-&gt; {<span class="at">:range</span> [<span class="dv">1</span> <span class="dv">40</span>] <span class="at">:title</span> <span class="st">"population, M"</span>} area? (<span class="kw">assoc</span> <span class="at">:area</span> <span class="va">true</span>))}</span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/scatter {<span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:stroke-width</span> <span class="fl">0.5</span>})]</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:charts</span> [(chart/scatter {<span class="at">:stroke-color</span> <span class="at">:white</span> <span class="at">:stroke-width</span> <span class="fl">0.5</span> <span class="at">:descending</span> <span class="va">true</span>})]</span>
 <span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:theme</span> {<span class="at">:palette</span> {<span class="at">:color</span> <span class="at">:set2</span>}}</span>
 <span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:labels</span> {<span class="at">:title</span> title <span class="at">:x</span> <span class="st">"GDP per capita, USD"</span> <span class="at">:y</span> <span class="st">"life expectancy, years"</span>}})]</span>
 <span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
@@ -9718,12 +9716,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="connected-scatter" class="level2" data-number="35.5">
-<h2 data-number="35.5" class="anchored" data-anchor-id="connected-scatter"><span class="header-section-number">35.5</span> Connected scatter</h2>
+<section id="connected-scatter" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="connected-scatter"><span class="header-section-number">31.5</span> Connected scatter</h2>
 <p>Two variables over time: the points in time order joined by a path, dates written next to some of them.</p>
-<section id="connected-scatter-with-dates" class="level3" data-number="35.5.1">
-<h3 data-number="35.5.1" class="anchored" data-anchor-id="connected-scatter-with-dates"><span class="header-section-number">35.5.1</span> Connected scatter with dates</h3>
-<p>Yearly means of US unemployment duration and savings rate, 1990-2014; labels on boxes keep the years readable where the path crosses itself.</p>
+<section id="connected-scatter-with-dates" class="level3" data-number="31.5.1">
+<h3 data-number="31.5.1" class="anchored" data-anchor-id="connected-scatter-with-dates"><span class="header-section-number">31.5.1</span> Connected scatter with dates</h3>
+<p>Yearly means of US unemployment duration and savings rate, 1990-2014, joined in time order (<code>:order :data</code>) by a smooth path (<code>:curve :bezier</code>) ending in an arrowhead (<code>:arrow</code>, see <a href="reference.charts_points_paths.html#ends">line</a>); labels on boxes keep the years readable where the path crosses itself.</p>
 <p>Source: R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter (<a href="https://r-graph-gallery.com/connected_scatterplot_ggplot2.html">1</a>, <a href="https://www.data-to-viz.com/graph/connectedscatter.html">2</a>). Data: US economic time series, 1967-2015, R ggplot2 package <code>economics</code> (Federal Reserve Bank of St.&nbsp;Louis, FRED); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [yearly (<span class="kw">vec</span> (<span class="kw">for</span> [[year rows] (<span class="kw">sort-by</span> <span class="kw">key</span> (<span class="kw">group-by</span> #(.getYear ^LocalDate (<span class="at">:date</span> <span class="va">%</span>)) economics))</span>
@@ -9731,7 +9729,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:year</span> year <span class="at">:uempmed</span> (stats/mean (<span class="kw">map</span> <span class="at">:uempmed</span> rows)) <span class="at">:psavert</span> (stats/mean (<span class="kw">map</span> <span class="at">:psavert</span> rows))}))]</span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
 <span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> yearly <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:uempmed</span> <span class="at">:y</span> <span class="at">:psavert</span>}</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:curve</span> <span class="at">:bezier</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:curve</span> <span class="at">:bezier</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>] <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">12</span>} <span class="at">:end-gap</span> <span class="dv">4</span>})</span>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>             (chart/scatter {<span class="at">:size</span> <span class="dv">6</span> <span class="at">:color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>]})</span>
 <span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> (<span class="kw">filterv</span> #(<span class="kw">zero?</span> (<span class="kw">mod</span> (<span class="kw">long</span> (<span class="at">:year</span> <span class="va">%</span>)) <span class="dv">4</span>)) yearly)</span>
 <span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:uempmed</span> <span class="at">:y</span> <span class="at">:psavert</span> <span class="at">:label</span> <span class="at">:year</span>}</span>
@@ -9744,12 +9742,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="d-density" class="level2" data-number="35.6">
-<h2 data-number="35.6" class="anchored" data-anchor-id="d-density"><span class="header-section-number">35.6</span> 2D density</h2>
+<section id="d-density" class="level2" data-number="31.6">
+<h2 data-number="31.6" class="anchored" data-anchor-id="d-density"><span class="header-section-number">31.6</span> 2D density</h2>
 <p>Where the points concentrate: counts in cells, a smooth density estimate, its contour lines.</p>
-<section id="d-histogram-and-hexbin" class="level3" data-number="35.6.1">
-<h3 data-number="35.6.1" class="anchored" data-anchor-id="d-histogram-and-hexbin"><span class="header-section-number">35.6.1</span> 2D histogram and hexbin</h3>
-<p><code>chart/bin2d</code> counts points in cells: squares, or hexagons (the default) - regular on screen for the panel’s shape.</p>
+<section id="d-histogram-and-hexbin" class="level3" data-number="31.6.1">
+<h3 data-number="31.6.1" class="anchored" data-anchor-id="d-histogram-and-hexbin"><span class="header-section-number">31.6.1</span> 2D histogram and hexbin</h3>
+<p><a href="reference.charts_grids_fields.html#bin2d"><code>chart/bin2d</code></a> counts points in cells: squares, or hexagons (the default) - regular on screen for the panel’s shape.</p>
 <p>Source: R Graph Gallery - 2D density chart; data-to-viz - 2D density (<a href="https://r-graph-gallery.com/2d-density-chart.html">1</a>, <a href="https://www.data-to-viz.com/graph/density2d.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -9765,9 +9763,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image21.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="d-kernel-density-and-contours" class="level3" data-number="35.6.2">
-<h3 data-number="35.6.2" class="anchored" data-anchor-id="d-kernel-density-and-contours"><span class="header-section-number">35.6.2</span> 2D kernel density and contours</h3>
-<p><code>chart/field</code> estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster; <code>chart/contour</code> draws its level lines, or with <code>:filled true</code> the bands between them.</p>
+<section id="d-kernel-density-and-contours" class="level3" data-number="31.6.2">
+<h3 data-number="31.6.2" class="anchored" data-anchor-id="d-kernel-density-and-contours"><span class="header-section-number">31.6.2</span> 2D kernel density and contours</h3>
+<p><a href="reference.charts_grids_fields.html#field"><code>chart/field</code></a> estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster; <a href="reference.charts_grids_fields.html#contour"><code>chart/contour</code></a> draws its level lines, or with <code>:filled true</code> the bands between them.</p>
 <p>Source: <a href="https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html">R Graph Gallery - 2D density plot with ggplot2</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -9785,8 +9783,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image22.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="points-over-a-density" class="level3" data-number="35.6.3">
-<h3 data-number="35.6.3" class="anchored" data-anchor-id="points-over-a-density"><span class="header-section-number">35.6.3</span> Points over a density</h3>
+<section id="points-over-a-density" class="level3" data-number="31.6.3">
+<h3 data-number="31.6.3" class="anchored" data-anchor-id="points-over-a-density"><span class="header-section-number">31.6.3</span> Points over a density</h3>
 <p>The density as a backdrop for the points themselves.</p>
 <p>Source: <a href="https://r-graph-gallery.com/2d-density-chart.html">R Graph Gallery - 2D density chart</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -9801,35 +9799,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="functions" class="level2" data-number="35.7">
-<h2 data-number="35.7" class="anchored" data-anchor-id="functions"><span class="header-section-number">35.7</span> Functions</h2>
+<section id="functions" class="level2" data-number="31.7">
+<h2 data-number="31.7" class="anchored" data-anchor-id="functions"><span class="header-section-number">31.7</span> Functions</h2>
 <p><code>chart/field {:f f}</code> samples a function of a point <code>[x y]</code> on a grid over a given domain (<code>:n</code> samples per axis) - no data needed. These examples have no gallery counterpart.</p>
-<section id="a-function-as-a-raster" class="level3" data-number="35.7.1">
-<h3 data-number="35.7.1" class="anchored" data-anchor-id="a-function-as-a-raster"><span class="header-section-number">35.7.1</span> A function as a raster</h3>
-<p>−(x² + y²) · sin x · sin y · sin xy on [−π, π]², white to black, 300 × 300 samples, square pixels (<code>:aspect :iso</code>).</p>
-<p>Source: cljplot2 - chart/field.</p>
+<section id="a-function-as-a-raster" class="level3" data-number="31.7.1">
+<h3 data-number="31.7.1" class="anchored" data-anchor-id="a-function-as-a-raster"><span class="header-section-number">31.7.1</span> A function as a raster</h3>
+<p>MATLAB’s “peaks” surface - a maximum above the centre, a minimum below it and smaller lobes - on [−3, 3]², white to black, 300 × 300 samples, square pixels (<code>:aspect :iso</code>).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn</span><span class="fu"> fn2d</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  [[x y]]</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x (<span class="kw">double</span> x) y (<span class="kw">double</span> y)]</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">*</span> (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))) (m/sin x) (m/sin y) (m/sin (<span class="kw">*</span> x y)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">defn</span><span class="fu"> peaks</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"The peaks function of a point `[x y]`: 3(1 − x)² e^(−x² − (y + 1)²) − 10(x/5 − x³ − y⁵) e^(−x² − y²) −</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="st">  e^(−(x + 1)² − y²) / 3."</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  [[^<span class="kw">double</span> x ^<span class="kw">double</span> y]]</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">-</span> (<span class="kw">*</span> <span class="fl">3.0</span> (m/sq (<span class="kw">-</span> <span class="fl">1.0</span> x)) (m/exp (<span class="kw">-</span> (<span class="kw">-</span> (<span class="kw">*</span> x x)) (m/sq (<span class="kw">+</span> y <span class="fl">1.0</span>)))))</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">*</span> <span class="fl">10.0</span> (<span class="kw">-</span> (<span class="kw">/</span> x <span class="fl">5.0</span>) (<span class="kw">*</span> x x x) (m/pow y <span class="fl">5.0</span>)) (m/exp (<span class="kw">-</span> (<span class="kw">-</span> (<span class="kw">*</span> x x)) (<span class="kw">*</span> y y))))</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">/</span> (m/exp (<span class="kw">-</span> (<span class="kw">-</span> (m/sq (<span class="kw">+</span> x <span class="fl">1.0</span>))) (<span class="kw">*</span> y y))) <span class="fl">3.0</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> fn2d <span class="at">:domain</span> {<span class="at">:x</span> [(<span class="kw">-</span> m/PI) m/PI] <span class="at">:y</span> [(<span class="kw">-</span> m/PI) m/PI]} <span class="at">:n</span> <span class="dv">300</span>})]</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a> {<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> peaks <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">3</span> <span class="dv">3</span>] <span class="at">:y</span> [-<span class="dv">3</span> <span class="dv">3</span>]} <span class="at">:n</span> <span class="dv">300</span>})]</span>
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [<span class="at">:white</span> <span class="at">:black</span>]}}</span>
 <span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"-(x^2 + y^2) sin x sin y sin xy"</span>}}</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"peaks(x, y)"</span>}}</span>
 <span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a> {<span class="at">:width</span> <span class="dv">650</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="use_cases.correlation_files/image24.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="a-function-with-contour-lines" class="level3" data-number="35.7.2">
-<h3 data-number="35.7.2" class="anchored" data-anchor-id="a-function-with-contour-lines"><span class="header-section-number">35.7.2</span> A function with contour lines</h3>
+<section id="a-function-with-contour-lines" class="level3" data-number="31.7.2">
+<h3 data-number="31.7.2" class="anchored" data-anchor-id="a-function-with-contour-lines"><span class="header-section-number">31.7.2</span> A function with contour lines</h3>
 <p>sin x · cos y on a diverging palette centred at 0, with contour lines at fixed levels.</p>
-<p>Source: cljplot2 - chart/field, chart/contour.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [wave (<span class="kw">fn</span> [[x y]] (<span class="kw">*</span> (m/sin x) (m/cos y)))</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>      domain {<span class="at">:x</span> [<span class="dv">0</span> (<span class="kw">*</span> <span class="dv">2</span> m/PI)] <span class="at">:y</span> [<span class="dv">0</span> <span class="dv">4</span>]}]</span>
@@ -9845,11 +9844,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="overplotting" class="level2" data-number="35.8">
-<h2 data-number="35.8" class="anchored" data-anchor-id="overplotting"><span class="header-section-number">35.8</span> Overplotting</h2>
+<section id="overplotting" class="level2" data-number="31.8">
+<h2 data-number="31.8" class="anchored" data-anchor-id="overplotting"><span class="header-section-number">31.8</span> Overplotting</h2>
 <p>With thousands of points a scatter plot turns into a blot. The usual ways out, on 53 940 diamonds.</p>
-<section id="size-transparency-sampling-binning-facets-margins" class="level3" data-number="35.8.1">
-<h3 data-number="35.8.1" class="anchored" data-anchor-id="size-transparency-sampling-binning-facets-margins"><span class="header-section-number">35.8.1</span> Size, transparency, sampling, binning, facets, margins</h3>
+<section id="size-transparency-sampling-binning-facets-margins" class="level3" data-number="31.8.1">
+<h3 data-number="31.8.1" class="anchored" data-anchor-id="size-transparency-sampling-binning-facets-margins"><span class="header-section-number">31.8.1</span> Size, transparency, sampling, binning, facets, margins</h3>
 <p>Smaller points and transparency let density show; a sample keeps the shape with fewer points; hexagon counts replace points by numbers; facets split the cloud by a category; marginal densities show where it is thick.</p>
 <p>Source: <a href="https://www.data-to-viz.com/caveat/overplotting.html">data-to-viz - Overplotting</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -9885,8 +9884,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image27.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="jitter" class="level3" data-number="35.8.2">
-<h3 data-number="35.8.2" class="anchored" data-anchor-id="jitter"><span class="header-section-number">35.8.2</span> Jitter</h3>
+<section id="jitter" class="level3" data-number="31.8.2">
+<h3 data-number="31.8.2" class="anchored" data-anchor-id="jitter"><span class="header-section-number">31.8.2</span> Jitter</h3>
 <p>Integer values pile up on a few positions; <code>:jitter [dx dy]</code> moves every point by a random offset within ±dx, ±dy (data units) so the piles spread - <code>:rng</code> with a seed makes it the same in every rendering.</p>
 <p>Source: <a href="https://www.data-to-viz.com/caveat/overplotting.html">data-to-viz - Overplotting (jitter)</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -9904,30 +9903,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="caveats" class="level2" data-number="35.9">
-<h2 data-number="35.9" class="anchored" data-anchor-id="caveats"><span class="header-section-number">35.9</span> Caveats</h2>
-<section id="anscombes-quartet" class="level3" data-number="35.9.1">
-<h3 data-number="35.9.1" class="anchored" data-anchor-id="anscombes-quartet"><span class="header-section-number">35.9.1</span> Anscombe’s quartet</h3>
+<section id="caveats" class="level2" data-number="31.9">
+<h2 data-number="31.9" class="anchored" data-anchor-id="caveats"><span class="header-section-number">31.9</span> Caveats</h2>
+<section id="anscombes-quartet" class="level3" data-number="31.9.1">
+<h3 data-number="31.9.1" class="anchored" data-anchor-id="anscombes-quartet"><span class="header-section-number">31.9.1</span> Anscombe’s quartet</h3>
 <p>Four datasets with the same means, variances, linear fit and r ≈ 0.82 - and four different relations: a line, a curve, a line with an outlier, a single far point making the correlation. Always look at the scatter plot. The same mean and spread of x and the same residual variance give the same line and confidence band; drawn over the whole x domain (<code>:full-range</code> with an explicit <code>:domain</code>, shared by the panels) they coincide.</p>
-<p>Source: <a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet">Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)</a>.</p>
+<p>Source: <a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet">Anscombe (1973), Graphs in Statistical Analysis</a>. Data: Anscombe’s quartet: similar statistics, different patterns, vega-datasets 3.3.1 <code>anscombe.json</code> (https://cdn.jsdelivr.net/npm/vega-datasets@3.3.1/data/anscombe.json); original: Anscombe’s quartet (Wikipedia), Anscombe, F. J. (1973). Graphs in Statistical Analysis. The American Statistician, 27(1):17-21.; licence: none listed - see vega-datasets (cite Vega as the source).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> anscombe</span></span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Anscombe's quartet (R `datasets::anscombe`) in long form."</span></span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">let</span> [x123 [<span class="dv">10</span> <span class="dv">8</span> <span class="dv">13</span> <span class="dv">9</span> <span class="dv">11</span> <span class="dv">14</span> <span class="dv">6</span> <span class="dv">4</span> <span class="dv">12</span> <span class="dv">7</span> <span class="dv">5</span>]</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>        x4 [<span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">19</span> <span class="dv">8</span> <span class="dv">8</span> <span class="dv">8</span>]</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>        ys {<span class="st">"I"</span> [<span class="fl">8.04</span> <span class="fl">6.95</span> <span class="fl">7.58</span> <span class="fl">8.81</span> <span class="fl">8.33</span> <span class="fl">9.96</span> <span class="fl">7.24</span> <span class="fl">4.26</span> <span class="fl">10.84</span> <span class="fl">4.82</span> <span class="fl">5.68</span>]</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"II"</span> [<span class="fl">9.14</span> <span class="fl">8.14</span> <span class="fl">8.74</span> <span class="fl">8.77</span> <span class="fl">9.26</span> <span class="fl">8.10</span> <span class="fl">6.13</span> <span class="fl">3.10</span> <span class="fl">9.13</span> <span class="fl">7.26</span> <span class="fl">4.74</span>]</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"III"</span> [<span class="fl">7.46</span> <span class="fl">6.77</span> <span class="fl">12.74</span> <span class="fl">7.11</span> <span class="fl">7.81</span> <span class="fl">8.84</span> <span class="fl">6.08</span> <span class="fl">5.39</span> <span class="fl">8.15</span> <span class="fl">6.42</span> <span class="fl">5.73</span>]</span>
-<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">"IV"</span> [<span class="fl">6.58</span> <span class="fl">5.76</span> <span class="fl">7.71</span> <span class="fl">8.84</span> <span class="fl">8.47</span> <span class="fl">7.04</span> <span class="fl">5.25</span> <span class="fl">12.50</span> <span class="fl">5.56</span> <span class="fl">7.91</span> <span class="fl">6.89</span>]}]</span>
-<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">vec</span> (<span class="kw">for</span> [<span class="kw">set</span> [<span class="st">"I"</span> <span class="st">"II"</span> <span class="st">"III"</span> <span class="st">"IV"</span>] [x y] (<span class="kw">map</span> <span class="kw">vector</span> (<span class="kw">if</span> (<span class="kw">=</span> <span class="st">"IV"</span> <span class="kw">set</span>) x4 x123) (ys <span class="kw">set</span>))]</span>
-<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:set</span> <span class="kw">set</span> <span class="at">:x</span> x <span class="at">:y</span> y}))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> anscombe </span>(nu/dataset <span class="at">:anscombe</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th">set</th>
+<th data-quarto-table-cell-role="th">series</th>
 <th data-quarto-table-cell-role="th">x</th>
 <th data-quarto-table-cell-role="th">y</th>
 </tr>
@@ -9935,222 +9925,222 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td>I</td>
-<td>10</td>
+<td>10.0</td>
 <td>8.04</td>
 </tr>
 <tr class="even">
 <td>I</td>
-<td>8</td>
+<td>8.0</td>
 <td>6.95</td>
 </tr>
 <tr class="odd">
 <td>I</td>
-<td>13</td>
+<td>13.0</td>
 <td>7.58</td>
 </tr>
 <tr class="even">
 <td>I</td>
-<td>9</td>
+<td>9.0</td>
 <td>8.81</td>
 </tr>
 <tr class="odd">
 <td>I</td>
-<td>11</td>
+<td>11.0</td>
 <td>8.33</td>
 </tr>
 <tr class="even">
 <td>I</td>
-<td>14</td>
+<td>14.0</td>
 <td>9.96</td>
 </tr>
 <tr class="odd">
 <td>I</td>
-<td>6</td>
+<td>6.0</td>
 <td>7.24</td>
 </tr>
 <tr class="even">
 <td>I</td>
-<td>4</td>
+<td>4.0</td>
 <td>4.26</td>
 </tr>
 <tr class="odd">
 <td>I</td>
-<td>12</td>
+<td>12.0</td>
 <td>10.84</td>
 </tr>
 <tr class="even">
 <td>I</td>
-<td>7</td>
-<td>4.82</td>
+<td>7.0</td>
+<td>4.81</td>
 </tr>
 <tr class="odd">
 <td>I</td>
-<td>5</td>
+<td>5.0</td>
 <td>5.68</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>10</td>
+<td>10.0</td>
 <td>9.14</td>
 </tr>
 <tr class="odd">
 <td>II</td>
-<td>8</td>
+<td>8.0</td>
 <td>8.14</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>13</td>
+<td>13.0</td>
 <td>8.74</td>
 </tr>
 <tr class="odd">
 <td>II</td>
-<td>9</td>
+<td>9.0</td>
 <td>8.77</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>11</td>
+<td>11.0</td>
 <td>9.26</td>
 </tr>
 <tr class="odd">
 <td>II</td>
-<td>14</td>
+<td>14.0</td>
 <td>8.1</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>6</td>
+<td>6.0</td>
 <td>6.13</td>
 </tr>
 <tr class="odd">
 <td>II</td>
-<td>4</td>
+<td>4.0</td>
 <td>3.1</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>12</td>
+<td>12.0</td>
 <td>9.13</td>
 </tr>
 <tr class="odd">
 <td>II</td>
-<td>7</td>
+<td>7.0</td>
 <td>7.26</td>
 </tr>
 <tr class="even">
 <td>II</td>
-<td>5</td>
+<td>5.0</td>
 <td>4.74</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>10</td>
+<td>10.0</td>
 <td>7.46</td>
 </tr>
 <tr class="even">
 <td>III</td>
-<td>8</td>
+<td>8.0</td>
 <td>6.77</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>13</td>
+<td>13.0</td>
 <td>12.74</td>
 </tr>
 <tr class="even">
 <td>III</td>
-<td>9</td>
+<td>9.0</td>
 <td>7.11</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>11</td>
+<td>11.0</td>
 <td>7.81</td>
 </tr>
 <tr class="even">
 <td>III</td>
-<td>14</td>
+<td>14.0</td>
 <td>8.84</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>6</td>
+<td>6.0</td>
 <td>6.08</td>
 </tr>
 <tr class="even">
 <td>III</td>
-<td>4</td>
+<td>4.0</td>
 <td>5.39</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>12</td>
+<td>12.0</td>
 <td>8.15</td>
 </tr>
 <tr class="even">
 <td>III</td>
-<td>7</td>
+<td>7.0</td>
 <td>6.42</td>
 </tr>
 <tr class="odd">
 <td>III</td>
-<td>5</td>
+<td>5.0</td>
 <td>5.73</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>6.58</td>
 </tr>
 <tr class="odd">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>5.76</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>7.71</td>
 </tr>
 <tr class="odd">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>8.84</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>8.47</td>
 </tr>
 <tr class="odd">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>7.04</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>5.25</td>
 </tr>
 <tr class="odd">
 <td>IV</td>
-<td>19</td>
+<td>19.0</td>
 <td>12.5</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>5.56</td>
 </tr>
 <tr class="odd">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>7.91</td>
 </tr>
 <tr class="even">
 <td>IV</td>
-<td>8</td>
+<td>8.0</td>
 <td>6.89</td>
 </tr>
 </tbody>
@@ -10160,12 +10150,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [r-label (<span class="kw">fn</span> [rows] (<span class="kw">format</span> <span class="st">"r = %.2f"</span> (stats/pearson-correlation (<span class="kw">map</span> <span class="at">:x</span> rows) (<span class="kw">map</span> <span class="at">:y</span> rows))))]</span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  (plot/render-image</span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> anscombe <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:facet</span> <span class="at">:set</span>}</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:data</span> anscombe <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
 <span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">4</span>}</span>
 <span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="dv">3</span> <span class="dv">20</span>]}}</span>
 <span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">:charts</span> [(chart/smooth {<span class="at">:method</span> <span class="at">:lm</span> <span class="at">:full-range</span> <span class="va">true</span>})</span>
 <span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>             (chart/scatter {<span class="at">:size</span> <span class="dv">7</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">60</span> <span class="dv">40</span>]})</span>
-<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> (<span class="kw">vec</span> (<span class="kw">for</span> [[<span class="kw">set</span> rows] (<span class="kw">group-by</span> <span class="at">:set</span> anscombe)] {<span class="at">:set</span> <span class="kw">set</span> <span class="at">:x</span> <span class="dv">4</span> <span class="at">:y</span> <span class="dv">13</span> <span class="at">:label</span> (r-label rows)}))</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>             (chart/text {<span class="at">:data</span> (<span class="kw">vec</span> (<span class="kw">for</span> [[series rows] (<span class="kw">group-by</span> <span class="at">:series</span> anscombe)] {<span class="at">:series</span> series <span class="at">:x</span> <span class="dv">4</span> <span class="at">:y</span> <span class="dv">13</span> <span class="at">:label</span> (r-label rows)}))</span>
 <span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:label</span> <span class="at">:label</span>} <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:top</span>]</span>
 <span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:background</span> [<span class="dv">255</span> <span class="dv">255</span> <span class="dv">255</span> <span class="dv">210</span>] <span class="at">:inset</span> <span class="dv">3</span>})]</span>
 <span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Anscombe's quartet: one r, four relations"</span>}}</span>
@@ -10175,8 +10165,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.correlation_files/image29.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="other-caveats" class="level3" data-number="35.9.2">
-<h3 data-number="35.9.2" class="anchored" data-anchor-id="other-caveats"><span class="header-section-number">35.9.2</span> Other caveats</h3>
+<section id="other-caveats" class="level3" data-number="31.9.2">
+<h3 data-number="31.9.2" class="anchored" data-anchor-id="other-caveats"><span class="header-section-number">31.9.2</span> Other caveats</h3>
 <ul>
 <li><p>Correlation is not causation: two variables can move together because a third one drives both.</p></li>
 <li><p>Pearson’s r measures only a linear relation: very different clouds (Anscombe’s quartet) share one r; look at the scatter plot, and use Spearman or Kendall (<code>chart/correlation {:method :spearman}</code>) for monotone relations.</p></li>
@@ -10593,13 +10583,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./use_cases.part_of_a_whole.html" class="pagination-link" aria-label="Part of a whole">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span>
+      <a href="./use_cases.distribution.html" class="pagination-link" aria-label="Distribution">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./use_cases.flow.html" class="pagination-link" aria-label="Flow">
-        <span class="nav-page-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./use_cases.ranking.html" class="pagination-link" aria-label="Ranking">
+        <span class="nav-page-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

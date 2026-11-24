@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -517,12 +517,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Five aesthetics style marks from data: <code>:color</code>, <code>:shape</code>, <code>:size</code>, <code>:dash</code> and <code>:pattern</code>. Each mapped aesthetic has a scale (<code>:scales {:color spec}</code>) mapping its domain (levels or a numeric range) onto attributes (colours, shapes …), and every scale draws a legend unless told not to. All five share one spec; the colour scale uses every key, the others differ only in their <code>:range</code>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.aesthetics-legends</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.aesthetic <span class="at">:as</span> aesthetic]</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> LocalDate]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.scale.aesthetic <span class="at">:as</span> aesthetic]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu])</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:import</span> [java.<span class="kw">time</span> LocalDate]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset <code>4_ThreeNum</code> (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
@@ -1586,7 +1587,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a> <span class="at">:tableau-classic-20</span></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a> <span class="at">:tableau-classic-medium</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Swatches of a few palettes (an <code>:identity</code> colour scale reads the colours from the data):</p>
+<p>Swatches of a few palettes, a <a href="reference.charts_grids_fields.html#tile">tile</a> per colour (an <code>:identity</code> colour scale reads the colours from the data):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> palettes </span>(plot/find-palette <span class="ss">#"^:(rcartocolor/(Bold|Pastel|Vivid|Prism)|tableau-10)$"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1608,292 +1609,292 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:tableau-10</td>
 <td>0</td>
-<td>[31.0 119.0 180.0 255.0]</td>
+<td>[31 119 180]</td>
 </tr>
 <tr class="even">
 <td>:tableau-10</td>
 <td>1</td>
-<td>[255.0 127.0 14.0 255.0]</td>
+<td>[255 127 14]</td>
 </tr>
 <tr class="odd">
 <td>:tableau-10</td>
 <td>2</td>
-<td>[44.0 160.0 44.0 255.0]</td>
+<td>[44 160 44]</td>
 </tr>
 <tr class="even">
 <td>:tableau-10</td>
 <td>3</td>
-<td>[214.0 39.0 40.0 255.0]</td>
+<td>[214 39 40]</td>
 </tr>
 <tr class="odd">
 <td>:tableau-10</td>
 <td>4</td>
-<td>[148.0 103.0 189.0 255.0]</td>
+<td>[148 103 189]</td>
 </tr>
 <tr class="even">
 <td>:tableau-10</td>
 <td>5</td>
-<td>[140.0 86.0 75.0 255.0]</td>
+<td>[140 86 75]</td>
 </tr>
 <tr class="odd">
 <td>:tableau-10</td>
 <td>6</td>
-<td>[227.0 119.0 194.0 255.0]</td>
+<td>[227 119 194]</td>
 </tr>
 <tr class="even">
 <td>:tableau-10</td>
 <td>7</td>
-<td>[127.0 127.0 127.0 255.0]</td>
+<td>[127 127 127]</td>
 </tr>
 <tr class="odd">
 <td>:tableau-10</td>
 <td>8</td>
-<td>[188.0 189.0 34.0 255.0]</td>
+<td>[188 189 34]</td>
 </tr>
 <tr class="even">
 <td>:tableau-10</td>
 <td>9</td>
-<td>[23.0 190.0 207.0 255.0]</td>
+<td>[23 190 207]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>0</td>
-<td>[127.0 60.0 141.0 255.0]</td>
+<td>[127 60 141]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>1</td>
-<td>[17.0 165.0 121.0 255.0]</td>
+<td>[17 165 121]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>2</td>
-<td>[57.0 105.0 172.0 255.0]</td>
+<td>[57 105 172]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>3</td>
-<td>[242.0 183.0 1.0 255.0]</td>
+<td>[242 183 1]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>4</td>
-<td>[231.0 63.0 116.0 255.0]</td>
+<td>[231 63 116]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>5</td>
-<td>[128.0 186.0 90.0 255.0]</td>
+<td>[128 186 90]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>6</td>
-<td>[230.0 131.0 16.0 255.0]</td>
+<td>[230 131 16]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>7</td>
-<td>[0.0 134.0 149.0 255.0]</td>
+<td>[0 134 149]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>8</td>
-<td>[207.0 28.0 144.0 255.0]</td>
+<td>[207 28 144]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>9</td>
-<td>[249.0 123.0 114.0 255.0]</td>
+<td>[249 123 114]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Bold</td>
 <td>10</td>
-<td>[75.0 75.0 143.0 255.0]</td>
+<td>[75 75 143]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Bold</td>
 <td>11</td>
-<td>[165.0 170.0 153.0 255.0]</td>
+<td>[165 170 153]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>0</td>
-<td>[102.0 197.0 204.0 255.0]</td>
+<td>[102 197 204]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>1</td>
-<td>[246.0 207.0 113.0 255.0]</td>
+<td>[246 207 113]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>2</td>
-<td>[248.0 156.0 116.0 255.0]</td>
+<td>[248 156 116]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>3</td>
-<td>[220.0 176.0 242.0 255.0]</td>
+<td>[220 176 242]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>4</td>
-<td>[135.0 197.0 95.0 255.0]</td>
+<td>[135 197 95]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>5</td>
-<td>[158.0 185.0 243.0 255.0]</td>
+<td>[158 185 243]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>6</td>
-<td>[254.0 136.0 177.0 255.0]</td>
+<td>[254 136 177]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>7</td>
-<td>[201.0 219.0 116.0 255.0]</td>
+<td>[201 219 116]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>8</td>
-<td>[139.0 224.0 164.0 255.0]</td>
+<td>[139 224 164]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>9</td>
-<td>[180.0 151.0 231.0 255.0]</td>
+<td>[180 151 231]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Pastel</td>
 <td>10</td>
-<td>[211.0 180.0 132.0 255.0]</td>
+<td>[211 180 132]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Pastel</td>
 <td>11</td>
-<td>[179.0 179.0 179.0 255.0]</td>
+<td>[179 179 179]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>0</td>
-<td>[95.0 70.0 144.0 255.0]</td>
+<td>[95 70 144]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>1</td>
-<td>[29.0 105.0 150.0 255.0]</td>
+<td>[29 105 150]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>2</td>
-<td>[56.0 166.0 165.0 255.0]</td>
+<td>[56 166 165]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>3</td>
-<td>[15.0 133.0 84.0 255.0]</td>
+<td>[15 133 84]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>4</td>
-<td>[115.0 175.0 72.0 255.0]</td>
+<td>[115 175 72]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>5</td>
-<td>[237.0 173.0 8.0 255.0]</td>
+<td>[237 173 8]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>6</td>
-<td>[225.0 124.0 5.0 255.0]</td>
+<td>[225 124 5]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>7</td>
-<td>[204.0 80.0 62.0 255.0]</td>
+<td>[204 80 62]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>8</td>
-<td>[148.0 52.0 110.0 255.0]</td>
+<td>[148 52 110]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>9</td>
-<td>[111.0 64.0 112.0 255.0]</td>
+<td>[111 64 112]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Prism</td>
 <td>10</td>
-<td>[153.0 78.0 149.0 255.0]</td>
+<td>[153 78 149]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Prism</td>
 <td>11</td>
-<td>[102.0 102.0 102.0 255.0]</td>
+<td>[102 102 102]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>0</td>
-<td>[229.0 134.0 6.0 255.0]</td>
+<td>[229 134 6]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>1</td>
-<td>[93.0 105.0 177.0 255.0]</td>
+<td>[93 105 177]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>2</td>
-<td>[82.0 188.0 163.0 255.0]</td>
+<td>[82 188 163]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>3</td>
-<td>[153.0 201.0 69.0 255.0]</td>
+<td>[153 201 69]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>4</td>
-<td>[204.0 97.0 176.0 255.0]</td>
+<td>[204 97 176]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>5</td>
-<td>[36.0 121.0 108.0 255.0]</td>
+<td>[36 121 108]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>6</td>
-<td>[218.0 165.0 27.0 255.0]</td>
+<td>[218 165 27]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>7</td>
-<td>[47.0 138.0 196.0 255.0]</td>
+<td>[47 138 196]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>8</td>
-<td>[118.0 78.0 159.0 255.0]</td>
+<td>[118 78 159]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>9</td>
-<td>[237.0 100.0 90.0 255.0]</td>
+<td>[237 100 90]</td>
 </tr>
 <tr class="odd">
 <td>:rcartocolor/Vivid</td>
 <td>10</td>
-<td>[204.0 58.0 142.0 255.0]</td>
+<td>[204 58 142]</td>
 </tr>
 <tr class="even">
 <td>:rcartocolor/Vivid</td>
 <td>11</td>
-<td>[165.0 170.0 153.0 255.0]</td>
+<td>[165 170 153]</td>
 </tr>
 </tbody>
 </table>
@@ -1911,7 +1912,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.aesthetics_legends_files/image3.png" class="img-fluid"></p>
 </div>
-<p>Gradients, each sampled at 32 points:</p>
+<p>Gradients, each sampled at 32 points (tiles without outlines, <code>:stroke-color :none</code> - <a href="reference.shared_options.html#cell-style">Cell style</a>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> gradients </span>(plot/find-gradient <span class="st">"viridis"</span> <span class="ss">#".*"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1935,502 +1936,502 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>0</td>
-<td>[0.0 32.0 77.0 255.0]</td>
+<td>[0 32 77]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>1</td>
-<td>[0.0 38.096774193548384 90.38709677419355 255.0]</td>
+<td>[0 38 90]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>2</td>
-<td>[0.0 44.193548387096776 105.58064516129032 255.0]</td>
+<td>[0 44 106]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>3</td>
-<td>[0.0 48.58064516129032 111.0 255.0]</td>
+<td>[0 49 111]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>4</td>
-<td>[10.09677419354838 54.774193548387096 110.0 255.0]</td>
+<td>[10 55 110]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>5</td>
-<td>[32.93548387096774 60.96774193548387 108.51612903225806 255.0]</td>
+<td>[33 61 109]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>6</td>
-<td>[46.74193548387096 66.58064516129032 108.0 255.0]</td>
+<td>[47 67 108]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>7</td>
-<td>[57.354838709677416 72.6774193548387 107.0 255.0]</td>
+<td>[57 73 107]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>8</td>
-<td>[66.54838709677419 78.54838709677419 107.0 255.0]</td>
+<td>[67 79 107]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>9</td>
-<td>[75.74193548387098 83.87096774193549 107.87096774193549 255.0]</td>
+<td>[76 84 108]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>10</td>
-<td>[83.93548387096774 89.96774193548387 108.0 255.0]</td>
+<td>[84 90 108]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>11</td>
-<td>[91.12903225806453 96.06451612903226 110.0 255.0]</td>
+<td>[91 96 110]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>12</td>
-<td>[99.16129032258064 102.16129032258064 111.16129032258064 255.0]</td>
+<td>[99 102 111]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>13</td>
-<td>[106.51612903225806 108.51612903225806 113.25806451612904 255.0]</td>
+<td>[107 109 113]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>14</td>
-<td>[114.0 114.06451612903226 116.0 255.0]</td>
+<td>[114 114 116]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>15</td>
-<td>[120.90322580645162 120.35483870967742 119.0 255.0]</td>
+<td>[121 120 119]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>16</td>
-<td>[129.09677419354838 126.64516129032259 121.0 255.0]</td>
+<td>[129 127 121]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>17</td>
-<td>[136.29032258064515 132.93548387096772 121.0 255.0]</td>
+<td>[136 133 121]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>18</td>
-<td>[144.48387096774195 139.48387096774195 120.25806451612902 255.0]</td>
+<td>[144 139 120]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>19</td>
-<td>[152.67741935483872 145.83870967741936 120.0 255.0]</td>
+<td>[153 146 120]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>20</td>
-<td>[160.8709677419355 152.8709677419355 118.06451612903226 255.0]</td>
+<td>[161 153 118]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>21</td>
-<td>[170.06451612903223 159.06451612903223 116.96774193548389 255.0]</td>
+<td>[170 159 117]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>22</td>
-<td>[178.25806451612905 166.25806451612905 114.0 255.0]</td>
+<td>[178 166 114]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>23</td>
-<td>[186.4516129032258 173.4516129032258 111.7741935483871 255.0]</td>
+<td>[186 173 112]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>24</td>
-<td>[195.6451612903226 180.32258064516128 108.6774193548387 255.0]</td>
+<td>[196 180 109]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>25</td>
-<td>[204.83870967741933 187.41935483870967 104.58064516129033 255.0]</td>
+<td>[205 187 105]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>26</td>
-<td>[213.54838709677423 195.03225806451616 99.48387096774192 255.0]</td>
+<td>[214 195 99]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>27</td>
-<td>[222.83870967741936 202.2258064516129 94.38709677419355 255.0]</td>
+<td>[223 202 94]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>28</td>
-<td>[232.1290322580645 210.4193548387097 88.29032258064515 255.0]</td>
+<td>[232 210 88]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>29</td>
-<td>[241.61290322580643 217.61290322580643 80.38709677419357 255.0]</td>
+<td>[242 218 80]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/cividis</td>
 <td>30</td>
-<td>[250.80645161290326 225.80645161290326 72.19354838709675 255.0]</td>
+<td>[251 226 72]</td>
 </tr>
 <tr class="even">
 <td>:viridis/cividis</td>
 <td>31</td>
-<td>[255.0 234.0 70.0 255.0]</td>
+<td>[255 234 70]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>0</td>
-<td>[0.0 0.0 4.0 255.0]</td>
+<td>[0 0 4]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>1</td>
-<td>[4.096774193548387 3.096774193548387 18.483870967741936 255.0]</td>
+<td>[4 3 18]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>2</td>
-<td>[11.387096774193548 7.193548387096774 36.96774193548387 255.0]</td>
+<td>[11 7 37]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>3</td>
-<td>[21.870967741935484 11.290322580645162 56.45161290322581 255.0]</td>
+<td>[22 11 56]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>4</td>
-<td>[34.16129032258064 12.0 75.93548387096774 255.0]</td>
+<td>[34 12 76]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>5</td>
-<td>[48.4516129032258 10.0 92.45161290322581 255.0]</td>
+<td>[48 10 92]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>6</td>
-<td>[62.74193548387096 9.58064516129032 102.16129032258064 255.0]</td>
+<td>[63 10 102]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>7</td>
-<td>[76.03225806451613 12.677419354838708 107.6774193548387 255.0]</td>
+<td>[76 13 108]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>8</td>
-<td>[89.54838709677419 16.774193548387096 110.0 255.0]</td>
+<td>[90 17 110]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>9</td>
-<td>[103.48387096774195 21.870967741935488 110.0 255.0]</td>
+<td>[103 22 110]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>10</td>
-<td>[115.90322580645162 25.967741935483872 110.0 255.0]</td>
+<td>[116 26 110]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>11</td>
-<td>[129.1935483870968 31.064516129032263 107.93548387096774 255.0]</td>
+<td>[129 31 108]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>12</td>
-<td>[142.48387096774195 35.32258064516129 104.83870967741936 255.0]</td>
+<td>[142 35 105]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>13</td>
-<td>[155.03225806451613 41.0 100.0 255.0]</td>
+<td>[155 41 100]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>14</td>
-<td>[168.06451612903226 46.0 95.29032258064517 255.0]</td>
+<td>[168 46 95]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>15</td>
-<td>[180.35483870967744 51.35483870967742 89.09677419354838 255.0]</td>
+<td>[180 51 89]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>16</td>
-<td>[193.09677419354838 58.0 79.90322580645162 255.0]</td>
+<td>[193 58 80]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>17</td>
-<td>[204.29032258064515 66.29032258064514 71.70967741935486 255.0]</td>
+<td>[204 66 72]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>18</td>
-<td>[214.9677419354839 75.22580645161293 63.03225806451609 255.0]</td>
+<td>[215 75 63]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>19</td>
-<td>[224.67741935483872 85.51612903225806 53.322580645161295 255.0]</td>
+<td>[225 86 53]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>20</td>
-<td>[232.8709677419355 96.74193548387098 44.12903225806451 255.0]</td>
+<td>[233 97 44]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>21</td>
-<td>[239.06451612903223 109.09677419354836 33.90322580645164 255.0]</td>
+<td>[239 109 34]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>22</td>
-<td>[245.1290322580645 122.5161290322581 22.612903225806424 255.0]</td>
+<td>[245 123 23]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>23</td>
-<td>[248.2258064516129 136.90322580645162 11.548387096774196 255.0]</td>
+<td>[248 137 12]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>24</td>
-<td>[251.0 152.29032258064518 6.0 255.0]</td>
+<td>[251 152 6]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>25</td>
-<td>[252.0 167.6774193548387 13.258064516129009 255.0]</td>
+<td>[252 168 13]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>26</td>
-<td>[251.0 184.06451612903228 28.580645161290374 255.0]</td>
+<td>[251 184 29]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>27</td>
-<td>[249.38709677419354 199.83870967741936 48.064516129032256 255.0]</td>
+<td>[249 200 48]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>28</td>
-<td>[245.29032258064515 215.83870967741936 71.25806451612905 255.0]</td>
+<td>[245 216 71]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>29</td>
-<td>[242.19354838709677 231.41935483870967 99.45161290322575 255.0]</td>
+<td>[242 231 99]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/inferno</td>
 <td>30</td>
-<td>[242.90322580645162 244.70967741935488 133.1290322580646 255.0]</td>
+<td>[243 245 133]</td>
 </tr>
 <tr class="even">
 <td>:viridis/inferno</td>
 <td>31</td>
-<td>[252.0 255.0 164.0 255.0]</td>
+<td>[252 255 164]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>0</td>
-<td>[0.0 0.0 4.0 255.0]</td>
+<td>[0 0 4]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>1</td>
-<td>[3.193548387096774 3.096774193548387 18.387096774193548 255.0]</td>
+<td>[3 3 18]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>2</td>
-<td>[10.387096774193548 8.193548387096774 34.774193548387096 255.0]</td>
+<td>[10 8 35]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>3</td>
-<td>[19.580645161290324 13.290322580645162 53.16129032258065 255.0]</td>
+<td>[20 13 53]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>4</td>
-<td>[30.16129032258064 17.0 72.54838709677419 255.0]</td>
+<td>[30 17 73]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>5</td>
-<td>[42.4516129032258 17.0 92.41935483870967 255.0]</td>
+<td>[42 17 92]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>6</td>
-<td>[55.74193548387096 15.41935483870968 108.74193548387096 255.0]</td>
+<td>[56 15 109]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>7</td>
-<td>[70.70967741935483 15.677419354838708 119.35483870967741 255.0]</td>
+<td>[71 16 119]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>8</td>
-<td>[84.09677419354838 18.774193548387096 124.7741935483871 255.0]</td>
+<td>[84 19 125]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>9</td>
-<td>[95.74193548387098 23.870967741935488 127.87096774193549 255.0]</td>
+<td>[96 24 128]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>10</td>
-<td>[108.90322580645162 28.967741935483872 129.0 255.0]</td>
+<td>[109 29 129]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>11</td>
-<td>[122.19354838709678 34.06451612903226 130.0 255.0]</td>
+<td>[122 34 130]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>12</td>
-<td>[135.48387096774195 39.32258064516129 129.0 255.0]</td>
+<td>[135 39 129]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>13</td>
-<td>[148.03225806451613 43.25806451612903 128.0 255.0]</td>
+<td>[148 43 128]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>14</td>
-<td>[161.41935483870967 47.354838709677416 126.64516129032258 255.0]</td>
+<td>[161 47 127]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>15</td>
-<td>[175.35483870967744 52.45161290322581 123.54838709677419 255.0]</td>
+<td>[175 52 124]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>16</td>
-<td>[188.6451612903226 57.54838709677419 119.45161290322581 255.0]</td>
+<td>[189 58 119]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>17</td>
-<td>[201.93548387096772 62.0 113.70967741935486 255.0]</td>
+<td>[202 62 114]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>18</td>
-<td>[214.22580645161293 68.74193548387098 108.25806451612902 255.0]</td>
+<td>[214 69 108]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>19</td>
-<td>[226.3548387096774 77.51612903225806 101.3225806451613 255.0]</td>
+<td>[226 78 101]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>20</td>
-<td>[235.8709677419355 87.80645161290323 96.06451612903226 255.0]</td>
+<td>[236 88 96]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>21</td>
-<td>[243.03225806451613 101.09677419354836 92.0 255.0]</td>
+<td>[243 101 92]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>22</td>
-<td>[248.1290322580645 115.64516129032263 92.12903225806453 255.0]</td>
+<td>[248 116 92]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>23</td>
-<td>[251.0 130.90322580645162 95.45161290322581 255.0]</td>
+<td>[251 131 95]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>24</td>
-<td>[253.0 147.29032258064518 102.64516129032259 255.0]</td>
+<td>[253 147 103]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>25</td>
-<td>[254.0 162.6774193548387 111.25806451612901 255.0]</td>
+<td>[254 163 111]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>26</td>
-<td>[254.0 178.06451612903228 121.54838709677422 255.0]</td>
+<td>[254 178 122]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>27</td>
-<td>[254.0 192.83870967741936 133.83870967741936 255.0]</td>
+<td>[254 193 134]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>28</td>
-<td>[254.0 207.83870967741936 146.83870967741936 255.0]</td>
+<td>[254 208 147]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>29</td>
-<td>[253.0 223.22580645161287 160.41935483870967 255.0]</td>
+<td>[253 223 160]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/magma</td>
 <td>30</td>
-<td>[252.09677419354838 237.70967741935488 175.6129032258065 255.0]</td>
+<td>[252 238 176]</td>
 </tr>
 <tr class="even">
 <td>:viridis/magma</td>
 <td>31</td>
-<td>[252.0 253.0 191.0 255.0]</td>
+<td>[252 253 191]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/mako</td>
 <td>0</td>
-<td>[11.0 4.0 5.0 255.0]</td>
+<td>[11 4 5]</td>
 </tr>
 <tr class="even">
 <td>:viridis/mako</td>
 <td>1</td>
-<td>[20.193548387096776 9.193548387096774 16.29032258064516 255.0]</td>
+<td>[20 9 16]</td>
 </tr>
 <tr class="odd">
 <td>:viridis/mako</td>
 <td>2</td>
-<td>[28.387096774193548 16.193548387096776 28.580645161290324 255.0]</td>
+<td>[28 16 29]</td>
 </tr>
 <tr class="even">
 <td>:viridis/mako</td>
 <td>3</td>
-<td>[36.58064516129032 22.29032258064516 40.87096774193548 255.0]</td>
+<td>[37 22 41]</td>
 </tr>
 <tr class="odd">
 <td>…</td>
@@ -2643,7 +2644,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange (<span class="kw">for</span> [[title transform] [[<span class="st">"none"</span> <span class="va">nil</span>] [<span class="st">":sqrt"</span> <span class="at">:sqrt</span>] [<span class="st">":log"</span> <span class="at">:log</span>]</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                                         [<span class="st">":sq"</span> <span class="at">:sq</span>] [<span class="st">":exp"</span> <span class="at">:exp</span>] [<span class="st">"cube root (fn)"</span> #(Math/cbrt <span class="va">%</span>)]]]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                                         [<span class="st">":sq"</span> <span class="at">:sq</span>] [<span class="st">":exp"</span> <span class="at">:exp</span>] [<span class="st">"cube root (fn)"</span> #(m/cbrt <span class="va">%</span>)]]]</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                   {<span class="at">:data</span> ramp</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:i</span> <span class="at">:y</span> <span class="at">:row</span> <span class="at">:color</span> (<span class="kw">if</span> (<span class="kw">=</span> <span class="at">:exp</span> transform) <span class="at">:tenth</span> <span class="at">:i</span>)}</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:charts</span> [(chart/tile)]</span>
@@ -3638,7 +3639,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Every named style, and two dash arrays (an <code>:identity</code> scale draws the data’s dashes):</p>
+<p>Every named style, and two dash arrays (an <code>:identity</code> scale draws the data’s dashes; the names are a <a href="reference.charts_annotations.html#text">text</a> chart anchored right of its point and moved left by <code>:offset</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> dashes </span>(<span class="kw">concat</span> (<span class="kw">for</span> [[i d] (map-indexed <span class="kw">vector</span> (<span class="at">:dash</span> describe/attribute-values)) x [<span class="dv">0</span> <span class="dv">10</span>]]</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:i</span> i <span class="at">:x</span> x <span class="at">:dash</span> d <span class="at">:name</span> (<span class="kw">str</span> d)})</span>
@@ -3831,7 +3832,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Every named pattern and two pattern maps:</p>
+<p>Every named pattern and two pattern maps (white bars outlined in black, the pattern in black - <a href="reference.shared_options.html#fill-patterns">Fill patterns</a>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> patterns </span>(<span class="kw">concat</span> (<span class="kw">for</span> [p (<span class="at">:pattern</span> describe/attribute-values)] {<span class="at">:name</span> (<span class="kw">name</span> p) <span class="at">:pattern</span> p <span class="at">:v</span> <span class="dv">1</span>})</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                      [{<span class="at">:name</span> <span class="st">"lines 135, spacing 8"</span> <span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:lines</span> <span class="at">:angle</span> <span class="dv">135</span> <span class="at">:spacing</span> <span class="dv">8</span> <span class="at">:width</span> <span class="dv">2</span>} <span class="at">:v</span> <span class="dv">1</span>}</span>

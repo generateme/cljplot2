@@ -1147,10 +1147,11 @@
   :labels {:x "date" :y "price"}}
  {:width 700 :height 400})
 
-;; ### A comet chart showing changes between between two states
+;; ### A comet chart showing changes between two states
 
-;; Barley yields from 1931 (thin) to 1932 (wide) per variety and site, coloured by the direction of the change (the
-;; original colours by the change's size; a trail has one colour per group).
+;; Barley yields per variety and site as trails from 1931 to 1932, the width following the yield - a blue comet
+;; widens (an increase), a red one narrows (a decrease); coloured by the direction of the change (the original colours
+;; by the change's size; a trail has one colour per group).
 
 (nu/source-note {:source "Vega-Lite - A comet chart showing changes between two states" :url (vl-url "trail_comet")
                  :dataset :barley-vega})
@@ -1204,7 +1205,7 @@
                           :size 9 :anchor [:center :top] :offset [0 -4]})
              (chart/text {:data (map #(apply max-key :t %) decades) :mapping {:x :t :y :co2 :label :year :color :decade}
                           :size 9 :anchor [:center :bottom] :offset [0 4]})]
-    :scales {:color {:range (mapv (c/gradient :viridis/magma) (map #(* 0.8 (/ (double %) (dec (count decades)))) (range (count decades)))) :legend false}
+    :scales {:color {:range (mapv (plot/gradient :viridis/magma) (map #(* 0.8 (/ (double %) (dec (count decades)))) (range (count decades)))) :legend false}
              :x {:ticks (vec (range 11))}}
     :labels {:x "Year into Decade" :y "CO2 concentration in ppm"}}
    {:width 800 :height 500}))
@@ -1333,7 +1334,7 @@
 (nu/source-note {:source "Vega-Lite - Stacked Area Chart" :url [(vl-url "stacked_area") (vg-url "stacked-area-chart")]
                  :dataset :unemployment-across-industries})
 
-(def industry-colors {:range (c/palette :category20b) :title "series"})
+(def industry-colors {:range (plot/palette :category20b) :title "series"})
 
 (plot/render-image
  {:data unemployment :mapping {:x :date :y :count :color :series}
@@ -1538,7 +1539,7 @@
   :mapping {:x :x :y :y :xend :xend :yend :yend :color :dir}
   :charts [(chart/segment {:line-width 1.2 :arrow {:end true :size 2.5} :padding {:x [0.0 0.0] :y [0.0 0.0]}})]
   :scales {:x {:nice false} :y {:nice false}
-           :color {:domain [0 360] :range (mapv (c/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
+           :color {:domain [0 360] :range (mapv (plot/gradient :pals/kovesi.cyclic_mrybm_35_75_c68) (m/slice-range 0 1 13))
                    :legend false}}
   :aspect :iso
   :labels {:x "longitude" :y "latitude"}}
@@ -1799,7 +1800,7 @@
 ;; Mean age per group: people's ages joined into the group list by name (Vega-Lite's `lookup`).
 
 (nu/source-note {:source "Vega-Lite - Using the lookup transform to combine data" :url (vl-url "lookup")
-                 :dataset :lookup-groups})
+                 :dataset [:lookup-groups :lookup-people]})
 
 (nu/data-table (nu/dataset :lookup-groups))
 
@@ -1909,6 +1910,9 @@
    15.7 15.98 16.38 16.04 19.42 15.94 16.16 15.96 16.26 15.78 15.88 15.98 16.06 16.12 23.02 15.62 15.92 16.06 14.78
    16.26 19.52 16.32 16.6 16.22 19.74 19.46 15.94 15.84 16.1 16.46 16.18 16.1 15.94 16.06 15.86 15.82 16.04 16.18
    15.82 17.3 15.94 15.74 15.72 15.68 15.62 15.6 16.04 15.5 15.6 19.44 15.96 16.24 16.04 16.24])
+
+(nu/data-table falcon-ms)
+
 (def square-ms
   [24.2 17.9 15.8 58.4 151 2523.1 245.3 136 72.3 55.7 42.4 37.7 30.1 30.1 21.8 20.6 21.8 17.6 18.2 21 941.7 177.4
    2821.8 359.2 318 217.1 126 69 57.8 45.3 35.6 29.1 23.8 44.2 17.7 17.7 15.7 27.8 22.8 3853.6 91.6 181.4 476.3
@@ -1920,6 +1924,8 @@
    22.6 17.6 17.2 19.2 111.8 35.4 27.6 25.4 21.9 18.6 18.1 21.2 17.9 17 80.6 29.8 30.1 16 26.8 17.5 22.3 16.8 22.4
    77.4 31 29.7 28.7 26 16.9 15.8 19 52.6 25.2 16.7 17.9 21 19.8 18.8 46.5 17.5 16.8 18.3 18.3 14.9 41 18.3 17.3 17
    17.5 32.3 22.6 16.6 17.9 25.6 17.5 20.3 25.2 18.6 17.7])
+
+(nu/data-table square-ms)
 
 (plot/render-image
  {:data (for [[system times] [["Falcon" falcon-ms] ["Square Crossfilter (3M)" square-ms]]
@@ -2223,23 +2229,24 @@
 
 (def likert
   "Questions: name, the 17 ratings, the median and the scale's end labels."
-  [["Identify Errors:" [2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3] 2.0 "Easy" "Hard"]
-   ["Fix Errors:" [2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2] 2.0 "Easy" "Hard"]
-   ["Easier to Fix:" [3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2] 2.0 "Toolbar" "Gesture"]
-   ["Faster to Fix:" [4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2] 2.5 "Toolbar" "Gesture"]
-   ["Easier on Phone:" [2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1] 1.5 "Toolbar" "Gesture"]
-   ["Easier on Tablet:" [5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3] 3.0 "Toolbar" "Gesture"]
-   ["Device Preference:" [5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2] 4.5 "Phone" "Tablet"]])
+  [{:question "Identify Errors:" :ratings [2 2 2 3 2 1 2 3 2 2 2 1 2 3 4 1 3] :median 2.0 :lo "Easy" :hi "Hard"}
+   {:question "Fix Errors:" :ratings [2 3 2 3 2 3 3 1 3 2 2 3 2 3 5 3 2] :median 2.0 :lo "Easy" :hi "Hard"}
+   {:question "Easier to Fix:" :ratings [3 4 2 2 4 3 4 2 2 1 1 2 1 2 1 2 2] :median 2.0 :lo "Toolbar" :hi "Gesture"}
+   {:question "Faster to Fix:" :ratings [4 5 1 2 4 4 5 4 4 1 1 3 1 2 1 2 2] :median 2.5 :lo "Toolbar" :hi "Gesture"}
+   {:question "Easier on Phone:" :ratings [2 5 2 4 4 4 3 2 1 1 1 1 1 1 1 1 1] :median 1.5 :lo "Toolbar" :hi "Gesture"}
+   {:question "Easier on Tablet:" :ratings [5 5 1 1 5 4 2 5 4 1 1 3 1 1 1 4 3] :median 3.0 :lo "Toolbar" :hi "Gesture"}
+   {:question "Device Preference:" :ratings [5 5 5 5 5 4 4 5 4 5 4 3 5 1 5 5 2] :median 4.5 :lo "Phone" :hi "Tablet"}])
 
-(let [questions (mapv first likert)
-      ends (for [[question _ median lo hi] likert] {:question question :median median :lo lo :hi hi})]
+(nu/data-table likert)
+
+(let [questions (mapv :question likert)]
   (plot/render-image
-   {:data (for [[question ratings] likert [rating n] (frequencies ratings)] {:question question :rating rating :n n})
+   {:data (for [{:keys [question ratings]} likert [rating n] (frequencies ratings)] {:question question :rating rating :n n})
     :mapping {:x :rating :y :question :size :n}
     :charts [(chart/scatter {:color [110 180 253]})
-             (chart/rug {:data ends :mapping {:x :median :size nil} :color :black :line-width 2 :thickness 0.4})
-             (chart/text {:data ends :mapping {:x (constantly 0.4) :y :question :label :lo :size nil} :anchor [:right :middle]})
-             (chart/text {:data ends :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
+             (chart/rug {:data likert :mapping {:x :median :size nil} :color :black :line-width 2 :thickness 0.4})
+             (chart/text {:data likert :mapping {:x (constantly 0.4) :y :question :label :lo :size nil} :anchor [:right :middle]})
+             (chart/text {:data likert :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
     :scales {:y {:domain questions :reverse true} :x {:domain [-1.2 7.2] :ticks [1 2 3 4 5] :nice false}
              :size {:range [3 16] :area true :title "Number of Ratings"}}
     :labels {:title "Questionnaire Ratings" :x nil :y nil}}
@@ -2374,7 +2381,7 @@
 ;; reigns and below the lower ones.
 
 (nu/source-note {:source "Vega-Lite - Wheat and Wages Example" :url [(vl-url "wheat_wages") (vg-url "wheat-and-wages")]
-                 :dataset :wheat})
+                 :dataset [:wheat :monarchs]})
 
 (nu/data-table (nu/dataset :wheat))
 
@@ -2491,7 +2498,7 @@
             {:site site :variety variety :year (str year) :yield (stats/median (map :yield rows))})
     :mapping {:x :yield :y :variety :color :year :facet :site}
     :charts [(chart/scatter {:shape \o :size 7 :stroke-width 1.5})]
-    :scales {:facet {:domain (vec (sort-by site-medians (keys site-medians)))} :color {:range (c/palette :category10)}
+    :scales {:facet {:domain (vec (sort-by site-medians (keys site-medians)))} :color {:range (plot/palette :category10)}
              :y {:domain (vec (sort-by (comp - variety-medians) (keys variety-medians))) :reverse true}}
     :facets {:columns 2}
     :labels {:x "Median of yield" :y "variety"}}
@@ -2507,7 +2514,7 @@
   (plot/render-image
    {:data rows :mapping {:x :date :y :price :color :symbol :facet-row :symbol}
     :charts [(chart/line {:fill :color})]
-    :scales {:y {:domain [0 (reduce max (map :price rows))]} :color {:range (c/palette :category10) :legend false}}
+    :scales {:y {:domain [0 (reduce max (map :price rows))]} :color {:range (plot/palette :category10) :legend false}}
     :theme {:panel {:grid {:x :none :y :none}}}
     :labels {:x "Time" :y "Price"}}
    {:width 600 :height 500}))
@@ -2614,7 +2621,7 @@
                              [:acceleration "Acceleration" (range 8 27 2)] [:displacement "Displacement" (range 50 501 50)]]]
          {:data (filter k cars) :mapping {:x k :color :origin}
           :charts [(chart/histogram {:bins (vec bins) :y :count :position :stack})]
-          :scales {:color {:range (c/palette :category10)}}
+          :scales {:color {:range (plot/palette :category10)}}
           :labels {:x (str title " (binned)") :y "Count of Records"}}))
   {:columns 2})
  {:width 900 :height 600})
@@ -2632,7 +2639,7 @@
     (vec (for [[row-k row-title] (reverse columns) [col-k col-title] columns]
            {:data (filter #(and (row-k %) (col-k %)) cars) :mapping {:x col-k :y row-k :color :origin}
             :charts [(chart/scatter {:shape \o :size 5})]
-            :scales {:color {:range (c/palette :category10)}}
+            :scales {:color {:range (plot/palette :category10)}}
             :legend (= [row-k col-k] [:horsepower :horsepower])
             :labels {:x col-title :y row-title}}))
     {:columns 3 :equal-panels true})
@@ -2749,7 +2756,7 @@
 
 (let [industries (vec (sort (distinct (map :series unemployment))))
       colors (map (fn [industry color] (if (= "Finance" industry) color (c/lerp color [236 236 243] 0.8)))
-                  industries (cycle (c/palette :category20b)))]
+                  industries (cycle (plot/palette :category20b)))]
   (plot/render-image
    {:data unemployment :mapping {:x :date :y :count :color :series}
     :charts [(chart/line {:fill :color :position :silhouette :line-width 0 :alpha 1.0})]
@@ -2794,7 +2801,8 @@
  {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
   :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :line-width 0.2})]
   :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title nil}
-           :x {:formatter #(str (m/round (double %)))} :y {:formatter #(str (m/round (* 100.0 (double %))) "%")}}
+           :x {:domain [1850 2000] :expand [0 0] :nice false :formatter #(str (m/round (double %)))}
+           :y {:domain [0 1] :expand [0 0] :formatter #(str (m/round (* 100.0 (double %))) "%")}}
   :labels {:x "year" :y "share of the labour force"}}
  {:width 900 :height 500})
 
@@ -2814,7 +2822,7 @@
   :coord {:kind :polar}
   :charts [(chart/parallel {:variables [:key-0 :key-1 :key-2 :key-3 :key-4 :key-5 :key-6] :scaling :globalminmax
                             :fill :color :alpha 0.5 :axes false})]
-  :scales {:color {:range (c/palette :category10)}}
+  :scales {:color {:range (plot/palette :category10)}}
   :labels {:x nil :y nil}}
  {:width 500 :height 450})
 
@@ -2872,7 +2880,7 @@
  {:data (filter #(and (:horsepower %) (:miles-per-gallon %)) cars)
   :mapping {:x :horsepower :y :miles-per-gallon :color :origin}
   :charts [(chart/scatter {:size 4}) (chart/contour {:levels 3 :line-width 1.5})]
-  :scales {:color {:range (c/palette :category10)}}
+  :scales {:color {:range (plot/palette :category10)}}
   :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
  {:width 600 :height 450})
 
@@ -3045,20 +3053,22 @@
 ;; Dependencies between Flare classes routed along the class tree (hierarchical edge bundling), coloured by the
 ;; source's top-level package.
 
-(nu/source-note {:source "Vega - Edge bundling" :url (vg-url "edge-bundling") :dataset :flare-dependencies-vega})
+(nu/source-note {:source "Vega - Edge bundling" :url (vg-url "edge-bundling")
+                 :dataset [:flare-dependencies-vega :flare-vega]})
 
 (nu/data-table (nu/dataset :flare-dependencies-vega))
 
 (plot/render-image
  (plot/bundle (nu/dataset :flare-dependencies-vega) flare-tree {:from :source :to :target :scales {:color {:legend false}}})
- {:width 900 :height 900})
+ {:width 800 :height 800})
 
 ;; ### Force directed layout
 
 ;; Les Misérables characters linked by co-occurrence, laid out by forces (seeded), coloured by group, edge widths by
 ;; the number of shared chapters.
 
-(nu/source-note {:source "Vega - Force directed layout" :url (vg-url "force-directed-layout") :dataset :miserables-nodes})
+(nu/source-note {:source "Vega - Force directed layout" :url (vg-url "force-directed-layout")
+                 :dataset [:miserables-nodes :miserables-links-vega]})
 
 (def miserables-nodes (map #(update % :group str) (nu/dataset :miserables-nodes)))
 
@@ -3080,7 +3090,8 @@
 ;; their group when both share it (grey across groups), every name on the axes (x labels vertical) - the original
 ;; reorders by dragging.
 
-(nu/source-note {:source "Vega - Reorderable matrix" :url (vg-url "reorderable-matrix") :dataset :miserables-links-vega})
+(nu/source-note {:source "Vega - Reorderable matrix" :url (vg-url "reorderable-matrix")
+                 :dataset [:miserables-links-vega :miserables-nodes]})
 
 (let [by-index (into {} (map (juxt :index identity) miserables-nodes))
       order (mapv :name (sort-by (juxt #(parse-long (:group %)) :index) miserables-nodes))]
@@ -3093,10 +3104,10 @@
     :charts [(chart/tile)]
     :scales {:x {:domain order} :y {:domain order :reverse true}
              :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
-                     :range (conj (vec (take 11 (cycle (c/palette :category10)))) [190 190 190]) :legend false}}
-    :theme {:text {:tick-label {:size 8}} :axis {:x {:label-rotation -90}}}
+                     :range (conj (vec (take 11 (cycle (plot/palette :category10)))) [190 190 190]) :legend false}}
+    :theme {:text {:tick-label {:size 7}} :axis {:x {:label-rotation -90}}}
     :labels {:x nil :y nil}}
-   {:width 1000 :height 1000}))
+   {:width 1000 :height 800}))
 
 ;; ### Arc diagram
 

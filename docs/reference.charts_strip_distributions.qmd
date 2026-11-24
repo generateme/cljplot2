@@ -31,8 +31,8 @@ code-block-background: true
 
 Strip charts showing the distribution of each level's values: summaries (`box`, `violin`) and the values
 themselves (`stripplot`, `beeswarm`, `dotplot`, `rug`). Placement, width and grouping across the strip are the
-Strip options group every one of them takes. Each chart lists the mapping keys it reads, its own options and the
-shared option groups it takes.
+[Strip options](reference.shared_options.html#strip-options) group every one of them takes. Each chart lists the
+mapping keys it reads, its own options and the shared option groups it takes.
 
 
 ::: {.sourceClojure}
@@ -159,12 +159,13 @@ the box and the outliers past them - computed from the values ...
 
 
 Its options: the box and outlier style, the statistics, outliers on or off, the mean marker, widths by count and
-the Tufte variant (whisker lines and a median point):
+the Tufte variant (whisker lines and a median point) - here on rear axle ratios, with outliers in the 4- and
+8-cylinder groups:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69.0 117.0 180.0 255.0]</td><td>box fill colour; the Tufte variant's median point and mean marker (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline and whisker width in pixels (0 - no box outline)</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>outlier point shape, also the Tufte median point (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)</td></tr><tr><td>:stat</td><td>one of :tukey :identity</td><td>:tukey</td><td>statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)</td></tr><tr><td>:outliers</td><td>true or false or nil</td><td>true</td><td>draw the outliers (and include them in the value extent)</td></tr><tr><td>:mean</td><td>true or false or nil</td><td>false</td><td>draw a mean marker (with :stat :identity it needs :mean mapped)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>box width proportional to the square root of its count, relative to the largest (with :stat :identity it needs :n mapped)</td></tr><tr><td>:variant</td><td>one of :classic :tufte or nil</td><td>:classic</td><td>drawing: :classic (box, median line, whiskers with caps) or :tufte (Tufte's quartile plot: whisker lines and a median point, no box)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>box fill colour; the Tufte variant's median point and mean marker (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline and whisker width in pixels (0 - no box outline)</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>outlier point shape, also the Tufte median point (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)</td></tr><tr><td>:stat</td><td>one of :tukey :identity</td><td>:tukey</td><td>statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)</td></tr><tr><td>:outliers</td><td>true or false or nil</td><td>true</td><td>draw the outliers (and include them in the value extent)</td></tr><tr><td>:mean</td><td>true or false or nil</td><td>false</td><td>draw a mean marker (with :stat :identity it needs :mean mapped)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>box width proportional to the square root of its count, relative to the largest (with :stat :identity it needs :n mapped)</td></tr><tr><td>:variant</td><td>one of :classic :tufte or nil</td><td>:classic</td><td>drawing: :classic (box, median line, whiskers with caps) or :tufte (Tufte's quartile plot: whisker lines and a median point, no box)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -174,18 +175,18 @@ the Tufte variant (whisker lines and a median point):
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:color [230 160 60] :stroke-color :black :stroke-width 2 :shape \x :size 9
                                                         :mean true})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title "style, :mean true"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:outliers false :varwidth true})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":outliers false, :varwidth"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:variant :tufte})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":variant :tufte"}}]
@@ -206,12 +207,12 @@ the Tufte variant (whisker lines and a median point):
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box)]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title "default padding"}}
                                   {:data mtcars
-                                   :mapping {:x :mpg :y :cyl}
+                                   :mapping {:x :drat :y :cyl}
                                    :charts [(chart/box {:padding {:x [0.4 0.4]}})]
                                    :scales {:y {:type :categorical :reverse true}}
                                    :labels {:title ":padding {:x [0.4 0.4]}"}}]
@@ -265,7 +266,7 @@ past the data), how widths compare between violins and the inner marks:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69.0 117.0 180.0 255.0]</td><td>violin fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels (0 - no outline)</td></tr><tr><td>:inner-color</td><td>one of :contrast or a clojure2d color or :none</td><td>:contrast</td><td>colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)</td></tr><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>density kernel (a fastmath kernel keyword)</td></tr><tr><td>:bandwidth</td><td>a positive number or keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector keyword</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>100</td><td>number of density evaluation points per violin</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>0.0</td><td>how far the violin reaches past the data range, in bandwidths (0 - the data range)</td></tr><tr><td>:scale</td><td>one of :width :area :count</td><td>:width</td><td>violin widths: :width (each as wide as its slot), :area (equal areas - densities on one scale) or :count (areas proportional to the counts)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>multiply each violin's width by the square root of its count relative to the largest</td></tr><tr><td>:inner</td><td>one of :box :quartiles :rug :points :none</td><td>:box</td><td>inner marks: :box (IQR bar, whisker line, median dot), :quartiles (quartile lines across), :rug (a tick per value), :points (values on the centre line) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>violin fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels (0 - no outline)</td></tr><tr><td>:inner-color</td><td>one of :contrast or a clojure2d color or :none</td><td>:contrast</td><td>colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)</td></tr><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>density kernel (a fastmath kernel keyword)</td></tr><tr><td>:bandwidth</td><td>a positive number or keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector keyword</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>100</td><td>number of density evaluation points per violin</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>0.0</td><td>how far the violin reaches past the data range, in bandwidths (0 - the data range)</td></tr><tr><td>:scale</td><td>one of :width :area :count</td><td>:width</td><td>violin widths: :width (each as wide as its slot), :area (equal areas - densities on one scale) or :count (areas proportional to the counts)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>multiply each violin's width by the square root of its count relative to the largest</td></tr><tr><td>:inner</td><td>one of :box :quartiles :rug :points :none</td><td>:box</td><td>inner marks: :box (IQR bar, whisker line, median dot), :quartiles (quartile lines across), :rug (a tick per value), :points (values on the centre line) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -298,6 +299,41 @@ past the data), how widths compare between violins and the inner marks:
 :::
 
 
+The inner marks' sizes and the quartile dash are theme keys of `[:chart :violin]`, not options:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:inner-box-width</td><td>a positive number</td><td>5.0</td><td>width in pixels of the inner box (quartile bar) of :inner :box</td></tr><tr><td>:inner-median-size</td><td>a positive number</td><td>4.0</td><td>diameter in pixels of the median dot of :inner :box</td></tr><tr><td>:inner-quartile-dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers</td><td>[4.0 3.0]</td><td>dash style of the quartile lines of :inner :quartiles</td></tr><tr><td>:inner-rug-width</td><td>a positive number</td><td>1.0</td><td>line width in pixels of the ticks of :inner :rug</td></tr><tr><td>:inner-point-size</td><td>a positive number</td><td>3.0</td><td>diameter in pixels of the points of :inner :points</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin)]
+                                   :theme {:chart {:violin {:inner-box-width 10 :inner-median-size 8}}}
+                                   :labels {:title "wider inner box, bigger median"}}
+                                  {:data iris
+                                   :mapping {:x :species :y :petal-length}
+                                   :charts [(chart/violin {:inner :quartiles})]
+                                   :theme {:chart {:violin {:inner-quartile-dash [1.0 2.0]}}}
+                                   :labels {:title "dotted quartiles"}}]
+                                 {:columns 2})
+                   {:width 800 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_strip_distributions_files/image6.png)
+:::
+
+
 The fill and outline, and the density estimate: another kernel, few evaluation points (a coarse outline),
 widths by count (`:varwidth`) and the padding:
 
@@ -324,7 +360,7 @@ widths by count (`:varwidth`) and the padding:
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image6.png)
+![](reference.charts_strip_distributions_files/image7.png)
 :::
 
 
@@ -356,7 +392,7 @@ and 5 cars - the five-gear violin shrinks):
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image7.png)
+![](reference.charts_strip_distributions_files/image8.png)
 :::
 
 
@@ -382,7 +418,7 @@ Every `:inner` mark:
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image8.png)
+![](reference.charts_strip_distributions_files/image9.png)
 :::
 
 
@@ -416,7 +452,7 @@ Every value as a point across its level's strip, jittered so equal values don't 
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image9.png)
+![](reference.charts_strip_distributions_files/image10.png)
 :::
 
 
@@ -425,7 +461,7 @@ Its options: the point style, the jitter spread (seeded for the same image on ev
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 100.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:jitter</td><td>a number in [0 1]</td><td>0.25</td><td>jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator per build (builds differ)</td><td>random number generator for jitter (seeded for reproducible plots)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 100]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:jitter</td><td>a number in [0 1]</td><td>0.25</td><td>jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator per build (builds differ)</td><td>random number generator for jitter (seeded for reproducible plots)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -441,7 +477,7 @@ Its options: the point style, the jitter spread (seeded for the same image on ev
                                    :labels {:title ":jitter 0"}}
                                   {:data iris
                                    :mapping {:x :sepal-length :y :species}
-                                   :charts [(chart/stripplot {:jitter 0.8 :size 8 :shape \s :color [200 80 40 90]
+                                   :charts [(chart/stripplot {:jitter 0.8 :size 8 :shape \S :color [200 80 40 90]
                                                               :stroke-color [120 40 20] :stroke-width 1.5
                                                               :rng (r/rng :mersenne 1)})]
                                    :scales {:y {:reverse true}}
@@ -458,7 +494,7 @@ Its options: the point style, the jitter spread (seeded for the same image on ev
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image10.png)
+![](reference.charts_strip_distributions_files/image11.png)
 :::
 
 
@@ -491,7 +527,7 @@ Every value as a point, packed across the strip without overlaps - the swarm's w
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image11.png)
+![](reference.charts_strip_distributions_files/image12.png)
 :::
 
 
@@ -501,7 +537,7 @@ the packing direction and the padding:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels, also the packing diameter (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:fit</td><td>true or false or nil</td><td>true</td><td>squeeze a swarm wider than its item's cross range into it (points may then overlap)</td></tr><tr><td>:pack</td><td>one of :across :around</td><td>:across</td><td>packing: :across (points move only across the value axis) or :around (in both directions - round clusters, points may leave their value a little)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels, also the packing diameter (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:fit</td><td>true or false or nil</td><td>true</td><td>squeeze a swarm wider than its item's cross range into it (points may then overlap)</td></tr><tr><td>:pack</td><td>one of :across :around</td><td>:across</td><td>packing: :across (points move only across the value axis) or :around (in both directions - round clusters, points may leave their value a little)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -529,7 +565,7 @@ the packing direction and the padding:
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image12.png)
+![](reference.charts_strip_distributions_files/image13.png)
 :::
 
 
@@ -554,7 +590,7 @@ The point style, the default packing (`:across` - points move only across the va
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image13.png)
+![](reference.charts_strip_distributions_files/image14.png)
 :::
 
 
@@ -586,7 +622,7 @@ Values binned along the value axis, each a dot stacked in its bin (Wilkinson's d
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image14.png)
+![](reference.charts_strip_distributions_files/image15.png)
 :::
 
 
@@ -596,7 +632,7 @@ stack and the padding:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot</td><td>dot size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:method</td><td>one of :dot-density :histogram</td><td>:dot-density</td><td>binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)</td></tr><tr><td>:binwidth</td><td>a finite number, a positive number</td><td>the range of all values / 30 (1 for a single distinct value)</td><td>bin width in data units</td></tr><tr><td>:origin</td><td>a finite number</td><td>the smallest value</td><td>left edge of the first fixed bin in data units (only with :method :histogram - an error otherwise)</td></tr><tr><td>:at</td><td>one of :center :value</td><td>:center</td><td>where a bin's dots sit along the value axis: :center (the bin centre) or :value (each dot at its own value - the wheat plot)</td></tr><tr><td>:stack-dir</td><td>one of :up :center</td><td>:up</td><td>stacking: :up (from the slot's low cross edge toward the next level) or :center (centred on the slot)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot</td><td>dot size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:method</td><td>one of :dot-density :histogram</td><td>:dot-density</td><td>binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)</td></tr><tr><td>:binwidth</td><td>a finite number, a positive number</td><td>the range of all values / 30 (1 for a single distinct value)</td><td>bin width in data units</td></tr><tr><td>:origin</td><td>a finite number</td><td>the smallest value</td><td>left edge of the first fixed bin in data units (only with :method :histogram - an error otherwise)</td></tr><tr><td>:at</td><td>one of :center :value</td><td>:center</td><td>where a bin's dots sit along the value axis: :center (the bin centre) or :value (each dot at its own value - the wheat plot)</td></tr><tr><td>:stack-dir</td><td>one of :up :center</td><td>:up</td><td>stacking: :up (from the slot's low cross edge toward the next level) or :center (centred on the slot)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -624,37 +660,32 @@ stack and the padding:
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image15.png)
+![](reference.charts_strip_distributions_files/image16.png)
 :::
 
 
-The defaults spelled out (`:dot-density` binning, dots at the bin `:center`, stacked `:up`), then a style - a
-fixed dot size, outlined squares - and the padding:
+A style - a fixed dot size, outlined squares - and the padding:
 
 
 ::: {.sourceClojure}
 ```clojure
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg}
-                                   :charts [(chart/dotplot {:binwidth 1.5 :method :dot-density :at :center :stack-dir :up})]
-                                   :labels {:title "defaults"}}
-                                  {:data mtcars
-                                   :mapping {:x :mpg}
-                                   :charts [(chart/dotplot {:binwidth 1.5 :size 7 :shape \s :color [230 160 60]
+                                   :charts [(chart/dotplot {:binwidth 1.5 :size 7 :shape \S :color [230 160 60]
                                                             :stroke-color :black :stroke-width 1})]
                                    :labels {:title ":size 7, outlined squares"}}
                                   {:data mtcars
                                    :mapping {:x :mpg}
                                    :charts [(chart/dotplot {:binwidth 1.5 :padding {:x [0.3 0.3]}})]
                                    :labels {:title ":padding {:x [0.3 0.3]}"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 280})
+                                 {:columns 2})
+                   {:width 800 :height 280})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image16.png)
+![](reference.charts_strip_distributions_files/image17.png)
 :::
 
 
@@ -686,7 +717,7 @@ A short line per value - along the panel's edge, or one strip per level; often b
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image17.png)
+![](reference.charts_strip_distributions_files/image18.png)
 :::
 
 
@@ -695,7 +726,7 @@ Its options: the line colour and width, and the padding:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 100.0]</td><td>rug line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>rug line width in pixels (0 - nothing drawn)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 100]</td><td>rug line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>rug line width in pixels (0 - nothing drawn)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -726,7 +757,7 @@ Its options: the line colour and width, and the padding:
 
 
 ::: {.clay-image}
-![](reference.charts_strip_distributions_files/image18.png)
+![](reference.charts_strip_distributions_files/image19.png)
 :::
 
 

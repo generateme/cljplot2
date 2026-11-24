@@ -122,7 +122,7 @@ antialiased for quality, `:highest` adds exact stroke geometry (lines can look s
 ## Inspection
 
 Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
-content - panel, axes, axis titles, legend:
+content - panel, axes, axis titles, legend (axis titles added here):
 
 ::: {.clay-table}
 
@@ -136,7 +136,8 @@ content - panel, axes, axis titles, legend:
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image iris-plot {:width 500 :height 300 :debug true})
+(plot/render-image (assoc iris-plot :labels {:x "sepal length" :y "petal length"})
+                   {:width 500 :height 300 :debug true})
 ```
 :::
 

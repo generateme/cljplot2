@@ -37,7 +37,8 @@ swaps the directions and `:aspect :iso` keeps data units square.
 ::: {.sourceClojure}
 ```clojure
 (ns reference.scales-axes-coords
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.scale.coord :as coord]
@@ -369,7 +370,7 @@ Positive values only; `:base` changes the tick values (here powers of two).
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data (for [i (range 1 11)] {:x (Math/pow 2 i) :y i})
+(plot/render-image {:data (for [i (range 1 11)] {:x (m/pow 2 i) :y i})
                     :mapping {:x :x :y :y}
                     :charts [(chart/line) (chart/scatter)]
                     :scales {:x {:kind :log :base 2}}}
@@ -609,12 +610,13 @@ The interpolators - fastmath 1D interpolation methods (or a function):
 :::
 
 
-Here the middle of the domain, 40 to 60, gets half of the axis:
+Here the domain values 1, 40, 60 and 100 sit at evenly spaced stops, so each of the three segments gets a third
+of the axis - 40 to 60 is stretched, 1 to 40 and 60 to 100 are squeezed:
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data (for [i (range 1 101)] {:x i :y (Math/log i)})
+(plot/render-image {:data (for [i (range 1 101)] {:x i :y (m/log i)})
                     :mapping {:x :x :y :y}
                     :charts [(chart/line)]
                     :scales {:x {:kind :interpolated :domain [1 40 60 100] :ticks [1 20 40 50 60 80 100]}}}
@@ -768,14 +770,29 @@ In polar coordinates `:flip true` swaps the roles - the vertical scale on angles
 :::
 
 
-`:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it:
+`:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
+points joined in data order, [line](reference.charts_points_paths.html#line) `:order :data`):
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image {:data (for [t (range 0 63)] {:x (Math/cos (* 0.1 t)) :y (* 0.5 (Math/sin (* 0.1 t)))})
+(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>1.0</td><td>0.0</td></tr><tr><td>0.9950307753654014</td><td>0.049783923297908324</td></tr><tr><td>0.9801724878485438</td><td>0.09907307159969878</td></tr><tr><td>0.9555728057861408</td><td>0.14737758720545208</td></tr><tr><td>0.9214762118704076</td><td>0.19421739813734734</td></tr><tr><td>0.8782215733702285</td><td>0.2391269893106591</td></tr><tr><td>0.8262387743159949</td><td>0.281660029031811</td></tr><tr><td>0.766044443118978</td><td>0.3213938048432696</td></tr><tr><td>0.6982368180860729</td><td>0.35793342462985916</td></tr><tr><td>0.6234898018587336</td><td>0.3909157412340149</td></tr><tr><td>0.5425462638657594</td><td>0.4200129615753857</td></tr><tr><td>0.4562106573531631</td><td>0.4449359044057343</td></tr><tr><td>0.3653410243663952</td><td>0.46543687432210207</td></tr><tr><td>0.27084046814300516</td><td>0.481312123475006</td></tr><tr><td>0.17364817766693041</td><td>0.492403876506104</td></tr><tr><td>0.07473009358642439</td><td>0.49860189859059006</td></tr><tr><td>-0.02493069173807269</td><td>0.4998445910004081</td></tr><tr><td>-0.12434370464748494</td><td>0.49611960330008603</td></tr><tr><td>-0.22252093395631434</td><td>0.4874639560909118</td></tr><tr><td>-0.3184866502516843</td><td>0.4739636730835659</td></tr><tr><td>-0.4112871031306114</td><td>0.4557529261558366</td></tr><tr><td>-0.4999999999999998</td><td>0.43301270189221935</td></tr><tr><td>-0.5837436722347896</td><td>0.4059690028579283</td></tr><tr><td>-0.6616858375968592</td><td>0.3748906014838672</td></tr><tr><td>-0.7330518718298261</td><td>0.34008636888545984</td></tr><tr><td>-0.7971325072229222</td><td>0.30190220516273886</td></tr><tr><td>-0.8532908816321556</td><td>0.26071760168974906</td></tr><tr><td>-0.900968867902419</td><td>0.21694186955877912</td></tr><tr><td>-0.9396926207859083</td><td>0.17101007166283444</td></tr><tr><td>-0.9690772862290778</td><td>0.12337869884514692</td></tr><tr><td>-0.9888308262251285</td><td>0.07452113308808736</td></tr><tr><td>-0.9987569212189223</td><td>0.02492294283034874</td></tr><tr><td>-0.9987569212189223</td><td>-0.024922942830348398</td></tr><tr><td>-0.9888308262251285</td><td>-0.07452113308808724</td></tr><tr><td>-0.9690772862290781</td><td>-0.12337869884514659</td></tr><tr><td>-0.9396926207859084</td><td>-0.17101007166283433</td></tr><tr><td>-0.9009688679024191</td><td>-0.216941869558779</td></tr><tr><td>-0.8532908816321557</td><td>-0.26071760168974895</td></tr><tr><td>-0.7971325072229226</td><td>-0.3019022051627386</td></tr><tr><td>-0.7330518718298262</td><td>-0.34008636888545973</td></tr><tr><td>-0.6616858375968597</td><td>-0.374890601483867</td></tr><tr><td>-0.5837436722347898</td><td>-0.40596900285792825</td></tr><tr><td>-0.5000000000000004</td><td>-0.4330127018922192</td></tr><tr><td>-0.4112871031306116</td><td>-0.45575292615583657</td></tr><tr><td>-0.318486650251685</td><td>-0.4739636730835658</td></tr><tr><td>-0.2225209339563146</td><td>-0.4874639560909118</td></tr><tr><td>-0.12434370464748584</td><td>-0.496119603300086</td></tr><tr><td>-0.024930691738073156</td><td>-0.4998445910004081</td></tr><tr><td>0.07473009358642348</td><td>-0.4986018985905901</td></tr><tr><td>0.17364817766692997</td><td>-0.49240387650610407</td></tr><tr><td>0.2708404681430043</td><td>-0.4813121234750062</td></tr><tr><td>0.36534102436639454</td><td>-0.46543687432210223</td></tr><tr><td>0.45621065735316285</td><td>-0.44493590440573433</td></tr><tr><td>0.5425462638657597</td><td>-0.42001296157538565</td></tr><tr><td>0.6234898018587334</td><td>-0.39091574123401496</td></tr><tr><td>0.698236818086073</td><td>-0.35793342462985916</td></tr><tr><td>0.7660444431189778</td><td>-0.3213938048432698</td></tr><tr><td>0.8262387743159949</td><td>-0.281660029031811</td></tr><tr><td>0.8782215733702283</td><td>-0.2391269893106593</td></tr><tr><td>0.9214762118704076</td><td>-0.19421739813734737</td></tr><tr><td>0.9555728057861406</td><td>-0.14737758720545235</td></tr><tr><td>0.9801724878485438</td><td>-0.09907307159969886</td></tr><tr><td>0.9950307753654013</td><td>-0.04978392329790864</td></tr><tr><td>1.0</td><td>-1.2246467991473532E-16</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data ellipse
                     :mapping {:x :x :y :y}
-                    :charts [(chart/line)]
+                    :charts [(chart/line {:order :data})]
                     :aspect :iso
                     :labels {:title ":aspect :iso"}}
                    {:width 500 :height 400})

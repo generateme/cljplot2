@@ -1,4 +1,4 @@
-;; # Colors
+;; # Colours
 
 ;; How cljplot2 picks colours: specifying a colour, palettes, discrete and continuous colour scales, colour in
 ;; practice and accessibility (the [R Graph Gallery](https://r-graph-gallery.com/ggplot2-color.html) colour pages
@@ -11,7 +11,6 @@
   (:require [clojure2d.color :as c]
             [fastmath.random :as r]
             [fastmath.stats :as stats]
-            [scicloj.kindly.v4.kind :as kind]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [notebook-utils :as nu]))
@@ -64,8 +63,9 @@
 
 ;; ## Palettes
 
-;; Palettes are named lists of colours (`c/palette`, `c/find-palette`); gradients are functions of `t` in `[0 1]`
-;; (`c/gradient`). A scale's `:range` takes either name.
+;; Palettes are named lists of colours (`plot/palette` gives one, `plot/find-palette` lists the names); gradients are
+;; functions of `t` in `[0 1]` (`plot/gradient`, names from `plot/find-gradient`). A scale's `:range` takes either
+;; name.
 
 ;; ### Palette types
 
@@ -94,14 +94,16 @@
 
 ;; ### Palette families
 
-;; The same scatter with a ColorBrewer, viridis, MetBrewer and Tableau palette. `(c/find-palette #"(?i)tableau")`
-;; lists palettes by name.
+;; The same scatter with a ColorBrewer, viridis, MetBrewer and Tableau palette; `plot/find-palette` lists palettes by
+;; name:
 
 (nu/source-note {:source "R Graph Gallery - paletteer, viridis, RColorBrewer"
                  :url ["https://r-graph-gallery.com/package/paletteer.html"
                        "https://r-graph-gallery.com/package/viridis.html"
                        "https://r-graph-gallery.com/38-rcolorbrewers-palettes.html"]
                  :dataset :iris})
+
+(plot/find-palette #"(?i)tableau")
 
 (plot/render-image
  (plot/arrange
@@ -120,16 +122,16 @@
 ;; ### Palette swatches
 
 ;; A palette shown as colours: rects with an identity colour scale (the data values are the colours). Every row is
-;; resampled to nine colours with `c/resample`, which also samples a gradient (given as `(c/gradient name)`).
+;; resampled to nine colours with `(plot/palette p 9)`, which also samples a gradient (given as `(plot/gradient name)`).
 
 (nu/source-note {:source "R Graph Gallery - Color palette finder"
                  :url "https://r-graph-gallery.com/color-palette-finder"})
 
 (let [palettes [[":RColorBrewer/Set2" :RColorBrewer/Set2] [":tableau-10" :tableau-10]
                 [":MetBrewer/Hiroshige" :MetBrewer/Hiroshige] [":blues-9" :blues-9] [":viridis" :viridis]
-                ["gradient :viridis/magma" (c/gradient :viridis/magma)] [":RColorBrewer/RdBu" :RColorBrewer/RdBu]]
+                ["gradient :viridis/magma" (plot/gradient :viridis/magma)] [":RColorBrewer/RdBu" :RColorBrewer/RdBu]]
       rows (for [[row [_ p]] (map-indexed vector palettes)
-                 [i col] (map-indexed vector (c/resample p 9))]
+                 [i col] (map-indexed vector (plot/palette p 9))]
              {:x0 i :x1 (+ i 0.92) :y0 (- row) :y1 (- 0.85 row) :c col})
       names (for [[row [label]] (map-indexed vector palettes)] {:x -0.2 :y (- 0.42 row) :label label})]
   (plot/render-image
@@ -359,22 +361,30 @@
 
 ;; ### Colour-blind preview
 
-;; `plot/cvd-image` shows an image as seen with a colour vision deficiency (the render option `:cvd` does the
-;; same for a whole plot). The default palette as most people see it, then with deuteranopia, protanopia and
-;; tritanopia.
+;; The render option `:cvd` draws a whole plot as seen with a colour vision deficiency; `plot/cvd-image` turns an image
+;; already rendered. The default palette as most people see it, then with deuteranopia and protanopia (the render
+;; option) and tritanopia (`plot/cvd-image`).
 
 (nu/source-note {:source "R Graph Gallery - viridis (colour-blind friendly maps)"
                  :url "https://r-graph-gallery.com/package/viridis.html"
                  :dataset :iris})
 
-(let [image (plot/render-image {:data iris :mapping {:x :sepal-length :y :sepal-width :color :species}
-                                :charts [(chart/scatter {:size 7})]
-                                :labels {:title "default palette" :x "sepal length" :y "sepal width"}}
-                               {:width 480 :height 340})
-      cell (fn [caption img] (kind/hiccup [:div [:p [:b caption]] img]))]
-  (kind/table
-   {:row-vectors [[(cell "as most people see it" image) (cell "deuteranopia" (plot/cvd-image image :deuteranopia))]
-                  [(cell "protanopia" (plot/cvd-image image :protanopia)) (cell "tritanopia" (plot/cvd-image image :tritanopia))]]}))
+(def cvd-example
+  {:data iris :mapping {:x :sepal-length :y :sepal-width :color :species}
+   :charts [(chart/scatter {:size 7})]
+   :labels {:title "default palette, as most people see it" :x "sepal length" :y "sepal width"}})
+
+(plot/render-image cvd-example {:width 480 :height 340})
+
+(plot/render-image (assoc-in cvd-example [:labels :title] "deuteranopia (:cvd)")
+                   {:width 480 :height 340 :cvd :deuteranopia})
+
+(plot/render-image (assoc-in cvd-example [:labels :title] "protanopia (:cvd)")
+                   {:width 480 :height 340 :cvd :protanopia})
+
+(plot/cvd-image (plot/render-image (assoc-in cvd-example [:labels :title] "tritanopia (plot/cvd-image)")
+                                   {:width 480 :height 340})
+                :tritanopia)
 
 ;; ### Colour caveats
 

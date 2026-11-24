@@ -393,38 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Colors</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+  <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -1485,7 +1485,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]</td>
+<td>[69 117 180]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">
@@ -1513,7 +1513,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A theme restyles every network of a plot - here square, dark nodes:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network friends {<span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>) <span class="at">:labels</span> <span class="va">true</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:network-node</span> {<span class="at">:shape</span> <span class="ch">\s</span> <span class="at">:color</span> [<span class="dv">60</span> <span class="dv">60</span> <span class="dv">60</span>] <span class="at">:size</span> <span class="dv">10</span>}}}})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:network-node</span> {<span class="at">:shape</span> <span class="ch">\S</span> <span class="at">:color</span> [<span class="dv">60</span> <span class="dv">60</span> <span class="dv">60</span>] <span class="at">:size</span> <span class="dv">10</span>}}}})</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -1534,7 +1534,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[120.0 120.0 120.0 200.0]</td>
+<td>[120 120 120 200]</td>
 <td>line colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
@@ -1709,7 +1709,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69.0 117.0 180.0 255.0]</td>
+<td>[69 117 180]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">
@@ -1757,7 +1757,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[120.0 120.0 120.0 255.0]</td>
+<td>[120 120 120]</td>
 <td>line colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
@@ -1844,7 +1844,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_graphs_files/image9.png" class="img-fluid"></p>
 </div>
-<p>Bands in the target’s colour or grey with stronger opacity, nodes coloured by a node column with a legend, and no labels:</p>
+<p>Bands in the target’s colour with stronger opacity (<code>:alpha 0.8</code>), bands in the theme’s grey, and nodes coloured by a node column with a legend and no labels:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> stages </span>[{<span class="at">:id</span> <span class="st">"web"</span> <span class="at">:kind</span> <span class="st">"channel"</span>} {<span class="at">:id</span> <span class="st">"store"</span> <span class="at">:kind</span> <span class="st">"channel"</span>} {<span class="at">:id</span> <span class="st">"basket"</span> <span class="at">:kind</span> <span class="st">"step"</span>}</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:id</span> <span class="st">"paid"</span> <span class="at">:kind</span> <span class="st">"outcome"</span>} {<span class="at">:id</span> <span class="st">"left"</span> <span class="at">:kind</span> <span class="st">"outcome"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1949,7 +1949,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[150.0 150.0 150.0 255.0]</td>
+<td>[150 150 150]</td>
 <td>fill colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">
@@ -2064,7 +2064,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[150.0 150.0 150.0 255.0]</td>
+<td>[150 150 150]</td>
 <td>fill colour (a mapped :color wins)</td>
 </tr>
 <tr class="even">

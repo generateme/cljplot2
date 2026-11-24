@@ -86,7 +86,7 @@
 ;; A theme restyles every network of a plot - here square, dark nodes:
 
 (plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
-                                          :theme {:chart {:network-node {:shape \s :color [60 60 60] :size 10}}}})
+                                          :theme {:chart {:network-node {:shape \S :color [60 60 60] :size 10}}}})
                    {:width 500 :height 360})
 
 (nu/options-table (describe/style-rows :network-edge))
@@ -172,8 +172,8 @@
 (plot/render-image (plot/sankey energy {:link-color :source})
                    {:width 900 :height 550})
 
-;; Bands in the target's colour or grey with stronger opacity, nodes coloured by a node column with a legend, and
-;; no labels:
+;; Bands in the target's colour with stronger opacity (`:alpha 0.8`), bands in the theme's grey, and nodes coloured
+;; by a node column with a legend and no labels:
 
 (def stages [{:id "web" :kind "channel"} {:id "store" :kind "channel"} {:id "basket" :kind "step"}
              {:id "paid" :kind "outcome"} {:id "left" :kind "outcome"}])

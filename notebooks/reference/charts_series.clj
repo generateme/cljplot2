@@ -5,7 +5,8 @@
 ;; shared option groups it takes (documented once in the Shared options chapter).
 
 (ns reference.charts-series
-  (:require [fastmath.random :as r]
+  (:require [fastmath.core :as m]
+            [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
@@ -30,7 +31,7 @@
 (nu/options-table (describe/mapping (chart/ribbon)))
 
 (def bands (for [g ["low" "high"] t (range 0 25)]
-             (let [c (+ (if (= g "low") 1.0 4.0) (Math/sin (* 0.3 t)))
+             (let [c (+ (if (= g "low") 1.0 4.0) (m/sin (* 0.3 t)))
                    w (+ 0.4 (* 0.04 t))]
                {:group g :t t :lo (- c w) :mid c :hi (+ c w)})))
 
@@ -147,12 +148,12 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-
-;; The default band of a fitted method, given explicitly (`:band :confidence`), and no band (`:band :none`):
+;; The confidence band (`:band :confidence`, the default of `:loess`, `:lm`, `:glm` and `:gp`) at a higher level - a
+;; wider band, in its own fill - and no band (`:band :none`):
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/scatter) (chart/smooth {:method :lm :band :confidence})]
-                                   :labels {:title ":band :confidence"}}
+                                   :charts [(chart/scatter) (chart/smooth {:band :confidence :level 0.999 :fill [200 80 40 90]})]
+                                   :labels {:title ":band :confidence, :level 0.999"}}
                                   {:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:band :none})]
                                    :labels {:title ":band :none"}}]

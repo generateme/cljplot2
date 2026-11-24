@@ -6,7 +6,8 @@
 ;; it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).
 
 (ns reference.charts-multivariate-3d
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
@@ -61,23 +62,27 @@
 
 ;; The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
 ;; scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
-;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range):
+;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range); short variable names let
+;; all four axis names fit:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :center})]
                                    :labels {:title ":scaling :center" :x nil :y nil}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :robust :robust-center :median :robust-spread :mad})]
                                    :labels {:title ":robust, :median / :mad" :x nil :y nil}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
+                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
                                                              :scaling :robust :robust-center :mean :robust-spread 0.25})]
                                    :labels {:title ":robust, :mean / 0.25" :x nil :y nil}}]
                                  {:columns 3 :widths [1 1 1.3]})
@@ -161,7 +166,7 @@
 
 (plot/render-image {:data quakes
                     :mapping {:x :long :y :lat :z :depth}
-                    :charts [(chart/cloud {:size 5 :shape \s :color [200 80 40 220] :stroke-color :black
+                    :charts [(chart/cloud {:size 5 :shape \S :color [200 80 40 220] :stroke-color :black
                                            :stroke-width 0.3 :domain {:z [690 40]}
                                            :axis-titles {:x "longitude" :y "latitude" :z "depth"}})]}
                    {:width 600 :height 480})
@@ -238,7 +243,7 @@
 (nu/options-table (describe/mapping (chart/surface)))
 
 (def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
-               {:x x :y y :z (* x (Math/exp (- (+ (* x x) (* y y)))))}))
+               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
 
 (nu/data-table lattice)
 
@@ -248,31 +253,30 @@
                    {:width 600 :height 480})
 
 ;; Its options: the source (`:f` with the 3D frame's `:domain`, `:fu` over `:u` / `:v`, or `:density`), the grid
-;; size, and the drawing - filled, wireframe or both, shaded, in one colour:
+;; size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded, in one colour:
 
 (nu/options-table (describe/own-rows (describe/options (chart/surface))))
 
-(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (Math/sin (Math/hypot x y)))
+(plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/hypot x y)))
                                                             :domain {:x [-6 6] :y [-6 6]} :n 25 :style :both})]
                                    :labels {:title ":f, :style :both"}
                                    :legend false}
-                                  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (Math/cos v)) (Math/cos u))
-                                                                             (* (+ 2.0 (Math/cos v)) (Math/sin u))
-                                                                             (Math/sin v)])
-                                                            :u [0.0 (* 2 Math/PI)] :v [0.0 (* 2 Math/PI)] :n [36 18]
+                                  {:charts [(chart/surface {:fu (fn [[u v]] [(* (+ 2.0 (m/cos v)) (m/cos u))
+                                                                             (* (+ 2.0 (m/cos v)) (m/sin u))
+                                                                             (m/sin v)])
+                                                            :u [0.0 m/TWO_PI] :v [0.0 m/TWO_PI] :n [36 18]
                                                             :aspect [1 1 0.35] :color [120 170 210] :shade true})]
                                    :labels {:title ":fu (a torus), one colour"}}
                                   {:data iris
                                    :mapping {:x :sepal-length :y :sepal-width}
-                                   :charts [(chart/surface {:density true :n 30 :style :wireframe
-                                                            :stroke-color [40 40 40]})]
+                                   :charts [(chart/surface {:density true :n 30 :style :wireframe})]
                                    :labels {:title ":density, :wireframe"}
                                    :legend false}]
                                  {:columns 3})
                    {:width 1000 :height 380})
 
 ;; A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
-;; high), and the quad outlines' width:
+;; high), and the quad outlines' colour and width (outlines of `:style :both`):
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :sepal-width}
@@ -286,12 +290,12 @@
                                    :legend false}
                                   {:data lattice
                                    :mapping {:x :x :y :y :z :z}
-                                   :charts [(chart/surface {:style :both :stroke-width 2})]
-                                   :labels {:title ":style :both, :stroke-width 2"}}]
+                                   :charts [(chart/surface {:style :both :stroke-color [40 40 40] :stroke-width 2})]
+                                   :labels {:title ":stroke-color, :stroke-width 2"}}]
                                  {:columns 3 :widths [1 1 1.25]})
                    {:width 1000 :height 360})
 
-;; The 3D frame (Shared options) on a surface: seen from another side and from above, and with y reversed:
+;; The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surface: seen from another side and from above, and with y reversed:
 
 (plot/render-image (plot/arrange [{:data lattice
                                    :mapping {:x :x :y :y :z :z}

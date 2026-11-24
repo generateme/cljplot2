@@ -5,7 +5,8 @@
 ;; swaps the directions and `:aspect :iso` keeps data units square.
 
 (ns reference.scales-axes-coords
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.scale.coord :as coord]
@@ -148,7 +149,7 @@
 
 (nu/scale-kind-doc :log)
 
-(plot/render-image {:data (for [i (range 1 11)] {:x (Math/pow 2 i) :y i})
+(plot/render-image {:data (for [i (range 1 11)] {:x (m/pow 2 i) :y i})
                     :mapping {:x :x :y :y}
                     :charts [(chart/line) (chart/scatter)]
                     :scales {:x {:kind :log :base 2}}}
@@ -214,9 +215,10 @@
 
 (sort schema/interpolation-methods)
 
-;; Here the middle of the domain, 40 to 60, gets half of the axis:
+;; Here the domain values 1, 40, 60 and 100 sit at evenly spaced stops, so each of the three segments gets a third
+;; of the axis - 40 to 60 is stretched, 1 to 40 and 60 to 100 are squeezed:
 
-(plot/render-image {:data (for [i (range 1 101)] {:x i :y (Math/log i)})
+(plot/render-image {:data (for [i (range 1 101)] {:x i :y (m/log i)})
                     :mapping {:x :x :y :y}
                     :charts [(chart/line)]
                     :scales {:x {:kind :interpolated :domain [1 40 60 100] :ticks [1 20 40 50 60 80 100]}}}
@@ -287,11 +289,16 @@
                                  {:columns 2})
                    {:width 900 :height 420})
 
-;; `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it:
+;; `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
+;; points joined in data order, [line](reference.charts_points_paths.html#line) `:order :data`):
 
-(plot/render-image {:data (for [t (range 0 63)] {:x (Math/cos (* 0.1 t)) :y (* 0.5 (Math/sin (* 0.1 t)))})
+(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
+
+(nu/data-table ellipse)
+
+(plot/render-image {:data ellipse
                     :mapping {:x :x :y :y}
-                    :charts [(chart/line)]
+                    :charts [(chart/line {:order :data})]
                     :aspect :iso
                     :labels {:title ":aspect :iso"}}
                    {:width 500 :height 400})

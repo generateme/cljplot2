@@ -126,7 +126,7 @@
   - `rows` (sequence of maps): the data rows.
   - `options` (map, optional): `:hierarchy` - level accessors, outer level first (none - a root without children).
 
-  Returns the root group `{:name nil :height h :children [..]}`; rows without a level are left out; no rows - a root without children.
+  Returns the root group `{:name nil :value n :height h :children [..]}` (also over a single top-level group): every other node's `:name` is its level value and `:value` the number of rows under it; a leaf is the end of a row path - one per distinct path, not per row - `{:name v :value n :color nil :height 0.0}`. A path cut short by a missing level ends at its last level's node when that node has no other children, else in a leaf `{:name nil ...}` under it. Rows without a first level are left out; no such rows - `{:name nil :height 0.0 :children []}` (no `:value`).
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[from-levels-options]]).
 

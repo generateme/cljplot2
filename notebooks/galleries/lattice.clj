@@ -6,8 +6,9 @@
 ;;
 ;; The figures show the same information as the originals; styling differs, and the code is cljplot2's own (plain
 ;; plot maps, data prepared in Clojure). Lattice's banking (`aspect = "xy"`) is replaced by the image size, its
-;; strips by cljplot2 facet strips. Lattice fills panels from the bottom row up; here they run top-down, so panels
-;; stacked in rows and ordered by a statistic put the largest first to look the same. 3D boxes are drawn in
+;; strips by cljplot2 facet strips. Lattice fills panels from the bottom row up; figures whose panel order matters do
+;; the same with `:facets {:order :bottom-up}` (the first panel at the bottom left), the others keep cljplot2's
+;; top-down order. 3D boxes are drawn in
 ;; perspective at lattice's `distance` of 0.2 (`:view {:distance 0.2}`; cljplot2's default is orthographic), from
 ;; lattice's views: `screen = list(z = θ, x = φ)` is `:view {:azimuth -θ :elevation (90 + φ)}` (the default z = 40,
 ;; x = -60 - azimuth -40, elevation 30). Data
@@ -230,7 +231,7 @@
 ;; ### Fig 2.6 Dot plot
 
 ;; Barley yield of each variety at six sites, the two years in two shapes. Sites, varieties and years
-;; keep R's factor order (`nu/levels`); lattice fills panels from the bottom, so the sites run top-down reversed.
+;; keep R's factor order (`nu/levels`), the sites from the bottom up as lattice's (`:facets {:order :bottom-up}`).
 
 (nu/source-note {:source "Lattice Fig 2.6" :url (figure-url 2 6) :dataset :barley})
 
@@ -238,10 +239,10 @@
  {:data barley
   :mapping {:x :yield :y :variety :shape :year :facet :site}
   :scales {:y {:domain (nu/levels :barley :variety)}
-           :facet {:domain (vec (rseq (nu/levels :barley :site)))}
+           :facet {:domain (nu/levels :barley :site)}
            :shape {:domain (nu/levels :barley :year)}}
   :charts [(chart/scatter)]
-  :facets {:columns 1}
+  :facets {:columns 1 :order :bottom-up}
   :theme {:text {:tick-label {:size 8}}}
   :labels {:x "yield" :y nil}}
  {:width 600 :height 800})
@@ -651,7 +652,7 @@
 (plot/render-image
  {:data postdoc
   :mapping {:x :count :y :field :color :reason}
-  :scales {:color {:domain (nu/levels :postdoc :reason)}}
+  :scales {:color {:domain (nu/levels :postdoc :reason)} :x {:domain [0 1]}}
   :charts [(chart/bar {:position :normalize})]
   :labels {:x "Proportion" :y nil}}
  {:width 900 :height 450})
@@ -677,17 +678,18 @@
 
 ;; ### Fig 4.7 Ordered panels and levels
 
-;; Panels ordered by their median proportion, the fields within each panel by their proportion (free y scales).
+;; Panels ordered by their median proportion from the bottom up, the fields within each panel by their proportion
+;; (free y scales).
 
 (nu/source-note {:source "Lattice Fig 4.7" :url (figure-url 4 7) :dataset :postdoc})
 
 (plot/render-image
  {:data postdoc-proportions
   :mapping {:x :proportion :y :field :facet :reason}
-  :scales {:facet {:order-by #(stats/median (map :proportion %)) :descending true}
+  :scales {:facet {:order-by #(stats/median (map :proportion %))}
            :y {:order-by #(stats/mean (map :proportion %))}}
   :charts [(chart/scatter)]
-  :facets {:columns 1 :scales {:y :free}}
+  :facets {:columns 1 :order :bottom-up :scales {:y :free}}
   :labels {:x "Proportion" :y nil}}
  {:width 600 :height 800})
 
@@ -1230,16 +1232,15 @@
 ;; ### Fig 6.10 Labelled contours
 
 ;; The Gaussian process fit (in place of the book's locfit) as contour lines with their levels, a panel per
-;; radiation level - the highest on top, as the book's bottom-up panels.
+;; radiation level - from the bottom up, the highest on top.
 
 (nu/source-note {:source "Lattice Fig 6.10" :url (figure-url 6 10) :dataset :environmental})
 
 (plot/render-image
  {:data (filterv #(= "Gaussian process" (:model %)) env-fits)
   :mapping {:x :wind :y :temperature :value :fit :facet :radiation}
-  :scales {:facet {:order-by #(:radiation (first %)) :descending true}}
   :charts [(chart/contour {:levels 15 :labels true :color [40 40 40]})]
-  :facets {:columns 1}
+  :facets {:columns 1 :order :bottom-up}
   :labels {:x "wind" :y "temperature"}}
  {:width 500 :height 800})
 
@@ -1898,22 +1899,22 @@
 
 ;; ### Fig 10.18 Level order matters
 
-;; The same barley dot plot with varieties and sites as plain text (alphabetical, left) and in R's factor order
-;; (right).
+;; The same barley dot plot with varieties and sites as plain text (alphabetical, left) and in R's factor order,
+;; panels filled bottom-up as lattice does (`:facets {:order :bottom-up}`, right).
 
 (nu/source-note {:source "Lattice Fig 10.18" :url (figure-url 10 18) :dataset :barley})
 
-(let [panel (fn [varieties sites]
+(let [panel (fn [varieties sites facet-order]
               {:data barley
                :mapping {:x :yield :y :variety :shape :year :facet :site}
                :scales {:y {:domain varieties} :facet {:domain sites} :shape {:domain (nu/levels :barley :year)}}
                :charts [(chart/scatter {:size 5})]
-               :facets {:columns 1}
+               :facets {:columns 1 :order facet-order}
                :theme {:text {:tick-label {:size 7}}}
                :labels {:x "yield" :y nil}})]
   (plot/render-image
-   (plot/arrange [(panel (vec (sort (nu/levels :barley :variety))) (vec (sort (nu/levels :barley :site))))
-                  (panel (nu/levels :barley :variety) (vec (rseq (nu/levels :barley :site))))]
+   (plot/arrange [(panel (vec (sort (nu/levels :barley :variety))) (vec (sort (nu/levels :barley :site))) :top-down)
+                  (panel (nu/levels :barley :variety) (nu/levels :barley :site) :bottom-up)]
                  {:columns 2})
    {:width 900 :height 800}))
 
@@ -1936,16 +1937,16 @@
 
 ;; ### Fig 10.20 A panel per region
 
-;; Regions ordered by their median density, the states within each by density (free y).
+;; Regions ordered by their median density from the bottom up, the states within each by density (free y).
 
 (nu/source-note {:source "Lattice Fig 10.20" :url (figure-url 10 20) :dataset :states})
 
 (def density-by-region
   {:data states-per-mile
    :mapping {:x :density :y :name :facet :region}
-   :scales (assoc by-density :x {:kind :log} :facet {:order-by #(stats/median (map :density %)) :descending true})
+   :scales (assoc by-density :x {:kind :log} :facet {:order-by #(stats/median (map :density %))})
    :charts [(chart/scatter)]
-   :facets {:columns 1 :scales {:y :free}}
+   :facets {:columns 1 :order :bottom-up :scales {:y :free}}
    :theme {:text {:tick-label {:size 8}}}
    :labels {:x "Density (per square mile)" :y nil}})
 
@@ -1958,14 +1959,15 @@
 (nu/source-note {:source "Lattice Fig 10.21" :url (figure-url 10 21) :dataset :states})
 
 (let [counts (frequencies (map :region states))
-      ;; top-down as the panels: the largest median first
+      ;; heights run top-down: the largest median (the top panel) first
       order (sort-by (fn [r] (- (stats/median (map :density (filter #(= r (:region %)) states-per-mile))))) (keys counts))]
   (plot/render-image (assoc-in density-by-region [:facets :heights] (mapv counts order)) {:width 600 :height 800}))
 
 ;; ### Fig 10.22 Many panels, ordered
 
-;; Cancer death rates of men against women per county, a panel per state - ordered by the median difference - on
-;; log-2 axes with the line y = x (square panels from the image size: `:aspect :iso` needs linear axes).
+;; Cancer death rates of men against women per county, a panel per state - ordered by the median difference from the
+;; bottom left up - on log-2 axes with the line y = x (square panels from the image size: `:aspect :iso` needs linear
+;; axes).
 
 (nu/source-note {:source "Lattice Fig 10.22" :url (figure-url 10 22) :dataset :us-cancer-rates})
 
@@ -1975,9 +1977,9 @@
  {:data (filter #(and (:rate-male %) (:rate-female %)) (nu/dataset :us-cancer-rates))
   :mapping {:x :rate-female :y :rate-male :facet :state}
   :scales {:x {:kind :log :base 2 :ticks [75 150 300 600]} :y {:kind :log :base 2 :ticks [75 150 300 600]}
-           :facet {:order-by #(stats/median (map (fn [row] (- (:rate-male row) (:rate-female row))) %)) :descending true}}
+           :facet {:order-by #(stats/median (map (fn [row] (- (:rate-male row) (:rate-female row))) %))}}
   :charts [(chart/scatter {:size 2}) (chart/function {:f identity :color :black})]
-  :facets {:columns 7}
+  :facets {:columns 7 :order :bottom-up}
   :theme {:text {:strip {:size 8} :tick-label {:size 7}}}
   :labels {:x "rate.female" :y "rate.male"}}
  {:width 1000 :height 800})
@@ -2014,18 +2016,17 @@
 
 ;; ### Fig 10.25 Residuals and their medians (again)
 
-;; Fig 3.17 repeated in the book's chapter on data manipulation.
+;; The book repeats [Fig 3.17](#fig-3.17-residuals-and-their-medians) in its chapter on data manipulation; it is
+;; drawn there, not again here.
 
 (nu/source-note {:source "Lattice Fig 10.25" :url (figure-url 10 25) :dataset :barley})
-
-(plot/render-image barley-residual-plot {:width 800 :height 450})
 
 ;; ## Chapter 11 - Manipulating the trellis Object
 
 ;; ### Fig 11.1 Linear and log scales side by side
 
-;; US personal expenditure 1940 - 1960, a panel per category (ordered by the median), stems from 0 on the left,
-;; a log-2 axis on the right.
+;; US personal expenditure 1940 - 1960, a panel per category (ordered by the median from the bottom up), stems from 0
+;; on the left, a log-2 axis on the right.
 
 (nu/source-note {:source "Lattice Fig 11.1" :url (figure-url 11 1) :dataset :us-personal-expenditure})
 
@@ -2033,8 +2034,8 @@
 
 (let [expenditure {:data (nu/dataset :us-personal-expenditure)
                    :mapping {:x :expenditure :y :year :facet :category}
-                   :scales {:facet {:order-by #(stats/median (map :expenditure %)) :descending true}}
-                   :facets {:columns 1}
+                   :scales {:facet {:order-by #(stats/median (map :expenditure %))}}
+                   :facets {:columns 1 :order :bottom-up}
                    :labels {:x "Expenditure (billion dollars)" :y nil}}]
   (plot/render-image
    (plot/arrange [(assoc expenditure :charts [(chart/segment {:xend 0}) (chart/scatter)])
@@ -2046,17 +2047,17 @@
 
 ;; ### Fig 11.2 Panel heights
 
-;; Days of frost per state, a panel per region (ordered by mean frost), the states by frost within each (free y);
-;; each panel as tall as its number of states.
+;; Days of frost per state, a panel per region (ordered by mean frost from the bottom up), the states by frost within
+;; each (free y); each panel as tall as its number of states.
 
 (nu/source-note {:source "Lattice Fig 11.2" :url (figure-url 11 2) :dataset :states})
 
 (def frost-plot
   {:data states
    :mapping {:x :frost :y :name :facet :region}
-   :scales {:y {:order-by #(stats/mean (map :frost %))} :facet {:order-by #(stats/mean (map :frost %)) :descending true}}
+   :scales {:y {:order-by #(stats/mean (map :frost %))} :facet {:order-by #(stats/mean (map :frost %))}}
    :charts [(chart/scatter)]
-   :facets {:columns 1 :scales {:y :free}}
+   :facets {:columns 1 :order :bottom-up :scales {:y :free}}
    :theme {:text {:tick-label {:size 8}}}
    :labels {:x "Frost" :y nil}})
 
@@ -2146,7 +2147,7 @@
 ;; ### Fig 13.1 Hypocycloids
 
 ;; A panel per ratio k = p / 10 of the fixed to the rolling circle (p = 11 ... 30): the rolling circle of radius 1/k
-;; traced from its rim over 10 turns. Panels run top-down here (lattice fills them bottom-up).
+;; traced from its rim over 10 turns, the panels from the bottom left up as lattice's.
 
 (nu/source-note {:source "Lattice Fig 13.1" :url (figure-url 13 1)})
 
@@ -2158,7 +2159,7 @@
     :scales {:facet {:domain (mapv ratio-text ps)}
              :x {:domain [-1 1] :axis false} :y {:domain [-1 1] :axis false}}
     :charts [(chart/line {:order :data :line-width 0.8})]
-    :facets {:columns 4}
+    :facets {:columns 4 :order :bottom-up}
     :aspect :iso
     :labels {:x nil :y nil}}
    {:width 650 :height 800}))
@@ -2224,11 +2225,11 @@
     (mapv (comp keyword :name) (tree/leaves (tree/from-hclust (cl/hclust matrix {:method :complete}) names)))))
 
 (def cars93-short-names
-  "Names of the numeric Cars93 columns short enough for a strip of the 18 x 18 grid."
-  {:min-price "min-price" :price "price" :max-price "max-price" :mpg-city "mpg-city" :mpg-highway "mpg-hwy"
+  "Names of the numeric Cars93 columns short enough for a strip of the 18 x 18 grid (at most 8 characters)."
+  {:min-price "price-lo" :price "price" :max-price "price-hi" :mpg-city "mpg-city" :mpg-highway "mpg-hwy"
    :engine-size "engine" :horsepower "hp" :rpm "rpm" :rev-per-mile "rev/mile" :fuel-tank-capacity "tank"
-   :passengers "passengers" :length "length" :wheelbase "wheelbase" :width "width" :turn-circle "turn"
-   :rear-seat-room "rear-seat" :luggage-room "luggage" :weight "weight"})
+   :passengers "seats" :length "length" :wheelbase "wheel-b" :width "width" :turn-circle "turn"
+   :rear-seat-room "rear-rm" :luggage-room "luggage" :weight "weight"})
 
 (def cars93-pairs
   "Every ordered pair of the numeric Cars93 columns with every car's two values: `{:a :b :x :y}` (short column
@@ -2241,7 +2242,7 @@
 ;; ### Fig 13.5 Correlation ellipses
 
 ;; The Cars93 correlations (6.12) in clustered order, each pair as the ellipse of a bivariate normal with that
-;; correlation, colored by it (the book also prints 100 r inside): a facet grid of correlation glyphs - `plot/pairs`
+;; correlation, coloured by it (the book also prints 100 r inside): a facet grid of correlation glyphs - `plot/pairs`
 ;; needs larger cells for 18 variables.
 
 (nu/source-note {:source "Lattice Fig 13.5" :url (figure-url 13 5) :dataset :cars93})

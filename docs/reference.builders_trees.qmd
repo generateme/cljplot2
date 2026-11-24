@@ -77,13 +77,15 @@ The cars' variables as z-scores, a row vector per car, clustered with complete l
 
 ::: {.sourceClojure}
 ```clojure
-(def standardized
-  (let [moments (into {} (for [k variables :let [vs (map k mtcars)]] [k [(stats/mean vs) (stats/stddev vs)]]))]
-    (mapv (fn [car] (mapv (fn [k] (let [[mu sd] (moments k)] (/ (- (double (k car)) (double mu)) (double sd))))
-                          variables))
-          mtcars)))
+(def standardized (apply mapv vector (map (fn [k] (stats/standardize (map k mtcars))) variables)))
 ```
 :::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>[0.6750876206931093 -0.8010684219091876 -0.6554596090331999 1.1283722620337149 -1.1502784754134987 -1.1015230645561858]</td></tr><tr><td>[0.6750876206931093 -0.8010684219091876 -0.6554596090331999 1.1283722620337149 -0.838525042459661 -0.7741715999318604]</td></tr><tr><td>[1.1090725197101083 -1.2597353595104843 -0.9790258770132912 1.014968014593141 -1.517047220065073 0.15527273712649395]</td></tr><tr><td>[0.7715287093635531 0.06334234510864066 -0.6554596090331999 -0.7314573959917041 -0.4228537985212105 0.6404543721946926]</td></tr><tr><td>[0.1205513608380552 0.9630351842496456 0.5817055332436202 -0.5726914495749004 -0.14777724003252984 -0.7741715999318604]</td></tr><tr><td>[-0.024110272167610528 -0.2277347499075668 -0.7506261584391091 -1.4572445796113807 -0.12332599038909156 1.096408197921431]</td></tr><tr><td>[-0.9403006145368302 0.9630351842496456 1.9140372249263495 -0.43660635264621106 0.011155882649818772 -1.4639479003902616]</td></tr><tr><td>[1.4948368743918843 -0.9183813117187501 -1.5690584833299286 0.6520744227833027 -0.45341786057550826 0.967805836819018]</td></tr><tr><td>[1.1090725197101083 -0.9704223681004355 -0.9409592572509275 1.1737339610099446 -0.5023203598623848 2.663018778623563]</td></tr><tr><td>[0.2411027216761104 -0.734032484875152 -0.40802658057783586 1.1737339610099446 -0.14777724003252984 -0.02593968079054295]</td></tr><tr><td>[-0.09644108867044382 -0.734032484875152 -0.40802658057783586 1.1737339610099446 -0.14777724003252984 0.32479403130694806]</td></tr><tr><td>[-0.43398489901699894 0.2203475660567769 0.6768720826495295 -0.7541382454798196 0.6224371237357761 -0.5520402489367825]</td></tr><tr><td>[-0.21699244950849902 0.2203475660567769 0.6768720826495295 -0.7541382454798196 0.2067658797973251 -0.43512901157095013]</td></tr><tr><td>[-0.7233081650283313 0.2203475660567769 0.6768720826495295 -0.7541382454798196 0.26789400390592055 -0.20130653683928948]</td></tr><tr><td>[-1.880601229073661 1.9509332036985922 1.1527048296790756 -1.071670138313427 2.065060852698634 -0.2129976605758723]</td></tr><tr><td>[-1.880601229073661 1.8450869873290623 1.3430379284908942 -0.9129041918966233 2.277786724596547 -0.306526650468537]</td></tr></tbody></table></div>
+```
 
 
 
@@ -186,7 +188,7 @@ shown; the clustered heatmap's trees too), the group names in the text role `:de
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 70.0 70.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70 70 70]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -271,7 +273,7 @@ The theme styles of a node-link tree - nodes in `[:chart :tree-node]` (scatter),
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70.0 130.0 180.0 255.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70 130 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -296,7 +298,7 @@ Small dark nodes through the theme:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[176.0 176.0 176.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>0.9</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[176 176 176]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>0.9</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -432,7 +434,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by</td><td>one of :group :none or nil</td><td>:group</td><td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70.0 110.0 180.0 255.0]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by</td><td>one of :group :none or nil</td><td>:group</td><td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70 110 180]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
 ```
 
 :::
@@ -467,8 +469,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 :::
 
 
-One edge colour, more opaque, without leaf names (left); coloured by group with the default translucency and
-names (right):
+One edge colour, more opaque, without leaf names (left); coloured by group (the default) and fainter (right):
 
 
 ::: {.sourceClojure}
@@ -476,8 +477,7 @@ names (right):
 (plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :none :edge-color [120 60 160]
                                                                   :alpha 0.8 :labels false
                                                                   :title ":color-by :none, :alpha 0.8"})
-                                  (plot/bundle calls office-tree {:color-by :group :alpha 0.4 :labels true
-                                                                  :title ":color-by :group"})]
+                                  (plot/bundle calls office-tree {:alpha 0.15 :title ":alpha 0.15"})]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})
 ```
@@ -495,7 +495,7 @@ leaves in `[:chart :bundle-leaf]` (scatter):
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -520,7 +520,7 @@ Thicker edges through the theme:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>3</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 180.0]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>3</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr></tbody></table>
 ```
 
 :::

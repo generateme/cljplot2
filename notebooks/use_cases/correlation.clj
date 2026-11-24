@@ -4,8 +4,9 @@
 ;; plots, 2D densities, functions of two variables and the ways out of overplotting (the
 ;; [R Graph Gallery](https://r-graph-gallery.com/) correlation pages and [data-to-viz](https://www.data-to-viz.com/)).
 ;;
-;; Not here: labels along a trend line and label repel, clustered heatmap order with dendrograms (waits for
-;; hierarchical clustering in fastmath), arrows on connected scatter plots (backlog), 3D densities and interactivity.
+;; Not here: labels along a trend line and label repel, 3D densities and interactivity; a heatmap in clustered order
+;; with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmap)) is in the
+;; [Flow](use_cases.flow.html) chapter.
 
 (ns use-cases.correlation
   (:require [fastmath.core :as m]
@@ -13,6 +14,7 @@
             [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.pairwise :as pairwise]
             [notebook-utils :as nu])
   (:import [java.time DayOfWeek LocalDate]
            [java.time.temporal IsoFields]))
@@ -105,7 +107,7 @@
 
 ;; ### Text labels in boxes
 
-;; A text chart names some cars; `:background` puts each label on a semi-transparent box, so the points it covers
+;; A [text](reference.charts_annotations.html#text) chart names some cars; `:background` puts each label on a semi-transparent box, so the points it covers
 ;; stay visible and the text stays readable over them.
 
 (nu/source-note {:source "R Graph Gallery - Add text labels with ggplot2"
@@ -125,7 +127,7 @@
 
 ;; ### Rugs and marginal distributions
 
-;; Margins share the panel's axes: rugs (one line per value) beside both axes, or the densities of both variables.
+;; [Margins](reference.facets_arrange.html#margins) share the panel's axes: rugs (one line per value) beside both axes, or the densities of both variables.
 
 (nu/source-note {:source "R Graph Gallery - Marginal distribution with ggplot2"
                  :url "https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html"
@@ -145,7 +147,7 @@
 
 ;; ### Linear fit with a confidence band
 
-;; `chart/smooth {:method :lm}` adds the least-squares line and its 95 % confidence band.
+;; [`chart/smooth {:method :lm}`](reference.charts_series.html#smooth) adds the least-squares line and its 95 % confidence band.
 
 (nu/source-note {:source "R Graph Gallery - Scatterplot with a regression line"
                  :url "https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html"
@@ -264,7 +266,7 @@
 ;; ### Basic heatmap, square and hexagon cells
 
 ;; European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across
-;; columns of different units; `:cell :pointy-hex` draws the same grid as a honeycomb.
+;; columns of different units; the [tile](reference.charts_grids_fields.html#tile) `:cell :pointy-hex` draws the same grid as a honeycomb.
 
 (def europe (filterv #(= "Europe" (:continent %)) countries))
 
@@ -338,24 +340,23 @@
 
 ;; ### Values in cells: the correlation matrix
 
-;; `fastmath.stats/correlation-matrix` gives r of every pair of variables; one tile per pair, coloured on a
-;; diverging scale over [-1 1] and labelled with its value (`:value-label`, text in a contrasting colour).
+;; [`pairwise/matrix-rows`](reference.data_sets_series.html#pairwisematrix-rows) gives r of every pair of variables,
+;; here the lower triangle with the diagonal, each pair once; one tile per pair, coloured on a diverging scale over
+;; [-1 1] and labelled with its value (`:value-label`, text in a contrasting colour). The y scale's `:reverse` puts
+;; the first variable on top.
 
 (nu/source-note {:source "R Graph Gallery - Correlation matrix with ggally (heatmap)"
                  :url "https://r-graph-gallery.com/199-correlation-matrix-with-ggally.html"
                  :dataset :mtcars})
 
-(let [variables [:mpg :cyl :disp :hp :drat :wt :qsec :gear :carb]
-      names (mapv name variables)
-      r (stats/correlation-matrix (mapv (fn [k] (mapv k mtcars)) variables))]
-  (plot/render-image
-   {:data (vec (for [i (range (count names)) j (range (count names))]
-                 {:x (names i) :y (names j) :r (nth (nth r i) j)}))
-    :mapping {:x :x :y :y :color :r}
-    :scales {:y {:domain (vec (reverse names))} :color {:range :RColorBrewer/RdBu :domain [-1 1] :title "r"}}
-    :charts [(chart/tile {:stroke-color :white :value-label (fn [{:keys [value]}] (format "%.2f" (double value)))})]
-    :labels {:title "mtcars: correlation of every pair" :x nil :y nil}}
-   {:width 700 :height 600}))
+(plot/render-image
+ {:data (pairwise/matrix-rows mtcars {:variables [:mpg :cyl :disp :hp :drat :wt :qsec :gear :carb]
+                                      :triangle :lower :self-pairs true})
+  :mapping {:x (comp name :x) :y (comp name :y) :color :value}
+  :scales {:y {:reverse true} :color {:range :RColorBrewer/RdBu :domain [-1 1] :title "r"}}
+  :charts [(chart/tile {:stroke-color :white :value-label true})]
+  :labels {:title "mtcars: correlation of every pair" :x nil :y nil}}
+ {:width 700 :height 600})
 
 ;; ### Calendar heatmap
 
@@ -375,7 +376,7 @@
                    :change (m/constrain (- (/ (double (:value day)) (double (:value prev))) 1.0) -0.1 0.1)}))]
   (plot/render-image
    {:data days :mapping {:x :week :y :weekday :color :change :facet-row :year}
-    :scales {:y {:domain (vec (reverse weekdays))}
+    :scales {:y {:domain weekdays :reverse true}
              :color {:range :RColorBrewer/RdYlGn :midpoint 0 :domain [-0.1 0.1] :title "daily change"
                      :formatter #(format "%+.0f%%" (* 100.0 (double %)))}}
     :charts [(chart/tile {:stroke-color :white})]
@@ -384,24 +385,25 @@
 
 ;; ### Row and column order
 
-;; The order of the categories is the scale's `:domain`: the data order (the default; here the dataset's subregions)
-;; hides structure that a meaningful order shows - countries sorted by life expectancy.
+;; Categories come in data order by default (here the dataset's subregions), which hides structure that a meaningful
+;; order shows: the band scale's `:order-by` sorts the countries by a function of each one's rows - its life
+;; expectancy.
 
 (nu/source-note {:source "R Graph Gallery - Heatmap"
                  :url "https://r-graph-gallery.com/heatmap.html"
                  :dataset :countries})
 
 (let [rows (z-scores europe)
-      by-life (mapv :country (sort-by :life-expectancy europe))
-      heatmap (fn [order title legend?]
+      life-expectancy (fn [country-rows] (some #(when (= "life-expectancy" (:indicator %)) (:value %)) country-rows))
+      heatmap (fn [order-by title legend?]
                 {:data rows :mapping {:x :country :y :indicator :color :z} :legend legend?
                  :scales (cond-> {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
-                           order (assoc :x {:domain order}))
+                           order-by (assoc :x {:order-by order-by}))
                  :theme {:axis {:x {:label-rotation 90}}}
                  :charts [(chart/tile)]
                  :labels {:title title :x nil :y nil}})]
   (plot/render-image
-   (plot/arrange [(heatmap nil "data order" false) (heatmap by-life "by life expectancy" true)] {:columns 1})
+   (plot/arrange [(heatmap nil "data order" false) (heatmap life-expectancy "by life expectancy (:order-by)" true)] {:columns 1})
    {:width 1000 :height 800}))
 
 ;; ### Smoothed heatmap
@@ -470,8 +472,9 @@
 ;; ### Bubble chart: area, size range, colours and legend
 
 ;; Gapminder 2007: income (log axis) against life expectancy, population as the bubble's area (`:area true`, size
-;; range 1-40 px), continent as colour. The left panel maps population linearly to the diameter: large countries
-;; look far larger than they are.
+;; range 1-40 px), continent as colour; the `:order` mapping with `:descending true` draws the largest bubbles first,
+;; so the small ones stay on top. The left panel maps population linearly to the diameter: large countries look far
+;; larger than they are.
 
 (nu/source-note {:source "R Graph Gallery - Bubble chart; data-to-viz - Bubble"
                  :url ["https://r-graph-gallery.com/320-the-basis-of-bubble-plot.html"
@@ -479,10 +482,10 @@
                  :dataset :gapminder-2007})
 
 (let [bubbles (fn [area? title legend?]
-                {:data (sort-by #(- (double (:pop %))) gapminder) :legend legend?
-                 :mapping {:x :gdp-per-cap :y :life-exp :size #(/ (double (:pop %)) 1.0e6) :color :continent}
+                {:data gapminder :legend legend?
+                 :mapping {:x :gdp-per-cap :y :life-exp :size #(/ (double (:pop %)) 1.0e6) :color :continent :order :pop}
                  :scales {:x {:kind :log} :size (cond-> {:range [1 40] :title "population, M"} area? (assoc :area true))}
-                 :charts [(chart/scatter {:stroke-color :white :stroke-width 0.5})]
+                 :charts [(chart/scatter {:stroke-color :white :stroke-width 0.5 :descending true})]
                  :theme {:palette {:color :set2}}
                  :labels {:title title :x "GDP per capita, USD" :y "life expectancy, years"}})]
   (plot/render-image
@@ -496,8 +499,9 @@
 
 ;; ### Connected scatter with dates
 
-;; Yearly means of US unemployment duration and savings rate, 1990-2014; labels on boxes keep the years readable
-;; where the path crosses itself.
+;; Yearly means of US unemployment duration and savings rate, 1990-2014, joined in time order (`:order :data`) by a
+;; smooth path (`:curve :bezier`) ending in an arrowhead (`:arrow`, see [line](reference.charts_points_paths.html#ends));
+;; labels on boxes keep the years readable where the path crosses itself.
 
 (nu/source-note {:source "R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter"
                  :url ["https://r-graph-gallery.com/connected_scatterplot_ggplot2.html"
@@ -509,7 +513,7 @@
                     {:year year :uempmed (stats/mean (map :uempmed rows)) :psavert (stats/mean (map :psavert rows))}))]
   (plot/render-image
    {:data yearly :mapping {:x :uempmed :y :psavert}
-    :charts [(chart/line {:order :data :curve :bezier :color [33 102 172]})
+    :charts [(chart/line {:order :data :curve :bezier :color [33 102 172] :arrow {:end true :size 12} :end-gap 4})
              (chart/scatter {:size 6 :color [33 102 172]})
              (chart/text {:data (filterv #(zero? (mod (long (:year %)) 4)) yearly)
                           :mapping {:x :uempmed :y :psavert :label :year}
@@ -523,7 +527,7 @@
 
 ;; ### 2D histogram and hexbin
 
-;; `chart/bin2d` counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
+;; [`chart/bin2d`](reference.charts_grids_fields.html#bin2d) counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
 
 (nu/source-note {:source "R Graph Gallery - 2D density chart; data-to-viz - 2D density"
                  :url ["https://r-graph-gallery.com/2d-density-chart.html" "https://www.data-to-viz.com/graph/density2d.html"]
@@ -540,8 +544,8 @@
 
 ;; ### 2D kernel density and contours
 
-;; `chart/field` estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster;
-;; `chart/contour` draws its level lines, or with `:filled true` the bands between them.
+;; [`chart/field`](reference.charts_grids_fields.html#field) estimates the density (Gaussian kernel, a bandwidth per
+;; axis) and draws it as a raster; [`chart/contour`](reference.charts_grids_fields.html#contour) draws its level lines, or with `:filled true` the bands between them.
 
 (nu/source-note {:source "R Graph Gallery - 2D density plot with ggplot2"
                  :url "https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html"
@@ -579,27 +583,27 @@
 
 ;; ### A function as a raster
 
-;; −(x² + y²) · sin x · sin y · sin xy on [−π, π]², white to black, 300 × 300 samples, square pixels (`:aspect :iso`).
+;; MATLAB's "peaks" surface - a maximum above the centre, a minimum below it and smaller lobes - on [−3, 3]², white
+;; to black, 300 × 300 samples, square pixels (`:aspect :iso`).
 
-(nu/source-note {:source "cljplot2 - chart/field"})
-
-(defn fn2d
-  [[x y]]
-  (let [x (double x) y (double y)]
-    (* (- (+ (* x x) (* y y))) (m/sin x) (m/sin y) (m/sin (* x y)))))
+(defn peaks
+  "The peaks function of a point `[x y]`: 3(1 − x)² e^(−x² − (y + 1)²) − 10(x/5 − x³ − y⁵) e^(−x² − y²) −
+  e^(−(x + 1)² − y²) / 3."
+  [[^double x ^double y]]
+  (- (* 3.0 (m/sq (- 1.0 x)) (m/exp (- (- (* x x)) (m/sq (+ y 1.0)))))
+     (* 10.0 (- (/ x 5.0) (* x x x) (m/pow y 5.0)) (m/exp (- (- (* x x)) (* y y))))
+     (/ (m/exp (- (- (m/sq (+ x 1.0))) (* y y))) 3.0)))
 
 (plot/render-image
- {:charts [(chart/field {:f fn2d :domain {:x [(- m/PI) m/PI] :y [(- m/PI) m/PI]} :n 300})]
+ {:charts [(chart/field {:f peaks :domain {:x [-3 3] :y [-3 3]} :n 300})]
   :scales {:color {:range [:white :black]}}
   :aspect :iso
-  :labels {:title "-(x^2 + y^2) sin x sin y sin xy"}}
+  :labels {:title "peaks(x, y)"}}
  {:width 650 :height 600})
 
 ;; ### A function with contour lines
 
 ;; sin x · cos y on a diverging palette centred at 0, with contour lines at fixed levels.
-
-(nu/source-note {:source "cljplot2 - chart/field, chart/contour"})
 
 (let [wave (fn [[x y]] (* (m/sin x) (m/cos y)))
       domain {:x [0 (* 2 m/PI)] :y [0 4]}]
@@ -677,30 +681,22 @@
 ;; The same mean and spread of x and the same residual variance give the same line and confidence band; drawn over
 ;; the whole x domain (`:full-range` with an explicit `:domain`, shared by the panels) they coincide.
 
-(nu/source-note {:source "Anscombe (1973), Graphs in Statistical Analysis (R datasets::anscombe)"
-                 :url "https://en.wikipedia.org/wiki/Anscombe%27s_quartet"})
+(nu/source-note {:source "Anscombe (1973), Graphs in Statistical Analysis"
+                 :url "https://en.wikipedia.org/wiki/Anscombe%27s_quartet"
+                 :dataset :anscombe})
 
-(def anscombe
-  "Anscombe's quartet (R `datasets::anscombe`) in long form."
-  (let [x123 [10 8 13 9 11 14 6 4 12 7 5]
-        x4 [8 8 8 8 8 8 8 19 8 8 8]
-        ys {"I" [8.04 6.95 7.58 8.81 8.33 9.96 7.24 4.26 10.84 4.82 5.68]
-            "II" [9.14 8.14 8.74 8.77 9.26 8.10 6.13 3.10 9.13 7.26 4.74]
-            "III" [7.46 6.77 12.74 7.11 7.81 8.84 6.08 5.39 8.15 6.42 5.73]
-            "IV" [6.58 5.76 7.71 8.84 8.47 7.04 5.25 12.50 5.56 7.91 6.89]}]
-    (vec (for [set ["I" "II" "III" "IV"] [x y] (map vector (if (= "IV" set) x4 x123) (ys set))]
-           {:set set :x x :y y}))))
+(def anscombe (nu/dataset :anscombe))
 
 (nu/data-table anscombe)
 
 (let [r-label (fn [rows] (format "r = %.2f" (stats/pearson-correlation (map :x rows) (map :y rows))))]
   (plot/render-image
-   {:data anscombe :mapping {:x :x :y :y :facet :set}
+   {:data anscombe :mapping {:x :x :y :y :facet :series}
     :facets {:columns 4}
     :scales {:x {:domain [3 20]}}
     :charts [(chart/smooth {:method :lm :full-range true})
              (chart/scatter {:size 7 :color [200 60 40]})
-             (chart/text {:data (vec (for [[set rows] (group-by :set anscombe)] {:set set :x 4 :y 13 :label (r-label rows)}))
+             (chart/text {:data (vec (for [[series rows] (group-by :series anscombe)] {:series series :x 4 :y 13 :label (r-label rows)}))
                           :mapping {:x :x :y :y :label :label} :anchor [:left :top]
                           :background [255 255 255 210] :inset 3})]
     :labels {:title "Anscombe's quartet: one r, four relations"}}

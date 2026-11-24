@@ -147,7 +147,7 @@
 (defn pack-siblings
   "Gives the centres of circles packed without overlap, in input order.
 
-  The first circle sits at the origin; two touch on the x axis (the contact at the origin); from the third on each circle touches two placed ones.
+  A single circle sits at the origin; the first two touch on the x axis, the first centred at `[-r1 0]` and the second at `[r0 0]` (`r0`, `r1` their radii; they touch at `[r0 - r1, 0]`, the origin only for equal radii); from the third on each circle touches two placed ones. Centres are not shifted afterwards (the pack's enclosing circle is not centred at the origin).
 
   Parameters:
 
