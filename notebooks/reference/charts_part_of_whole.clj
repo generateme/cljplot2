@@ -45,6 +45,20 @@
                                  {:columns 2})
                    {:width 1000 :height 380})
 
+;; `:order` sets the siblings' order, as in the partition: by descending value (the default of `:squarify`) or in
+;; data order (the default of `:slice-dice`) - slices ordered by size make a mosaic read largest first:
+
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:layout :slice-dice :order :value})]
+                                   :labels {:title ":slice-dice, :order :value"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:order :data})]
+                                   :labels {:title ":squarify, :order :data"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 380})
+
 (nu/shared-groups (describe/options (chart/treemap)))
 
 ;; ## partition

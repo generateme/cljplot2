@@ -2,7 +2,9 @@
   "Scatter chart: one shape per row at its mapped (x, y).
 
   Options (defaults from theme `[:chart :scatter]`): `:size` (pixels), `:color`, `:stroke-color`, `:stroke-width`,
-  `:shape` (see [[cljplot2.graphics.shape]]); mapped `:color`, `:shape`, `:size` override them per point
+  `:shape` (see [[cljplot2.graphics.shape]]), `:alpha` (a fraction, no theme default - `nil` keeps the colours' own
+  alpha) - the opacity of every point colour, mapped, NA or not, and of the legend keys' colour (the outline
+  `:stroke-color` keeps its own alpha); mapped `:color`, `:shape`, `:size` override them per point
   (see [[cljplot2.scale.aesthetic]]); `:padding {:x [lo hi] :y [lo hi]}` (fractions of the data span),
   `:descending` (default false - values of a mapped `:order` drawn ascending, see draw order below), plus `:data` and `:mapping`
   (see [[cljplot2.chart]]).
@@ -29,6 +31,7 @@
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.position :as scale]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.schema :as schema]
@@ -139,12 +142,12 @@
 
   - `chart` (map): the chart value - `:options` (see the namespace doc).
   - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
-  - `env` (map): `:theme`, `:na-level?` (default true - `nil` aesthetic values are the NA level), `:plot-scales` - the plot's `:scales`.
+  - `env` (map): `:theme`, `:na-level` (default true - `nil` aesthetic values are the NA level), `:plot-scales` - the plot's `:scales`.
 
   Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:x [..] :y [..] :style st}` plus a vector per mapped aesthetic (`:color`, `:shape`, `:size`; `nil` - NA) of the rows with valid positions and kept aesthetic values (see [[cljplot2.data.group/kept-value?]]), in draw order, jittered with `:jitter`, `st` the resolved style; extents per panel (aesthetics: value extents of non-NA values); `:na` - aesthetics with NA values; `:dropped` - per dimension the rows dropped (aesthetic values outside an explicit domain count).
 
   Throws `ex-info {:key :mapping}` when a mapped dimension has no valid value in a non-empty data set (usually a misspelt mapping), `{:key :order}` for incomparable order values, `{:key :jitter}` for jitter on non-numeric positions."
-  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales] :or {na-level true}}]
   (let [st (theme/resolved-style theme chart)
         descending? (data/option options :descending false)
         order-of (when (some? (:order mapping)) (data/row-accessor :order (:order mapping)))
@@ -153,8 +156,8 @@
         accessors (mapv #(data/row-accessor % (mapping %)) dims)
         values (update-vals ordered-groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all-values (apply concat (vals values))
-        dropped (into {} (map-indexed (fn [i k] [k (count (remove #(group/kept-value? k na-level? plot-scales (% i)) all-values))]) dims))
-        keep-row? (fn [vs] (every? identity (map-indexed (fn [i k] (group/kept-value? k na-level? plot-scales (vs i))) dims)))
+        dropped (into {} (map-indexed (fn [i k] [k (count (remove #(group/kept-value? k na-level plot-scales (% i)) all-values))]) dims))
+        keep-row? (fn [vs] (every? identity (map-indexed (fn [i k] (group/kept-value? k na-level plot-scales (vs i))) dims)))
         kept-points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
                                                    (into {:style st}
                                                          (map-indexed (fn [i k] [k (mapv #(% i) kept)]))
@@ -192,19 +195,21 @@
   - `scales` (map): the finalized scales - positions place a point, aesthetic scales give its colour, shape and size.
   - `env` (map): `:theme`.
 
-  Draws nothing for no points (there may be no scales then). Points the scales can't place - a position `##NaN` (e.g. outside an explicit bands domain) or an aesthetic value outside its domain (`nil` attribute) - are skipped."
+  Draws nothing for no points (there may be no scales then). Points the scales can't place - a position `##NaN` (e.g. outside an explicit bands domain) or an aesthetic value outside its domain (`nil` attribute) - are skipped. With the style's `:alpha` every point colour takes that opacity."
   [_chart {:keys [x y style] :as computed} canvas _box scales env]
   (when (seq x)
-    (let [{:keys [^double stroke-width]} style
+    (let [{:keys [^double stroke-width alpha]} style
           projection (scale/projection scales)
           na (na-attributes style (:theme env))
           mapped (vec (for [k aesthetic/dims :when (contains? computed k)]
-                        [k (aesthetic/attribute-fn k (get scales k) (na k)) (computed k)]))
+                        (let [f (aesthetic/attribute-fn k (get scales k) (na k))]
+                          [k (if (and alpha (= k :color)) #(some-> (f %) (draw/with-alpha alpha)) f) (computed k)])))
+          base-style (update style :color draw/with-alpha alpha)
           point-style (if (seq mapped)
                         (fn [^long i] (reduce (fn [st [k f vs]]
                                                 (if-some [a (f (nth vs i))] (assoc st k a) (reduced nil)))
-                                              style mapped))
-                        (constantly style))]
+                                              base-style mapped))
+                        (constantly base-style))]
       (c2d/set-stroke-custom canvas {:size stroke-width})
       (dorun (map-indexed (fn [^long i vx]
                             (let [^Vec2 p (projection vx (nth y i))]
@@ -212,4 +217,3 @@
                                 (when-let [st (point-style i)]
                                   (shape/draw! canvas (:shape st) p st)))))
                           x)))))
-

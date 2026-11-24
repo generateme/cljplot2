@@ -152,7 +152,7 @@
   (testing "exactly fitting doesn't throw"
     (is (layout (one-row [{:size [:fixed 60]} {:size [:fraction 0.4]}]))))
   (testing "one pixel too much"
-    (is (= {:key :columns :axis :columns :available 100 :required 101.0}
+    (is (= {:key :width :axis :columns :available 100 :required 101 :cause :track-space}
            (error #(layout (one-row [{:size [:fixed 61]} {:size [:fraction 0.4]}]))))))
   (testing "measured content overflowing on rows"
     (is (= :rows (:axis (error #(layout {:columns [{:size [:flexible]}] :rows [{:size [:measured]}]

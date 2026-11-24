@@ -96,7 +96,7 @@
     - `:level` - the confidence level of the band (default 0.95).
     - `:partial` - the partial autocorrelation instead (default `false`).
 
-  Returns a vector of rows `{:lag :value :lo :hi :significant?}`: lags 0 to `:lags`, the band `[:lo :hi]` - Bartlett's per lag (fastmath `acf-ci` `:cis`), `:significant?` - the value outside the band (lag 0, always 1, isn't). With `:partial true`: lags 1 to `:lags`, the constant band `±ci` (`pacf-ci`).
+  Returns a vector of rows `{:lag :value :lo :hi :significant}`: lags 0 to `:lags`, the band `[:lo :hi]` - Bartlett's per lag (fastmath `acf-ci` `:cis`), `:significant` - the value outside the band (lag 0, always 1, isn't). With `:partial true`: lags 1 to `:lags`, the constant band `±ci` (`pacf-ci`).
 
   Throws `ex-info {:key :values}` for a non-finite value, fewer than 2 values or a constant series, `{:key :lags}` for lags outside 1 to n - 1; `{:key k}` for an invalid option `k` (checked first)."
   {:cljplot2/api true :cljplot2/options acf-rows-options}
@@ -107,7 +107,7 @@
          vs (finite-series! values)
          lags (lags! lags-option (count vs))
          row (fn [^long lag ^double value ^double band]
-               {:lag lag :value value :lo (m/- band) :hi band :significant? (and (m/pos? lag) (m/> (m/abs value) band))})
+               {:lag lag :value value :lo (m/- band) :hi band :significant (and (m/pos? lag) (m/> (m/abs value) band))})
          rows (if partial?
                 (let [{:keys [ci pacf]} (stats/pacf-ci vs lags alpha)]
                   (mapv #(row %1 %2 ci) (range 1 (m/long-inc lags)) (rest pacf)))

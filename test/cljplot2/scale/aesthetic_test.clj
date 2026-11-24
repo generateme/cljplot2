@@ -81,7 +81,7 @@
     (testing "nil -> NA level, listed last"
       (let [built (build (plot-of {:color :g} {:data data}))]
         (is (= ["b" "a" "b" "c" nil] (:color (panel-data built))))
-        (is (true? (:na? (spec built :color))))
+        (is (true? (:na-level (spec built :color))))
         (is (= ["a" "b" "c" "NA"] (mapv :label (:entries (first (legends built))))))
         (is (= {:color (get-in theme/default-theme [:palette :na])} (:attributes (last (:entries (first (legends built))))))
             "NA entry: NA color only")))
@@ -99,7 +99,7 @@
     (testing ":groups {:na false} drops and counts"
       (let [built (build (plot-of {:color :g} {:data data :groups {:na false}}))]
         (is (= {:x 0 :y 0 :color 1} (get-in built [:stats 0 :dropped])))
-        (is (false? (:na? (spec built :color))))
+        (is (false? (:na-level (spec built :color))))
         (is (= ["a" "b" "c"] (mapv :label (:entries (first (legends built))))))))
     (testing "NaN / infinite dropped and counted (NA on)"
       (let [built (build (plot-of {:size :s} {:data (conj rows {:x 6 :y 6 :s ##NaN} {:x 7 :y 7 :s ##Inf})}))]
@@ -134,7 +134,7 @@
   (testing "numbers match as doubles: long data, double domain"
     (let [built (build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931.0 1932.0]}}}))
           f (aesthetic/attribute-fn :color (spec built :color) :na)]
-      (is (false? (:na? (spec built :color))))
+      (is (false? (:na-level (spec built :color))))
       (is (= (category20 0) (f 1931)))
       (is (= (category20 1) (f 1932.0))))
     (is (= :domain (:key (error #(build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931 1931.0]}}})))))
@@ -156,7 +156,7 @@
           s (spec built :color)
           {:keys [x y]} (grid/item-box (:layout built) :panel)
           c (plot/render p {:width 600 :height 400})]
-      (is (false? (:na? s)))
+      (is (false? (:na-level s)))
       (is (nil? ((aesthetic/attribute-fn :color s :na) "c")))
       (is (= ["a" "b"] (mapv :label (:entries (first (legends built))))))
       (is (= 1 (get-in built [:stats 0 :dropped :color])) "point outside the domain dropped and counted")

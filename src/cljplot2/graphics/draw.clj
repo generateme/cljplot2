@@ -357,11 +357,11 @@
 
   - `options` (map): the chart options - `:corner-radius`, `:corner-radius-end` (see [[corner-radius-option]], [[corner-radius-end-option]]).
 
-  Returns `{:radius r :end? e}` - `:corner-radius-end` (only the value-end corners) wins over `:corner-radius`; `nil` for square corners (both absent or 0). A drawn bar adds `:axis` (see [[bar-rounding]])."
+  Returns `{:radius r :value-end e}` - `:corner-radius-end` (only the value-end corners) wins over `:corner-radius`; `nil` for square corners (both absent or 0). A drawn bar adds `:axis` (see [[bar-rounding]])."
   [options]
   (let [end (:corner-radius-end options)
         r (double (or end (:corner-radius options) 0.0))]
-    (when (m/pos? r) {:radius r :end? (some? end)})))
+    (when (m/pos? r) {:radius r :value-end (some? end)})))
 
 (defn value-axis
   "Gives the range axis a bar's value runs along.
@@ -413,12 +413,12 @@
 
   Parameters:
 
-  - `rounding` (map): `:end?`, `:axis` (see [[corner-rounding]], [[bar-rounding]]).
+  - `rounding` (map): `:value-end`, `:axis` (see [[corner-rounding]], [[bar-rounding]]).
 
-  Returns a set of `[i j]` - the corner at `hi` and `vj` (0 or 1): every corner, or with `:end?` the two at the value end along `:axis`."
-  [{:keys [end? axis]}]
+  Returns a set of `[i j]` - the corner at `hi` and `vj` (0 or 1): every corner, or with `:value-end` the two at the value end along `:axis`."
+  [{:keys [value-end axis]}]
   (cond
-    (not end?) #{[0 0] [1 0] [1 1] [0 1]}
+    (not value-end) #{[0 0] [1 0] [1 1] [0 1]}
     (= :h axis) #{[1 0] [1 1]}
     :else #{[0 1] [1 1]}))
 
@@ -514,12 +514,12 @@
   Parameters:
 
   - `geometry` (map): the panel's polar geometry.
-  - `corner` (map): `:a` - the edge's angle (radians), `:inward` - the angular direction (+1 / -1) into the sector, `:arc` - the arc's radius, `:outer?` - the outer arc (the corner circle inside it), else the inner one (outside it), `:r` - the corner radius.
+  - `corner` (map): `:a` - the edge's angle (radians), `:inward` - the angular direction (+1 / -1) into the sector, `:arc` - the arc's radius, `:outer` - the outer arc (the corner circle inside it), else the inner one (outside it), `:r` - the corner radius.
 
   Returns `{:delta d :edge points}`: `d` - the angle the arc gives up, `points` - the corner from the arc to the edge (pixels; one point - a square corner)."
-  [geometry {:keys [^double a ^double inward ^double arc outer? ^double r]}]
+  [geometry {:keys [^double a ^double inward ^double arc outer ^double r]}]
   (if (m/pos? r)
-    (let [centre-r (if outer? (m/- arc r) (m/+ arc r))
+    (let [centre-r (if outer (m/- arc r) (m/+ arc r))
           delta (m/asin (m// r centre-r))
           at (m/+ a (m/* inward delta))
           tangent-arc (coord/to-pixel geometry at arc)
@@ -567,7 +567,7 @@
             outer-j (if (m/>= v1 v0) 1 0)
             corner (fn [^long i outer?]
                      (sector-corner geometry {:a (if (m/zero? i) h0 h1) :inward (if (m/zero? i) sigma (m/- sigma))
-                                              :arc (if outer? hi lo) :outer? outer?
+                                              :arc (if outer? hi lo) :outer outer?
                                               :r (if (corners [i (if outer? outer-j (m/long-sub 1 outer-j))]) r 0.0)}))
             o0 (corner 0 true) o1 (corner 1 true)
             outer (coord/line-path geometry [[(m/+ h0 (m/* sigma (double (:delta o0)))) hi]

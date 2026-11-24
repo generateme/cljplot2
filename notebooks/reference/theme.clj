@@ -72,6 +72,20 @@
                     :theme {:axis {:x {:label-rotation 45 :tick-length 0 :line-color :none}}}}
                    {:width 500 :height 320})
 
+;; `:tick-label` restyles one axis's tick labels over the `:tick-label` text role (polar guides too) - here emoji
+;; levels drawn in the bundled Noto Emoji font, larger, while the y axis keeps the role's font:
+
+(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
+            {:fruit "🍒" :count 81}])
+
+(nu/data-table fruit)
+
+(plot/render-image {:data fruit
+                    :mapping {:x :fruit :y :count}
+                    :charts [(chart/bar)]
+                    :theme {:axis {:x {:tick-label {:font "Noto Emoji" :size 22}}}}}
+                   {:width 500 :height 300})
+
 ;; The y axis has the same keys:
 
 (nu/options-table (describe/theme-rows :axis) :y-axis)
@@ -81,7 +95,8 @@
 
 ;; ## Strips
 
-;; Facet strip boxes; the shingle fill marks a shingle level's range.
+;; Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
+;; down to `:min-text-size` points, then is cut with an ellipsis.
 
 (nu/options-table (describe/theme-rows :strip))
 
@@ -90,6 +105,18 @@
 (plot/render-image (assoc faceted-iris :theme {:strip {:fill [70 90 140] :border-color :none}
                                                :text {:strip {:color :white}}})
                    {:width 700 :height 280})
+
+;; Long level names in row strips: the first two fit; the third shrinks to `:min-text-size` and is cut - at the
+;; default 7 points (left) later than at 9 (right).
+
+(plot/render-image (plot/arrange (for [min-text-size [7 9]]
+                                   (assoc iris-plot
+                                          :mapping {:x :sepal-length :y :petal-length
+                                                    :facet-row #(str "Iris " (:species %) (when (= "virginica" (:species %)) " (Anderson)"))}
+                                          :labels {:title (str ":min-text-size " min-text-size)}
+                                          :theme {:strip {:min-text-size min-text-size}}))
+                                 {:columns 2})
+                   {:width 800 :height 400})
 
 ;; ## Facets
 
@@ -117,6 +144,17 @@
 
 (plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
                    {:width 500 :height 300})
+
+;; Line marks thinner than `:min-key-line-width` are drawn that wide in legend keys, so a key's colour reads (the
+;; lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width 0 - no line - stays undrawn.
+
+(plot/render-image (plot/arrange (for [min-key-line-width [0 2 4]]
+                                   (assoc iris-plot
+                                          :charts [(chart/line)]
+                                          :labels {:title (str ":min-key-line-width " min-key-line-width)}
+                                          :theme {:legend {:min-key-line-width min-key-line-width}}))
+                                 {:columns 3})
+                   {:width 900 :height 260})
 
 ;; A colour bar with more, longer and thicker ticks.
 

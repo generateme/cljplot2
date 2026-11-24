@@ -207,17 +207,17 @@
   Parameters:
 
   - `domain` (map): the option `{:x [lo hi] :y [lo hi]}`, or `nil`.
-  - `plot-scales` (map): the plot's scale specs; the explicit numeric `:domain`s of `:x` and `:y` used when the option lacks an axis.
+  - `plot-scales` (map): the plot's scale specs; the explicit numeric `:domain`s of `:x` and `:y` used when the option lacks an axis - both ends given ([[cljplot2.data.rows/full-domain]]: `[nil nil]` and a partial domain give none, a function has no data to complete it).
 
   Returns `[[x0 x1] [y0 y1]]` of doubles.
 
   Throws `ex-info {:key :domain}` when an axis has neither."
   [domain plot-scales]
-  (let [explicit (fn [k] (let [d (get-in plot-scales [k :domain])] (when (and (m/== 2 (count d)) (every? schema/finite? d)) d)))
+  (let [explicit (fn [k] (let [d (data/full-domain (get-in plot-scales [k :domain]))] (when (and (m/== 2 (count d)) (every? schema/finite? d)) d)))
         x (or (:x domain) (explicit :x))
         y (or (:y domain) (explicit :y))]
     (when-not (and x y)
-      (schema/fail! "A function field needs a :domain {:x [lo hi] :y [lo hi]} (or explicit :x and :y scale domains)."
+      (schema/fail! "A function field needs a :domain {:x [lo hi] :y [lo hi]} (or explicit :x and :y scale domains with both ends)."
                     {:key :domain}))
     [(mapv double x) (mapv double y)]))
 

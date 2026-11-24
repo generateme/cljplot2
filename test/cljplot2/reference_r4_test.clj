@@ -38,7 +38,7 @@
 (deftest fragment-keys-test
   (testing "groups in the order of their first row, each with the keys the rows hold"
     (is (= [[:line-style [:line-width :dash]] [:field [:f :domain :kernel :bandwidth :binned :cut :interpolation :n]]
-            [:common [:data :mapping]] [:theme-style [:theme-style]]]
+            [:common [:data :mapping :legend]] [:theme-style [:theme-style]]]
            (describe/fragment-keys (describe/options (chart/contour))))))
   (testing "a chart takes part of a group: bar - 8 of the 9 strip entries"
     (let [strip (some (fn [[f ks]] (when (= :strip f) ks)) (describe/fragment-keys (describe/options (chart/bar))))]

@@ -424,14 +424,14 @@
     (testing "R1 legends expected before stats"
       (is (= [] (legend/provisional-legends {:charts [] :scales {} :legend false} (inputs {:color :c} [{:c "a"}]))))
       (is (= [] (legend/provisional-legends {:charts [] :scales {}} (inputs {:x :x} [{:x 1}]))) "nothing mapped")
-      (let [[l] (legend/provisional-legends {:charts [] :scales {}} (inputs {:color :c} [{:c "a"} {:c "b"} {:c "a"} {:c nil}]))]
+      (let [[l] (legend/provisional-legends {:charts [(chart/scatter)] :scales {}} (inputs {:color :c} [{:c "a"} {:c "b"} {:c "a"} {:c nil}]))]
         (is (= [:legend "c" ["a" "b"]] [(:kind l) (:title l) (mapv :label (:entries l))])))
       (let [[l] (legend/provisional-legends {:charts [] :scales {}} (inputs {:color :v} [{:v 1} {:v 2}]))]
         (is (= [:colorbar "v"] [(:kind l) (:title l)])))
       (let [[l] (legend/provisional-legends {:charts [(chart/bin2d {:measure :pmf})] :scales {}} (inputs {:x :x :y :y} [{:x 1 :y 1}]))]
         (is (= [:colorbar "Probability"] [(:kind l) (:title l)])))
       (is (= [] (legend/provisional-legends {:charts [] :scales {:color {:legend false}}} (inputs {:color :c} [{:c "a"}]))))
-      (is (= "own" (:title (first (legend/provisional-legends {:charts [] :scales {:color {:title "own"}}} (inputs {:color :c} [{:c "a"}])))))))))
+      (is (= "own" (:title (first (legend/provisional-legends {:charts [(chart/scatter)] :scales {:color {:title "own"}}} (inputs {:color :c} [{:c "a"}])))))))))
 
 (deftest computed-aesthetics-test
   (testing "R4 another chart can't map an aesthetic bin2d computes"

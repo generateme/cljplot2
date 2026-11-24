@@ -94,7 +94,7 @@
       (is (= [0 1 2] (mapv :depth nodes)))))
   (testing "cluster: leaves at the deepest depth, one step apart"
     (let [{:keys [nodes]} (tree/node-link-layout lopsided {:layout :cluster})
-          leaves (filter :leaf? nodes)]
+          leaves (filter :leaf nodes)]
       (is (apply = (map :x leaves)))
       (is (= (map double (range (count leaves))) (sort (map :breadth leaves))))))
   (testing "links: a path per non-root node from its parent; :line - two points, :diagonal - 17"

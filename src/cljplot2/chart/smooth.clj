@@ -15,9 +15,9 @@
     (default for the other methods; their `:confidence` throws `ex-info {:key :band}`); `:level` - a number in (0, 1)
     or a vector of them (nested bands, the widest drawn first; repeated levels drawn once), default 0.95
   * `:n` - grid points (default 200) over each group's x range; `:full-range true` - over the plot's x `:domain`
-    when it is given, else over the x range of all groups of the panel
-  * `:color`, `:line-width`, `:dash` (line), `:fill` (bands: `:color` - default, the group colour at `:alpha`, default
-    0.3 - a colour or `:none`: no band, as `:band :none`)
+    when it is given (a partial `[lo nil]` / `[nil hi]` - its open end from that range), else over the x range of all groups of the panel
+  * `:color`, `:line-width`, `:dash` (line), `:fill` (bands: `:color` - default, the group colour faded by `:alpha`
+    (its own alpha times `:alpha`, default 0.3) - a colour or `:none`: no band, as `:band :none`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default 5% each side
 
   On a `:log` x or y axis the fit runs in log10 coordinates of that axis (see
@@ -56,9 +56,9 @@
 (def ^:private style-entries
   "Map entries of the smooth style: the line style, the band `:fill` and `:alpha`, the band pattern."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :band :description "band fill: :color (the line colour at :alpha), a colour or :none (no band, as :band :none)"}
+              (schema/optional :fill {:cljplot2/section :band :description "band fill: :color (the line colour, its own alpha times :alpha), a colour or :none (no band, as :band :none)"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :band :description "band fill opacity of :fill :color"} schema/fraction))
+              (schema/optional :alpha {:cljplot2/section :band :description "factor of the line colour's alpha filling the band with :fill :color"} schema/fraction))
         draw/pattern-style-entries))
 
 (def ^:private method-schema
@@ -206,18 +206,26 @@
    (let [p (apply max-key first points)] [(first p) (second p)])])
 
 (defn- domain-ends
-  "Gives the ends of the plot's x domain.
+  "Gives the ends of the plot's x domain, a partial one completed by the data.
 
   Parameters:
 
-  - `plot-scales` (map): the plot's `:scales` - `[:x :domain]` (numbers or `java.time` values).
+  - `plot-scales` (map): the plot's `:scales` - `[:x :domain]` (numbers or `java.time` values; read through [[cljplot2.data.rows/given-domain]]).
   - `tx` (map): the x stat transform - `:forward`.
+  - `data-ends` (`[[lo-key lo-x] [hi-key hi-x]]` or `nil`): the ends of the fit points (see [[ends]]).
 
-  Returns `[[lo-key lo-x] [hi-key hi-x]]`, keys in the transform's coordinates; `nil` without a keyed domain."
-  [plot-scales tx]
-  (let [domain (get-in plot-scales [:x :domain])]
-    (when (and (sequential? domain) (seq domain) (every? data/x-key domain))
-      (ends (map (fn [x] [((:forward tx) (double (data/x-key x))) x]) domain)))))
+  Returns `[[lo-key lo-x] [hi-key hi-x]]`, keys in the transform's coordinates: a full domain's ends; a partial `[lo nil]` / `[nil hi]` - its given end and the data's other one (`nil` without data, or when the data lie beyond the given end - the x scale reports that); `nil` without a keyed domain (also `[nil nil]`)."
+  [plot-scales tx data-ends]
+  (let [domain (data/given-domain (get-in plot-scales [:x :domain]))
+        keyed (fn [x] [((:forward tx) (double (data/x-key x))) x])]
+    (cond
+      (data/partial-domain? domain)
+      (when data-ends
+        (let [[lo hi] domain
+              [[^double a] [^double b] :as completed] [(if (some? lo) (keyed lo) (first data-ends))
+                                                       (if (some? hi) (keyed hi) (second data-ends))]]
+          (when (m/< a b) completed)))
+      (and (seq domain) (every? data/x-key domain)) (ends (map keyed domain)))))
 
 (defn- fitted-curve
   "Fits the curve of one group.
@@ -290,8 +298,8 @@
         data (into {} (map (fn [[panel gs]]
                              (let [pts (points panel)
                                    panel-range (when full-range?
-                                                 (or (domain-ends plot-scales (first transforms))
-                                                     (some->> (seq (apply concat (filter fittable? pts))) ends)))]
+                                                 (let [data-ends (some->> (seq (apply concat (filter fittable? pts))) ends)]
+                                                   (or (domain-ends plot-scales (first transforms) data-ends) data-ends)))]
                                [panel {:curves (vec (keep (fn [[g p]]
                                                             (when (fittable? p)
                                                               (fitted-curve p (or panel-range (ends p)) spec n (:aesthetics g) transforms)))

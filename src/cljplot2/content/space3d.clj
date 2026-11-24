@@ -6,7 +6,7 @@
   * `{:kind :point :at Vec2 :style st}` - a shape (`st` - `:shape :size :color :stroke-color :stroke-width`)
   * `{:kind :line :from Vec2 :to Vec2 :color c :line-width w}`
   * `{:kind :polygon :points [Vec2 ..] :fill c :stroke-color c :stroke-width w}` (`:stroke-color :none` - no outline)
-  * `{:kind :path :points [Vec2 ..] :closed? b :color c :line-width w}` - a polyline
+  * `{:kind :path :points [Vec2 ..] :closed b :color c :line-width w}` - a polyline
   * `{:kind :region :rings [[Vec2 ..] ..] :fill c}` - an even-odd filled region (holes open)
 
   [[frame-margin]], [[frame-margins]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
@@ -14,12 +14,14 @@
   and the hidden box edges (dashed);
   [[draw-frame-front!]] - the visible box edges and, per axis, ticks, horizontal tick labels and a title along its
   edge ([[cljplot2.data.space3d/axis-edges]]), styled by theme `[:axis :x]` (lines, tick length, label gap; tick
-  spacing of `[:axis :x]` / `[:axis :y]` for z) and the `:tick-label` / `:axis-title` text roles.
+  spacing of `[:axis :x]` / `[:axis :y]` for z) and the `:tick-label` / `:axis-title` text roles (tick labels of
+  every axis with `[:axis :x :tick-label]` merged over their role, see [[cljplot2.content.axis/tick-label]]).
 
   Functions: [[draw-primitives!]], [[draw-scene!]], [[draw-3d-chart]], [[scene-frame]], frame [[frame-margin]],
   [[frame-margins]], [[draw-frame-back!]], [[draw-frame-front!]], axes [[axis-ticks]], [[edge-ticks]],
   [[edge-point]], [[edge-angle]], [[title-distance]]."
   (:require [clojure2d.core :as c2d]
+            [cljplot2.content.axis :as axis-content]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
@@ -53,7 +55,7 @@
               (c2d/line canvas (:from p) (:to p)))
     :path (do (c2d/set-stroke-custom canvas {:size (:line-width p) :cap :round :join :round})
               (c2d/set-color canvas (:color p))
-              (c2d/path canvas (:points p) (:closed? p) true))
+              (c2d/path canvas (:points p) (:closed p) true))
     :region (do (c2d/set-color canvas (:fill p))
                 (c2d/shape canvas (polyline/rings-path (:rings p)) false))
     :polygon (let [pts (:points p)]
@@ -153,7 +155,7 @@
   Returns a sequence of `Vec2` sizes."
   [{:keys [domains levels]} [w h] env]
   (let [longest (m/min (double w) (double h))]
-    (map #(measure/label-size :tick-label % env)
+    (map #(measure/natural-size (axis-content/tick-label (:theme env) :x %) env)
          (mapcat #(if-let [ls (get levels %)]
                     (map label/name-text ls)
                     (:labels (edge-ticks % (domains %) nil (tick-count env % longest))))
@@ -172,13 +174,13 @@
 
   Parameters:
 
-  - `frame` (map): `:axes?`, `:domains`, `:levels`, `:titles` (`{:x t ..}`, `nil` - none).
+  - `frame` (map): `:axes`, `:domains`, `:levels`, `:titles` (`{:x t ..}`, `nil` - none).
   - `[w h]`: the panel size in pixels.
   - `env` (map): `:canvas`, `:theme`.
 
   Returns the margin; [[bare-frame-margin]] without axes."
-  [{:keys [titles axes?] :as frame} [w h] env]
-  (if-not axes?
+  [{:keys [titles axes] :as frame} [w h] env]
+  (if-not axes
     bare-frame-margin
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           widest (double (reduce m/max 0.0 (map (fn [^Vec2 s] (m/max (.x s) (.y s))) (tick-label-sizes frame [w h] env))))
@@ -199,9 +201,9 @@
   - `env` (map): `:canvas`, `:theme`.
 
   Returns `{:top :right :bottom :left}`; [[bare-frame-margin]] every side without axes."
-  [{:keys [axes?] :as frame} [w h] env]
+  [{:keys [axes] :as frame} [w h] env]
   (let [full (frame-margin frame [w h] env)]
-    (if-not axes?
+    (if-not axes
       {:top full :right full :bottom full :left full}
       (let [label-gap (double (get-in env [:theme :axis :x :label-gap]))
             tallest (.y (measure/max-size (tick-label-sizes frame [w h] env)))]
@@ -324,7 +326,8 @@
       (draw/outline! canvas tick-color tick-width #(c2d/line % p q))
       ;; a thinned categorical axis has ticks without labels
       (when (some? text)
-        (let [^Vec2 size (measure/label-size :tick-label text env)
+        (let [content (axis-content/tick-label (:theme env) :x text)
+              ^Vec2 size (measure/natural-size content env)
               e (extent-along size o)
               ^Vec2 c (v/add q (v/mult o (m/+ label-gap e)))
               box (label-box c size)]
@@ -332,7 +335,7 @@
           ;; skipped when it collides with another axis's label or one drawn before it on this axis
           (when-not (or (some #(measure/boxes-overlap? box %) taken) (some #(measure/boxes-overlap? box %) @labelled))
             (swap! labelled conj box)
-            (label/draw-at! canvas {:kind :label :role :tick-label :text text} [:center :middle] (.x c) (.y c) env)))))
+            (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
       ;; the title runs along its edge, turned to read left to right (or bottom to top)
       (let [content {:kind :label :role :axis-title :text (str title) :rotation (edge-angle along)}
@@ -409,12 +412,12 @@
 
   - `canvas`: the canvas in graphics context.
   - `proj` (map): the projector (see [[cljplot2.data.space3d/projector]]).
-  - `frame` (map): `:view`, `:aspect`, `:box?` (nothing without it), `:domains`, `:levels`.
+  - `frame` (map): `:view`, `:aspect`, `:box` (nothing without it), `:domains`, `:levels`.
   - `env` (map): `:theme`.
 
   Returns `nil`."
-  [canvas proj {:keys [view aspect box?] :as frame} env]
-  (when box?
+  [canvas proj {:keys [view aspect box] :as frame} env]
+  (when box
     (let [canvas-env (assoc env :canvas canvas)
           corner (:corner proj)]
       (draw-box-grid! canvas proj frame canvas-env)
@@ -475,17 +478,17 @@
 
   - `canvas`: the canvas in graphics context.
   - `proj` (map): the projector.
-  - `frame` (map): `:view`, `:aspect`, `:box?` (the edges), `:axes?` (the axes), `:domains`, `:levels`, `:titles`.
+  - `frame` (map): `:view`, `:aspect`, `:box` (the edges), `:axes` (the axes), `:domains`, `:levels`, `:titles`.
   - `env` (map): `:theme`.
 
   Returns the label boxes drawn (a vector) with axes, else `nil`."
-  [canvas proj {:keys [view aspect box? axes?] :as frame} env]
+  [canvas proj {:keys [view aspect box axes] :as frame} env]
   (let [canvas-env (assoc env :canvas canvas)
         corner (:corner proj)]
-    (when (and box? (box-edge-stroke! canvas nil canvas-env))
+    (when (and box (box-edge-stroke! canvas nil canvas-env))
       (doseq [{:keys [from to]} (space/visible-edges view aspect)]
         (c2d/line canvas (corner from) (corner to))))
-    (when axes?
+    (when axes
       (reduce (fn [taken [k {:keys [from to] :as edge}]]
                 ;; an edge seen end-on (z from straight above) has no room for an axis
                 (if (m/>= (v/mag (v/sub (corner to) (corner from))) min-axis-length)

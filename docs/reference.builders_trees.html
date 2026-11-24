@@ -1052,7 +1052,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:mapping</td>
 <td>map of keyword to any value or nil</td>
 <td></td>
-<td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)</td>
+<td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf, :name)</td>
 </tr>
 <tr class="even">
 <td>:node-style</td>
@@ -1141,6 +1141,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>a shape character, keyword or shape map</td>
 <td>\O</td>
 <td>point shape (a mapped :shape wins)</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1] or nil</td>
+<td>the colours' own alpha</td>
+<td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td>
 </tr>
 </tbody>
 </table>
@@ -2012,6 +2018,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>a shape character, keyword or shape map</td>
 <td>\O</td>
 <td>point shape (a mapped :shape wins)</td>
+</tr>
+<tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1] or nil</td>
+<td>the colours' own alpha</td>
+<td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td>
 </tr>
 </tbody>
 </table>

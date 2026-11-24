@@ -99,7 +99,7 @@ direction at each depth:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value for :squarify, :data for :slice-dice</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr></tbody></table>
 ```
 
 :::
@@ -127,7 +127,32 @@ direction at each depth:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+`:order` sets the siblings' order, as in the partition: by descending value (the default of `:squarify`) or in
+data order (the default of `:slice-dice`) - slices ordered by size make a mosaic read largest first:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:layout :slice-dice :order :value})]
+                                   :labels {:title ":slice-dice, :order :value"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:order :data})]
+                                   :labels {:title ":squarify, :order :data"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_part_of_whole_files/image2.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## partition
@@ -163,7 +188,7 @@ coordinates the bands become rings (a sunburst).
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image2.png)
+![](reference.charts_part_of_whole_files/image3.png)
 :::
 
 
@@ -201,7 +226,7 @@ reversed, so sport comes first and the teams go from the cheapest up (by value, 
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image3.png)
+![](reference.charts_part_of_whole_files/image4.png)
 :::
 
 
@@ -220,11 +245,11 @@ The borders in an icicle: thick dark lines instead of the default thin white one
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image4.png)
+![](reference.charts_part_of_whole_files/image5.png)
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## pack
@@ -252,7 +277,7 @@ Each leaf a circle of area proportional to its value, packed inside the circle o
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image5.png)
+![](reference.charts_part_of_whole_files/image6.png)
 :::
 
 
@@ -286,7 +311,7 @@ drawing (the layout unchanged - here the group circles, depth 1):
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image6.png)
+![](reference.charts_part_of_whole_files/image7.png)
 :::
 
 
@@ -315,11 +340,11 @@ data order; and wider borders:
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image7.png)
+![](reference.charts_part_of_whole_files/image8.png)
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
 
 
 ## waffle
@@ -362,7 +387,7 @@ A grid of cells (10 × 10 by default), each category taking a share of the cells
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image8.png)
+![](reference.charts_part_of_whole_files/image9.png)
 :::
 
 
@@ -403,11 +428,11 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image9.png)
+![](reference.charts_part_of_whole_files/image10.png)
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## venn
@@ -452,7 +477,7 @@ an item and a set it belongs to.
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image10.png)
+![](reference.charts_part_of_whole_files/image11.png)
 :::
 
 
@@ -491,7 +516,7 @@ labels - a function of `{:sets :size :share}` writes a region's text:
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image11.png)
+![](reference.charts_part_of_whole_files/image12.png)
 :::
 
 
@@ -515,7 +540,7 @@ Without set names, and with thick outlines in the darkened set colours:
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image12.png)
+![](reference.charts_part_of_whole_files/image13.png)
 :::
 
 
@@ -543,11 +568,11 @@ The gap between a circle and its set name is a theme key of `[:chart :venn]`, no
 
 
 ::: {.clay-image}
-![](reference.charts_part_of_whole_files/image13.png)
+![](reference.charts_part_of_whole_files/image14.png)
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

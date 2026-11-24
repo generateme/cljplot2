@@ -269,7 +269,7 @@
       (is (seq (error-ins #(built {:charts [(chart/surface (assoc plane :cut 1))]})))))))
 
 (deftest scene-frame-test
-  (let [first-frame {:view {:azimuth 10 :elevation 20} :aspect [1 1 1] :box? true :axes? true :titles {:x "a" :y "b"}}
+  (let [first-frame {:view {:azimuth 10 :elevation 20} :aspect [1 1 1] :box true :axes true :titles {:x "a" :y "b"}}
         scene (fn [& overrides] (space-draw/scene-frame (cons {:frame first-frame :domains {:x [0 1]}}
                                                               (map (fn [o] {:frame-overrides o}) overrides))))]
     (testing "R7 later charts' explicit frame options merged over the first's, in order"
@@ -278,10 +278,10 @@
       (is (= {:x "a" :y "B" :z "c"} (:titles (scene {:titles {:y "B"}} {:titles {:z "c"}}))))
       (is (nil? (:titles (scene {:titles nil}))) "nil clears the titles")
       (is (= [2 1 1] (:aspect (scene {:aspect [3 1 1]} {:aspect [2 1 1]}))) "the last wins")
-      (is (false? (:box? (scene {:box? false})))))
+      (is (false? (:box (scene {:box false})))))
     (testing "R7 overrides hold only the options set; :axis-titles nil - no titles"
       (is (= {} (space/frame-overrides {:box nil :size 3})))
-      (is (= {:view {:azimuth 5} :box? false :titles nil} (space/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
+      (is (= {:view {:azimuth 5} :box false :titles nil} (space/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
       (is (nil? (:titles (space/frame-settings {:axis-titles nil} {:x :x})))))
     (testing "R7 a cloud's view over a surface's frame"
       (let [domain {:x [0 2] :y [0 1] :z [0 12]}
@@ -308,7 +308,7 @@
 
 (deftest review2-fixes-test
   (testing "V1 the frame margin measures every level label, not the thinned ones"
-    (let [frame (fn [ls] {:domains {:x [0.5 (+ 0.5 (count ls))] :y [0 1] :z [0 1]} :levels {:x ls} :titles {} :axes? true})
+    (let [frame (fn [ls] {:domains {:x [0.5 (+ 0.5 (count ls))] :y [0 1] :z [0 1]} :levels {:x ls} :titles {} :axes true})
           margin (fn [ls] (c2d/with-canvas [c (c2d/canvas 10 10)]
                             (space-draw/frame-margin (frame ls) [400 300] {:theme cljplot2.theme/default-theme :canvas c})))
           short (mapv str (range 10))

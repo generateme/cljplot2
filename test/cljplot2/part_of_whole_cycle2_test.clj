@@ -300,20 +300,20 @@
         size-of (fn [{:keys [text]}] (Vec2. (* 6.0 (count text)) 12.0))
         fill-of (fn [{:keys [depth]}] (if (= 1 depth) [0 0 120] [250 250 200]))
         line (constantly 9)
-        parent {:x 100.0 :y 100.0 :r 80.0 :depth 1 :leaf? false :label "Parent"}
-        child {:x 100.0 :y 104.0 :r 75.0 :depth 2 :leaf? false :label "Child"}]
+        parent {:x 100.0 :y 100.0 :r 80.0 :depth 1 :leaf false :label "Parent"}
+        child {:x 100.0 :y 104.0 :r 75.0 :depth 2 :leaf false :label "Child"}]
     (testing "V3 a label overlapping an ancestor's isn't drawn"
       (is (= ["Parent"] (map (comp :text :content) (placements [parent child] size-of fill-of line)))))
     (testing "V3 separate labels are all drawn"
       (is (= ["Parent" "leaf"] (map (comp :text :content)
-                                    (placements [parent {:x 100.0 :y 120.0 :r 30.0 :depth 2 :leaf? true :label "leaf"}] size-of fill-of line)))))
+                                    (placements [parent {:x 100.0 :y 120.0 :r 30.0 :depth 2 :leaf true :label "leaf"}] size-of fill-of line)))))
     (testing "V5 backdrop (the role's :contrast colour is resolved by it): the circle painted under the label - the
               child's light fill, not the parent's dark one"
       (let [[{:keys [backdrop]}] (placements [parent (assoc child :y 100.0 :r 78.0 :label nil)] size-of fill-of line)]
         (is (= [250 250 200] backdrop))))
     (testing "the parent's dark fill when no child lies under the label"
-      (let [[{:keys [backdrop]}] (placements [parent {:x 100.0 :y 150.0 :r 20.0 :depth 2 :leaf? true :label nil}] size-of fill-of line)]
+      (let [[{:keys [backdrop]}] (placements [parent {:x 100.0 :y 150.0 :r 20.0 :depth 2 :leaf true :label nil}] size-of fill-of line)]
         (is (= [0 0 120] backdrop))))
     (testing "circles narrower than a line aren't measured"
-      (is (empty? (placements [{:x 10.0 :y 10.0 :r 4.0 :depth 1 :leaf? true :label "x"}]
+      (is (empty? (placements [{:x 10.0 :y 10.0 :r 4.0 :depth 1 :leaf true :label "x"}]
                               (fn [_] (throw (ex-info "measured" {}))) fill-of line))))))

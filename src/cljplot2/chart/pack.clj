@@ -87,7 +87,7 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
   - `env` (map): `:theme` and the rest of the compute environment.
 
-  Returns `{:data {panel {:tree root :top-count n :style st :options o :colored? b}} :extents :na :dropped}`: `root` - see [[cljplot2.data.hierarchy]]; `o` - the options of `defaults` with their defaults; aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
+  Returns `{:data {panel {:tree root :top-count n :style st :options o :colored b}} :extents :na :dropped}`: `root` - see [[cljplot2.data.hierarchy]]; `o` - the options of `defaults` with their defaults; aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
 
   See also [[draw]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
@@ -95,7 +95,7 @@
         opts (data/options-with-defaults defaults options)
         st (theme/resolved-style theme chart)]
     {:data (update-vals trees (fn [tree] {:tree (hierarchy/ordered-tree tree (:order opts)) :top-count top-count :style st
-                                          :options opts :colored? (some? (:color mapping))}))
+                                          :options opts :colored (some? (:color mapping))}))
      :extents extents
      :na na
      :dropped dropped}))
@@ -110,12 +110,12 @@
   - `tree` (map): the packed root (nodes with `:x`, `:y`, `:r`, see [[cljplot2.layout.pack]]).
   - `options` (map): `:root` (the root too), `:hidden-levels` (depths not drawn), `:group-labels`, `:leaf-labels`.
 
-  Returns a vector of `{:x :y :r :depth :leaf? :color :top-index :label}` (see [[cljplot2.data.hierarchy/label-text]]); the root only with `:root`, none at `:hidden-levels`."
+  Returns a vector of `{:x :y :r :depth :leaf :color :top-index :label}` (see [[cljplot2.data.hierarchy/label-text]]); the root only with `:root`, none at `:hidden-levels`."
   [tree {:keys [root hidden-levels group-labels leaf-labels]}]
   (let [total (:value tree)
         node-of (fn [node depth path parent-value top-index]
                   (let [leaf? (nil? (:children node))]
-                    {:x (:x node) :y (:y node) :r (:r node) :depth depth :leaf? leaf? :color (:color node)
+                    {:x (:x node) :y (:y node) :r (:r node) :depth depth :leaf leaf? :color (:color node)
                      :top-index top-index
                      :label (hierarchy/label-text (if leaf? leaf-labels group-labels) node
                                                   (hierarchy/node-info node depth path parent-value total))}))
@@ -154,14 +154,14 @@
 
   Parameters:
 
-  - `node` (map): `:x`, `:y`, `:r` in pixels, `:leaf?`.
+  - `node` (map): `:x`, `:y`, `:r` in pixels, `:leaf`.
   - `size` (`Vec2`): the label's natural size.
 
   Returns the label's pixel centre `[x y]`, or `nil` when it doesn't fit."
-  [{:keys [^double x ^double y ^double r leaf?]} ^Vec2 size]
+  [{:keys [^double x ^double y ^double r leaf]} ^Vec2 size]
   (let [w (.x size)
         h (.y size)]
-    (if leaf?
+    (if leaf
       (when (m/<= (m/hypot w h) (m/* 2.0 r))
         [x y])
       (when (m/<= w (m/* 2.0 r))
@@ -198,8 +198,8 @@
 
   See also [[label-position]], [[covering-node]]."
   [nodes size-of fill-of line-size]
-  (reduce (fn [placed {:keys [label leaf? ^double r] :as node}]
-            (let [role (if leaf? :pack-leaf :pack-group)]
+  (reduce (fn [placed {:keys [label leaf ^double r] :as node}]
+            (let [role (if leaf :pack-leaf :pack-group)]
               (if-not (and label (m/>= (m/* 2.0 r) (double (line-size role))))
                 placed
                 (let [content {:kind :label :role role :text label}

@@ -57,9 +57,9 @@
                                         :charts [(chart/function {:f [["c" m/sin] ["b" m/cos]] :domain [0 1] :mapping {:color :function}})
                                                  (chart/scatter {:mapping {:x :x :y :y :color :g}})]}))))
   (testing "ordered extents merge"
-    (is (:ordered? (rows/merge-extents :color [{:kind :categorical :values ["b" "a"] :ordered? true}
-                                                {:kind :categorical :values ["c"] :ordered? true}])))
-    (is (nil? (:ordered? (rows/merge-extents :color [{:kind :categorical :values ["b"] :ordered? true}
+    (is (:ordered (rows/merge-extents :color [{:kind :categorical :values ["b" "a"] :ordered true}
+                                                {:kind :categorical :values ["c"] :ordered true}])))
+    (is (nil? (:ordered (rows/merge-extents :color [{:kind :categorical :values ["b"] :ordered true}
                                                       {:kind :categorical :values ["a"]}])))))
   (testing "pairs render with a legend; a parametric curve"
     (is (instance? BufferedImage (plot/render-image {:charts [(chart/function {:f ten :domain [0 m/PI] :mapping {:color :function}})]} size)))

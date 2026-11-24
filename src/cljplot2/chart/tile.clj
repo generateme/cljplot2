@@ -165,20 +165,20 @@
 
   - `chart` (map): the chart value - `:options` (the cell style, `:value-label`).
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, `:color`, optional `:size`).
-  - `env` (map): `:theme`, `:na-level?` (default true), `:plot-scales`, `:flip?`.
+  - `env` (map): `:theme`, `:na-level` (default true), `:plot-scales`, `:flip`.
 
-  Returns per panel `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f :sized? b}` (axis info - see [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping).
+  Returns per panel `{:cells [[x y color size?] ..] :axes {:x info :y info} :style st :value-label f :sized b}` (axis info - see [[axis-info]]); extents (numeric axes: the values widened by the cells' reach; categorical: the levels), color value extents (and size values with a `:size` mapping), no padding, `:scale-defaults` (categorical axes: see [[band-room]]; numeric axes: no nice domain - cells fill the panel), `:na`, `:dropped` (`:x`, `:y`, `:color`, `:duplicate`; `:size` with a `:size` mapping).
 
   Throws `ex-info {:key :mapping}` when no row has a valid x, y or colour, or for temporal positions."
-  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level? plot-scales flip?] :or {na-level? true}}]
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales flip] :or {na-level true}}]
   (let [st (theme/resolved-style theme chart)
-        sized? (some? (:size mapping))
-        accessors (mapv #(data/row-accessor % (mapping %)) (cond-> [:x :y :color] sized? (conj :size)))
+        sized (some? (:size mapping))
+        accessors (mapv #(data/row-accessor % (mapping %)) (cond-> [:x :y :color] sized (conj :size)))
         values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         all (apply concat (vals values))
         position-ok? (fn [v] (group/kept-value? :x false plot-scales v))
-        color-kept? (fn [v] (group/kept-value? :color na-level? plot-scales v))
-        size-ok? (fn [cell] (or (not sized?) (group/kept-value? :size false plot-scales (nth cell 3))))
+        color-kept? (fn [v] (group/kept-value? :color na-level plot-scales v))
+        size-ok? (fn [cell] (or (not sized) (group/kept-value? :size false plot-scales (nth cell 3))))
         keep? (fn [[x y c :as cell]] (and (position-ok? x) (position-ok? y) (color-kept? c) (size-ok? cell)))
         kept (update-vals values #(last-per-position (filterv keep? %)))
         cells-of (update-vals kept first)
@@ -197,24 +197,24 @@
                           (if (every? number? vs) {:kind :categorical :values (vec (distinct vs))} (data/extent k vs)))))]
     (data/check-mapped! all [[:x first] [:y second] [:color #(nth % 2)]]
                         (fn [k v] (if (= :color k) (aesthetic/valid-value? k (get plot-scales k) v) (data/valid-value? v))))
-    {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options) :sized? sized?}))
+    {:data (update-vals cells-of (fn [cs] {:cells cs :axes axes :style st :value-label (:value-label options) :sized sized}))
      :extents (update-vals cells-of (fn [cs] (into {} (filter val)
                                                    {:x (axis-extent :x (map first cs))
                                                     :y (axis-extent :y (map second cs))
                                                     :color (aesthetic/value-extent :color (get plot-scales :color)
                                                                                    (remove nil? (map #(nth % 2) cs)))
-                                                    :size (when sized?
+                                                    :size (when sized
                                                             (aesthetic/value-extent :size (get plot-scales :size)
                                                                                     (map #(nth % 3) cs)))})))
      :padding data/zero-padding
      :scale-defaults (into {} (for [k [:x :y]]
-                                [k (if (numeric? k) {:nice false} (band-room (overhang k) (= k (if flip? :x :y))))]))
+                                [k (if (numeric? k) {:nice false} (band-room (overhang k) (= k (if flip :x :y))))]))
      :na (if (some #(nil? (nth % 2)) kept-all) #{:color} #{})
      :dropped (cond-> {:x (count (remove #(position-ok? (first %)) all))
                        :y (count (remove #(position-ok? (second %)) all))
                        :color (count (remove #(color-kept? (nth % 2)) all))
                        :duplicate (reduce m/long-add 0 (map second (vals kept)))}
-                sized? (assoc :size (count (remove size-ok? all))))}))
+                sized (assoc :size (count (remove size-ok? all))))}))
 
 ;; drawing
 
@@ -269,7 +269,7 @@
   - `env` (map): the drawing environment.
 
   A cell whose colour is outside the colour scale, or whose size factor is 0, isn't drawn; labels take black or white by the colour painted under them (text role `:tile-value`)."
-  [_chart {:keys [cells axes style value-label sized?]} canvas _box scales env]
+  [_chart {:keys [cells axes style value-label sized]} canvas _box scales env]
   (when (seq cells)
     (let [px (axis-placement (:x axes) (:x scales))
           py (axis-placement (:y axes) (:y scales))
@@ -277,7 +277,7 @@
           centre-x? (= :numeric (:kind (:x axes)))
           centre-y? (= :numeric (:kind (:y axes)))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))
-          factor-of (if sized?
+          factor-of (if sized
                       (let [size-of (aesthetic/attribute-fn :size (:size scales) nil)
                             largest (largest-size (:size scales))]
                         (fn [cell] (some-> (size-of (nth cell 3)) (size-factor largest))))
@@ -294,7 +294,7 @@
       (let [draw-cells! (fn [c] (doseq [{:keys [to-pixel offsets fill cell-scale]} placed]
                                   (cell-draw/draw-cell! c to-pixel offsets fill (assoc style :cell-scale cell-scale))))]
         ;; sized cells don't abut: antialiased edges
-        (if sized? (draw-cells! canvas) (cell-draw/call-with-cell-rendering canvas style draw-cells!)))
+        (if sized (draw-cells! canvas) (cell-draw/call-with-cell-rendering canvas style draw-cells!)))
       (when value-label
         (doseq [{:keys [x y value fill to-pixel offsets]} placed
                 :let [text (label-text value-label value x y)

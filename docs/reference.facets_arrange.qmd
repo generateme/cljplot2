@@ -210,6 +210,44 @@ write the strip texts.
 :::
 
 
+A cell too small for its sub-plot's axes, labels, legends and margins is an error naming the cell (`[:plot i]`,
+row by row; a nested cell by its whole path, outer cells first), its title - else its mapped `:x` / `:y` - its
+size and the pixels needed, keyed `:width` or `:height`. Eight plots side by side in 400 pixels:
+
+
+::: {.sourceClojure}
+```clojure
+(try (plot/build (plot/arrange (repeat 8 {:data mtcars :mapping {:x :hp :y :mpg} :charts [(chart/scatter)]})
+                               {:columns 8})
+                 {:width 400 :height 200})
+     (catch clojure.lang.ExceptionInfo e
+       {:message (ex-message e) :data (ex-data e)}))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+{:message
+ "Sub-plot [:plot 0] (x :hp, y :mpg) is 39x180 px; its axes, labels, legends and margins need 57 px of width. Enlarge the image or the cell, or shrink the sub-plot's fixed parts.",
+ :data
+ {:key :width,
+  :axis :columns,
+  :available 39,
+  :cause :track-space,
+  :required 57,
+  :errors
+  [{:in nil,
+    :message
+    "Not enough space: the plot's fixed parts (axes, labels, legends, strips, margins, gaps) need 57 px of width, 39 px given."}],
+  :subplot [:plot 0],
+  :subplot-path [[:plot 0]]}}
+
+```
+:::
+
+
 It returns a plot whose `:arrange` key holds the plots and the layout - also written by hand. Here a legend
 shown once, in its own cell: the two plots hide their legends (`:legend false`), a third plot draws only its
 legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend slice) in a column sized to fit
@@ -253,7 +291,7 @@ the diagonal take any charts.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:variables (required)</td><td>sequential of keyword (2..20)</td><td></td><td>the numeric columns, in matrix order</td><td></td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>extra mapping of every cell (grouping aesthetics such as :color, :group)</td><td></td></tr><tr><td>:lower</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/scatter)</td><td>charts below the diagonal; :none - empty cells</td><td></td></tr><tr><td>:upper</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/correlation {:glyph :number})</td><td>charts above the diagonal; :none - empty cells</td><td></td></tr><tr><td>:diagonal</td><td>:names, :none, a chart or a vector of charts or nil or nil</td><td>(chart/density)</td><td>charts of the diagonal cells (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td><td></td></tr><tr><td>:variable-names</td><td>map of keyword to string or nil</td><td>the variable's name</td><td>display names of the variables, {variable text}</td><td></td></tr><tr><td>:scales</td><td>map</td><td></td><td>the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one</td><td></td></tr><tr><td>:scales :color</td><td>an aesthetic scale spec</td><td></td><td>the colour scale spec</td><td></td></tr><tr><td>:theme</td><td>any value or nil</td><td></td><td>theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)</td><td></td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:variables</td><td>sequential of keyword (2..20) or nil</td><td>required unless :row-variables and :column-variables are given</td><td>the numeric columns, in matrix order (rows and columns)</td><td></td></tr><tr><td>:row-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix rows, top to bottom (on y)</td><td></td></tr><tr><td>:column-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix columns, left to right (on x)</td><td></td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>extra mapping of every cell (grouping aesthetics such as :color, :group)</td><td></td></tr><tr><td>:lower</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/scatter)</td><td>charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells</td><td></td></tr><tr><td>:upper</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/correlation {:glyph :number})</td><td>charts above the diagonal (a square matrix only); :none - empty cells</td><td></td></tr><tr><td>:diagonal</td><td>:names, :none, a chart or a vector of charts or nil or nil</td><td>(chart/density)</td><td>charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td><td></td></tr><tr><td>:variable-names</td><td>map of keyword to string or nil</td><td>the variable's name</td><td>display names of the variables, {variable text}</td><td></td></tr><tr><td>:scales</td><td>map</td><td></td><td>the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one</td><td></td></tr><tr><td>:scales :color</td><td>an aesthetic scale spec</td><td></td><td>the colour scale spec</td><td></td></tr><tr><td>:theme</td><td>any value or nil</td><td></td><td>theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)</td><td></td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr></tbody></table>
 ```
 
 :::
@@ -271,6 +309,28 @@ the diagonal take any charts.
 
 ::: {.clay-image}
 ![](reference.facets_arrange_files/image6.png)
+:::
+
+
+`:row-variables` and `:column-variables` (each defaulting to `:variables`) put other variables, or another order,
+on the rows than on the columns - here 3 rows x 2 columns. Such a matrix has no triangles: every cell of two
+different variables draws `:lower`, a cell whose row and column variable are the same draws `:diagonal`
+(wherever it is), and `:upper` is an error.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/pairs mtcars {:row-variables [:hp :wt :mpg]
+                                       :column-variables [:mpg :disp]
+                                       :lower [(chart/scatter) (chart/smooth {:method :lm})]
+                                       :mapping {:color #(str (:cyl %) " cyl")}})
+                   {:width 600 :height 700})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image7.png)
 :::
 
 
@@ -303,7 +363,7 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image7.png)
+![](reference.facets_arrange_files/image8.png)
 :::
 
 
@@ -331,7 +391,7 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image8.png)
+![](reference.facets_arrange_files/image9.png)
 :::
 
 
@@ -367,7 +427,7 @@ items placed on them - labels (`{:kind :label :text t :role r}`, the role requir
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image9.png)
+![](reference.facets_arrange_files/image10.png)
 :::
 
 

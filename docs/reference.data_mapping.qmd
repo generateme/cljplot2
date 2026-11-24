@@ -54,12 +54,12 @@ The mapping is open: a chart of your own may read other keys.
 ## Data: rows or columns
 
 Columns become rows; both forms give the same plot. A chart may bring its own `:data` (and `:mapping`) - the
-Data and mapping group every chart takes:
+Common options group every chart takes:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>the plot's :data</td><td>the chart's own data instead of the plot's</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row)</td><td></td><td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>the plot's :data</td><td>the chart's own data instead of the plot's</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row)</td><td></td><td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td></tr><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>draw the chart's key glyph in the legends (false - the chart adds none, a legend no chart keys is dropped; its aesthetics still scale)</td></tr></tbody></table>
 ```
 
 :::

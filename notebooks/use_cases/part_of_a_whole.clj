@@ -404,7 +404,7 @@
                   {:data dots :mapping {:x :combination :y :set}
                    :theme {:axis {:x {:label-rotation -45}}}
                    :charts [(chart/scatter {:size 12 :color [210 210 210]})
-                            (chart/scatter {:data (filter :member? dots) :size 12 :color :black})]
+                            (chart/scatter {:data (filter :member dots) :size 12 :color :black})]
                    :labels {:x nil :y nil}}]
                  {:columns 1 :heights [3 2]}))
  {:width 900 :height 650})

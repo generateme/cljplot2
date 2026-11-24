@@ -10,10 +10,13 @@
   dropped and counted (`:dropped {:x n :y n :z n ..}`).
 
   Options (point style defaults from theme `[:chart :cloud]`: `:size`, `:color`, `:stroke-color`, `:stroke-width`,
-  `:shape`):
+  `:shape`, `:line-width` - spikes and lines; `:alpha` - no theme default, the opacity of every mark's colour as
+  scatter's - and of the legend keys; projected points and bar shading start from it):
 
   * `:type` - `:points` (default), `:none` (no marks - only `:projections`), `:spikes` (a line from z = `:base` - default the low z limit - to each point, width
-    `:stroke-width`, lattice `type = h`) or `:bars` (a box per row from `:base` to z, `:bar-size [fx fy]` (default
+    `:line-width`, lattice `type = h`), `:lines` (a panel's points joined in data order, a line per value of the
+    mapped `:group` - one line without it; each segment in its first point's colour, width `:line-width`, sorted by
+    its midpoint's depth among the scene's marks - e.g. contour lines on a surface) or `:bars` (a box per row from `:base` to z, `:bar-size [fx fy]` (default
     `[0.8 0.8]`) of the x / y resolution - the smallest gap between distinct values; faces shaded - `:ambient`
     (default 0.4) and `:light` (default `[-0.5 0.6 -1.0]`, see [[cljplot2.data.space3d/shader]]) - outlined by
     `:stroke-color`)
@@ -42,9 +45,9 @@
     `:base` default 0; bars `:bar-size` of a cell; z titled Count); `:z` isn't read, no aesthetic mapping
     (`ex-info {:key :bins}`), no `:projections`
 
-  Facets: a box per panel, domains shared by all panels. Points, spikes and bar faces are drawn far to near.
+  Facets: a box per panel, domains shared by all panels. Points, spikes, line segments and bar faces are drawn far to near.
 
-  Functions: [[compute]] and [[chart-primitives]] - the chart contract (with [[legend]]); [[axis-levels]] - the levels of a categorical axis; [[bin-counts]] - the cells of a 2D histogram; [[projection-layers]], [[projection-primitives]] - the side projections; [[primitives]] - the points, spikes or bars of a panel; schema pieces [[schemas]], [[cljplot2.data.space3d/distance-rule]], [[projection-kinds]], [[projection-style-entries]]; option defaults [[default-projection-grid]], [[default-projection-levels]]."
+  Functions: [[compute]] and [[chart-primitives]] - the chart contract (with [[legend]]); [[axis-levels]] - the levels of a categorical axis; [[bin-counts]] - the cells of a 2D histogram; [[projection-layers]], [[projection-primitives]] - the side projections; [[primitives]] - the points, spikes, lines or bars of a panel; schema pieces [[schemas]], [[cljplot2.data.space3d/distance-rule]], [[projection-kinds]], [[projection-style-entries]]; option defaults [[default-projection-grid]], [[default-projection-levels]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.cells :as cells]
@@ -56,6 +59,7 @@
             [cljplot2.data.rows :as data]
             [cljplot2.data.space3d :as space]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -82,22 +86,29 @@
   [(schema/optional :projection-alpha-factor {:description "alpha factor of projected points (their style's colour)"} schema/fraction)
    (schema/optional :band-alpha-factor {:description "alpha factor of a projected density band (the chart's colour)"} schema/fraction)])
 
+(def ^:private line-width-entries
+  "Map entries (one) of the width of spikes and lines."
+  [(schema/optional :line-width {:description "width in pixels of spikes and lines"} schema/non-neg)])
+
 (def schemas
   "Schemas of the cloud chart: `:style` (theme `[:chart :cloud]`), `:options`, `:mapping` (merged)."
   {:style (-> [:map {:closed true}]
              (into common/point-style-entries)
+             (into line-width-entries)
              (into projection-style-entries))
    :options (schema/with-rules
              (-> [:map {:closed true}]
                  (into (schema/in-section :style common/point-style-entries))
+                 (into (schema/in-section :style line-width-entries))
                  (into data/common-options)
                  (into theme/theme-style-entries)
                  (into space/frame-options)
                  (into space/shading-options)
                  (conj (schema/optional :type {:cljplot2/section :marks :description (str "marks: :points, :spikes (a line from :base to each point), "
+                                                                 ":lines (points joined in data order per :group), "
                                                                  ":bars (a box per row from :base to z) or :none (only :projections)")
                                                :default :points}
-                                        [:enum :points :spikes :bars :none])
+                                        [:enum :points :spikes :lines :bars :none])
                        (schema/optional :base {:cljplot2/section :marks :description "z where spikes and bars start (kept within an explicit z domain)"
                                                :cljplot2/default-doc "the low z limit (0 with :bins)"}
                                         schema/finite)
@@ -129,7 +140,9 @@
              [:z {:optional true :description "z coordinate, numeric (not read with :bins)"} schema/accessor]
              (schema/nilable :color {:description "point colour"} schema/accessor)
              (schema/nilable :size {:description "point size"} schema/accessor)
-             (schema/nilable :shape {:description "point shape"} schema/accessor)]})
+             (schema/nilable :shape {:description "point shape"} schema/accessor)
+             (schema/nilable :group {:description "groups without a visual aesthetic, each its own line with :type :lines (not read by other types)"}
+                             schema/accessor)]})
 
 (def ^:private position-dims
   "Position dimensions of a cloud row, in the order of its values."
@@ -265,12 +278,12 @@
 
   - `chart` (map): the chart value - `:kind`, `:options` (see the namespace doc), `:schema` (its style keys, see [[cljplot2.theme/resolved-style]]).
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
-  - `env` (map): `:theme`, `:na-level?` (default true), `:plot-scales`.
+  - `env` (map): `:theme`, `:na-level` (default true), `:plot-scales`.
 
-  Returns `{:data {panel computed} :extents :na :dropped}`; per panel `{:points {:x [..] :y [..] :z [..] aesthetic [..]} :domains {:x :y :z} :frame f :frame-overrides o :style st :type t :base b :half [hx hy] :shading sh}` - `f` see [[cljplot2.data.space3d/frame-settings]], `st` the resolved style ([[cljplot2.theme/resolved-style]]), `hx` / `hy` half a bar in data units, `sh` the chart's `:ambient` / `:light`; with `:bins` the points are the non-empty cells ([[bin-counts]]), with `:projections` also `:projections` ([[projection-layers]]). Extents are the aesthetics' only (the chart lays out its own panel); `:dropped` - per dimension the rows with a non-finite or out-of-domain coordinate, or an aesthetic value off its scale.
+  Returns `{:data {panel computed} :extents :na :dropped}`; per panel `{:points {:x [..] :y [..] :z [..] aesthetic [..] :group [..]} :domains {:x :y :z} :frame f :frame-overrides o :style st :type t :base b :half [hx hy] :shading sh}` - `f` see [[cljplot2.data.space3d/frame-settings]], `st` the resolved style ([[cljplot2.theme/resolved-style]]), `hx` / `hy` half a bar in data units, `sh` the chart's `:ambient` / `:light`; `:group` - the rows' `:group` values with `:type :lines` and a mapped `:group` (`nil` a value too); with `:bins` the points are the non-empty cells ([[bin-counts]]), with `:projections` also `:projections` ([[projection-layers]]). Extents are the aesthetics' only (the chart lays out its own panel); `:dropped` - per dimension the rows with a non-finite or out-of-domain coordinate, or an aesthetic value off its scale.
 
   Throws `ex-info {:key :mapping}`, `{:key :bins}` or `{:key :domain}` for a mapping its options can't draw (see [[check-mapping!]], [[axis-levels]]); `{:key :mapping}` when rows exist but a position has no valid value (see [[cljplot2.data.rows/check-mapped!]])."
-  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level? plot-scales] :or {na-level? true}}]
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales] :or {na-level true}}]
   (let [st (theme/resolved-style theme chart)
         explicit (:domain options)
         bins (:bins options)
@@ -278,7 +291,10 @@
         positions (if bins [:x :y] position-dims)
         npos (count positions)
         dims (into positions (aesthetic/mapped-dims mapping))
-        accessors (mapv #(data/row-accessor % (mapping %)) dims)
+        mark-type (data/option options :type :points)
+        ;; the line of each row, read after the dimensions (no drop: every value - nil too - is a line)
+        group-of (when (and (= mark-type :lines) (some? (:group mapping))) (data/row-accessor :group (:group mapping)))
+        accessors (cond-> (mapv #(data/row-accessor % (mapping %)) dims) group-of (conj group-of))
         _ (data/check-mapped! (mapcat val groups) (map vector positions accessors))
         raw-values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         levels (into {} (keep (fn [[i k]] (when (#{:x :y} k)
@@ -299,17 +315,17 @@
                           {:key :mapping :in [:mapping k] :value bad}))
         kept-at? (fn [^long i k v] (if (m/< i npos)
                                      (and (schema/finite? v) (space/in-domain? (get explicit k) v))
-                                     (group/kept-value? k na-level? plot-scales v)))
+                                     (group/kept-value? k na-level plot-scales v)))
         keep-row? (fn [vs] (every? identity (map-indexed (fn [i k] (kept-at? i k (vs i))) dims)))
         dropped (into {} (map-indexed (fn [i k] [k (count (remove #(kept-at? i k (% i)) all-values))]) dims))
         row-points (update-vals values (fn [vs] (let [kept (filterv keep-row? vs)]
-                                                  (into {} (map-indexed (fn [i k] [k (mapv #(% i) kept)])) dims))))
+                                                  (cond-> (into {} (map-indexed (fn [i k] [k (mapv #(% i) kept)])) dims)
+                                                    group-of (assoc :group (mapv peek kept))))))
         bin-domains (when bins
                       (into {} (map (fn [k] [k (or (k explicit) (space/data-domain (mapcat k (vals row-points)) 0.0))])) [:x :y]))
         points (if bins
                  (update-vals row-points #(bin-counts (:x %) (:y %) [(:x bin-domains) (:y bin-domains)] bins))
                  row-points)
-        mark-type (data/option options :type :points)
         bars? (= mark-type :bars)
         [fx fy] (data/option options :bar-size [0.8 0.8])
         coords (fn [k] (mapcat k (vals points)))
@@ -360,14 +376,18 @@
   - `scales` (map): the plot's aesthetic scales.
   - `env` (map): the drawing environment (`:theme` - its `[:palette :na]` colours NA values).
 
-  Returns a function of a point index giving its style - `style` with the point's mapped attributes; `nil` for an aesthetic value outside its scale (the point is skipped)."
-  [points style scales env]
+  Returns a function of a point index giving its style - `style` with the point's mapped attributes, its colour (mapped,
+  NA or not) at the style's `:alpha` (`nil` - its own alpha); `nil` for an aesthetic value outside its scale (the point
+  is skipped)."
+  [points {:keys [alpha] :as style} scales env]
   (let [na {:color (get-in env [:theme :palette :na]) :shape (:shape style) :size (:size style)}
         mapped (vec (for [k aesthetic/dims :when (contains? points k)]
-                      [k (aesthetic/attribute-fn k (get scales k) (na k)) (points k)]))]
+                      (let [f (aesthetic/attribute-fn k (get scales k) (na k))]
+                        [k (if (and alpha (= k :color)) #(some-> (f %) (draw/with-alpha alpha)) f) (points k)])))
+        base-style (update style :color draw/with-alpha alpha)]
     (if (seq mapped)
-      (fn [^long i] (reduce (fn [st [k f vs]] (if-some [a (f (nth vs i))] (assoc st k a) (reduced nil))) style mapped))
-      (constantly style))))
+      (fn [^long i] (reduce (fn [st [k f vs]] (if-some [a (f (nth vs i))] (assoc st k a) (reduced nil))) base-style mapped))
+      (constantly base-style))))
 
 (defn- bar-faces
   "Gives the visible faces of one bar as polygon primitives.
@@ -398,6 +418,27 @@
                  :fill (shade (:color st) normal) :stroke-color stroke :stroke-width (:stroke-width st)})))
           space/faces)))
 
+(defn- line-primitives
+  "Gives the segments of one panel's lines (`:type :lines`).
+
+  Parameters:
+
+  - `points` (map): the panel's points - `:x`, `:y`, `:z` and `:group` (the rows' line values; none - one line).
+  - `point` (function): the projection, data point -> `[pixel depth]`.
+  - `styles` (function): point index -> its style, `nil` - skipped (see [[point-styles]]).
+
+  Returns a sequence of `:line` primitives: per line (the rows of one `:group` value, in data order) a segment between consecutive points in the style of its first point (`:color`, width `:line-width`; none for a `nil` style), at the mean depth of its ends - so segments sort among the scene's other marks."
+  [{:keys [x y z group]} point styles]
+  (let [projected (mapv (fn [i] (point [(x i) (y i) (z i)])) (range (count x)))
+        lines (if group (vals (group-by group (range (count x)))) [(range (count x))])]
+    (for [line lines
+          [i j] (partition 2 1 line)
+          :let [st (styles i)]
+          :when st
+          :let [[from ^double from-depth] (projected i)
+                [to ^double to-depth] (projected j)]]
+      {:kind :line :from from :to to :depth (m/* 0.5 (m/+ from-depth to-depth)) :color (:color st) :line-width (:line-width st)})))
+
 (defn primitives
   "Gives the primitives of one panel's points by the chart's mark type (see [[cljplot2.content.space3d]]).
 
@@ -407,24 +448,26 @@
   - `point` (function): the projection, data point -> `[pixel depth]`.
   - `styles` (function): point index -> its style, `nil` - skipped (see [[point-styles]]).
 
-  Returns a sequence of primitives: `:points` - a `:point` each; `:spikes` - a `:line` from the base, at the depth where it stands; `:bars` - the visible faces ([[bar-faces]]); `:none` - nothing."
+  Returns a sequence of primitives: `:points` - a `:point` each; `:spikes` - a `:line` from the base, at the depth where it stands; `:lines` - the lines' segments ([[line-primitives]]); `:bars` - the visible faces ([[bar-faces]]); `:none` - nothing."
   [{:keys [points base half frame shading] mark-type :type} point styles]
   (let [{:keys [x y z]} points
         bars? (= mark-type :bars)
         orientation (when bars? (space/face-orientation frame))
         shade (when bars? (space/shader shading))]
-    (mapcat (fn [i]
-              (when-let [st (styles i)]
-                (let [p [(x i) (y i) (z i)]
-                      [px depth] (point p)]
-                  (case mark-type
-                    :points [{:kind :point :at px :depth depth :style st}]
-                    :none nil
-                    ;; a spike sorts by where it stands, as a bar
-                    :spikes (let [[b bd] (point [(x i) (y i) base])]
-                              [{:kind :line :from b :to px :depth bd :color (:color st) :line-width (:stroke-width st)}])
-                    :bars (bar-faces point orientation shade p base half st)))))
-            (range (count x)))))
+    (if (= mark-type :lines)
+      (line-primitives points point styles)
+      (mapcat (fn [i]
+                (when-let [st (styles i)]
+                  (let [p [(x i) (y i) (z i)]
+                        [px depth] (point p)]
+                    (case mark-type
+                      :points [{:kind :point :at px :depth depth :style st}]
+                      :none nil
+                      ;; a spike sorts by where it stands, as a bar
+                      :spikes (let [[b bd] (point [(x i) (y i) base])]
+                                [{:kind :line :from b :to px :depth bd :color (:color st) :line-width (:line-width st)}])
+                      :bars (bar-faces point orientation shade p base half st)))))
+                (range (count x))))))
 
 (defn projection-primitives
   "Gives the primitives of one panel's side projections on the far walls.
@@ -452,8 +495,8 @@
                                (for [level levels :let [rings (contour/level-rings grid level)] :when (seq rings)]
                                  {:kind :region :rings (mapv #(mapv place %) rings) :depth ##Inf :fill (draw/faded (:color style) (:band-alpha-factor style))}))
                     :contour (when grid
-                               (for [level levels {line-points :points closed? :closed?} (contour/isolines grid level)]
-                                 {:kind :path :points (mapv place line-points) :closed? closed? :depth ##Inf
+                               (for [level levels {line-points :points closed :closed} (contour/isolines grid level)]
+                                 {:kind :path :points (mapv place line-points) :closed closed :depth ##Inf
                                   :color (:color style) :line-width 1.0})))))))
           projections))
 
@@ -468,7 +511,7 @@
   - `scales` (map): the plot's aesthetic scales.
   - `env` (map): the drawing environment.
 
-  Returns its side projections ([[projection-primitives]]), then its points, spikes or bars ([[primitives]]), styled by the aesthetic `scales`."
+  Returns its side projections ([[projection-primitives]]), then its points, spikes, lines or bars ([[primitives]]), styled by the aesthetic `scales`."
   [_chart {:keys [points style] :as computed} point scales env]
   (let [styles (point-styles points style scales env)]
     (concat (projection-primitives computed point styles) (primitives computed point styles))))
@@ -484,10 +527,12 @@
   - `box` (map): the key box `{:x :y :w :h}` in pixels.
   - `env` (map): the drawing environment (`:theme`).
 
-  Returns `nil`; draws the point (points), a vertical line (spikes) or a filled square (bars), styled by the chart's resolved style with the attributes over it."
+  Returns `nil`; draws the point (points), a vertical line (spikes) or a horizontal line (lines) - width `:line-width`, raised in keys as other line marks (see [[cljplot2.theme/key-line-style]]) - or a filled square (bars), styled by the chart's resolved style with the attributes over it, the colour at the style's `:alpha`."
   [chart attributes canvas box env]
-  (let [st (theme/key-style env chart attributes nil)]
+  (let [key-st (theme/key-style env chart attributes nil)
+        st (update key-st :color draw/with-alpha (:alpha key-st))]
     (case (data/option (:options chart) :type :points)
       :bars (draw/bar-key! canvas box {:color (:color st) :stroke-color (:stroke-color st) :stroke-width (:stroke-width st)} false)
-      :spikes (draw/spike-key! canvas box {:color (:color st) :line-width (:stroke-width st) :span [0.15 0.85]})
+      :spikes (draw/spike-key! canvas box {:color (:color st) :line-width (:line-width st) :span [0.15 0.85]})
+      :lines (polyline/key-glyph! canvas box {:color (:color st) :line-width (:line-width st) :dash :none} :none)
       (shape/draw-key! canvas (:shape st) box st))))

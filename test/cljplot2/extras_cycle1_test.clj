@@ -204,8 +204,8 @@
       (is (= (mapv double acf) (mapv :value rows)))
       (is (= (mapv double cis) (mapv :hi rows)))
       (is (= (mapv #(- (double %)) cis) (mapv :lo rows)))
-      (is (= {:lag 0 :value 1.0 :significant? false} (select-keys (first rows) [:lag :value :significant?])))
-      (is (<= (count (filter :significant? rows)) 2) "white noise")))
+      (is (= {:lag 0 :value 1.0 :significant false} (select-keys (first rows) [:lag :value :significant])))
+      (is (<= (count (filter :significant rows)) 2) "white noise")))
   (testing "2.1 PACF rows: lags 1.., the constant band"
     (let [rows (series/acf-rows noise {:lags 20 :partial true :level 0.99})
           {:keys [ci pacf]} (stats/pacf-ci noise 20 0.01)]
@@ -214,7 +214,7 @@
       (is (every? #(= (double ci) (:hi %)) rows))))
   (testing "2.1 an MA(1) series: lag 1 significant"
     (let [ma (mapv (fn [i] (+ (noise (inc i)) (* 0.9 (noise i)))) (range 199))]
-      (is (:significant? (second (series/acf-rows ma {}))))))
+      (is (:significant (second (series/acf-rows ma {}))))))
   (testing "2.1 default lags: min(floor(10 log10 n), n - 1)"
     (is (= 23 (series/default-lags 200)))
     (is (= 1 (series/default-lags 2)))
@@ -271,7 +271,7 @@
           p (plot/acf ma {:colors {:significant [0 200 0]} :scales {:y {:domain [-1 1]}} :title "t" :theme {:plot {:background :white}}})
           hi (last (:charts p))]
       (is (= [0 200 0] (get-in hi [:options :color])))
-      (is (every? :significant? (get-in hi [:options :data])))
+      (is (every? :significant (get-in hi [:options :data])))
       (is (seq (get-in hi [:options :data])))
       (is (= [-1 1] (get-in p [:scales :y :domain])))
       (is (= "t" (get-in p [:labels :title])))

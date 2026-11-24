@@ -26,7 +26,7 @@
       (is (= [:columns :rows :widths :heights :align :equal-panels :title :theme] ks))
       (is (every? #(= :arrange (:fragment %)) (take 6 (describe/options #'multiplot/arrange))))))
   (testing "pairs"
-    (is (= [:variables :mapping :lower :upper :diagonal :variable-names :scales :color :theme :title]
+    (is (= [:variables :row-variables :column-variables :mapping :lower :upper :diagonal :variable-names :scales :color :theme :title]
            (map :key (describe/options #'multiplot/pairs))))))
 
 (deftest defaults-test

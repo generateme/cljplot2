@@ -68,7 +68,7 @@
       {:variables [["A" 1] :b]}))
   (testing "1.2 labels - names or pair labels, duplicates rejected, x extent ordered"
     (let [p {:data rows3 :charts [(chart/parallel {:variables [:b ["Alpha" :a]]})]}]
-      (is (= {:kind :categorical :values ["b" "Alpha"] :ordered? true} (get-in (stats p) [:extents (first (keys (:data (stats p)))) :x])))
+      (is (= {:kind :categorical :values ["b" "Alpha"] :ordered true} (get-in (stats p) [:extents (first (keys (:data (stats p)))) :x])))
       (is (= ["b" "Alpha"] (get-in (build p) [:finalized-scales :x :domain]))))
     (is (= :variables (:key (error #(build {:data rows3 :charts [(chart/parallel {:variables [:a ["a" :b]]})]})))))
     (is (= :variables (:key (error #(build {:data rows3 :charts [(chart/parallel {:variables [:a :a]})]}))))))
@@ -316,11 +316,11 @@
       (is (> (double (:lo-gap (angles {} {:padding {:y [0.2 0.2]}}))) (double (:lo-gap (angles {} {})))))
       (is (< (Math/abs (double (:lo-gap (angles {:scales {:y {:expand [0 0]}}} {})))) 1e-9))
       (is (< (Math/abs (double (:lo-gap (angles {:scales {:y {:axis true}}} {})))) 1e-9) "plot spec sets :axis - suggestions dropped as a whole"))
-    (testing "S1 the suggestion only under flip + polar"
-      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :charts [(chart/parallel {:variables [:a :b]})]}))))
-      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :coord polar :charts [(chart/parallel {:variables [:a :b]})]}))))
-      (is (= {:y {:axis false}} (:scale-defaults (stats {:data rows3 :flip true :charts [(chart/parallel {:variables [:a :b]})]}))))
-      (is (= {:y {:axis false :expand [0.1 0]}}
+    (testing "S1 the suggestion only under flip + polar; every variable name kept (names label separate axes)"
+      (is (= {:x {:overlapping-labels :keep} :y {:axis false}} (:scale-defaults (stats {:data rows3 :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:x {:overlapping-labels :keep} :y {:axis false}} (:scale-defaults (stats {:data rows3 :coord polar :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:x {:overlapping-labels :keep} :y {:axis false}} (:scale-defaults (stats {:data rows3 :flip true :charts [(chart/parallel {:variables [:a :b]})]}))))
+      (is (= {:x {:overlapping-labels :keep} :y {:axis false :expand [0.1 0]}}
              (:scale-defaults (stats {:data rows3 :coord polar :flip true :charts [(chart/parallel {:variables [:a :b] :padding {:y [0.1 0]}})]}))))))
   (testing "S1 other polar charts keep unpadded angles (pies)"
     (let [b (build {:data [{:p "a" :n 1} {:p "b" :n 3}] :mapping {:x :n :color :p} :coord polar :scales {:x {:axis false}}

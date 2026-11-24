@@ -274,14 +274,14 @@
 
   Parameters:
 
-  - `nodes` (sequence of maps): laid-out nodes with `:angle` (degrees), `:leaf?`, `:name` and an optional `:radius` (default 1).
+  - `nodes` (sequence of maps): laid-out nodes with `:angle` (degrees), `:leaf`, `:name` and an optional `:radius` (default 1).
   - `user-theme` (map or `nil`): the builder's `:theme` option, merged over the default theme for the role's size.
 
   Returns a vector of up to two text chart values (empty without leaves).
 
   See also [[circle-axis]]."
   [nodes user-theme]
-  (let [leaves (filterv :leaf? nodes)
+  (let [leaves (filterv :leaf nodes)
         role-size (double (get-in (theme/deep-merge theme/default-theme user-theme) [:text :radial-label :size]))
         size (m/min role-size (m/max 5.0 (m// 1400.0 (m/max 1 (count leaves)))))
         row (fn [{leaf-name :name :keys [^double angle ^double radius] :or {radius 1.0}}]
@@ -375,7 +375,7 @@
          top (double (:height t))]
      (cond-> {:charts (cond-> [(branch-chart paths (some? k) line-style)]
                         (and circular labels?) (into (radial-labels nodes user-theme))
-                        group-labels (conj (chart/text {:data (filterv #(and (not (:leaf? %)) (some? (:name %))) nodes)
+                        group-labels (conj (chart/text {:data (filterv #(and (not (:leaf %)) (some? (:name %))) nodes)
                                                          :mapping {:x :x :y :y :label #(str (:name %))}
                                                          :anchor [:left :bottom] :offset [3 3]
                                                          :role :dendrogram-group-label})))
@@ -401,12 +401,12 @@
 
   Parameters:
 
-  - `nodes` (sequence of maps): laid-out nodes with `:x`, `:y`, `:leaf?` and an optional `:name`.
+  - `nodes` (sequence of maps): laid-out nodes with `:x`, `:y`, `:leaf` and an optional `:name`.
 
   Returns a vector of up to two text chart values."
   [nodes]
   (let [named (filterv #(some? (:name %)) nodes)
-        [leaves groups] ((juxt filter remove) :leaf? named)
+        [leaves groups] ((juxt filter remove) :leaf named)
         text (fn [rows anchor dx]
                (chart/text {:data rows :mapping {:x :x :y :y :label #(str (:name %))} :anchor anchor :offset [dx 0]
                             :role :tree-label :reserve-room :anchor}))]
@@ -421,7 +421,7 @@
                                :default true}
                      schema/bool)
     (schema/optional :node-points {:description "a point per node" :default true} schema/bool)
-    (schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf?, :name)"}
+    (schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf, :name)"}
                     node-map)
     (schema/nilable :node-style {:description "scatter options of the nodes, merged over the default"
                                  :cljplot2/default-doc "theme [:chart :tree-node]"}
@@ -447,7 +447,7 @@
     - layout - `:layout` (`:tidy` default, `:cluster`), `:links` (`:diagonal` default, `:line`), `:circular` (radial, equal axes; leaf names outward, group names left out), `:span` (its degrees), see [[cljplot2.data.tree/node-link-layout]];
     - `:labels` - node names in the text role `:tree-label` (cartesian - leaves right of their node, groups left), default `true`;
     - `:node-points` - node points, default `true`;
-    - `:mapping` - node aesthetics (`:color`, `:size`, `:shape`; nodes have `:depth`, `:leaf?`, `:name` and their row's columns - e.g. `{:color #(str (:depth %))}`);
+    - `:mapping` - node aesthetics (`:color`, `:size`, `:shape`; nodes have `:depth`, `:leaf`, `:name` and their row's columns - e.g. `{:color #(str (:depth %))}`);
     - `:node-style` - scatter options over the theme style `[:chart :tree-node]`;
     - `:link-style` - line options over the theme style `[:chart :tree-link]` (a mid grey, so the many leaf links don't merge into a block);
     - `:leaf-names` - names of an `hclust` result's observations;
@@ -656,7 +656,7 @@
          nodes (:nodes laid)
          top-group (fn [i] (let [chain (vec (take-while some? (iterate #(:parent (nodes %)) i)))]
                             (:name (nodes (nth chain (m/long-max 0 (m/long-sub (count chain) 2)))))))
-         leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf? n) [(tree/leaf-key n) (str (top-group i))])) nodes))
+         leaf-group (into {} (keep-indexed (fn [i n] (when (:leaf n) [(tree/leaf-key n) (str (top-group i))])) nodes))
          {bundled :paths} (tree/bundle-paths edges laid (cond-> {:beta beta} from (assoc :from from) to (assoc :to to)))
          _ (when (and (seq edges) (empty? bundled))
              (schema/fail! (str "No bundle edge joins two different leaves of the tree: edge ends should name leaves - "
@@ -664,7 +664,7 @@
                            {:key :edges :value (count edges)}))
          from-of (data/row-accessor :from (or from :from))
          paths (mapv #(assoc % ::group (leaf-group (from-of %))) bundled)
-         leaves (mapv #(assoc % ::group (leaf-group (tree/leaf-key %))) (filter :leaf? nodes))]
+         leaves (mapv #(assoc % ::group (leaf-group (tree/leaf-key %))) (filter :leaf nodes))]
      (cond-> {:charts (cond-> [(chart/line (cond-> {:theme-style :bundle-edge :data paths :order :data :stroke-alpha-factor alpha
                                                     :mapping (cond-> {:x :x :y :y :group :id} by-group? (assoc :color ::group))}
                                              (not by-group?) (assoc :color edge-color)))
@@ -717,7 +717,7 @@
          g (graph/graph edges (select-keys options graph-keys))
          {:keys [groups arcs ribbons]} (graph/chord-layout g (select-keys options (keys-of graph/chord-layout-entries)))
          label-nodes (vec (for [{:keys [id ^double start ^double end ^double value]} groups :when (m/pos? value)]
-                            {:name id :leaf? true :angle (m/* 0.5 (m/+ start end))}))]
+                            {:name id :leaf true :angle (m/* 0.5 (m/+ start end))}))]
      (cond-> {:charts (cond-> [(chart/polygon {:data ribbons :alpha alpha :mapping {:x :x :y :y :group :ribbon :color :from}})
                                (chart/polygon {:data arcs :mapping {:x :x :y :y :color :group}})]
                         labels? (into (radial-labels label-nodes user-theme)))

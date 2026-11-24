@@ -206,12 +206,12 @@
   - `chart-split` (map): the chart's rows split per panel.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :one-sided? b}` (`:one-sided?` - mirrored groups swarm to their own side); x extents - the values. The packing happens at draw, in pixels."
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :one-sided b}` (`:one-sided` - mirrored groups swarm to their own side); x extents - the values. The packing happens at draw, in pixels."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)
         point-style (theme/resolved-style theme chart)]
     {:data (update-vals items (fn [its] {:items its :style point-style :place place :options options
-                                         :one-sided? (= :mirror position)}))
+                                         :one-sided (= :mirror position)}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place items (fn [{:keys [values]}] [(v/mn values) (v/mx values)])))
      :padding (strip/padding place options)
@@ -244,14 +244,14 @@
   Parameters:
 
   - `_chart` (map): the chart value (unused).
-  - `computed` (map): the panel's stats - `:items`, `:style`, `:place`, `:options` (`:pack` default `:across`, `:fit` default true), `:one-sided?` (mirrored groups swarm from 0 outward).
+  - `computed` (map): the panel's stats - `:items`, `:style`, `:place`, `:options` (`:pack` default `:across`, `:fit` default true), `:one-sided` (mirrored groups swarm from 0 outward).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales (in the strip frame).
   - `env` (map): the draw environment - `:theme`.
 
   Packs each item's values by [[swarm-offsets]] (`:pack :around` - [[around-offsets]]) at the point size, fitted into its slot with `:fit` ([[fit-offsets]]); skips a group outside its scale's domain, a level without span and points the scales can't place; then the n labels."
-  [_chart {:keys [items style place options one-sided?]} canvas box scales env]
+  [_chart {:keys [items style place options one-sided]} canvas box scales env]
   (let [{:keys [point span value-pixel] :as pl} (strip-chart/placement box scales options place)
         fit? (data/option options :fit true)
         around? (= :around (:pack options))]
@@ -261,17 +261,17 @@
             :when (and st (m/pos? s))]
       (let [[^double lo ^double hi] slot
             side (strip/slot-side slot)
-            base (if one-sided? 0.0 (strip/in-slot slot 0.0))
-            room (m/* s (if one-sided? (m/abs (m/+ lo hi)) (strip/slot-half slot)))
+            base (if one-sided 0.0 (strip/in-slot slot 0.0))
+            room (m/* s (if one-sided (m/abs (m/+ lo hi)) (strip/slot-half slot)))
             ;; [value pixel] pairs in increasing pixel order (a reversed value axis reverses the values)
             kept (sort-by second (filter #(m/valid-double? (double (second %))) (map (juxt identity value-pixel) values)))
             diameter (double (:size st))
             pairs (if around?
-                    (around-offsets (map second kept) diameter one-sided?)
-                    (mapv (fn [o] [0.0 o]) (swarm-offsets (map second kept) diameter one-sided?)))
+                    (around-offsets (map second kept) diameter one-sided)
+                    (mapv (fn [o] [0.0 o]) (swarm-offsets (map second kept) diameter one-sided)))
             crosses (cond->> (map second pairs) fit? (#(fit-offsets % room)))]
         (doseq [[[v] [^double along] ^double o] (map vector kept pairs crosses)
-                :let [cross (m/+ base (m// (m/* (if one-sided? side 1.0) o) s))
+                :let [cross (m/+ base (m// (m/* (if one-sided side 1.0) o) s))
                       ^Vec2 at (point v level cross)
                       ^Vec2 p (if (m/zero? along)
                                 at

@@ -217,8 +217,8 @@
 
 (defn- option-text
   "Option cell of `row`: its path's keys (`:grid :x`), `(required)` after a required one."
-  [{:keys [path required?]}]
-  (cond-> (str/join " " (map pr-str path)) required? (str " (required)")))
+  [{:keys [path required]}]
+  (cond-> (str/join " " (map pr-str path)) required (str " (required)")))
 
 (defn- section-rows
   "The rows of `rows` in `section` (their `:section`); throws `ex-info {:key :section}` naming the sections of `rows`

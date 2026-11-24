@@ -27,7 +27,7 @@
   object); a data side mapped by a keyword - \"<key>\" (Q-Q) / \"<key> probabilities\" (P-P).
 
   Options (style defaults from theme `[:chart :qq]` / `[:chart :pp]`): point style as [[cljplot2.chart.scatter]]
-  (`:size`, `:color`, `:stroke-color`, `:stroke-width`, `:shape`), `:line-width`, `:padding`, plus `:data` /
+  (`:size`, `:color`, `:stroke-color`, `:stroke-width`, `:shape`, `:alpha`), `:line-width`, `:padding`, plus `:data` /
   `:mapping`.
 
   Functions: [[distributions-only?]] - whether both sides are distributions; [[qq-compute]], [[pp-compute]], [[draw]] - the chart contract of both kinds (key glyph [[cljplot2.chart.legend/stroked-point-legend]]); [[qq-schemas]], [[pp-schemas]] - their style, options and mapping."
@@ -39,6 +39,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.probability :as probability]
             [cljplot2.data.rows :as data]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -418,14 +419,16 @@
   - `scales` (map): finalized scales.
   - `env` (map): the draw environment - `:theme`.
 
-  A group outside its scale's domain is skipped, as are points the scales can't place.
+  A group outside its scale's domain is skipped, as are points the scales can't place. The style's `:alpha` sets the
+  opacity of the points' colour (not of the line).
 
   Throws as [[linear!]] for a reference line over a non-linear scale."
   [_chart {:keys [groups style]} canvas _box scales env]
   (let [projection (scale/projection scales)]
     (doseq [{:keys [x y line aesthetics]} groups
             :let [st (group/style style aesthetics scales (:theme env))]
-            :when st]
+            :when st
+            :let [point-st (update st :color draw/with-alpha (:alpha st))]]
       (when (and line (polyline/set-style! canvas {:color (:color st) :line-width (:line-width st) :dash :none}))
         (linear! :x (:x scales))
         (linear! :y (:y scales))
@@ -434,6 +437,6 @@
       (dorun (map (fn [vx vy]
                     (let [^Vec2 p (projection vx vy)]
                       (when (data/finite-point? p)
-                        (shape/draw! canvas (:shape st) p st))))
+                        (shape/draw! canvas (:shape point-st) p point-st))))
                   x y)))))
 

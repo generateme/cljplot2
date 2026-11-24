@@ -77,7 +77,7 @@ reads the attributes from the data.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :binned :identity :linear :ordinal</td><td>:linear for numeric :color / :size data, else :ordinal</td><td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (ordinal levels) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value or nil</td><td>the data's levels (sorted) or [min max]</td><td>ordinal: the levels in order; linear / binned: [lo hi]</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :binned :identity :linear :ordinal</td><td>:linear for numeric :color / :size data, else :ordinal</td><td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color or :size by bins) or :identity (values are the attributes)</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (ordinal levels) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value or nil</td><td>the data's levels (sorted) or [min max]</td><td>ordinal: the levels in order; linear / binned: [lo hi] (nil at an end - the data's, e.g. [0 nil])</td></tr></tbody></table>
 ```
 
 :::
@@ -406,7 +406,7 @@ bins:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>5 equal bins</td><td>binned :color: a bin count, breaks, a bin method or quantile bins</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>5 equal bins</td><td>binned :color / :size: a bin count, breaks, a bin method or quantile bins</td></tr></tbody></table>
 ```
 
 :::
@@ -431,6 +431,29 @@ bins:
 
 ::: {.clay-image}
 ![](reference.aesthetics_legends_files/image8.png)
+:::
+
+
+A `:binned` size scale takes the same `:bins`: one size per class - class `i` of `n` at `(i + 1) / n` of `:range`
+(in area with `:area`), so the largest class gets the range's maximum and the first one stays visible with
+`:range [0 m]` - and a legend entry per class labelled by its breaks:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data gapminder
+                    :mapping {:x :gdp-per-cap :y :life-exp :size :pop}
+                    :charts [(chart/scatter {:alpha 0.6})]
+                    :scales {:x {:kind :log :formatter :power}
+                             :size {:kind :binned :bins [0 1.0e7 5.0e7 2.0e8 1.4e9] :range [0 24] :area true
+                                    :formatter #(str (m/round (m// % 1.0e6)) "M")}}}
+                   {:width 700 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image9.png)
 :::
 
 
@@ -468,7 +491,7 @@ panels; their sizes and frame are in the theme `:legend` section (Theme chapter)
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image9.png)
+![](reference.aesthetics_legends_files/image10.png)
 :::
 
 
@@ -488,7 +511,7 @@ A colour bar takes `:ticks` and `:formatter` too:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image10.png)
+![](reference.aesthetics_legends_files/image11.png)
 :::
 
 
@@ -532,7 +555,7 @@ alike (right):
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image11.png)
+![](reference.aesthetics_legends_files/image12.png)
 :::
 
 
@@ -582,7 +605,7 @@ Every built-in shape (`describe/attribute-values` lists the built-in shapes, das
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image12.png)
+![](reference.aesthetics_legends_files/image13.png)
 :::
 
 
@@ -616,7 +639,7 @@ A shape range of characters and shape maps:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image13.png)
+![](reference.aesthetics_legends_files/image14.png)
 :::
 
 
@@ -648,7 +671,7 @@ Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image14.png)
+![](reference.aesthetics_legends_files/image15.png)
 :::
 
 
@@ -703,7 +726,7 @@ Every named style, and two dash arrays (an `:identity` scale draws the data's da
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image15.png)
+![](reference.aesthetics_legends_files/image16.png)
 :::
 
 
@@ -722,7 +745,7 @@ A dash range by group:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image16.png)
+![](reference.aesthetics_legends_files/image17.png)
 :::
 
 
@@ -774,7 +797,7 @@ Every named pattern and two pattern maps (white bars outlined in black, the patt
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image17.png)
+![](reference.aesthetics_legends_files/image18.png)
 :::
 
 

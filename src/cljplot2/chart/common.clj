@@ -1,7 +1,7 @@
 (ns cljplot2.chart.common
   "Option schema pieces several chart kinds share. Chart namespaces don't require each other (CLAUDE.md, Layers), so a schema entry or rule two charts take lives here; shared statistics, geometry and drawing live in the lower layers, shared key glyphs in [[cljplot2.chart.legend]].
 
-  Functions and vars: [[fill-gradient-rule]] (line, ribbon, density), [[point-style-entries]] (scatter, ribbon, cloud, qq, pp)."
+  Functions and vars: [[fill-gradient-rule]] (line, ribbon, density), [[point-style-entries]] (scatter, cloud, qq, pp)."
   (:require [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -12,10 +12,14 @@
   [#(when (and (:fill-gradient-axis %) (nil? (:fill-gradient %))) ":fill-gradient-axis needs :fill-gradient") [:fill-gradient-axis]])
 
 (def point-style-entries
-  "Map entries of a point style (all optional; defaults from the theme)."
+  "Map entries of a point style (all optional; defaults from the theme; `:alpha` has none - `nil` keeps the colours'
+  own alpha, applied by the charts and by [[cljplot2.chart.legend/stroked-point-legend]])."
   [(schema/optional :size {:description "point size in pixels (a mapped :size wins)"} schema/non-neg)
    (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
    (schema/optional :stroke-color {:description "outline colour: a colour or :none"} schema/color)
    (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
+   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)
+   (schema/nilable :alpha {:description "opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)"
+                           :cljplot2/default-doc "the colours' own alpha"}
+                   schema/fraction)])
 

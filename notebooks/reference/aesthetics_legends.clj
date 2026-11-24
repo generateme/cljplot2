@@ -184,6 +184,18 @@
                                  {:columns 2})
                    {:width 900 :height 600})
 
+;; A `:binned` size scale takes the same `:bins`: one size per class - class `i` of `n` at `(i + 1) / n` of `:range`
+;; (in area with `:area`), so the largest class gets the range's maximum and the first one stays visible with
+;; `:range [0 m]` - and a legend entry per class labelled by its breaks:
+
+(plot/render-image {:data gapminder
+                    :mapping {:x :gdp-per-cap :y :life-exp :size :pop}
+                    :charts [(chart/scatter {:alpha 0.6})]
+                    :scales {:x {:kind :log :formatter :power}
+                             :size {:kind :binned :bins [0 1.0e7 5.0e7 2.0e8 1.4e9] :range [0 24] :area true
+                                    :formatter #(str (m/round (m// % 1.0e6)) "M")}}}
+                   {:width 700 :height 380})
+
 ;; ## Legend
 
 ;; One legend per mapped aesthetic, titled by the mapped column's name: `:title` renames it, `:formatter` writes its

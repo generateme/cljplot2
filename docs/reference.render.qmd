@@ -164,7 +164,7 @@ extent of each mapped dimension:
 {:color
  {:extent
   {:kind :categorical, :values ["setosa" "versicolor" "virginica"]},
-  :na? false},
+  :na-level false},
  :y
  {:extent {:kind :numeric, :min 1.0, :max 6.9},
   :padding [0.05 0.05],

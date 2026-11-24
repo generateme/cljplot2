@@ -1272,7 +1272,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:kind</td>
 <td>one of :binned :identity :linear :ordinal</td>
 <td>:linear for numeric :color / :size data, else :ordinal</td>
-<td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color by bins) or :identity (values are the attributes)</td>
+<td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color or :size by bins) or :identity (values are the attributes)</td>
 </tr>
 <tr class="even">
 <td>:type</td>
@@ -1284,7 +1284,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:domain</td>
 <td>sequential of any value or nil</td>
 <td>the data's levels (sorted) or [min max]</td>
-<td>ordinal: the levels in order; linear / binned: [lo hi]</td>
+<td>ordinal: the levels in order; linear / binned: [lo hi] (nil at an end - the data's, e.g. [0 nil])</td>
 </tr>
 </tbody>
 </table>
@@ -2690,7 +2690,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:bins</td>
 <td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td>
 <td>5 equal bins</td>
-<td>binned :color: a bin count, breaks, a bin method or quantile bins</td>
+<td>binned :color / :size: a bin count, breaks, a bin method or quantile bins</td>
 </tr>
 </tbody>
 </table>
@@ -2710,6 +2710,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="clay-image">
 <p><img src="reference.aesthetics_legends_files/image8.png" class="img-fluid"></p>
+</div>
+<p>A <code>:binned</code> size scale takes the same <code>:bins</code>: one size per class - class <code>i</code> of <code>n</code> at <code>(i + 1) / n</code> of <code>:range</code> (in area with <code>:area</code>), so the largest class gets the range’s maximum and the first one stays visible with <code>:range [0 m]</code> - and a legend entry per class labelled by its breaks:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:size</span> <span class="at">:pop</span>}</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter {<span class="at">:alpha</span> <span class="fl">0.6</span>})]</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:size</span> {<span class="at">:kind</span> <span class="at">:binned</span> <span class="at">:bins</span> [<span class="dv">0</span> <span class="fl">1.0e7</span> <span class="fl">5.0e7</span> <span class="fl">2.0e8</span> <span class="fl">1.4e9</span>] <span class="at">:range</span> [<span class="dv">0</span> <span class="dv">24</span>] <span class="at">:area</span> <span class="va">true</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:formatter</span> #(<span class="kw">str</span> (m/round (m// <span class="va">%</span> <span class="fl">1.0e6</span>)) <span class="st">"M"</span>)}}}</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.aesthetics_legends_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="legend" class="level2" data-number="4.5">
@@ -2762,33 +2775,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:color</span> <span class="at">:continent</span> <span class="at">:shape</span> <span class="at">:continent</span> <span class="at">:size</span> <span class="at">:pop</span>}</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:color</span> {<span class="at">:title</span> <span class="st">"continent"</span>}</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:size</span> {<span class="at">:title</span> <span class="st">"population"</span> <span class="at">:ticks</span> [<span class="fl">1e7</span> <span class="fl">1e8</span> <span class="fl">1e9</span>]</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:formatter</span> #(<span class="kw">format</span> <span class="st">"%.0f M"</span> (<span class="kw">/</span> (<span class="kw">double</span> <span class="va">%</span>) <span class="fl">1e6</span>))}}}</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image9.png" class="img-fluid"></p>
-</div>
-<p>A colour bar takes <code>:ticks</code> and <code>:formatter</code> too:</p>
-<div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:color</span> <span class="at">:life-exp</span>}</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:color</span> <span class="at">:continent</span> <span class="at">:shape</span> <span class="at">:continent</span> <span class="at">:size</span> <span class="at">:pop</span>}</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:color</span> {<span class="at">:ticks</span> [<span class="dv">45</span> <span class="dv">55</span> <span class="dv">65</span> <span class="dv">75</span>] <span class="at">:formatter</span> #(<span class="kw">str</span> <span class="va">%</span> <span class="st">" years"</span>) <span class="at">:title</span> <span class="st">"life expectancy"</span>}}}</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:color</span> {<span class="at">:title</span> <span class="st">"continent"</span>}</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:size</span> {<span class="at">:title</span> <span class="st">"population"</span> <span class="at">:ticks</span> [<span class="fl">1e7</span> <span class="fl">1e8</span> <span class="fl">1e9</span>]</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">:formatter</span> #(<span class="kw">format</span> <span class="st">"%.0f M"</span> (<span class="kw">/</span> (<span class="kw">double</span> <span class="va">%</span>) <span class="fl">1e6</span>))}}}</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.aesthetics_legends_files/image10.png" class="img-fluid"></p>
 </div>
+<p>A colour bar takes <code>:ticks</code> and <code>:formatter</code> too:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:color</span> <span class="at">:life-exp</span>}</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:color</span> {<span class="at">:ticks</span> [<span class="dv">45</span> <span class="dv">55</span> <span class="dv">65</span> <span class="dv">75</span>] <span class="at">:formatter</span> #(<span class="kw">str</span> <span class="va">%</span> <span class="st">" years"</span>) <span class="at">:title</span> <span class="st">"life expectancy"</span>}}}</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.aesthetics_legends_files/image11.png" class="img-fluid"></p>
+</div>
 <p>Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3264,21 +3277,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Whole-number data over a short range - here 3 to 5 gears (size) and the 0 / 1 engine shape <code>vs</code> (colour) - gets fractional counted entries (left); <code>:integer-ticks true</code> keeps only whole ones, on a size legend and a colour bar alike (right):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:size</span> <span class="at">:gear</span> <span class="at">:color</span> <span class="at">:vs</span>}</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"counted ticks"</span>}}</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:size</span> <span class="at">:gear</span> <span class="at">:color</span> <span class="at">:vs</span>}</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:size</span> {<span class="at">:integer-ticks</span> <span class="va">true</span>} <span class="at">:color</span> {<span class="at">:integer-ticks</span> <span class="va">true</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":integer-ticks true"</span>}}]</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:size</span> <span class="at">:gear</span> <span class="at">:color</span> <span class="at">:vs</span>}</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"counted ticks"</span>}}</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:size</span> <span class="at">:gear</span> <span class="at">:color</span> <span class="at">:vs</span>}</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:size</span> {<span class="at">:integer-ticks</span> <span class="va">true</span>} <span class="at">:color</span> {<span class="at">:integer-ticks</span> <span class="va">true</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":integer-ticks true"</span>}}]</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image11.png" class="img-fluid"></p>
+<p><img src="reference.aesthetics_legends_files/image12.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="shape" class="level2" data-number="4.6">
@@ -3308,7 +3321,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Every built-in shape (<code>describe/attribute-values</code> lists the built-in shapes, dashes, patterns and cells; an <code>:identity</code> scale draws the data’s shapes):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> shapes </span>(map-indexed (<span class="kw">fn</span> [i s] {<span class="at">:i</span> i <span class="at">:shape</span> s <span class="at">:name</span> (<span class="kw">str</span> s)}) (<span class="at">:shape</span> describe/attribute-values)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> shapes </span>(map-indexed (<span class="kw">fn</span> [i s] {<span class="at">:i</span> i <span class="at">:shape</span> s <span class="at">:name</span> (<span class="kw">str</span> s)}) (<span class="at">:shape</span> describe/attribute-values)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3416,20 +3429,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:i</span> <span class="at">:y</span> (<span class="kw">constantly</span> <span class="dv">1</span>) <span class="at">:shape</span> <span class="at">:shape</span>}</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">18</span> <span class="at">:color</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>]})</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:i</span> <span class="at">:y</span> (<span class="kw">constantly</span> <span class="fl">0.4</span>) <span class="at">:label</span> <span class="at">:name</span>}})]</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:shape</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="fl">1.5</span>] <span class="at">:axis</span> <span class="va">false</span>}}}</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">200</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:i</span> <span class="at">:y</span> (<span class="kw">constantly</span> <span class="dv">1</span>) <span class="at">:shape</span> <span class="at">:shape</span>}</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">18</span> <span class="at">:color</span> [<span class="dv">69</span> <span class="dv">117</span> <span class="dv">180</span>]})</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:i</span> <span class="at">:y</span> (<span class="kw">constantly</span> <span class="fl">0.4</span>) <span class="at">:label</span> <span class="at">:name</span>}})]</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:shape</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:domain</span> [<span class="dv">0</span> <span class="fl">1.5</span>] <span class="at">:axis</span> <span class="va">false</span>}}}</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">200</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image12.png" class="img-fluid"></p>
+<p><img src="reference.aesthetics_legends_files/image13.png" class="img-fluid"></p>
 </div>
 <p>A shape range of characters and shape maps:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> groups </span>(<span class="kw">for</span> [[gi g] (map-indexed <span class="kw">vector</span> [<span class="st">"a"</span> <span class="st">"b"</span> <span class="st">"c"</span>]) i (<span class="kw">range</span> <span class="dv">8</span>)]</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:x</span> i <span class="at">:y</span> (<span class="kw">+</span> (<span class="kw">*</span> <span class="dv">3</span> gi) (<span class="kw">mod</span> (<span class="kw">*</span> i <span class="dv">7</span>) <span class="dv">3</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> groups </span>(<span class="kw">for</span> [[gi g] (map-indexed <span class="kw">vector</span> [<span class="st">"a"</span> <span class="st">"b"</span> <span class="st">"c"</span>]) i (<span class="kw">range</span> <span class="dv">8</span>)]</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:x</span> i <span class="at">:y</span> (<span class="kw">+</span> (<span class="kw">*</span> <span class="dv">3</span> gi) (<span class="kw">mod</span> (<span class="kw">*</span> i <span class="dv">7</span>) <span class="dv">3</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3567,14 +3580,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> groups</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:shape</span> <span class="at">:g</span>}</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">14</span>})]</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:shape</span> {<span class="at">:range</span> [<span class="ch">\s</span> {<span class="at">:path</span> <span class="st">"M0 0 L10 0 L5 9 Z"</span>} {<span class="at">:text</span> <span class="st">"★"</span>}]}}}</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> groups</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:shape</span> <span class="at">:g</span>}</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">14</span>})]</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:shape</span> {<span class="at">:range</span> [<span class="ch">\s</span> {<span class="at">:path</span> <span class="st">"M0 0 L10 0 L5 9 Z"</span>} {<span class="at">:text</span> <span class="st">"★"</span>}]}}}</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image13.png" class="img-fluid"></p>
+<p><img src="reference.aesthetics_legends_files/image14.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="size" class="level2" data-number="4.7">
@@ -3603,15 +3616,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:size</span> <span class="at">:pop</span>}</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:size</span> {<span class="at">:range</span> [<span class="dv">4</span> <span class="dv">50</span>] <span class="at">:area</span> <span class="va">true</span> <span class="at">:legend</span> <span class="va">false</span>}}}</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> gapminder</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:gdp-per-cap</span> <span class="at">:y</span> <span class="at">:life-exp</span> <span class="at">:size</span> <span class="at">:pop</span>}</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power</span>}</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:size</span> {<span class="at">:range</span> [<span class="dv">4</span> <span class="dv">50</span>] <span class="at">:area</span> <span class="va">true</span> <span class="at">:legend</span> <span class="va">false</span>}}}</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image14.png" class="img-fluid"></p>
+<p><img src="reference.aesthetics_legends_files/image15.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="dash" class="level2" data-number="4.8">
@@ -3641,10 +3654,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Every named style, and two dash arrays (an <code>:identity</code> scale draws the data’s dashes; the names are a <a href="reference.charts_annotations.html#text">text</a> chart anchored right of its point and moved left by <code>:offset</code>):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> dashes </span>(<span class="kw">concat</span> (<span class="kw">for</span> [[i d] (map-indexed <span class="kw">vector</span> (<span class="at">:dash</span> describe/attribute-values)) x [<span class="dv">0</span> <span class="dv">10</span>]]</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:i</span> i <span class="at">:x</span> x <span class="at">:dash</span> d <span class="at">:name</span> (<span class="kw">str</span> d)})</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>                    (<span class="kw">for</span> [[i d] [[<span class="dv">8</span> [<span class="dv">12</span> <span class="dv">4</span>]] [<span class="dv">9</span> [<span class="dv">2</span> <span class="dv">2</span> <span class="dv">8</span> <span class="dv">2</span>]]] x [<span class="dv">0</span> <span class="dv">10</span>]]</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:i</span> i <span class="at">:x</span> x <span class="at">:dash</span> d <span class="at">:name</span> (<span class="kw">pr-str</span> d)})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> dashes </span>(<span class="kw">concat</span> (<span class="kw">for</span> [[i d] (map-indexed <span class="kw">vector</span> (<span class="at">:dash</span> describe/attribute-values)) x [<span class="dv">0</span> <span class="dv">10</span>]]</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:i</span> i <span class="at">:x</span> x <span class="at">:dash</span> d <span class="at">:name</span> (<span class="kw">str</span> d)})</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                    (<span class="kw">for</span> [[i d] [[<span class="dv">8</span> [<span class="dv">12</span> <span class="dv">4</span>]] [<span class="dv">9</span> [<span class="dv">2</span> <span class="dv">2</span> <span class="dv">8</span> <span class="dv">2</span>]]] x [<span class="dv">0</span> <span class="dv">10</span>]]</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:i</span> i <span class="at">:x</span> x <span class="at">:dash</span> d <span class="at">:name</span> (<span class="kw">pr-str</span> d)})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3783,28 +3796,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> dashes</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:i</span> <span class="at">:dash</span> <span class="at">:dash</span> <span class="at">:group</span> <span class="at">:i</span>}</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">2</span> <span class="at">:color</span> <span class="at">:black</span>})</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">zero?</span> (<span class="kw">long</span> (<span class="at">:x</span> <span class="va">%</span>))) dashes)</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:i</span> <span class="at">:label</span> <span class="at">:name</span>} <span class="at">:anchor</span> [<span class="at">:right</span> <span class="at">:middle</span>] <span class="at">:offset</span> [-<span class="dv">8</span> <span class="dv">0</span>]})]</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:dash</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">10</span>] <span class="at">:axis</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span> <span class="at">:reverse</span> <span class="va">true</span>}}}</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image15.png" class="img-fluid"></p>
-</div>
-<p>A dash range by group:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> groups</span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:dash</span> <span class="at">:g</span>}</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">2</span>})]</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:dash</span> {<span class="at">:range</span> [<span class="at">:solid</span> <span class="at">:dotted</span> [<span class="dv">8</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">3</span>]]}}}</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> dashes</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:i</span> <span class="at">:dash</span> <span class="at">:dash</span> <span class="at">:group</span> <span class="at">:i</span>}</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">2</span> <span class="at">:color</span> <span class="at">:black</span>})</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">zero?</span> (<span class="kw">long</span> (<span class="at">:x</span> <span class="va">%</span>))) dashes)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:i</span> <span class="at">:label</span> <span class="at">:name</span>} <span class="at">:anchor</span> [<span class="at">:right</span> <span class="at">:middle</span>] <span class="at">:offset</span> [-<span class="dv">8</span> <span class="dv">0</span>]})]</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:dash</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> {<span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">10</span>] <span class="at">:axis</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span> <span class="at">:reverse</span> <span class="va">true</span>}}}</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.aesthetics_legends_files/image16.png" class="img-fluid"></p>
+</div>
+<p>A dash range by group:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> groups</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:dash</span> <span class="at">:g</span>}</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:line-width</span> <span class="dv">2</span>})]</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:dash</span> {<span class="at">:range</span> [<span class="at">:solid</span> <span class="at">:dotted</span> [<span class="dv">8</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">3</span>]]}}}</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.aesthetics_legends_files/image17.png" class="img-fluid"></p>
 </div>
 </section>
 <section id="pattern" class="level2" data-number="4.9">
@@ -3834,9 +3847,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Every named pattern and two pattern maps (white bars outlined in black, the pattern in black - <a href="reference.shared_options.html#fill-patterns">Fill patterns</a>):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> patterns </span>(<span class="kw">concat</span> (<span class="kw">for</span> [p (<span class="at">:pattern</span> describe/attribute-values)] {<span class="at">:name</span> (<span class="kw">name</span> p) <span class="at">:pattern</span> p <span class="at">:v</span> <span class="dv">1</span>})</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                      [{<span class="at">:name</span> <span class="st">"lines 135, spacing 8"</span> <span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:lines</span> <span class="at">:angle</span> <span class="dv">135</span> <span class="at">:spacing</span> <span class="dv">8</span> <span class="at">:width</span> <span class="dv">2</span>} <span class="at">:v</span> <span class="dv">1</span>}</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                       {<span class="at">:name</span> <span class="st">"dots, spacing 5"</span> <span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:dots</span> <span class="at">:spacing</span> <span class="dv">5</span> <span class="at">:size</span> <span class="dv">3</span>} <span class="at">:v</span> <span class="dv">1</span>}]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> patterns </span>(<span class="kw">concat</span> (<span class="kw">for</span> [p (<span class="at">:pattern</span> describe/attribute-values)] {<span class="at">:name</span> (<span class="kw">name</span> p) <span class="at">:pattern</span> p <span class="at">:v</span> <span class="dv">1</span>})</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                      [{<span class="at">:name</span> <span class="st">"lines 135, spacing 8"</span> <span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:lines</span> <span class="at">:angle</span> <span class="dv">135</span> <span class="at">:spacing</span> <span class="dv">8</span> <span class="at">:width</span> <span class="dv">2</span>} <span class="at">:v</span> <span class="dv">1</span>}</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                       {<span class="at">:name</span> <span class="st">"dots, spacing 5"</span> <span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:dots</span> <span class="at">:spacing</span> <span class="dv">5</span> <span class="at">:size</span> <span class="dv">3</span>} <span class="at">:v</span> <span class="dv">1</span>}]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3909,15 +3922,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> patterns</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:name</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:pattern</span> <span class="at">:pattern</span>}</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar {<span class="at">:color</span> <span class="at">:white</span> <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:pattern-color</span> <span class="at">:black</span> <span class="at">:width</span> <span class="fl">0.9</span>})]</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span>}}</span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">45</span>}}}}</span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> patterns</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:name</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:pattern</span> <span class="at">:pattern</span>}</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar {<span class="at">:color</span> <span class="at">:white</span> <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:pattern-color</span> <span class="at">:black</span> <span class="at">:width</span> <span class="fl">0.9</span>})]</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:pattern</span> {<span class="at">:kind</span> <span class="at">:identity</span> <span class="at">:legend</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:axis</span> <span class="va">false</span>}}</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:theme</span> {<span class="at">:axis</span> {<span class="at">:x</span> {<span class="at">:label-rotation</span> <span class="dv">45</span>}}}}</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.aesthetics_legends_files/image17.png" class="img-fluid"></p>
+<p><img src="reference.aesthetics_legends_files/image18.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/aesthetics_legends.clj</small></small></pre></div>

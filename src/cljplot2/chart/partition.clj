@@ -83,7 +83,7 @@
   - `tree` (map): a root (see [[cljplot2.data.hierarchy]]).
   - `options` (map): `:order` (`:value` or `:data`), `:root` (draw the root too), `:group-labels`, `:leaf-labels` (see [[cljplot2.data.hierarchy/label-text]]).
 
-  Returns a vector of `{:x0 :x1 :y0 :y1 :depth :leaf? :color :top-index :name :label}`, parents before their children; `:label` - the text or `nil`. A root without children gives no cells (the root's own with `:root`)."
+  Returns a vector of `{:x0 :x1 :y0 :y1 :depth :leaf :color :top-index :name :label}`, parents before their children; `:label` - the text or `nil`. A root without children gives no cells (the root's own with `:root`)."
   [tree {:keys [order root group-labels leaf-labels]}]
   (let [total (double (:value tree))
         shift (if root 1.0 0.0)
@@ -92,7 +92,7 @@
                (let [leaf? (nil? (:children node))
                      x1 (m/+ (double x0) (m// (double (:value node)) total))]
                  {:x0 x0 :x1 x1 :y0 (m/+ (m/dec (double depth)) shift) :y1 (m/+ (double depth) shift)
-                  :depth depth :leaf? leaf? :color (:color node) :top-index top-index :name (:name node)
+                  :depth depth :leaf leaf? :color (:color node) :top-index top-index :name (:name node)
                   :label (hierarchy/label-text (if leaf? leaf-labels group-labels) node
                                                (hierarchy/node-info node depth path parent-value total))}))
         walk (fn walk [node depth path x0 top-index]
@@ -155,7 +155,7 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales` and the rest of the compute environment.
 
-  Returns `{:data {panel {:cells [..] :top-count n :style st :colored? b :named? b}} :extents :padding :na :dropped :scale-defaults}`: cells - see [[cells]]; `:named?` - `:color-by :name`; extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's, at least 1) and the aesthetic extents (the node names' with `:color-by :name`); no padding; `:scale-defaults` hiding both axes; `:dropped {:value n :color n}`."
+  Returns `{:data {panel {:cells [..] :top-count n :style st :colored b :named b}} :extents :padding :na :dropped :scale-defaults}`: cells - see [[cells]]; `:named` - `:color-by :name`; extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's, at least 1) and the aesthetic extents (the node names' with `:color-by :name`); no padding; `:scale-defaults` hiding both axes; `:dropped {:value n :color n}`."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)
         named? (= :name (:color-by options))
@@ -165,8 +165,8 @@
         panel-cells (update-vals trees #(cells % opts))
         levels (reduce m/max 1.0 (map :y1 (mapcat val panel-cells)))
         position-extents {:x (data/extent :x [0.0 1.0]) :y (data/extent :y [0.0 levels])}]
-    {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored? (some? (:color mapping))
-                                              :named? named?}))
+    {:data (update-vals panel-cells (fn [cs] {:cells cs :top-count top-count :style st :colored (some? (:color mapping))
+                                              :named named?}))
      :extents (merge-with merge aesthetic-extents (update-vals panel-cells (constantly position-extents)))
      :padding data/zero-padding
      :na na
@@ -235,9 +235,9 @@
     (doseq [[cell [a b]] (map vector panel-cells corners)
             :let [fill (fill-of cell)]]
       (draw/range-bar! canvas geometry a b fill stroke sw (pattern-fill style fill)))
-    (doseq [[{:keys [label leaf?] :as cell} [a b]] (map vector panel-cells corners)
+    (doseq [[{:keys [label leaf] :as cell} [a b]] (map vector panel-cells corners)
             :when (and label (data/finite-point? a) (data/finite-point? b))
-            :let [role (if leaf? :partition-leaf :partition-group)]
+            :let [role (if leaf :partition-leaf :partition-group)]
             ;; a line is at least the font size tall: cells without that room aren't measured
             :when (m/>= (line-room geometry a b) (double (get-in env [:theme :text role :size])))
             :let [content {:kind :label :role role :text label}

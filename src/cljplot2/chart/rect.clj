@@ -196,7 +196,7 @@
         (cond-> (update stats :dropped merge end-dropped)
           color-stats (-> (update :extents #(merge-with merge % (:extents color-stats)))
                           (assoc-in [:dropped :color] (:dropped color-stats))
-                          (cond-> (:na? color-stats) (update :na conj :color))))))))
+                          (cond-> (:na color-stats) (update :na conj :color))))))))
 
 (defn- outline
   "Gives the outline colour of a rect.

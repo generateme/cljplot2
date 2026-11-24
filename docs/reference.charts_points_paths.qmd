@@ -119,7 +119,7 @@ random offsets separating points on a grid of values (seeded here, so the image 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>draw the values of a mapped :order in descending order (later points on top)</td></tr><tr><td>:jitter</td><td>[a non-negative number, a non-negative number]</td><td></td><td>[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>an unseeded generator (builds differ)</td><td>random number generator for jitter (seeded for reproducible plots)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>draw the values of a mapped :order in descending order (later points on top)</td></tr><tr><td>:jitter</td><td>[a non-negative number, a non-negative number]</td><td></td><td>[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>an unseeded generator (builds differ)</td><td>random number generator for jitter (seeded for reproducible plots)</td></tr></tbody></table>
 ```
 
 :::
@@ -176,7 +176,28 @@ A mapped `:order` draws points by its values, later ones on top: the most powerf
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+`:alpha` sets the opacity of every point colour, mapped or not - overlapping bubbles stay visible; the white
+outline keeps its own colour:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
+                    :charts [(chart/scatter {:alpha 0.45 :stroke-color :white :stroke-width 1})]
+                    :scales {:color {:title "cylinders"} :size {:range [8 30]}}
+                    :labels {:title ":alpha 0.45" :x "weight [1000 lbs]" :y "miles per gallon"}}
+                   {:width 600 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image3.png)
+:::
+
+
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## line
@@ -206,7 +227,7 @@ carry a colour or width along its length. (The dataset's dates are text: the map
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image3.png)
+![](reference.charts_points_paths_files/image4.png)
 :::
 
 
@@ -219,7 +240,7 @@ follows a mapped `:size`:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour at :alpha), a colour or :none</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>area fill opacity of :fill :color and of stacked areas</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x</td><td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td></tr><tr><td>:stroke-alpha-factor</td><td>a number in [0 1]</td><td></td><td>multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)</td></tr><tr><td>:trail</td><td>true or false or nil</td><td>false</td><td>draw a filled trail whose width follows a linear mapped :size at every point</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area between the line and y = 0: :color (the line colour, its own alpha times :alpha), a colour or :none</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>factor of the line colour's alpha filling :fill :color and stacked areas</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x</td><td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td></tr><tr><td>:stroke-alpha-factor</td><td>a number in [0 1]</td><td></td><td>multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)</td></tr><tr><td>:trail</td><td>true or false or nil</td><td>false</td><td>draw a filled trail whose width follows a linear mapped :size at every point</td></tr></tbody></table>
 ```
 
 :::
@@ -259,7 +280,7 @@ follows a mapped `:size`:
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image4.png)
+![](reference.charts_points_paths_files/image5.png)
 :::
 
 
@@ -282,7 +303,30 @@ The gradient along x instead, and `:stroke-alpha-factor` fading the strokes of o
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image5.png)
+![](reference.charts_points_paths_files/image6.png)
+:::
+
+
+`:fill :color` keeps the line colour's own opacity: a dimmed line (alpha 60 of 255) fills dimmed too, here beside
+the same line at full opacity:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:color [200 80 40] :fill :color :alpha 0.5})]
+                                   :labels {:title "opaque colour, :alpha 0.5"}}
+                                  {:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:color [200 80 40 60] :fill :color :alpha 0.5})]
+                                   :labels {:title "colour alpha 60, :alpha 0.5"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_points_paths_files/image7.png)
 :::
 
 
@@ -337,7 +381,7 @@ groups combine (the Layering and position chapter shows `:stack` and the streamg
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image6.png)
+![](reference.charts_points_paths_files/image8.png)
 :::
 
 
@@ -376,7 +420,7 @@ Groups combined by `:position` (`:overlay`, the default, draws each line on its 
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image7.png)
+![](reference.charts_points_paths_files/image9.png)
 :::
 
 
@@ -426,11 +470,11 @@ Arrowheads at the ends of each run and gaps shortening it - e.g. to stop short o
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image8.png)
+![](reference.charts_points_paths_files/image10.png)
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:curve` `:sample-step`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:curve` `:sample-step`).
 
 
 ## segment
@@ -473,7 +517,7 @@ arrowheads and gaps as on lines.
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image9.png)
+![](reference.charts_points_paths_files/image11.png)
 :::
 
 
@@ -508,7 +552,7 @@ Its options: literal ends (here every segment starts at x = 0, a lollipop stem),
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image10.png)
+![](reference.charts_points_paths_files/image12.png)
 :::
 
 
@@ -531,11 +575,11 @@ Its options: literal ends (here every segment starts at x = 0, a lollipop stem),
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image11.png)
+![](reference.charts_points_paths_files/image13.png)
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## polygon
@@ -579,7 +623,7 @@ A filled shape per group through its rows in data order.
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image12.png)
+![](reference.charts_points_paths_files/image14.png)
 :::
 
 
@@ -606,7 +650,7 @@ Its options: the fill, its opacity and the outline (`:color` - the group's colou
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image13.png)
+![](reference.charts_points_paths_files/image15.png)
 :::
 
 
@@ -624,11 +668,11 @@ Without a mapped colour every polygon takes `:color`; `:padding` 0 lets the shap
 
 
 ::: {.clay-image}
-![](reference.charts_points_paths_files/image14.png)
+![](reference.charts_points_paths_files/image16.png)
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

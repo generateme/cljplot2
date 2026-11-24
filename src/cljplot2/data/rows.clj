@@ -9,9 +9,10 @@
 
   Functions:
 
-  - schemas and options: [[mapping-schema]], [[data-schema]], [[common-options]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
+  - schemas and options: [[mapping-schema]], [[data-schema]], [[common-options]], [[legend-option]], [[position-padding]], [[axis-padding]], [[default-padding]], [[explicit-padding]], [[option]], [[options-with-defaults]]
   - rows and accessors: [[rows]], [[row-accessor]], [[as-coordinates]], [[weight]]
   - time: [[temporal?]], [[period-start]], [[x-key]], [[key->x]], [[->local-date-time]], [[local-date-time->like]]
+  - scale domains (`[nil nil]` - no domain, `[lo nil]` / `[nil hi]` - partial): [[given-domain]], [[partial-domain?]], [[full-domain]], [[partial-domain-problem]], [[completed-domain]]
   - values and extents: [[valid-value?]], [[ordered-level?]] (the marker interface `OrderedLevel`), [[finite-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]
 
   Checks and helpers: [[check-mapped!]] (with the message [[no-valid-values]]), [[fail-mapping!]], [[sortable?]], [[invalid-count]], [[widened-range]], [[padding-stats]], [[zero-padding]]."
@@ -75,15 +76,24 @@
   (schema/named-type ::data #(or (sequential? %) (map? %))
                      "should be a sequence of rows (maps) or a map of columns (sequences)"))
 
-(def common-options
-  "Map entries of the options every chart takes (shared group `:common`): its own `:data` (see [[rows]]) and `:mapping` (merged over the plot's)."
+(def legend-option
+  "Map entries (one) of the chart option `:legend` (shared group `:common`), for charts taking no other common option: `false` - the chart draws no key glyph in any legend (its aesthetics still take their scales and other charts' glyphs stay; a legend no chart draws a key into is dropped)."
   (schema/in-fragment
    :common
-   [(schema/nilable :data {:description "the chart's own data instead of the plot's"
-                           :cljplot2/default-doc "the plot's :data"}
-                    data-schema)
-    (schema/optional :mapping {:description "the chart's mapping, merged over the plot's mapping (a key set to nil removes it)"}
-                     mapping-schema)]))
+   [(schema/nilable :legend {:description "draw the chart's key glyph in the legends (false - the chart adds none, a legend no chart keys is dropped; its aesthetics still scale)"
+                             :default true}
+                    schema/bool)]))
+
+(def common-options
+  "Map entries of the options every chart takes (shared group `:common`): its own `:data` (see [[rows]]), `:mapping` (merged over the plot's) and `:legend` (see [[legend-option]])."
+  (schema/in-fragment
+   :common
+   (into [(schema/nilable :data {:description "the chart's own data instead of the plot's"
+                                 :cljplot2/default-doc "the plot's :data"}
+                          data-schema)
+          (schema/optional :mapping {:description "the chart's mapping, merged over the plot's mapping (a key set to nil removes it)"}
+                           mapping-schema)]
+         legend-option)))
 
 (def axis-padding
   "Default padding of one position axis, `[lo hi]`: 5% of the data span on each side."
@@ -336,6 +346,81 @@
     (instance? Instant like) (.toInstant ldt ZoneOffset/UTC)
     (instance? ZonedDateTime like) (.atZone ldt (.getZone ^ZonedDateTime like))
     (instance? OffsetDateTime like) (.atOffset ldt (.getOffset ^OffsetDateTime like))))
+
+(defn given-domain
+  "Gives an explicit scale domain unless it leaves both ends to the data.
+
+  Every reader of a scale's `:domain` (position and aesthetic scales, facet checks, charts sampling over the plot's domain) goes through this function, [[partial-domain?]] and [[full-domain]], so `[nil nil]` and partial domains read the same everywhere.
+
+  Parameters:
+
+  - `domain`: a scale spec's `:domain`.
+
+  Returns `domain` when it is sequential and not `[nil nil]` - a full or a partial domain; else `nil` (`nil` and `[nil nil]` - no domain; a non-sequential value is rejected by the scale schemas)."
+  [domain]
+  (when (and (sequential? domain) (not (and (m/== 2 (count domain)) (every? nil? domain))))
+    domain))
+
+(defn partial-domain?
+  "Tests whether an explicit scale domain fixes one end and leaves the other to the data.
+
+  Parameters:
+
+  - `domain`: a scale spec's `:domain`.
+
+  Returns a truthy value for a sequential domain with a `nil` among non-`nil` values (`[lo nil]`, `[nil hi]`; another shape is invalid, see [[partial-domain-problem]]), else a falsy one.
+
+  See also [[completed-domain]]."
+  [domain]
+  (and (sequential? domain) (some nil? domain) (some some? domain)))
+
+(defn full-domain
+  "Gives an explicit scale domain that fixes all its values.
+
+  Parameters:
+
+  - `domain`: a scale spec's `:domain`.
+
+  Returns `domain` when it is a [[given-domain]] without `nil` values, else `nil` (no domain, or a partial one)."
+  [domain]
+  (when-let [given (given-domain domain)]
+    (when (not-any? nil? given) given)))
+
+(defn partial-domain-problem
+  "Explains why the shape of a partial scale domain is invalid.
+
+  Parameters:
+
+  - `domain`: a [[partial-domain?]] domain.
+
+  Returns the error message, or `nil` for two values (`[lo nil]` / `[nil hi]`); the scales check the given end's type."
+  [domain]
+  (when-not (m/== 2 (count domain)) "partial domain should be [lo nil] or [nil hi]"))
+
+(defn completed-domain
+  "Gives a partial scale domain with its open end taken from the data.
+
+  Parameters:
+
+  - `k` (keyword): the scale key, for errors.
+  - `explicit`: the partial domain, `[lo nil]` or `[nil hi]` (see [[partial-domain?]]).
+  - `data-range`: the data's `[lo hi]` (numbers or `java.time` values), `nil` without continuous data.
+
+  Returns `[lo hi]`: the given end kept, the other the data's.
+
+  Throws `ex-info {:key :domain :in [:scales k :domain]}` without a data range, and when the data lie entirely beyond the given end (compared by [[x-key]]: the domain would not increase)."
+  [k explicit data-range]
+  (let [fail! #(schema/fail! (str "Scale partial :domain " %) {:key :domain :in [:scales k :domain] :value explicit})
+        _ (when-not data-range
+            (fail! "[lo nil] / [nil hi] takes its open end from continuous data; there is none."))
+        [lo hi] explicit
+        [data-lo data-hi] data-range
+        domain [(if (some? lo) lo data-lo) (if (some? hi) hi data-hi)]
+        [a b] (map x-key domain)]
+    (if (and a b (m/< (double a) (double b)))
+      domain
+      (fail! (str "leaves no data on its open side: the data end at " (if (some? lo) data-hi data-lo)
+                  " (to reverse the scale, give :reverse true).")))))
 
 (definterface OrderedLevel)
 ;; Marker of categorical level types with a natural order (they also implement `Comparable`), e.g. shingle / bin
@@ -591,7 +676,7 @@
   - `k` (keyword): the dimension (for the error).
   - `extents` (collection): extents (see [[extent]]); `nil`s skipped.
 
-  Returns the merged extent: numeric / temporal - the smallest `:min` and the largest `:max`; categorical - the distinct levels (sorted when ordered levels). `:values` are kept (merged, distinct) when every extent has them (numeric / temporal: at most [[max-levels]]); `:sample`s (all values, for data-driven bins) are concatenated; `:ordered?` (levels in a given order, not to be sorted) stays when every extent has it. `nil` without extents.
+  Returns the merged extent: numeric / temporal - the smallest `:min` and the largest `:max`; categorical - the distinct levels (sorted when ordered levels). `:values` are kept (merged, distinct) when every extent has them (numeric / temporal: at most [[max-levels]]); `:sample`s (all values, for data-driven bins) are concatenated; `:ordered` (levels in a given order, not to be sorted) stays when every extent has it. `nil` without extents.
 
   Throws `ex-info {:key :mapping :in [:mapping k]}` for extents of mixed kinds."
   [k extents]
@@ -607,7 +692,7 @@
                      :min (temporal-min (map :min es))
                      :max (temporal-max (map :max es))})
           (every? :values es) (capped-values (mapcat :values es))
-          (every? :ordered? es) (assoc :ordered? true)
+          (every? :ordered es) (assoc :ordered true)
           (some :sample es) (assoc :sample (into [] (mapcat :sample) es)))))))
 
 (defn weight

@@ -30,7 +30,7 @@
         (is (== (total bin-bars) (double (:y1 (last sorted))))))
       (is (= 300.0 (reduce + (map total (vals by-bin)))) "every value counted once")
       (is (== (reduce max (map :y1 bars)) (double (get-in b [:extents :y :extent :max]))))
-      (is (not (:translucent? (panel-data b))))))
+      (is (not (:translucent (panel-data b))))))
   (testing ":normalize - every non-empty bin tops at 1; y title Proportion"
     (let [b (built groups3 (chart/histogram {:position :normalize :bins 6}))
           tops (map (fn [[_ bs]] (reduce max (map :y1 bs))) (group-by :x0 (:bars (panel-data b))))]
@@ -87,7 +87,7 @@
   (testing "style from the theme or options; a :none colour draws nothing"
     (is (< (black-pixels-on-zero {:zero-line-color :none}) 20)))
   (testing "no zero line without mirror"
-    (is (false? (:zero-line? (panel-data (built groups3 (chart/density {:position :stack})))))))
+    (is (false? (:zero-line (panel-data (built groups3 (chart/density {:position :stack})))))))
   (testing "schema"
     (is (= #{[:charts 0 :options :zero-line]} (error-ins #(built groups2 (chart/density {:position :mirror :zero-line 1})))))))
 

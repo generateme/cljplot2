@@ -15,7 +15,7 @@
                         :charts [(chart/bar {:value-label true})]}
                        {:data dots :mapping {:x :combination :y :set}
                         :charts [(chart/scatter {:color [210 210 210]})
-                                 (chart/scatter {:data (filter :member? dots) :color :black})]}]
+                                 (chart/scatter {:data (filter :member dots) :color :black})]}]
                       {:columns 1}))
 
   Functions: [[memberships]] - each item's sets; [[intersections]] - exact combinations and their sizes; [[set-sizes]] - items per set; [[upset-rows]] and [[membership-rows]] - the bar and dot-matrix rows of an UpSet plot; [[set-order]] - the chosen sets in order."
@@ -133,7 +133,7 @@
 
   - `rows`, `mapping`, `sets` (optional): as in [[memberships]].
 
-  Returns a vector of `{:combination c :set s :member? bool}` for every combination of [[upset-rows]] (in its order) and every chosen set (in set order); `:member?` - whether `s` is in the combination."
+  Returns a vector of `{:combination c :set s :member bool}` for every combination of [[upset-rows]] (in its order) and every chosen set (in set order); `:member` - whether `s` is in the combination."
   {:cljplot2/api true}
   ([rows mapping] (membership-rows rows mapping nil))
   ([rows mapping sets]
@@ -141,4 +141,4 @@
      (vec (for [{:keys [combination] ss :sets} (upset-rows rows mapping sets)
                 :let [in (set ss)]
                 s order]
-            {:combination combination :set s :member? (contains? in s)})))))
+            {:combination combination :set s :member (contains? in s)})))))

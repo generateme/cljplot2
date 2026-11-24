@@ -195,7 +195,7 @@ order of negative stacked parts, and the padding:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stat</td><td>one of :count :mean :median :percent :pmf :sum or a function</td><td>:sum</td><td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td></tr><tr><td>:position</td><td>one of :dodge :normalize :overlay :stack</td><td>:dodge when a level holds two or more groups, else :overlay</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>draw the 0 line on top of mirrored bars (with :mirror only)</td></tr><tr><td>:varwidth</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td></tr><tr><td>:negative-order</td><td>one of :forward :reverse</td><td>:forward</td><td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05, 0 at the baseline side the bars grow from</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stat</td><td>one of :count :mean :median :percent :pmf :sum or a function</td><td>:sum</td><td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td></tr><tr><td>:position</td><td>one of :dodge :normalize :overlay :stack</td><td>:dodge when a level holds two or more groups, else :overlay</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>draw the 0 line on top of mirrored bars (with :mirror only)</td></tr><tr><td>:varwidth</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td></tr><tr><td>:negative-order</td><td>one of :forward :reverse</td><td>:forward</td><td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
 ```
 
 :::
@@ -345,7 +345,7 @@ Each bar's length written past its end or in its middle, formatted or as the tex
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-stack</td><td>one of :horizontal :vertical</td><td>along the bars: :horizontal for horizontal bars, :vertical for vertical ones</td><td>how the value and n texts of one label are joined: :horizontal (side by side) or :vertical (one above the other)</td></tr><tr><td>:value-label</td><td>true or false or a function or nil</td><td>false</td><td>write each bar's length (true) or the text a function of {:value :n :share :level :group} returns</td></tr><tr><td>:label-position</td><td>one of :end :center :outer</td><td>:center for :stack / :normalize, else :end</td><td>where labels sit: :end (past the bar's end), :center (in the bar) or :outer (polar only: past the outer radius)</td></tr><tr><td>:label-leader</td><td>true or false or nil</td><td>false</td><td>draw a line from the bar's outer edge to its :outer label</td></tr><tr><td>:value-format</td><td>a number format string or a function</td><td>whole numbers as integers, else the fewest digits telling the labels apart</td><td>text of the value labels: a format string or a function of the number</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-stack</td><td>one of :horizontal :vertical</td><td>along the bars: :horizontal for horizontal bars, :vertical for vertical ones</td><td>how the value and n texts of one label are joined: :horizontal (side by side) or :vertical (one above the other)</td></tr><tr><td>:value-label</td><td>true or false or a function or nil</td><td>false</td><td>write each bar's length (true) or the text a function of {:value :n :share :level :group} returns</td></tr><tr><td>:label-position</td><td>one of :end :center :base :outer</td><td>:center for :stack / :normalize, else :end</td><td>where labels sit: :end (past the bar's end), :center (in the bar), :base (in the bar at its base) or :outer (polar only: past the outer radius)</td></tr><tr><td>:label-leader</td><td>true or false or nil</td><td>false</td><td>draw a line from the bar's outer edge to its :outer label</td></tr><tr><td>:value-format</td><td>a number format string or a function</td><td>whole numbers as integers, else the fewest digits telling the labels apart</td><td>text of the value labels: a format string or a function of the number</td></tr></tbody></table>
 ```
 
 :::
@@ -380,8 +380,8 @@ Each bar's length written past its end or in its middle, formatted or as the tex
 
 
 Where labels sit: past the bar's end (`:end`, the default unstacked) or inside it (`:center`, the default
-stacked); with the value and the row count (`:n-label`) the two texts join side by side or one above the other
-(`:label-stack`):
+stacked; `:base` - at its base, shown further down); with the value and the row count (`:n-label`) the two
+texts join side by side or one above the other (`:label-stack`):
 
 
 ::: {.sourceClojure}
@@ -415,6 +415,33 @@ stacked); with the value and the row count (`:n-label`) the two texts join side 
 :::
 
 
+`:base` writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment's
+own base when stacked. With 0 outside the value domain (e.g. `:scales {:x {:domain [4 nil]}}`) the label sits at
+the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where
+labels rarely fit their wedge and are skipped:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :species}
+                                   :charts [(chart/bar {:stat :mean :value-label true :label-position :base})]
+                                   :labels {:title ":label-position :base"}}
+                                  {:data sales
+                                   :mapping {:x :quarter :y :amount :color :product}
+                                   :charts [(chart/bar {:position :stack :value-label true :label-position :base})]
+                                   :labels {:title ":stack, :label-position :base"}}]
+                                 {:columns 2 :widths [1 1.3]})
+                   {:width 900 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_bars_ranges_files/image8.png)
+:::
+
+
 In a polar plot `:outer` puts the labels past the outer radius, with a leader line from each bar
 (`:label-leader`):
 
@@ -438,11 +465,11 @@ In a polar plot `:outer` puts the labels past the outer radius, with a leader li
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image8.png)
+![](reference.charts_bars_ranges_files/image9.png)
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:dodge-gap` `:bottom-share` `:n-label` `:n-format` `:level-axis`); [Mirrored strips](reference.shared_options.html#mirrored-strips) (`:mirror`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius` `:corner-radius-end`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:dodge-gap` `:bottom-share` `:n-label` `:n-format` `:level-axis`); [Mirrored strips](reference.shared_options.html#mirrored-strips) (`:mirror`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius` `:corner-radius-end`).
 
 
 ## extent
@@ -472,7 +499,7 @@ bootstrap estimate - with a mark at its centre.
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image9.png)
+![](reference.charts_bars_ranges_files/image10.png)
 :::
 
 
@@ -513,7 +540,7 @@ bootstrap's statistic and random generator (seeded here), the centre mark and th
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image10.png)
+![](reference.charts_bars_ranges_files/image11.png)
 :::
 
 
@@ -556,7 +583,7 @@ the mean (`:bootstrap-*`, 500 resamples, seeded):
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image11.png)
+![](reference.charts_bars_ranges_files/image12.png)
 :::
 
 
@@ -585,11 +612,11 @@ sized up with `:size`:
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image12.png)
+![](reference.charts_bars_ranges_files/image13.png)
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:position` `:dodge-gap` `:bottom-share` `:n-label` `:n-format` `:level-axis`); [Mirrored strips](reference.shared_options.html#mirrored-strips) (`:mirror`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:position` `:dodge-gap` `:bottom-share` `:n-label` `:n-format` `:level-axis`); [Mirrored strips](reference.shared_options.html#mirrored-strips) (`:mirror`).
 
 
 ## bullet
@@ -636,7 +663,7 @@ ranges, measures and markers (here percents of a plan, so the levels share one a
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image13.png)
+![](reference.charts_bars_ranges_files/image14.png)
 :::
 
 
@@ -675,11 +702,11 @@ markers' colour, width and length, and the padding (left: 20% past the largest v
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image14.png)
+![](reference.charts_bars_ranges_files/image15.png)
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:position` `:dodge-gap` `:bottom-share` `:level-axis`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Strip options](reference.shared_options.html#strip-options) (`:place` `:width` `:thickness` `:position` `:dodge-gap` `:bottom-share` `:level-axis`).
 
 
 ```{=html}

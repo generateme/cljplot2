@@ -85,7 +85,7 @@
              (map span cs)))
       (is (= ["B" "b1" nil "A" "a1" "a2"] (map :label cs)))
       (is (= [1 2 2 1 2 2] (map :depth cs)))
-      (is (= [false true true false true true] (map :leaf? cs)))
+      (is (= [false true true false true true] (map :leaf cs)))
       (is (= [1 1 1 0 0 0] (map :top-index cs)) "descendants inherit the top-level index")))
   (testing "2.2 :data order"
     (is (= [[0.0 0.4 0.0 1.0] [0.0 0.3 1.0 2.0] [0.3 0.4 1.0 2.0] [0.4 1.0 0.0 1.0] [0.4 0.8 1.0 2.0] [0.8 1.0 1.0 2.0]]

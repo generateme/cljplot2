@@ -320,13 +320,13 @@
 
 ;; ### Style
 
-;; The point style and the reference line's width:
+;; The point style (`:alpha` - the points' opacity, not the line's) and the reference line's width:
 
 (nu/options-table (describe/own-rows (describe/options (chart/qq))) :style)
 
 (plot/render-image {:data (filter #(= "t(3)" (:sample %)) samples)
                     :mapping {:y :v}
-                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \S :color [200 80 40 120]
+                    :charts [(chart/qq {:x-distribution [:normal] :size 9 :shape \S :color [200 80 40] :alpha 0.47
                                         :stroke-color :black :stroke-width 0.5 :line-width 3})]
                     :labels {:title "squares, :line-width 3"}}
                    {:width 500 :height 350})
@@ -375,7 +375,7 @@
 
 (plot/render-image {:data (filter #(= "t(3)" (:sample %)) samples)
                     :mapping {:y :v}
-                    :charts [(chart/pp {:x-distribution [:normal] :size 8 :shape \O :color [200 80 40 140]
+                    :charts [(chart/pp {:x-distribution [:normal] :size 8 :shape \O :color [200 80 40] :alpha 0.55
                                         :stroke-color :black :stroke-width 1 :line-width 3})]
                     :labels {:title "outlined points, :line-width 3"}}
                    {:width 500 :height 350})

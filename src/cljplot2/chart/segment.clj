@@ -164,7 +164,7 @@
           {:data data
            :extents (merge-with merge (group/aesthetic-extents panels plot-scales) (:extents color-stats) (:extents size-stats)
                                 position-extents)
-           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
+           :na (cond-> (group/na-dims panels) (:na color-stats) (conj :color) (:na size-stats) (conj :size))
            :dropped (cond-> (assoc dropped :x (invalid x-of) :y (invalid y-of))
                       xend-mapped? (assoc :xend (invalid xend-of))
                       yend-mapped? (assoc :yend (invalid yend-of))

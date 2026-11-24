@@ -99,7 +99,7 @@
                                                    [panel {:x (data/extent :x (mapcat :x polygons))
                                                            :y (data/extent :y (mapcat :y polygons))}])))
                                       data))
-           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color))
+           :na (cond-> (group/na-dims panels) (:na color-stats) (conj :color))
            :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows)
                                    :group (count (remove drawn? (mapcat val split-panels))))
                       continuous (assoc :color (:dropped color-stats)))})))

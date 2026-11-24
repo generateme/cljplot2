@@ -246,7 +246,7 @@
                                           :scales {:color {:kind :binned}} :charts [(chart/density)]}))))))
   (testing "6.8 misuse"
     (is (= :kind (key-of {:shape :sp} {:shape {:kind :binned}})))
-    (is (= :kind (key-of {:size :v} {:size {:kind :binned}})))
+    (is (= :kind (key-of {:dash :sp} {:dash {:kind :binned}})) "binned :size is allowed since batch C1")
     (is (= :kind (key-of {:color :sp} {:color {:kind :binned}})) "non-numeric data")
     (is (= :bins (key-of {:color :v} {:color {:bins 3}})) "bins without binned")
     (is (= :bins (key-of {:color :v} {:color {:kind :linear :bins 3}})))

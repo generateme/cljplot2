@@ -1,7 +1,7 @@
 (ns cljplot2.data.pairwise
   "Pairwise statistics of numeric variables: a statistic of two samples - an error, an association, an effect size, a distance or a user function - for every pair of variables.
 
-  A paired statistic takes the rows where both of its values are finite numbers (pairwise-complete rows); an independent-sample statistic (two groups compared, e.g. an effect size) takes each variable's own finite values. Fewer than 2 values in a sample, a non-finite result or a statistic that throws give `##NaN`. Statistics are computed by fastmath; [[statistics]] lists the built-in ones with their labels, families, how they behave when the samples swap (`:symmetry`) and whether zero is their neutral value (`:signed?`).
+  A paired statistic takes the rows where both of its values are finite numbers (pairwise-complete rows); an independent-sample statistic (two groups compared, e.g. an effect size) takes each variable's own finite values. Fewer than 2 values in a sample, a non-finite result or a statistic that throws give `##NaN`. Statistics are computed by fastmath; [[statistics]] lists the built-in ones with their labels, families, how they behave when the samples swap (`:symmetry`) and whether zero is their neutral value (`:signed`).
 
   Functions: [[statistics]] - the built-in statistics; [[pair-samples]], [[statistic-samples]] - the samples of two accessors; [[statistic-label]], [[statistic-symmetry]], [[signed-statistic?]], [[statistic-value]] - one statistic; [[cell-values]] - the values of chosen cells; [[matrix-rows]] - the rows of a statistic matrix (a standalone matrix is `chart/tile` over them; the `pairwise` chart draws one pair per panel)."
   (:require [fastmath.core :as m]
@@ -14,38 +14,38 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def statistics
-  "The built-in pairwise statistics: keyword -> `{:fn :label :family :symmetry :samples :signed? :description}`.
+  "The built-in pairwise statistics: keyword -> `{:fn :label :family :symmetry :samples :signed :description}`.
 
   - `:fn` - the fastmath function of two samples `(f xs ys)`.
   - `:label` - its short name (colour bar and text labels).
   - `:family` - `:error`, `:association`, `:effect-size` or `:distance`.
   - `:symmetry` - how the value changes when the samples swap: `:symmetric` (unchanged), `:antisymmetric` (negated), `:asymmetric` (otherwise), `:reciprocal` (inverted), `:complementary` (`1 - v`).
   - `:samples` - `:paired` (row i of xs goes with row i of ys; pairwise-complete rows) or `:independent` (two groups compared; each variable's own finite values).
-  - `:signed?` - zero is the neutral value (no error, no association, no effect): a colour scale centres on it.
+  - `:signed` - zero is the neutral value (no error, no association, no effect): a colour scale centres on it.
   - `:description` - what it measures.
 
   Errors (paired, xs - the observed values, ys - the predicted): `:me`, `:mae`, `:mape`, `:mse`, `:rmse`, `:r2`; association (paired): `:covariance`, `:pearson`, `:spearman`, `:kendall`; effect sizes (independent groups): `:cohens-d`, `:hedges-g`, `:glass-delta`, `:cliffs-delta`, `:ameasure`, `:means-ratio`; distances (paired): `:euclidean`, `:manhattan`, `:chebyshev`, `:canberra`, `:cosine` (a similarity)."
-  {:me {:fn stats/me :label "ME" :family :error :symmetry :antisymmetric :samples :paired :signed? true :description "mean error, mean of xs - ys"}
+  {:me {:fn stats/me :label "ME" :family :error :symmetry :antisymmetric :samples :paired :signed true :description "mean error, mean of xs - ys"}
    :mae {:fn stats/mae :label "MAE" :family :error :symmetry :symmetric :samples :paired :description "mean absolute error"}
    :mape {:fn stats/mape :label "MAPE" :family :error :symmetry :asymmetric :samples :paired :description "mean absolute percentage error, relative to xs"}
    :mse {:fn stats/mse :label "MSE" :family :error :symmetry :symmetric :samples :paired :description "mean squared error"}
    :rmse {:fn stats/rmse :label "RMSE" :family :error :symmetry :symmetric :samples :paired :description "root mean squared error"}
    :r2 {:fn stats/r2 :label "R²" :family :error :symmetry :asymmetric :samples :paired :description "coefficient of determination of ys predicting xs"}
-   :covariance {:fn stats/covariance :label "Cov" :family :association :symmetry :symmetric :samples :paired :signed? true :description "sample covariance"}
-   :pearson {:fn stats/pearson-correlation :label "Pearson" :family :association :symmetry :symmetric :samples :paired :signed? true :description "Pearson correlation"}
-   :spearman {:fn stats/spearman-correlation :label "Spearman" :family :association :symmetry :symmetric :samples :paired :signed? true :description "Spearman rank correlation"}
-   :kendall {:fn stats/kendall-correlation :label "Kendall" :family :association :symmetry :symmetric :samples :paired :signed? true :description "Kendall rank correlation (tau)"}
-   :cohens-d {:fn stats/cohens-d :label "Cohen's d" :family :effect-size :symmetry :antisymmetric :samples :independent :signed? true :description "standardized mean difference, pooled standard deviation"}
-   :hedges-g {:fn stats/hedges-g-corrected :label "Hedges' g" :family :effect-size :symmetry :antisymmetric :samples :independent :signed? true :description "Cohen's d corrected for small-sample bias"}
-   :glass-delta {:fn stats/glass-delta :label "Glass's Δ" :family :effect-size :symmetry :asymmetric :samples :independent :signed? true :description "mean difference over the standard deviation of ys"}
-   :cliffs-delta {:fn stats/cliffs-delta :label "Cliff's δ" :family :effect-size :symmetry :antisymmetric :samples :independent :signed? true :description "P(x > y) - P(x < y), non-parametric"}
+   :covariance {:fn stats/covariance :label "Cov" :family :association :symmetry :symmetric :samples :paired :signed true :description "sample covariance"}
+   :pearson {:fn stats/pearson-correlation :label "Pearson" :family :association :symmetry :symmetric :samples :paired :signed true :description "Pearson correlation"}
+   :spearman {:fn stats/spearman-correlation :label "Spearman" :family :association :symmetry :symmetric :samples :paired :signed true :description "Spearman rank correlation"}
+   :kendall {:fn stats/kendall-correlation :label "Kendall" :family :association :symmetry :symmetric :samples :paired :signed true :description "Kendall rank correlation (tau)"}
+   :cohens-d {:fn stats/cohens-d :label "Cohen's d" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "standardized mean difference, pooled standard deviation"}
+   :hedges-g {:fn stats/hedges-g-corrected :label "Hedges' g" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "Cohen's d corrected for small-sample bias"}
+   :glass-delta {:fn stats/glass-delta :label "Glass's Δ" :family :effect-size :symmetry :asymmetric :samples :independent :signed true :description "mean difference over the standard deviation of ys"}
+   :cliffs-delta {:fn stats/cliffs-delta :label "Cliff's δ" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "P(x > y) - P(x < y), non-parametric"}
    :ameasure {:fn stats/ameasure :label "A" :family :effect-size :symmetry :complementary :samples :independent :description "Vargha-Delaney A, P(x > y) (ties count half)"}
    :means-ratio {:fn stats/means-ratio :label "Means ratio" :family :effect-size :symmetry :reciprocal :samples :independent :description "mean of xs over mean of ys"}
    :euclidean {:fn dist/euclidean :label "Euclidean" :family :distance :symmetry :symmetric :samples :paired :description "Euclidean distance"}
    :manhattan {:fn dist/manhattan :label "Manhattan" :family :distance :symmetry :symmetric :samples :paired :description "Manhattan distance"}
    :chebyshev {:fn dist/chebyshev :label "Chebyshev" :family :distance :symmetry :symmetric :samples :paired :description "Chebyshev distance"}
    :canberra {:fn dist/canberra :label "Canberra" :family :distance :symmetry :symmetric :samples :paired :description "Canberra distance"}
-   :cosine {:fn dist/cosine :label "Cosine" :family :distance :symmetry :symmetric :samples :paired :signed? true :description "cosine similarity"}})
+   :cosine {:fn dist/cosine :label "Cosine" :family :distance :symmetry :symmetric :samples :paired :signed true :description "cosine similarity"}})
 
 (def method-schema
   "Schema of a statistic: a key of [[statistics]] or a function of two samples `(f xs ys)` giving a number."
@@ -115,7 +115,7 @@
   (get-in statistics [method :symmetry] :asymmetric))
 
 (defn signed-statistic?
-  "Tests whether zero is a statistic's neutral value (see [[statistics]] `:signed?`).
+  "Tests whether zero is a statistic's neutral value (see [[statistics]] `:signed`).
 
   Parameters:
 
@@ -123,7 +123,7 @@
 
   Returns `true` for a signed built-in statistic, else `nil` (a function: nothing is known of it)."
   [method]
-  (get-in statistics [method :signed?]))
+  (get-in statistics [method :signed]))
 
 (defn statistic-value
   "Computes a statistic of two samples.

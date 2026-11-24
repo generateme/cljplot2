@@ -1340,7 +1340,7 @@ Source: [Lattice Fig 4.5](http://lmdvr.r-forge.r-project.org/figures/figures.htm
 (plot/render-image
  {:data postdoc
   :mapping {:x :count :y :field :color :reason}
-  :scales {:color {:domain (nu/levels :postdoc :reason)} :x {:domain [0 1]}}
+  :scales {:color {:domain (nu/levels :postdoc :reason)}}
   :charts [(chart/bar {:position :normalize})]
   :labels {:x "Proportion" :y nil}}
  {:width 900 :height 450})
@@ -2247,7 +2247,7 @@ Source: [Lattice Fig 6.4](http://lmdvr.r-forge.r-project.org/figures/figures.htm
 (plot/render-image
  {:data state-density
   :mapping {:x :long :y :lat :z :density}
-  :charts [(chart/cloud {:type :spikes :stroke-width 2 :view {:azimuth -40 :elevation 30 :distance 0.2}
+  :charts [(chart/cloud {:type :spikes :line-width 2 :view {:azimuth -40 :elevation 30 :distance 0.2}
                          :domain {:z [0 (reduce max (map :density state-density))]}
                          :axis-titles {:x "long" :y "lat" :z "density"}})]}
  {:width 600 :height 500})
@@ -4340,27 +4340,27 @@ Source: [Lattice Fig 13.6](http://lmdvr.r-forge.r-project.org/figures/figures.ht
 
 ### Fig 13.7 Contours on a wireframe
 
-Maunga Whau's heights as a shaded surface with their contour lines (every 10 m) on the top of the box, as dense
-points of a cloud over the surface - cljplot2 has no 3D lines.
+Maunga Whau's heights as a shaded surface with their contour lines (every 10 m) on the top of the box - 3D lines
+of a cloud (`:type :lines`, one `:group` per contour line) over the surface.
 
 Source: [Lattice Fig 13.7](http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=13;figure=13_07;theme=stdColor;code=right). Data: Maunga Whau volcano topography, R datasets package `volcano` (Ross Ihaka); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
 ```clojure
-(defn- volcano-contour-points
-  "Points every tenth of a grid step along the contour lines of the volcano heights at 100, 110, ... 190 m, at
-  height `top`: rows `{:row :column :height}` (the grid - every row x column of `volcano`)."
+(defn- volcano-contour-rows
+  "The contour lines of the volcano heights at 100, 110, ... 190 m, at height `top`: rows `{:row :column :height
+  :line}`, a closed line ending at its first point, `:line` - `[level index]` (the grid - every row x column of
+  `volcano`)."
   [top]
   (let [nx (long (reduce max (map :row volcano))) ny (long (reduce max (map :column volcano)))
         heights (into {} (map (juxt (juxt :row :column) :height)) volcano)
         grid {:xs (double-array (range 1 (inc nx))) :ys (double-array (range 1 (inc ny))) :nx nx :ny ny
               :values (double-array (for [j (range 1 (inc ny)) i (range 1 (inc nx))] (heights [i j])))}]
     (vec (for [level (range 100 200 10)
-               {:keys [points closed?]} (contour/isolines grid level)
-               [[x0 y0] [x1 y1]] (partition 2 1 (cond-> points closed? (conj (first points))))
-               f (range 0.0 1.0 0.1)]
-           {:row (+ x0 (* f (- x1 x0))) :column (+ y0 (* f (- y1 y0))) :height top}))))
+               [index {:keys [points closed]}] (map-indexed vector (contour/isolines grid level))
+               [x y] (cond-> points closed (conj (first points)))]
+           {:row x :column y :height top :line [level index]}))))
 ```
 :::
 
@@ -4368,7 +4368,7 @@ Source: [Lattice Fig 13.7](http://lmdvr.r-forge.r-project.org/figures/figures.ht
 
 ::: {.printedClojure}
 ```clojure
-#'galleries.lattice/volcano-contour-points
+#'galleries.lattice/volcano-contour-rows
 
 ```
 :::
@@ -4384,8 +4384,8 @@ Source: [Lattice Fig 13.7](http://lmdvr.r-forge.r-project.org/figures/figures.ht
     :mapping {:x :row :y :column :z :height}
     :scales {:color {:range [[0 166 0] [230 230 0] [236 177 118] [242 242 242]]}}
     :charts [(chart/surface {:domain domain :view view :aspect [1 (/ 61.0 87.0) 0.3] :axes false})
-             (chart/cloud {:data (volcano-contour-points (second (:z domain))) :domain domain :size 1.2
-                           :color [40 40 40]})]
+             (chart/cloud {:data (volcano-contour-rows (second (:z domain))) :mapping {:group :line} :type :lines
+                           :domain domain :color [40 40 40] :line-width 1.0})]
     :labels {:x nil :y nil}}
    {:width 800 :height 550}))
 ```

@@ -168,9 +168,9 @@
 
   - `chart` (map): the chart value - `:options` (`:y` default `:percent`, `:bins` default `:sturges`, `:overlap` default 0.9, `:position`, style options).
   - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip?` ...
+  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip` ...
 
-  Returns the chart stats with `:ridges? true`: per panel `{:ridges [item ...] :top h :overlap o :style st :translucent? b}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]` on the common breaks; one `:top` over all panels; values outside the breaks counted in `:dropped` `:x`."
+  Returns the chart stats with `:ridges true`: per panel `{:ridges [item ...] :top h :overlap o :style st :translucent b}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]` on the common breaks; one `:top` over all panels; values outside the breaks counted in `:dropped` `:x`."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [y (data/option options :y :percent)
         {:keys [position items panels dropped group-keys]} (strip/ridge-split chart-split options env)
@@ -189,11 +189,11 @@
     (merge
      (data/padding-stats {:x data/axis-padding} {} options)
      {:data (update-vals binned (fn [its] {:ridges its :top top :overlap overlap :style bar-style
-                                           :translucent? (and (m/> (count group-keys) 1) (= :overlay position))}))
-      :ridges? true
+                                           :translucent (and (m/> (count group-keys) 1) (= :overlay position))}))
+      :ridges true
       :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                            (strip/extents :band binned (fn [_] [(first brks) (peek brks)])))
-      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
+      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip env) (get-in env [:plot-scales :y]))
       :na (group/na-dims panels)
       :dropped (update dropped :x #(m/long-add (long (or % 0)) outside))})))
 
@@ -206,7 +206,7 @@
   - `chart-split` (map): `:groups` (`{panel rows}`) and the merged `:mapping`.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns ridgeline stats for a categorical or bands `:y` ([[ridge-compute]]), else per panel `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style st :translucent? b :zero-line? b}` in data units (bars in group order, `:y0` / `:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent?` - grouped overlay, fill drawn with `:alpha`); x extents - the outer breaks, y - over 0 and every bar's ends, or `[-M M]` for a `:symmetric` mirror; `:dropped` `:x` - invalid values and values outside the breaks; `:tick-format {:y :absolute}` for mirror; the y axis titled by the measure (`:normalize` - `Proportion`).
+  Returns ridgeline stats for a categorical or bands `:y` ([[ridge-compute]]), else per panel `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style st :translucent b :zero-line b}` in data units (bars in group order, `:y0` / `:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent` - grouped overlay, fill drawn with `:alpha`); x extents - the outer breaks, y - over 0 and every bar's ends, or `[-M M]` for a `:symmetric` mirror; `:dropped` `:x` - invalid values and values outside the breaks; `:tick-format {:y :absolute}` for mirror; the y axis titled by the measure (`:normalize` - `Proportion`).
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite x, `{:key :position}` for `:mirror` without exactly two groups."
   [{:keys [options] :as chart} {:keys [groups mapping] :as chart-split} {:keys [theme] :as env}]
@@ -245,8 +245,8 @@
           data (if brks
                  (into {} (map (fn [[panel gs]]
                                  [panel {:bars (panel-bars gs (xs panel)) :style st
-                                         :translucent? (and (m/> n-groups 1) (= position :overlay))
-                                         :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
+                                         :translucent (and (m/> n-groups 1) (= position :overlay))
+                                         :zero-line (and (= position :mirror) (data/option options :zero-line true))}]))
                        panels)
                  {})
           bar-ys (fn [bars] (mapcat (juxt :y0 :y1) bars))
@@ -275,7 +275,7 @@
 
   Parameters:
 
-  - `computed` (map): the panel's ridgeline stats - `:ridges`, `:top`, `:overlap`, `:style`, `:translucent?`.
+  - `computed` (map): the panel's ridgeline stats - `:ridges`, `:top`, `:overlap`, `:style`, `:translucent`.
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales.
@@ -283,7 +283,7 @@
   - `rounding`: the corner rounding (see [[cljplot2.graphics.draw/corner-rounding]]).
 
   Nothing is drawn when every bin is empty; empty bins, groups outside their scale's domain and bars the scales can't place are skipped."
-  [{:keys [ridges ^double top ^double overlap style translucent?]} canvas box scales env rounding]
+  [{:keys [ridges ^double top ^double overlap style translucent]} canvas box scales env rounding]
   (let [pl (strip-chart/placement box scales {} :band)
         point (strip/ridge-point pl overlap)
         stroke-width (double (:stroke-width style))
@@ -294,7 +294,7 @@
               :let [st (group/style style aesthetics scales (:theme env))]
               :when st
               :let [side (strip/slot-side slot)
-                    fill (draw/translucent-fill (:color st) (:alpha style) translucent?)]
+                    fill (draw/translucent-fill (:color st) (:alpha style) translucent)]
               [x0 x1 ^double h] bars
               :when (m/pos? h)
               :let [a (point x0 level side 0.0)
@@ -309,14 +309,14 @@
   Parameters:
 
   - `chart` (map): the chart value - `:options` (corner radii).
-  - `computed` (map): the panel's stats - `:bars`, `:style`, `:translucent?`, `:zero-line?`, or ridgeline stats (`:ridges`).
+  - `computed` (map): the panel's stats - `:bars`, `:style`, `:translucent`, `:zero-line`, or ridgeline stats (`:ridges`).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales.
   - `env` (map): the draw environment - `:theme`.
 
   Grouped overlay bars get fill alpha `:alpha`; empty bins, bars under half a pixel and bars of groups outside an aesthetic domain are skipped; mirror with `:zero-line` (default on) - the y = 0 line on top. Ridgelines by [[draw-ridges!]], none without an x scale (see [[cljplot2.chart.strip/placeable?]])."
-  [{:keys [options]} {:keys [bars style translucent? ridges zero-line?] :as computed} canvas box scales env]
+  [{:keys [options]} {:keys [bars style translucent ridges zero-line] :as computed} canvas box scales env]
   (if ridges
     (when (strip-chart/placeable? scales) (draw-ridges! computed canvas box scales env (draw/corner-rounding options)))
     (when (seq bars)
@@ -332,7 +332,7 @@
           (let [{left :x top :y w :w h :h} (draw/rect-of projection x0 y0 x1 y1)
                 fill (:color st)
                 stroke (draw/outline-color (:stroke-color st) fill)
-                drawn-fill (draw/translucent-fill fill (:alpha style) translucent?)]
+                drawn-fill (draw/translucent-fill fill (:alpha style) translucent)]
             (if rounding
               (let [[base end] (draw/value-ends y0 y1)
                     a (projection x0 base)]
@@ -341,7 +341,7 @@
               (when (draw/visible-bar? (double w) (double h))
                 (draw/fill-patterned! canvas drawn-fill (pattern-fill st drawn-fill) #(c2d/rect % left top w h))
                 (draw/outline! canvas stroke stroke-width :miter #(c2d/rect % left top w h true))))))
-        (when zero-line?
+        (when zero-line
           (draw/zero-line! canvas box scales style))))))
 
 (defn legend

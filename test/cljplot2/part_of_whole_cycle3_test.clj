@@ -163,7 +163,7 @@
       (is (= [1 1 2 1 2 3] (map :degree up))))
     (let [dots (sets/membership-rows members mapping)]
       (is (= 18 (count dots)))
-      (is (= #{"A" "B"} (set (map :set (filter #(and (= "A & B" (:combination %)) (:member? %)) dots))))))))
+      (is (= #{"A" "B"} (set (map :set (filter #(and (= "A & B" (:combination %)) (:member %)) dots))))))))
 
 ;; 3. venn
 

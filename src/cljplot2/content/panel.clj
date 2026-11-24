@@ -21,6 +21,7 @@
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
+            [cljplot2.content.axis :as axis]
             [cljplot2.content.label :as label]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.data.facet :as facet]
@@ -294,19 +295,20 @@
   Parameters:
 
   - `c`: the canvas in graphics context (measuring).
+  - `k` (keyword): the scale key; theme `[:axis k :tick-label]` styles its labels over the `:tick-label` role (see [[cljplot2.content.axis/tick-label]]).
   - `finalized` (map): the finalized scale.
   - `place` (fn of a double): gives `[x y anchor]` of a tick at that pixel coordinate along the scale.
   - `env` (map): `:theme`.
 
   Returns a vector of `[content anchor x y]`; ticks the scale can't place are left out."
-  [c finalized place env]
+  [c k finalized place env]
   (let [forward (scale/forward-fn finalized)
         ;; indexed by kept-box-indices
         placed (vec (for [[tick text] (map vector (:ticks finalized) (:tick-labels finalized))
                           :let [p (double (forward tick))]
                           :when (m/valid-double? p)
                           :let [[x y anchor] (place p)]]
-                      [{:kind :label :role :tick-label :text text} anchor x y]))]
+                      [(axis/tick-label (:theme env) k text) anchor x y]))]
     (if (= :keep (:overlapping-labels finalized))
       placed
       (mapv placed (measure/kept-box-indices
@@ -341,14 +343,14 @@
         dy (m/- (m/* rgap (m/cos side)))]
     (when-let [angular (drawn akey)]
       (doseq [[content anchor x y] (polar-label-placements
-                                    c angular
+                                    c akey angular
                                     (fn [^double theta] (let [^Vec2 p (coord/to-pixel geometry theta (m/+ radius agap))]
                                                           [(.x p) (.y p) (coord/outward-anchor theta)]))
                                     env)]
         (label/draw-at! c content anchor x y env)))
     (when-let [radial (drawn rkey)]
       (doseq [[content anchor x y] (polar-label-placements
-                                    c radial
+                                    c rkey radial
                                     (fn [^double r] (let [^Vec2 p (coord/to-pixel geometry t0 r)]
                                                       [(m/+ (.x p) dx) (m/+ (.y p) dy) (coord/outward-anchor side)]))
                                     env)]

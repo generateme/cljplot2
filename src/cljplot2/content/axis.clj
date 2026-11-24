@@ -31,9 +31,11 @@
   the rotated label boxes. An axis followed by another panel's axis `:next-panel-gap` pixels further (set by the facet
   grid: right of a horizontal axis, below a vertical one) skips its labels that would overlap the next panel's drawn
   labels (the next panel keeps its own): those of the next panel's own scale with `:next-panel k` (panel-local scales;
-  `k` may be `nil`, the NA facet level - see [[crossing-labels]]), else its identical axis.
+  `k` may be `nil`, the NA facet level - see [[crossing-labels]]), else its identical axis. Theme
+  `[:axis k :tick-label]` (text style keys, e.g. a font of emoji) styles one axis's labels over the `:tick-label`
+  role (see [[tick-label]]; polar guides too).
 
-  Functions: [[label-spans]], [[label-step]], [[crossing-labels]], [[drawn-label-indices]]; schemas,
+  Functions: [[tick-label]], [[label-spans]], [[label-step]], [[crossing-labels]], [[drawn-label-indices]]; schemas,
  ; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:axis` and
   `:axis-overhang`."
@@ -82,17 +84,25 @@
 (defmethod measure/validate-content :axis [content] (schema/explain! [[axis-schema content [:content]]]))
 (defmethod measure/validate-content :axis-overhang [content] (schema/explain! [[overhang-schema content [:content]]]))
 
-(defn- tick-label
-  "Gives the label content of a tick label.
+(defn tick-label
+  "Gives the label content of a tick label of the axis of a scale.
+
+  Every tick label is drawn and measured with it: axes, polar guides (and the polar label room of
+  [[cljplot2.pipeline]]), parallel axes (theme `[:axis :y]`) and 3D frames (theme `[:axis :x]`).
 
   Parameters:
 
+  - `theme` (map): the merged theme; `[:axis k :tick-label]` - text style keys of the axis (e.g. a `:font` of emoji)
+    merged over the `:tick-label` text role.
+  - `k` (keyword): the theme axis, `:x` or `:y`.
   - `text`: the label text.
-  - `rotation` (number): clockwise degrees (default 0).
+  - `rotation` (number, optional): clockwise degrees; without it the content has no `:rotation` (none).
 
-  Returns `{:kind :label :role :tick-label :text text :rotation rotation}`."
-  ([text] (tick-label text 0))
-  ([text rotation] {:kind :label :role :tick-label :text text :rotation rotation}))
+  Returns `{:kind :label :role :tick-label :text text :rotation rotation}` with the axis's style keys."
+  ([theme k text]
+   (merge (get-in theme [:axis k :tick-label]) {:kind :label :role :tick-label :text text}))
+  ([theme k text rotation]
+   (assoc (tick-label theme k text) :rotation rotation)))
 
 (defn- label-rotation
   "Gives the tick label rotation of an axis.
@@ -118,7 +128,7 @@
   Returns a vector of `Vec2`s, one per label (indexed and read several times)."
   [k finalized env]
   (let [rotation (label-rotation k env)]
-    (mapv #(measure/natural-size (tick-label % rotation) env) (:tick-labels finalized))))
+    (mapv #(measure/natural-size (tick-label (:theme env) k % rotation) env) (:tick-labels finalized))))
 
 (defn- label-offset-fn
   "Gives the offset of a tick label's box centre from its tick along the axis of scale `k`, as a function of the
@@ -140,7 +150,7 @@
     (if (or (m/zero? rotation) (not (scale/horizontal? k finalized)))
       (constantly 0.0)
       (let [factor (m/* 0.5 (m/signum rotation) (m/cos (m/radians rotation)))]
-        (fn [text] (m/* factor (double (first (label/text-frame (tick-label text) (:canvas env) (:theme env))))))))))
+        (fn [text] (m/* factor (double (first (label/text-frame (tick-label (:theme env) k text 0) (:canvas env) (:theme env))))))))))
 
 (defn- label-offsets
   "Gives the offset of each tick label's box centre from its tick, along the axis (see [[label-offset-fn]]).
@@ -180,20 +190,21 @@
             sine (m/abs (if horizontal? (m/sin a) (m/cos a)))]
         (mapv (fn [text ^Vec2 size]
                 (let [along (if horizontal? (.x size) (.y size))
-                      frame-h (double (second (label/text-frame (tick-label text) (:canvas env) (:theme env))))]
+                      frame-h (double (second (label/text-frame (tick-label (:theme env) k text 0) (:canvas env) (:theme env))))]
                   (if (m/pos? sine) (m/min along (m// frame-h sine)) along)))
               (:tick-labels finalized) sizes)))))
 
 (defn- label-inset
-  "Gives the inset of tick labels (their text role's `:inset`).
+  "Gives the inset of an axis's tick labels (their text style's `:inset`).
 
   Parameters:
 
-  - `env` (map): `:theme`, the tick label text role read.
+  - `k` (keyword): the axis's scale.
+  - `env` (map): `:theme`, the tick label text role and `[:axis k :tick-label]` read.
 
   Returns the inset in pixels on every side."
-  [env]
-  (:inset (theme/text-style (:theme env) (tick-label nil))))
+  [k env]
+  (:inset (theme/text-style (:theme env) (tick-label (:theme env) k nil 0))))
 
 (defn- label-intervals
   "Gives the intervals of an axis's tick labels along the axis.
@@ -305,7 +316,7 @@
   (let [sizes (label-sizes k finalized env)
         offsets (label-offsets k finalized env)
         spans (label-spans k finalized env sizes)
-        inset (label-inset env)]
+        inset (label-inset k env)]
     [(label-intervals k finalized sizes inset offsets spans)
      (drawn-label-indices k finalized sizes inset offsets spans)]))
 
@@ -330,7 +341,7 @@
         room (when finalized (tick-room finalized style))
         all-sizes (when finalized (label-sizes k finalized env))
         drawn (when finalized
-                (set (drawn-label-indices k finalized all-sizes (label-inset env) (label-offsets k finalized env)
+                (set (drawn-label-indices k finalized all-sizes (label-inset k env) (label-offsets k finalized env)
                                           (label-spans k finalized env all-sizes))))
         sizes (keep-indexed (fn [i size] (when (contains? drawn i) size)) all-sizes)
         ^Vec2 largest (measure/max-size sizes)
@@ -352,7 +363,7 @@
             edge (double (if (= end :start) a b))
             nearest (apply min-key #(m/abs (m/- edge (double (forward %)))) ticks)
             i (.indexOf ^java.util.List ticks nearest)
-            ^Vec2 size (measure/natural-size (tick-label ((:tick-labels finalized) i) (label-rotation k env)) env)
+            ^Vec2 size (measure/natural-size (tick-label (:theme env) k ((:tick-labels finalized) i) (label-rotation k env)) env)
             horizontal? (scale/horizontal? k finalized)
             half (m/* 0.5 (if horizontal? (.x size) (.y size)))
             label-offset (double ((label-offset-fn k finalized env) ((:tick-labels finalized) i)))
@@ -402,11 +413,11 @@
           sizes (label-sizes k finalized measure-env)
           offsets (label-offsets k finalized measure-env)
           spans (label-spans k finalized measure-env sizes)
-          drawn (drawn-label-indices k finalized sizes (label-inset measure-env) offsets spans)
+          drawn (drawn-label-indices k finalized sizes (label-inset k measure-env) offsets spans)
           drawn-set (set drawn)
           next-gap (:next-panel-gap content)
           skipped (if next-gap
-                    (let [own (label-intervals k finalized sizes (label-inset measure-env) offsets spans)
+                    (let [own (label-intervals k finalized sizes (label-inset k measure-env) offsets spans)
                           next-finalized (when (contains? content :next-panel)
                                            (some-> (get (scale/panel-scales-of measure-env {:panel (:next-panel content)}) k)
                                                    scale/display-scale))
@@ -414,7 +425,7 @@
                       (crossing-labels own drawn next-intervals next-drawn (m/+ (if horizontal? w h) (double next-gap))))
                     #{})
           draw-label! (fn [text box] (c2d/with-isolated-canvas [isolated c]
-                                       (draw/draw-content (tick-label text rotation) isolated box measure-env)))]
+                                       (draw/draw-content (tick-label (:theme measure-env) k text rotation) isolated box measure-env)))]
       (when (draw/visible-stroke? line-color line-width)
         (set-line-style! c line-color line-width)
         (if horizontal?

@@ -245,7 +245,7 @@
     (let [slots (fn [p] (set (map :slot (get-in (build p) [:stats 0 :data :panel (if (= :bar (get-in p [:charts 0 :kind])) :bars :items)]))))]
       (is (= #{[-0.5 0.5]} (slots {:data groups :mapping {:x :v :y :g :color :g} :charts [(chart/bar)]}))
           "one group per level - full band")
-      (is (not (get-in (build {:data groups :mapping {:x :v :y :g :color :g} :charts [(chart/bar)]}) [:stats 0 :data :panel :translucent?]))
+      (is (not (get-in (build {:data groups :mapping {:x :v :y :g :color :g} :charts [(chart/bar)]}) [:stats 0 :data :panel :translucent]))
           "not translucent")
       (is (= 2 (count (slots {:data (concat groups (map #(assoc % :g "a" :c "z") groups)) :mapping {:x :v :y :g :color :c}
                               :charts [(chart/bar)]})))

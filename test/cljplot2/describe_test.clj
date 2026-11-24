@@ -23,7 +23,7 @@
       (is (= :strip (:fragment (row rows :place))))
       (is (nil? (:fragment (row rows :measure-fraction)))))
     (testing "every row has the documented keys"
-      (is (every? #(= #{:key :path :type :required? :default :default-doc :description :fragment :section} (set (keys %))) rows)))))
+      (is (every? #(= #{:key :path :type :required :default :default-doc :description :fragment :section} (set (keys %))) rows)))))
 
 (deftest schema-rows-test
   (let [s [:map {:closed true}
@@ -33,8 +33,8 @@
            (schema/optional :internal (schema/forbidden "is internal"))]
         rows (describe/schema-rows s)]
     (testing "required and optional, defaults and default texts"
-      (is (= [true 1 nil] ((juxt :required? :default :default-doc) (row rows :a))))
-      (is (= [false nil "computed"] ((juxt :required? :default :default-doc) (row rows :b)))))
+      (is (= [true 1 nil] ((juxt :required :default :default-doc) (row rows :a))))
+      (is (= [false nil "computed"] ((juxt :required :default :default-doc) (row rows :b)))))
     (testing "a nested closed map: its own row (type map), then its entries' rows"
       (is (= [[:a] [:b] [:b :c] [:d]] (map :path rows)))
       (is (= "map" (:type (row rows :b)))))
@@ -131,14 +131,14 @@
 
 (deftest required-rows-test
   (testing "merged maps (theme, render options): nothing is required of the user, nested maps included"
-    (is (not-any? :required? (describe/theme-rows)))
-    (is (not-any? :required? (describe/options pipeline/options-schema))))
+    (is (not-any? :required (describe/theme-rows)))
+    (is (not-any? :required (describe/options pipeline/options-schema))))
   (testing "boundary: a required entry of an ordinary map stays required, also nested; a merged map's flag doesn't leak"
     (let [rows (describe/schema-rows [:map [:a {:description "a"} [:map {:closed true} [:b {:description "b"} :int]]]])]
-      (is (every? :required? rows)))
+      (is (every? :required rows)))
     (let [rows (describe/schema-rows [:map [:m {:description "m"} [:map {:closed true :cljplot2/merged true} [:b {:description "b"} :int]]]
                                       [:c {:description "c"} :int]])]
-      (is (= [true false true] (map :required? rows))))))
+      (is (= [true false true] (map :required rows))))))
 
 (deftest internal-rows-test
   (testing "an internal entry has no row; boundary: its nested entries neither"
@@ -177,7 +177,7 @@
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
       (is (= [:font :size :font-style :color :inset :align :background] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
-      (is (not-any? :required? (filter #(= :text (first (:path %))) rows))))
+      (is (not-any? :required (filter #(= :text (first (:path %))) rows))))
     (testing "a section's rows: the rows under it, in order; together every row"
       (is (= (filter #(= :legend (first (:path %))) rows) (describe/theme-rows :legend)))
       (is (= [:legend] (:path (first (describe/theme-rows :legend)))))

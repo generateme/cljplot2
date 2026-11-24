@@ -81,7 +81,7 @@
   - `canvas` (clojure2d canvas): the target.
   - `grid` (map): a layout grid; its `:items` hold the content.
   - `layout` (map): the solved layout of `grid`, its `:items` in the same order (see [[cljplot2.layout.grid/solve]]).
-  - `env` (map): the drawing environment - theme, scales, charts and stats, `:subplots` (built sub-plots by item id), `:debug?`.
+  - `env` (map): the drawing environment - theme, scales, charts and stats, `:subplots` (built sub-plots by item id), `:debug`.
 
   Plot items draw their built sub-plot from `env` `:subplots`; one without a built sub-plot (e.g. a cell under 1x1 px) is skipped. Every other item is drawn with isolated graphics state."
   [canvas grid layout env]
@@ -90,7 +90,7 @@
     (cond
       (grid/grid? content) (draw-contents! canvas content (:layout item-layout) env)
       (subplot/plot-content? content) (when-let [built (get-in env [:subplots (:id item)])]
-                                        (draw-subplot! canvas built box (:debug? env)))
+                                        (draw-subplot! canvas built box (:debug env)))
       :else (c2d/with-isolated-canvas [isolated canvas] (draw/draw-content content isolated box env)))))
 
 (defn- draw-built!
@@ -113,7 +113,7 @@
                                                         :legend-charts (:charts (legend/legend-charts built))
                                                         :legend-stats (:stats (legend/legend-charts built))
                                                         :charts (:charts built) :stats (:stats built)
-                                                        :subplots (:subplots built) :debug? debug?})))
+                                                        :subplots (:subplots built) :debug debug?})))
 
 (defn- cvd-pixels
   "Pixels as seen with a colour vision deficiency.

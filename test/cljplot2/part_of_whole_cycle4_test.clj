@@ -87,7 +87,7 @@
                     :let [r (+ (double radius) d)]]
                 (rgb img (+ ox (m/round (+ (double cx) (* r (m/sin a))))) (+ oy dy (m/round (- (double cy) (* r (m/cos a)))))))]
       (is (some dark? ink))
-      (is (= #{true} (set (map #(get-in % [:label :outer?]) (placements p)))))))
+      (is (= #{true} (set (map #(get-in % [:label :outer]) (placements p)))))))
   (testing "2.3 room for :outer labels: the circle shrinks; labels at 12, 3, 6, 9 o'clock inside the image"
     (let [even (pie {:value-label (constantly "WWWWWW\nWWWWWW") :label-position :outer}
                     {:data (for [i (range 4)] {:part (str i) :n 1}) :coord {:kind :polar :start -45}})

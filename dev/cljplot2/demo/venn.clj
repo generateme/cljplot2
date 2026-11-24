@@ -31,7 +31,7 @@
                     :charts [(chart/bar {:value-label true})] :labels {:title "UpSet recipe" :x nil :y "Items"}}
                    {:data dots :mapping {:x :combination :y :set}
                     :charts [(chart/scatter {:size 12 :color [210 210 210]})
-                             (chart/scatter {:data (filter :member? dots) :size 12 :color :black})]
+                             (chart/scatter {:data (filter :member dots) :size 12 :color :black})]
                     :labels {:x nil :y nil}}]
                   {:columns 1})))
 

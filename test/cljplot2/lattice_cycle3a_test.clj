@@ -192,7 +192,7 @@
 
 (deftest review-fixes-test
   (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
-        frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true :axes? true :titles {}}
+        frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box true :axes true :titles {}}
         env {:theme cljplot2.theme/default-theme}
         draw (fn [f] (lines-in #(let [cv (c2d/canvas 400 300)] (c2d/with-canvas [c cv] (f c proj frame env)))))]
     (testing "U1 / U2 / V3 behind the data: grids of the floor and the two back walls, the 3 hidden edges"
@@ -205,7 +205,7 @@
         (is (= (+ 3 (grid :z 0) (grid :x back-x) (grid :y back-y)) (count back)))
         (is (= #{:x :y} (set (map first (#'space-draw/face-grid-lines proj :z 0 frame (assoc env :canvas (c2d/canvas 10 10)))))))
         (is (= #{:y :z} (set (map first (#'space-draw/face-grid-lines proj :x back-x frame (assoc env :canvas (c2d/canvas 10 10)))))))
-        (is (empty? (draw (fn [c p f e] (space-draw/draw-frame-back! c p (assoc f :box? false) e)))))))
+        (is (empty? (draw (fn [c p f e] (space-draw/draw-frame-back! c p (assoc f :box false) e)))))))
     (testing "U1 in front: the 9 visible edges (plus axis lines and ticks)"
       (is (>= (count (draw space-draw/draw-frame-front!)) 9))))
   (testing "U6 the frame behind the data, the data, then the frame in front"
@@ -273,7 +273,7 @@
     (is (= 1 (space/far-side {:azimuth 0 :elevation 0} [1 1 1] :y))))
   (testing "F4 z grid lines use the y grid style; :none turns them off"
     (let [proj (space/projector {:domains {:x [0 1] :y [0 1] :z [0 1]} :view space/default-view} {:w 400 :h 300 :margin 30})
-          frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box? true}
+          frame {:view space/default-view :domains {:x [0 1] :y [0 1] :z [0 1]} :box true}
           count-lines (fn [theme] (count (lines-in #(c2d/with-canvas [c (c2d/canvas 400 300)]
                                                       (space-draw/draw-frame-back! c proj frame {:theme theme})))))
           t cljplot2.theme/default-theme]
@@ -316,7 +316,7 @@
     (let [full {:x [0 1] :y [0 1] :z [0 1]}
           p {:mapping {:x :x :y :y :z :z}
              :charts [(chart/cloud {:data [{:x 0.5 :y 0.0 :z 0.5}] :domain full :size 30 :color [255 0 0] :axes false :box false})
-                      (chart/cloud {:data [{:x 0.5 :y 1.0 :z 1.0}] :type :spikes :stroke-width 30 :domain full :color [0 0 255]})]
+                      (chart/cloud {:data [{:x 0.5 :y 1.0 :z 1.0}] :type :spikes :line-width 30 :domain full :color [0 0 255]})]
              :scales {} :legend false}
           img (c2d/get-image (plot/render (assoc p :charts (vec (reverse (:charts p)))) {:width 300 :height 300}))
           img2 (c2d/get-image (plot/render p {:width 300 :height 300}))

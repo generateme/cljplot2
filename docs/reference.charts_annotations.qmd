@@ -164,7 +164,7 @@ Its options: literal positions - one or a vector of them, across x (`:x`) or alo
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
 ## rect
@@ -267,7 +267,7 @@ how much of a band a level end covers:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius`).
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius`).
 
 
 ## text
@@ -323,7 +323,7 @@ row per group, and room kept for labels past the data:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:select-within</td><td>one of :group-and-label :group or nil</td><td>:group-and-label</td><td>what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
 ```
 
 :::
@@ -422,6 +422,44 @@ or the start of the text's top edge:
 :::
 
 
+`:select` keeps one label per group and label text (`:select-within :group-and-label`, the default) - a label
+that changes along a line (here its phase; beta's early phase is shorter) gives one end label per text.
+`:select-within :group` keeps one per group, whatever its label. A `[:panel f]` position also works on an axis no
+chart maps - the dot plot's vertical:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group-and-label"}
+                                   :legend false}
+                                  {:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group"}
+                                   :legend false}
+                                  {:data faithful :mapping {:x :eruptions}
+                                   :charts [(chart/dotplot {:binwidth 0.1})
+                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
+                                                         :text "eruption lengths"})]
+                                   :labels {:title "[:panel f] without a y scale"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image7.png)
+:::
+
+
 The labels' style is a [theme text role](reference.theme.html#text), `:annotation` by default; `:role` picks
 another - a role the theme adds (here `:callout`, in the bottom right corner), or a builder's (here
 `:network-label`, small names on white boxes), the inline style keys still over it:
@@ -445,11 +483,11 @@ another - a role the theme adds (here `:callout`, in the bottom right corner), o
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image7.png)
+![](reference.charts_annotations_files/image8.png)
 :::
 
 
-Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:inset` `:background`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
+Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:inset` `:background`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
 ## image
@@ -475,7 +513,7 @@ image; it reads no mapping. Here a radial gradient covering the data range [-1 1
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image8.png)
+![](reference.charts_annotations_files/image9.png)
 :::
 
 
@@ -510,7 +548,7 @@ charts' domains (here a scatter's), drawn below them:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image9.png)
+![](reference.charts_annotations_files/image10.png)
 :::
 
 
@@ -541,7 +579,7 @@ may be mapped to colour or dash by the chart's own mapping.
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image10.png)
+![](reference.charts_annotations_files/image11.png)
 :::
 
 
@@ -578,7 +616,7 @@ mapping:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image11.png)
+![](reference.charts_annotations_files/image12.png)
 :::
 
 
@@ -611,7 +649,7 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image12.png)
+![](reference.charts_annotations_files/image13.png)
 :::
 
 
@@ -646,7 +684,7 @@ them, or those within `:y-limits`:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image13.png)
+![](reference.charts_annotations_files/image14.png)
 :::
 
 
@@ -663,11 +701,11 @@ The padding of the sampled span: none on x (the curve meets the panel's sides), 
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image14.png)
+![](reference.charts_annotations_files/image15.png)
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Common options](reference.shared_options.html#common-options) (`:legend`).
 
 
 ```{=html}

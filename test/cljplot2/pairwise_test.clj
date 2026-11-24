@@ -198,13 +198,13 @@
   (testing "a continuous colour mapping (of other charts) doesn't group; the cell keeps the theme colour (the plot's colour belongs to the mapping)"
     (let [d (panel-stats {:data rows :mapping {:x :a :y :c :color :d} :charts [(chart/pairwise {:glyph :shade :method :mae})]})]
       (is (nil? (:groups d)))
-      (is (not (:by-value? d)))))
+      (is (not (:by-value d)))))
   (testing "grouping: a value per group, no computed colour"
     (let [p {:data (map-indexed (fn [i row] (assoc row :g (if (even? i) "e" "o"))) rows)
              :mapping {:x :a :y :c :color :g} :charts [(chart/pairwise {:glyph :shade :method :mae})]}
           d (panel-stats p)]
       (is (= 2 (count (:groups d))))
-      (is (not (:by-value? d)))
+      (is (not (:by-value d)))
       (is (some? (plot/render p size)))))
   (testing "every glyph renders; a user function with a label"
     (doseq [g [:number :shade :shade-number]]

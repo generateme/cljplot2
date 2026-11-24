@@ -7,6 +7,7 @@
   (:require [fastmath.core :as m]
             [clojure2d.color :as c]
             [cljplot2.chart :as chart]
+            [cljplot2.data.rows :as rows]
             [cljplot2.data.series :as series]
             [cljplot2.multiplot :as multiplot]
             [cljplot2.schema :as schema]
@@ -114,12 +115,12 @@
                        (chart/rule {:y 0.0})
                        (chart/segment {:yend 0.0 :color stem})
                        (chart/scatter {:theme-style :acf-point :color stem})
-                       (chart/scatter {:theme-style :acf-point :data (filterv :significant? rows) :color significant})]
+                       (chart/scatter {:theme-style :acf-point :data (filterv :significant rows) :color significant})]
               :scales (theme/deep-merge {} scales)
               :labels {:title title :x "Lag" :y (when-not both? (kind-names (first kinds)))}}
        ;; ACF and PACF differ in range (lag 0 is 1 in the ACF): each panel row its own y domain, unless the caller
-       ;; fixes one
-       (and both? (nil? (get-in scales [:y :domain]))) (assoc :facets {:scales {:y :free}})
+       ;; fixes one (a partial domain fixes one end; `[nil nil]` is none)
+       (and both? (nil? (rows/given-domain (get-in scales [:y :domain])))) (assoc :facets {:scales {:y :free}})
        user-theme (assoc :theme user-theme)))))
 
 (def ^:private horizon-ends

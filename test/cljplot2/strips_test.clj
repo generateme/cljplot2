@@ -236,7 +236,7 @@
     (is (= (get-in (built {:data (conj rows {:v 500 :lvl "a" :g "p"}) :mapping {:x :v} :charts [(chart/box)]}) [:extents :x])
            (get-in (built {:data (conj rows {:v 500 :lvl "a" :g "p"}) :mapping {:x :v} :charts [(chart/box {:outliers nil})]}) [:extents :x]))
         ":outliers nil keeps outliers")
-    (is (true? (:zero-line? (panel-data (built {:data rows :mapping {:x :v :color :g} :charts [(chart/density {:position :mirror :zero-line nil})]}) 0)))))
+    (is (true? (:zero-line (panel-data (built {:data rows :mapping {:x :v :color :g} :charts [(chart/density {:position :mirror :zero-line nil})]}) 0)))))
   (testing "F5: band placement needs a bands :y scale, {:at v} a numeric one"
     (let [b (built {:data rows :mapping {:x :v} :charts [(chart/histogram)]})
           {:keys [w h]} (panel-box b)]

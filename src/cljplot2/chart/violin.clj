@@ -115,7 +115,7 @@
   - `chart-split` (map): the chart's rows split per panel.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :mirror? b}`; an item has `:xs`, `:widths` (densities scaled to `[0 1]` by `:scale` and `:varwidth`) and the [[cljplot2.data.strip/box-stats]] of its values; x extents - the density ranges; `:dropped` `:group` - items with fewer than 2 distinct values (no violin)."
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:items [..] :style st :place p :options o :mirror b}`; an item has `:xs`, `:widths` (densities scaled to `[0 1]` by `:scale` and `:varwidth`) and the [[cljplot2.data.strip/box-stats]] of its values; x extents - the density ranges; `:dropped` `:group` - items with fewer than 2 distinct values (no violin)."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [place position items panels dropped]} (strip/split chart-split options :center env)
         violin? #(m/>= (count (distinct (:values %))) 2)
@@ -138,7 +138,7 @@
         sized (update-vals profiled (fn [its] (mapv #(-> % (assoc :widths (widths %)) (dissoc :ds)) its)))
         violin-style (theme/resolved-style theme chart)]
     {:data (update-vals sized (fn [its] {:items its :style violin-style :place place :options options
-                                         :mirror? (= :mirror position)}))
+                                         :mirror (= :mirror position)}))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place sized (fn [{:keys [xs]}] [(first xs) (peek xs)])))
      :padding (strip/padding place options)
@@ -176,7 +176,7 @@
   Parameters:
 
   - `_chart` (map): the chart value (unused).
-  - `computed` (map): the panel's stats - `:items` (with `:xs`, `:widths` and box statistics), `:style`, `:place`, `:options` (`:inner` default `:box`), `:mirror?` (split violins - one half per group).
+  - `computed` (map): the panel's stats - `:items` (with `:xs`, `:widths` and box statistics), `:style`, `:place`, `:options` (`:inner` default `:box`), `:mirror` (split violins - one half per group).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales (in the strip frame).
@@ -185,7 +185,7 @@
   A violin whose outline the scales can't place entirely is skipped, as is a group outside its scale's domain; the n labels sit past the upper end of the density.
 
   See also [[width-at]], [[cljplot2.chart.strip/placement]]."
-  [_chart {:keys [items style place options mirror?]} canvas box scales env]
+  [_chart {:keys [items style place options mirror]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)
         inner (data/option options :inner :box)
         pattern-fill (draw/pattern-fill-cache)]
@@ -194,11 +194,11 @@
             :when st]
       (let [[^double lo ^double hi] slot
             ;; base line and outward extent: whole violin - centre ± half the slot; split half - from 0 outward
-            base (if mirror? 0.0 (strip/in-slot slot 0.0))
-            extent (if mirror? (m/+ lo hi) (strip/slot-half slot))
+            base (if mirror 0.0 (strip/in-slot slot 0.0))
+            extent (if mirror (m/+ lo hi) (strip/slot-half slot))
             outline (fn [^double side] (mapv (fn [x w] (point x level (m/+ base (m/* side extent (double w))))) xs widths))
             upper (outline 1.0)
-            lower (if mirror? (mapv #(point % level base) xs) (outline -1.0))
+            lower (if mirror (mapv #(point % level base) xs) (outline -1.0))
             polygon (into upper (rseq lower))
             fill (:color st)
             stroke (draw/outline-color (:stroke-color st) fill)
@@ -206,7 +206,7 @@
             sw (double (:stroke-width st))
             p (fn [v cross] (point v level cross))
             across (fn [v] (let [w (m/* extent (width-at xs widths (double v)))]
-                             (if mirror? [(p v base) (p v (m/+ base w))] [(p v (m/- base w)) (p v (m/+ base w))])))]
+                             (if mirror [(p v base) (p v (m/+ base w))] [(p v (m/- base w)) (p v (m/+ base w))])))]
         (when (every? data/finite-point? polygon)
           (let [pixels (mapv (fn [^Vec2 q] [(.x q) (.y q)]) polygon)]
             (draw/fill-patterned! canvas fill (pattern-fill st fill) #(c2d/path % pixels true false))
@@ -226,7 +226,7 @@
             :rug (let [t (m/* 0.15 extent)]
                    (c2d/set-stroke-custom canvas {:size (:inner-rug-width st) :cap :butt})
                    (doseq [v values]
-                     (if mirror?
+                     (if mirror
                        (c2d/line canvas (p v base) (p v (m/+ base t)))
                        (c2d/line canvas (p v (m/- base t)) (p v (m/+ base t))))))
             :points (let [d (:inner-point-size st)]

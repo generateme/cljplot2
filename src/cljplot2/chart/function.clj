@@ -147,6 +147,7 @@
              (-> [:map {:closed true}]
                  (into style-entries)
                  (into theme/theme-style-entries)
+                 (into data/legend-option)
                  (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
                        (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
                                         data/mapping-schema)
@@ -218,12 +219,12 @@
   - `mapping` (map): the chart's own mapping - the dims mapped to `:function`.
   - `labels` (sequence): the function labels in their given order.
 
-  Returns `extents` with every dim mapped to `:function` listing its values in the labels' order, marked `:ordered?` (ordinal scales keep it, see [[cljplot2.scale.aesthetic]])."
+  Returns `extents` with every dim mapped to `:function` listing its values in the labels' order, marked `:ordered` (ordinal scales keep it, see [[cljplot2.scale.aesthetic]])."
   [extents mapping labels]
   (let [dims (filter #(= :function (some-> (get mapping %) accessor/unwrap)) aesthetic/dims)
         order (vec (distinct labels))]
     (update-vals extents (fn [es] (reduce (fn [dim-extents k] (if-let [e (get dim-extents k)]
-                                                                (assoc dim-extents k (assoc e :values (filterv (set (:values e)) order) :ordered? true))
+                                                                (assoc dim-extents k (assoc e :values (filterv (set (:values e)) order) :ordered true))
                                                                 dim-extents))
                                           es dims)))))
 
@@ -234,7 +235,7 @@
 
   - `options` (map): `:f`, `:parametric`.
 
-  Returns `[parametric? labelled-functions]` (see [[labelled]])."
+  Returns `[parametric labelled-functions]` (see [[labelled]])."
   [{:keys [f parametric]}]
   [(some? parametric) (labelled (or f parametric))])
 
@@ -305,10 +306,10 @@
   - `plot-scales` (map): the plot's `:scales`.
   - `k` (keyword): the position scale, `:x` or `:y`.
 
-  Returns the domain as a vector when it is two numbers or `java.time` values, else `nil`."
+  Returns the domain as a vector when it is two numbers or `java.time` values ([[cljplot2.data.rows/full-domain]]), else `nil` - also for `[nil nil]` (no domain) and a partial domain (its open end comes from the scale: the chart then samples over the x scale's domain at drawing, and its y extent completes a partial y domain)."
   [plot-scales k]
-  (let [d (get-in plot-scales [k :domain])]
-    (when (and (sequential? d) (m/== 2 (count d)) (every? span-value? d)) (vec d))))
+  (let [d (data/full-domain (get-in plot-scales [k :domain]))]
+    (when (and (m/== 2 (count d)) (every? span-value? d)) (vec d))))
 
 (defn- y-extent-of
   "Gives the y extent of sampled function values.
@@ -317,7 +318,7 @@
 
   - `ys` (sequence): the plottable y samples.
   - `options` (map): `:y-limits [lo hi]` (only samples within count, by their min / max), `:y-extent` - the mode (default `:quantiles`, see the namespace doc).
-  - `explicit-y?` (boolean): does the plot have an explicit y domain?
+  - `explicit-y?` (truthy): does the plot have an explicit y domain with both ends (a domain with a `nil` end - a partial domain - takes its open end from this extent)?
 
   Returns a y extent (temporal samples - their min / max); `nil` with an explicit y domain, for `:none`, or without samples."
   [ys {:keys [y-limits] extent-mode :y-extent} explicit-y?]
@@ -338,15 +339,15 @@
 
   Parameters:
 
-  - `parametric?` (boolean): `:parametric` (over `:t`) rather than `:f` (over the domain)?
+  - `parametric` (boolean): `:parametric` (over `:t`) rather than `:f` (over the domain)?
   - `fs` (sequence): the labelled functions `[[label f] ..]`.
   - `options` (map): `:t`, `:domain`, `:sample-step`, `:y-limits`, `:y-extent`.
   - `plot-scales` (map): the plot's `:scales` - explicit x / y domains, the x scale spec.
 
   Returns `{:x extent :y extent}` (each when there is one); `{}` for an `:f` chart without a domain to sample yet."
-  [parametric? fs {:keys [t domain sample-step] :as options} plot-scales]
-  (let [explicit-y? (some? (get-in plot-scales [:y :domain]))]
-    (if parametric?
+  [parametric fs {:keys [t domain sample-step] :as options} plot-scales]
+  (let [explicit-y? (explicit-span plot-scales :y)]
+    (if parametric
       (let [points (for [[_ f] fs v (span-samples t (sample-count sample-step parametric-samples))
                          :let [p (point-of (f v))] :when p]
                      p)
@@ -372,17 +373,17 @@
   - `split` (map): `:mapping` - the chart's own mapping (facet keys of the plot).
   - `env` (map): `:theme`, `:plot-scales` (and the grouping keys of [[cljplot2.data.group/split]]).
 
-  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: one panel (`facet/all-panels`) `{:functions [{:f :aesthetics}] :style st :parametric? :domain :t :sample-step :gaps}` - the functions grouped by the chart's own mapping, `st` the resolved style; position extents from samples (see [[sampled-extents]]), aesthetic extents of the labels in their given order.
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: one panel (`facet/all-panels`) `{:functions [{:f :aesthetics}] :style st :parametric :domain :t :sample-step :gaps}` - the functions grouped by the chart's own mapping, `st` the resolved style; position extents from samples (see [[sampled-extents]]), aesthetic extents of the labels in their given order.
 
   Exceptions of a function propagate (option conflicts fail the options schema, see [[option-rules]])."
   [{:keys [options] :as chart} {:keys [mapping]} {:keys [theme plot-scales] :as env}]
-  (let [[parametric? fs] (functions-of options)
+  (let [[parametric fs] (functions-of options)
         rows (mapv (fn [[label f]] {:function label ::f f}) fs)
         {:keys [panels dropped]} (group/split {facet/all-panels rows} (select-keys mapping (conj aesthetic/dims :group)) env)
         functions (vec (for [g (get panels facet/all-panels) row (:rows g)] {:f (::f row) :aesthetics (:aesthetics g)}))
-        extents (sampled-extents parametric? fs options plot-scales)]
+        extents (sampled-extents parametric fs options plot-scales)]
     (into (data/padding-stats data/default-padding {} options)
-          {:data {facet/all-panels (merge {:functions functions :style (theme/resolved-style theme chart) :parametric? parametric?}
+          {:data {facet/all-panels (merge {:functions functions :style (theme/resolved-style theme chart) :parametric parametric}
                                           (select-keys options [:domain :t :sample-step :gaps]))}
            :extents (merge-with merge (label-ordered-extents (group/aesthetic-extents panels plot-scales) mapping (map first fs))
                                 (if (seq extents) {facet/all-panels extents} {}))
@@ -533,23 +534,23 @@
 
   Parameters:
 
-  - `computed` (map): `:functions`, `:style`, `:parametric?`, `:domain`, `:t`, `:sample-step`, `:gaps` (see [[compute]]).
+  - `computed` (map): `:functions`, `:style`, `:parametric`, `:domain`, `:t`, `:sample-step`, `:gaps` (see [[compute]]).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel's `:w`, `:h`.
   - `scales` (map): the finalized scales.
   - `env` (map): `:theme`.
 
   Throws the errors of [[require-scales!]] for an `:f` chart; exceptions of a function propagate."
-  [_chart {:keys [functions style parametric? domain t sample-step gaps]} canvas {:keys [^double w ^double h]} scales env]
-  (when-not parametric? (require-scales! scales))
+  [_chart {:keys [functions style parametric domain t sample-step gaps]} canvas {:keys [^double w ^double h]} scales env]
+  (when-not parametric (require-scales! scales))
   (let [y-scale (:y scales)
-        area (if parametric?
+        area (if parametric
                :closed
-               {:baseline (curve/area-baseline y-scale w h) :horizontal? (not (scale/horizontal? :y y-scale))})]
+               {:baseline (curve/area-baseline y-scale w h) :horizontal (not (scale/horizontal? :y y-scale))})]
     (doseq [{:keys [f aesthetics]} functions
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st
-            piece (cut-pieces (if parametric?
+            piece (cut-pieces (if parametric
                                 (parametric-points f t sample-step scales)
                                 (f-points f domain sample-step scales))
                               w h)]

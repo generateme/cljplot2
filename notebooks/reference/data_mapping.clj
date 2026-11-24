@@ -18,7 +18,7 @@
 ;; ## Data: rows or columns
 
 ;; Columns become rows; both forms give the same plot. A chart may bring its own `:data` (and `:mapping`) - the
-;; Data and mapping group every chart takes:
+;; Common options group every chart takes:
 
 (nu/options-table (describe/fragment-rows :common))
 

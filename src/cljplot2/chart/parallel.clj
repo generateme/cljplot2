@@ -4,7 +4,9 @@
 
   `:variables` (required) - at least two keywords or `[label accessor]` pairs, in axis order; labels (a keyword's
   name, or the pair's label as a string) must differ. They are the levels of the chart's `:x` (categorical, in the
-  given order: the plot's x axis names the variables); the x mapping isn't used. Values must be numbers: a missing,
+  given order: the plot's x axis names the variables - every name drawn, also when names collide, as the axis scale
+  default `:overlapping-labels :keep` (the plot's `:scales :x :overlapping-labels` wins; long names: rotate them
+  with theme `[:axis :x :label-rotation]`)); the x mapping isn't used. Values must be numbers: a missing,
   non-numeric or non-finite value breaks the row's line there (`:missing :break`, default) or drops the row
   (`:missing :drop`); such rows are counted in `:dropped {:variables n}`. Axes are computed from every row, also
   the dropped ones (filter the data to leave them out).
@@ -25,9 +27,10 @@
   plot's `:scales :y :axis` wins); with `:axes` (default true) the chart draws each variable's axis - a line from its
   scaled `lo` to `hi`, ticks of a linear scale over the domain (original units; as many as theme
   `[:axis :y :tick-spacing]` allows along the axis's pixel length) with labels (text role `:tick-label`, styled by
-  theme `[:axis :y]`): right of the axis, below it in a flipped plot, beside the spoke in a polar one (outside the
-  ring in a flipped polar one). A label overlapping one drawn before it (any axis, in axis and tick order) is
-  dropped - e.g. the 0 labels meeting at a radar's centre keep the first.
+  theme `[:axis :y]`, its `:tick-label` too): right of the axis, below it in a flipped plot, beside the spoke in a polar one (outside the
+  ring in a flipped polar one). In a radar (variables on angles) a label at a spoke's inner end repeating one at
+  the inner end of an earlier spoke (the same text at the same radius - e.g. 0 at the centre) is drawn once, on the
+  first spoke. A label overlapping one drawn before it (any axis, in axis and tick order) is dropped.
 
   `:curve :smooth` joins consecutive axes with smooth curves instead of straight segments: a cubic bezier in range
   space that meets every axis perpendicularly, at its value, and never leaves the range between the two values;
@@ -38,7 +41,7 @@
   row's line closes (last variable -> first), on a partial one (`:span` < 360) it doesn't. With `:flip` the
   variables are rings and the values angles: lines don't close, and the angle is padded by `:padding :y` (suggested
   as its `:expand`, so the ends of an axis don't meet; the plot's `:scales :y` wins). `:fill`
-  (`:color` - the line's colour at `:alpha`, or a colour) fills every complete row's polygon, with `:pattern`; polar
+  (`:color` - the line's colour faded by `:alpha`: its own alpha times `:alpha`; or a colour) fills every complete row's polygon, with `:pattern`; polar
   only (a theme fill is ignored in cartesian plots). While the plot's y axis is hidden, a web (theme
   `[:panel :grid :y]`) joins the axes at equal fractions of their length, as the rows do: closed polygons on a full
   circle, else open lines (across the rings with `:flip`).
@@ -55,6 +58,7 @@
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
             [wadogo.scale :as s]
+            [cljplot2.content.axis :as axis-content]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
@@ -149,9 +153,9 @@
 (def ^:private style-entries
   "Map entries of the parallel style (theme `[:chart :parallel]`; also options): the line style, the radar fill and its alpha, the pattern."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :style :description "radar polygon fill (polar only): :none, :color (the line's colour at :alpha) or a colour"}
+              (schema/optional :fill {:cljplot2/section :style :description "radar polygon fill (polar only): :none, :color (the line's colour, its own alpha times :alpha) or a colour"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :style :description "fill opacity"} schema/fraction))
+              (schema/optional :alpha {:cljplot2/section :style :description "factor of the line colour's alpha filling :fill :color"} schema/fraction))
         draw/pattern-style-entries))
 
 (defn- unknown-limits
@@ -349,12 +353,12 @@
 
   - `chart` (map): the chart value - `:options` (see the namespace doc), `:kind`, `:schema` (its style keys).
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
-  - `env` (map): `:theme`, `:plot-scales`, `:coord`, `:flip?` and the rest of the compute environment.
+  - `env` (map): `:theme`, `:plot-scales`, `:coord`, `:flip` and the rest of the compute environment.
 
-  Returns `{:data :extents :padding :padding-explicit :na :dropped :scale-defaults :style}`: per panel `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style st}` (`axes` - see [[variable-axes]], without accessors; rows with a missing value left out with `:missing :drop`); extents `:x` (the variable labels, ordered) and `:y` (the scaled values and axis ends) and the aesthetic extents; `:padding` - [[cljplot2.data.rows/default-padding]] under the `:padding` option; `:dropped :variables` - rows with a missing value; `:scale-defaults` hiding the plot's y axis (in a flipped polar plot also padding the value angle, `:expand`); `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too).
+  Returns `{:data :extents :padding :padding-explicit :na :dropped :scale-defaults :style}`: per panel `{:lines [{:rows [[scaled-or-nil ..] ..] :aesthetics}] :axes axes :style st}` (`axes` - see [[variable-axes]], without accessors; rows with a missing value left out with `:missing :drop`); extents `:x` (the variable labels, ordered) and `:y` (the scaled values and axis ends) and the aesthetic extents; `:padding` - [[cljplot2.data.rows/default-padding]] under the `:padding` option; `:dropped :variables` - rows with a missing value; `:scale-defaults` drawing every variable name on the plot's x axis (`:overlapping-labels :keep`) and hiding its y axis (in a flipped polar plot also padding the value angle, `:expand`); `:style` - the chart style (`:fill :none` in cartesian plots; the legend's too).
 
   Throws `ex-info {:key :fill}` for a radar fill in a cartesian plot, `{:key :variables}` for a variable without numbers (see [[variable-axes]])."
-  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales coord flip?] :as env}]
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales coord flip] :as env}]
   (check-fill! options coord)
   (let [{:keys [panels dropped]} (group/split groups mapping env)
         axes (variable-axes options (mapcat (fn [gs] (mapcat :rows gs)) (vals panels)))
@@ -368,7 +372,7 @@
                                               :incomplete (count (remove #(every? some? %) rows))}))
                                          gs)))
         labels (mapv :label axes)
-        x-extent (assoc (data/extent :x labels) :ordered? true)
+        x-extent (assoc (data/extent :x labels) :ordered true)
         y (y-extent axes (mapcat (fn [ls] (mapcat (comp (partial apply concat) :rows) ls)) (vals panel-lines)))
         st (cond-> (theme/resolved-style theme chart) (not (coord/polar? coord)) (assoc :fill :none))
         {:keys [padding] :as padding-stats} (data/padding-stats data/default-padding {} options)
@@ -380,7 +384,9 @@
                                 (update-vals panels (constantly {:x x-extent :y y})))
            :na (group/na-dims panels)
            :dropped (assoc dropped :variables (reduce m/long-add 0 (mapcat #(map :incomplete %) (vals panel-lines))))
-           :scale-defaults {:y (cond-> {:axis false} (and (coord/polar? coord) flip?) (assoc :expand (:y padding)))}
+           ;; every variable name drawn: they name separate axes, not ticks of one scale
+           :scale-defaults {:x {:overlapping-labels :keep}
+                            :y (cond-> {:axis false} (and (coord/polar? coord) flip) (assoc :expand (:y padding)))}
            :style st})))
 
 ;; draw
@@ -556,21 +562,40 @@
 (defn- axis-labels
   "Gives the tick labels of every axis to draw, without collisions across all axes.
 
-  A label is kept when its box overlaps no label kept before it (e.g. the 0 labels meeting at a radar's centre keep the first).
+  A label is kept when its box overlaps no label kept before it.
 
   Parameters:
 
   - `canvas`: the canvas (for measuring).
-  - `placed` (sequence): per axis `{:ticks [{:label [content anchor x y]} ..]}`.
+  - `placed` (sequence): per axis `{:ticks [{:label [content anchor x y]} ..]}`; a tick without a `:label` has none.
   - `env` (map): the drawing environment.
 
   Returns a vector of `[content anchor x y]`.
 
   See also [[cljplot2.graphics.measure/kept-box-indices]]."
   [canvas placed env]
-  (let [labels (vec (for [{:keys [ticks]} placed, {:keys [label]} ticks] label))]
+  (let [labels (vec (for [{:keys [ticks]} placed, {:keys [label]} ticks :when label] label))]
     (mapv labels (measure/kept-box-indices (mapv (fn [[content anchor x y]] (label/box-at canvas content anchor x y env))
                                                  labels)))))
+
+(def ^{:private true :const true :tag 'double} centre-tolerance
+  "Pixels a radar tick may lie from its spoke's inner end and still count as a centre label (see [[without-repeated-centre-labels]])."
+  0.5)
+
+(defn- without-repeated-centre-labels
+  "Leaves out the tick labels repeating a centre label of an earlier axis.
+
+  Parameters:
+
+  - `placed` (sequence): per axis `{:ticks [{:label .. :centre c} ..]}` in axis order; `c` - `[text radius]` of a tick at the axis's inner end of a radar spoke, else `nil`.
+
+  Returns a vector of the axes, the ticks whose `:centre` an earlier axis has already had without their `:label` (their marks stay)."
+  [placed]
+  (first (reduce (fn [[kept seen] {:keys [ticks] :as axis}]
+                   [(conj kept (assoc axis :ticks (mapv (fn [{:keys [centre] :as tick}] (if (and centre (seen centre)) (dissoc tick :label) tick)) ticks)))
+                    (into seen (keep :centre) ticks)])
+                 [[] #{}]
+                 placed)))
 
 (defn- draw-axes!
   "Draws each variable's axis: its line, ticks and tick labels in theme `[:axis :y]`.
@@ -584,10 +609,11 @@
   - `flipped?`: is the plot flipped?
   - `env` (map): the drawing environment (`:theme`).
 
-  Returns `nil`; an axis the scales can't place is skipped, colliding labels are dropped (see [[axis-labels]])."
+  Returns `nil`; an axis the scales can't place is skipped; in a radar a label repeating an earlier spoke's at the inner end is drawn once (see [[without-repeated-centre-labels]]), colliding labels are dropped (see [[axis-labels]])."
   [canvas axes rp geometry flipped? env]
   (let [{:keys [line-color line-width tick-color ^double tick-length tick-width ^double label-gap tick-spacing]} (get-in env [:theme :axis :y])
         off (m/+ tick-length label-gap)
+        spokes? (and geometry (not flipped?))
         placed (vec (for [{:keys [label domain] :as axis} axes
                           :let [[start end] (axis-ends rp axis)]
                           :when start
@@ -596,15 +622,18 @@
                        :ticks (vec (for [[tick text] (axis-ticks domain (polyline/path-length path) (double tick-spacing))
                                          :let [tp (rp label (scaled axis (double tick)))
                                                [^double px ^double py] (pixel geometry tp)
-                                               {[^double nx ^double ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))]]
-                                     {:mark [[px py] [(m/+ px (m/* nx tick-length)) (m/+ py (m/* ny tick-length))]]
-                                      :label [{:kind :label :role :tick-label :text text} anchor
+                                               {[^double nx ^double ny] :normal anchor :anchor} (axis-frame geometry flipped? (first tp))
+                                               ;; a radar spoke's range v is its radius in pixels
+                                               r (double (second tp))]]
+                                     {:centre (when (and spokes? (m/< (m/abs (m/- r (double (second start)))) centre-tolerance)) [text (m/round r)])
+                                      :mark [[px py] [(m/+ px (m/* nx tick-length)) (m/+ py (m/* ny tick-length))]]
+                                      :label [(axis-content/tick-label (:theme env) :y text) anchor
                                               (m/+ px (m/* nx off)) (m/+ py (m/* ny off))]}))}))]
     (doseq [{:keys [path ticks]} placed]
       (polyline/stroke-runs! canvas [path] {:color line-color :line-width line-width})
       (doseq [{:keys [mark]} ticks]
         (polyline/stroke-runs! canvas [mark] {:color tick-color :line-width tick-width})))
-    (doseq [[content anchor x y] (axis-labels canvas placed env)]
+    (doseq [[content anchor x y] (axis-labels canvas (without-repeated-centre-labels placed) env)]
       (label/draw-at! canvas content anchor x y env))))
 
 (defn- draw-web!
@@ -686,7 +715,7 @@
 
   See also [[cljplot2.graphics.polyline/key-glyph!]]."
   [chart attributes canvas box env]
-  (let [st (merge (or (get-in env [:chart-stats :style]) (theme/resolved-style (:theme env) chart))
+  (let [st (merge (theme/key-line-style (:theme env) (or (get-in env [:chart-stats :style]) (theme/resolved-style (:theme env) chart)))
                   (select-keys attributes [:color :dash :pattern]))
         area (polyline/area-color st false)]
     (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

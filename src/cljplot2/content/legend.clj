@@ -12,7 +12,9 @@
   at least theme `[:legend :key-size]` square and grows to the entry's mapped `:size`; a row is as tall as its key
   and label. Entries that don't fit the available height (the item box from the previous layout round) wrap into
   further columns. Each chart `i` (index into the plot's `:charts`) draws its glyph into every key with its `:legend`
-  function, in order (overlay), getting only the attributes of the dimensions `dims` it maps. Theme `:legend`
+  function, in order (overlay), getting only the attributes of the dimensions `dims` it maps; a chart with the option
+  `:legend false` (or without a `:legend` function) draws none, and a legend no chart draws a key into is dropped -
+  `false` means \"adds nothing\" on the plot, a scale and a chart alike. Theme `:legend`
   `:fill`, `:border-color`, `:border-width` box it (a `:none` border takes no space).
 
   Content `{:kind :colorbar :title t :scale spec :ticks [v ...] :labels [s ...]}`: title, then a vertical gradient bar
@@ -102,7 +104,7 @@
 
   Returns `{:kind :legend :title :entries :charts}` - one entry per entry label with the attributes of every member's
   dimension, and the charts whose glyphs the keys draw (mapping or computing a member's dimension, with a `:legend`
-  function)."
+  function and without the chart option `:legend false`)."
   [members theme charts mappings]
   (let [dims (mapv :dim members)
         na {:color (get-in theme [:palette :na])}
@@ -120,7 +122,8 @@
      :charts (vec (keep-indexed (fn [i [chart mapping]]
                                   (let [computed (aesthetic/computed-aesthetics chart mapping)
                                         mapped (filterv #(or (some? (get mapping %)) (contains? computed %)) dims)]
-                                    (when (and (:legend chart) (seq mapped)) {:chart i :dims mapped})))
+                                    (when (and (:legend chart) (not (false? (get-in chart [:options :legend]))) (seq mapped))
+                                      {:chart i :dims mapped})))
                                 (map vector charts mappings)))}))
 
 (defn- with-midpoint-tick
@@ -262,7 +265,8 @@
   - `plot` (map): a plot built up to `:scale-specs` - `:scale-specs`, `:theme`, `:legend`.
 
   Returns a vector of contents in aesthetic order (`:color`, `:shape`, `:size`, `:dash`, `:pattern`), a colour bar
-  last; empty when the plot's `:legend` is `false` or nothing with a legend is mapped."
+  last; empty when the plot's `:legend` is `false` or nothing with a legend is mapped. A legend no chart draws a key
+  into (every chart mapping it has `:legend false` or no `:legend` function) is left out."
   [{:keys [scale-specs theme legend] :as plot}]
   (if (false? legend)
     []
@@ -272,7 +276,9 @@
                                  i (first (keep-indexed (fn [i [gk]] (when (= gk k) i)) acc))]
                              (if i (update-in acc [i 1] conj candidate) (conj acc [k [candidate]]))))
                          [] (keep #(dim-legend % scale-specs mappings) aesthetic/dims))]
-      (cond->> (mapv (fn [[_ members]] (legend-content members theme charts mappings)) groups)
+      (cond->> (into [] (comp (map (fn [[_ members]] (legend-content members theme charts mappings)))
+                              (filter (comp seq :charts)))
+                     groups)
         (let [spec (:color scale-specs)] (and (#{:linear :binned} (:kind spec)) (not (false? (:legend spec)))))
         (into [(colorbar-content (:color scale-specs) (set (keep :color mappings)) (get-in theme [:legend :bar-ticks]))])))))
 
@@ -300,35 +306,42 @@
   - `plot` (map): `:charts`, `:scales`, `:legend`.
   - `chart-inputs` (sequence): `[{:mapping :groups}]` of the split stage, in chart order.
 
-  Returns a vector of contents; none for an identity scale, a scale with `:legend false`, or plot `:legend false`."
+  Returns a vector of contents; none for an identity scale, a scale with `:legend false`, or plot `:legend false`;
+  nor a legend no chart would draw a key into (see [[legends]])."
   [{:keys [charts scales legend]} chart-inputs]
   (if (false? legend)
     []
-    (vec (for [k aesthetic/dims
-               :let [own-spec (get scales k {})
-                     computed (some (fn [[chart {:keys [mapping]}]]
-                                      (let [aesthetics (aesthetic/computed-aesthetics chart mapping)] (when (contains? aesthetics k) aesthetics)))
-                                    (map vector charts chart-inputs))
-                     mapped (filter #(some? (get-in % [:mapping k])) chart-inputs)
-                     accessors (set (map #(get-in % [:mapping k]) mapped))
-                     values (into [] (comp (mapcat (fn [{:keys [mapping groups]}]
-                                                     (map (data/row-accessor k (mapping k)) (mapcat val groups))))
-                                           (remove nil?) (distinct) (take provisional-values))
-                                  mapped)
-                     continuous? (or (some? computed) (aesthetic/continuous-values? k values))
-                     kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k own-spec continuous?))
-                     suggested (when computed (aesthetic/computed-scale-attributes (get computed k)))
-                     spec (merge suggested own-spec)
-                     legend-title (cond
-                                    (contains? spec :title) (:title spec)
-                                    (and (m/one? (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
-               :when (and kind (not= :identity kind) (not (false? (:legend spec))))]
-           (if (and (= k :color) (#{:linear :binned} kind))
-             {:kind :colorbar :title legend-title :scale {:kind :linear :domain [0.0 1.0]} :ticks [0.0]
-              :labels [provisional-tick-label]}
-             {:kind :legend :title legend-title :charts []
-              :entries (mapv (fn [value] {:label (str value) :attributes {}})
-                             (if (#{:linear :binned} kind) [provisional-tick-label] values))})))))
+    (let [pairs (mapv vector charts chart-inputs)
+          keyed? (fn [k] (some (fn [[chart {:keys [mapping]}]]
+                                 (and (:legend chart) (not (false? (get-in chart [:options :legend])))
+                                      (or (some? (get mapping k)) (contains? (aesthetic/computed-aesthetics chart mapping) k))))
+                               pairs))]
+      (vec (for [k aesthetic/dims
+                 :let [own-spec (get scales k {})
+                       computed (some (fn [[chart {:keys [mapping]}]]
+                                        (let [aesthetics (aesthetic/computed-aesthetics chart mapping)] (when (contains? aesthetics k) aesthetics)))
+                                      pairs)
+                       mapped (filter #(some? (get-in % [:mapping k])) chart-inputs)
+                       accessors (set (map #(get-in % [:mapping k]) mapped))
+                       values (into [] (comp (mapcat (fn [{:keys [mapping groups]}]
+                                                       (map (data/row-accessor k (mapping k)) (mapcat val groups))))
+                                             (remove nil?) (distinct) (take provisional-values))
+                                    mapped)
+                       continuous? (or (some? computed) (aesthetic/continuous-values? k values))
+                       kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k own-spec continuous?))
+                       suggested (when computed (aesthetic/computed-scale-attributes (get computed k)))
+                       spec (merge suggested own-spec)
+                       legend-title (cond
+                                      (contains? spec :title) (:title spec)
+                                      (and (m/one? (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
+                 :let [bar? (and (= k :color) (#{:linear :binned} kind))]
+                 :when (and kind (not= :identity kind) (not (false? (:legend spec))) (or bar? (keyed? k)))]
+             (if bar?
+               {:kind :colorbar :title legend-title :scale {:kind :linear :domain [0.0 1.0]} :ticks [0.0]
+                :labels [provisional-tick-label]}
+               {:kind :legend :title legend-title :charts []
+                :entries (mapv (fn [value] {:label (str value) :attributes {}})
+                               (if (#{:linear :binned} kind) [provisional-tick-label] values))}))))))
 
 ;; content
 

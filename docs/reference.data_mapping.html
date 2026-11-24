@@ -527,7 +527,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="data-rows-or-columns" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="data-rows-or-columns"><span class="header-section-number">3.1</span> Data: rows or columns</h2>
-<p>Columns become rows; both forms give the same plot. A chart may bring its own <code>:data</code> (and <code>:mapping</code>) - the Data and mapping group every chart takes:</p>
+<p>Columns become rows; both forms give the same plot. A chart may bring its own <code>:data</code> (and <code>:mapping</code>) - the Common options group every chart takes:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -551,6 +551,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>a mapping: key -&gt; accessor (a keyword or a function of a row)</td>
 <td></td>
 <td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td>
+</tr>
+<tr class="odd">
+<td>:legend</td>
+<td>true or false or nil</td>
+<td>true</td>
+<td>draw the chart's key glyph in the legends (false - the chart adds none, a legend no chart keys is dropped; its aesthetics still scale)</td>
 </tr>
 </tbody>
 </table>

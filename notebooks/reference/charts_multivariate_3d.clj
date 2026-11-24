@@ -62,31 +62,32 @@
 
 ;; The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
 ;; scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
-;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range); short variable names let
-;; all four axis names fit:
+;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range). Every variable name is
+;; drawn, also when the names collide; long names in narrow plots turn with the theme's
+;; `[:axis :x :label-rotation]`:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
-                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :center})]
                                    :labels {:title ":scaling :center" :x nil :y nil}
+                                   :theme {:axis {:x {:label-rotation -30}}}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
-                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :robust :robust-center :median :robust-spread :mad})]
                                    :labels {:title ":robust, :median / :mad" :x nil :y nil}
+                                   :theme {:axis {:x {:label-rotation -30}}}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
-                                   :charts [(chart/parallel {:variables [["sepal L" :sepal-length] ["sepal W" :sepal-width]
-                                                                         ["petal L" :petal-length] ["petal W" :petal-width]]
+                                   :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :robust :robust-center :mean :robust-spread 0.25})]
-                                   :labels {:title ":robust, :mean / 0.25" :x nil :y nil}}]
+                                   :labels {:title ":robust, :mean / 0.25" :x nil :y nil}
+                                   :theme {:axis {:x {:label-rotation -30}}}}]
                                  {:columns 3 :widths [1 1 1.3]})
-                   {:width 1000 :height 340})
+                   {:width 1000 :height 360})
 
 ;; A missing value breaks a row's line there (`:break`) or drops the row (`:drop`); without `:axes` only the lines
 ;; are drawn, here also without padding:
@@ -117,7 +118,7 @@
 ;; ### Style
 
 ;; Smooth curves between the axes, and - in polar coordinates, where the axes become spokes of a radar - a fill of
-;; each row's polygon:
+;; each row's polygon (a value every spoke starts at, here 0 at the centre, is labelled once):
 
 (nu/options-table (describe/own-rows (describe/options (chart/parallel))) :style)
 
@@ -160,13 +161,14 @@
 
 ;; ### Style
 
-;; The point style used when nothing is mapped:
+;; The point style used when nothing is mapped (`:alpha` - the opacity of every mark's colour, mapped or not;
+;; `:line-width` - of spikes and lines):
 
 (nu/options-table (describe/own-rows (describe/options (chart/cloud))) :style)
 
 (plot/render-image {:data quakes
                     :mapping {:x :long :y :lat :z :depth}
-                    :charts [(chart/cloud {:size 5 :shape \S :color [200 80 40 220] :stroke-color :black
+                    :charts [(chart/cloud {:size 5 :shape \S :color [200 80 40] :alpha 0.85 :stroke-color :black
                                            :stroke-width 0.3 :domain {:z [690 40]}
                                            :axis-titles {:x "longitude" :y "latitude" :z "depth"}})]}
                    {:width 600 :height 480})
@@ -193,6 +195,32 @@
                                    :labels {:title ":bins [10 10], :type :bars"}}]
                                  {:columns 3})
                    {:width 1000 :height 380})
+
+;; `:type :lines` joins a panel's points in data order - one line per value of the mapped `:group` (one line
+;; without it); each segment takes its first point's colour and is drawn at its own depth among the other marks.
+;; Three spirals, and profiles of a surface - a line along y for every x, coloured by height:
+
+(def spirals (for [g ["a" "b" "c"] t (range 0 12.6 0.3)
+                   :let [phase (* 2.0944 (count (take-while #(not= g %) ["a" "b" "c"])))]]
+               {:spiral g :x (* (+ 1.0 (* 0.1 t)) (m/cos (+ t phase))) :y (* (+ 1.0 (* 0.1 t)) (m/sin (+ t phase))) :z t}))
+
+(nu/data-table spirals)
+
+(def profiles (for [x (range -2 2.01 0.4) y (range -2 2.01 0.1)]
+                {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
+
+(nu/data-table profiles)
+
+(plot/render-image (plot/arrange [{:data spirals
+                                   :mapping {:x :x :y :y :z :z :color :spiral :group :spiral}
+                                   :charts [(chart/cloud {:type :lines :line-width 2})]
+                                   :labels {:title ":type :lines, :group :spiral"}}
+                                  {:data profiles
+                                   :mapping {:x :x :y :y :z :z :color :z :group :x}
+                                   :charts [(chart/cloud {:type :lines :line-width 1.5 :view {:azimuth 30 :elevation 25}})]
+                                   :labels {:title "profiles, :group :x"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 420})
 
 ;; `:type :none` leaves only the projections - the point cloud's shadows on the three walls:
 

@@ -69,9 +69,11 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 - Tick labels are drawn without collisions: axes, polar guides, 3D frames and colour bars keep the first label, then
   each not overlapping one drawn (`measure/kept-label-indices` along an axis, `measure/kept-box-indices` for boxes).
   Axes and polar guides draw them all for a scale with `:overlapping-labels :keep` or explicit `:ticks` (without
-  `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec).
+  `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec). Every tick label of a
+  position axis (axes, polar guides, parallel axes, 3D frames, the size estimate) is made by `content.axis/tick-label`:
+  the `:tick-label` role with the theme's per-axis `[:axis k :tick-label]` merged over it.
 - Pairwise statistics: the registry `cljplot2.data.pairwise/statistics` (fastmath functions with labels, families,
-  symmetry, paired or independent samples, `:signed?`) serves `chart/pairwise` and `chart/correlation` (one
+  symmetry, paired or independent samples, `:signed`) serves `chart/pairwise` and `chart/correlation` (one
   statistic per panel, cells of `plot/pairs`; shared cell parts in `cljplot2.chart.statistic-cell`) and
   `pairwise/matrix-rows` (a standalone matrix is `chart/tile` over its rows). A cell is always f(x sample, y sample) -
   in `pairs` f(column variable, row variable). Paired statistics take pairwise-complete rows, independent-sample ones
@@ -83,7 +85,12 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 
 **Scales** are two-phase: phase 1 specs from merged extents + user `:scales`; phase 2 (after layout measurement)
 finalized, panel-local position scales. Aesthetic scales (`:color :shape :size :dash :pattern`) are final at
-phase 1; legends are derived from them and each chart draws its key glyph via `:legend`.
+phase 1; legends are derived from them and each chart draws its key glyph via `:legend`; a chart with the common
+option `:legend false` draws none, and a legend no chart draws a key into is dropped. Key glyphs raise a positive
+line width to the theme's `[:legend :min-key-line-width]` (`theme/key-style`). A scale's `:domain` may leave one end
+`nil` (`[lo nil]`, `[nil hi]`): the data fill it, the fixed end keeps the charts' padding and nice rounding; `[nil
+nil]` is no domain; every reader goes through `data.rows` (`given-domain`, `full-domain`, `completed-domain`); a free
+or sliced facet scale takes no partial domain.
 
 **Layout** is a track grid (`layout/grid`, `layout/plot-grid`) with a measure → solve → re-tick loop; a grid cell may
 hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
@@ -120,9 +127,11 @@ the theme: banned names, and one type family per name across all owners). One na
   `:panel`, `:legend`, `:strip`) keep `:border-color` / `:border-width`.
 - `:width` - a band fraction across the level axis (strips, rect, candlestick bodies); never pixels in a chart.
 - `:alpha` - an absolute opacity; a factor multiplying the colours' own alpha is `:alpha-factor` (bin2d, contour,
-  field, tile, `[:bridge ...]`); a confidence is `:level` (smooth, acf: 0.95).
-- `:fill` - a colour (`:color` = the mark's colour at `:alpha`, `:none`); flags and accessors get other names
-  (contour `:filled`, alluvial `:strand-color`).
+  field, tile, `[:bridge ...]`); a confidence is `:level` (smooth, acf: 0.95). One exception: area fills of line,
+  density, smooth, ribbon and parallel radar (`:fill :color`, stacked areas without a fill) take the mark's colour
+  faded by `:alpha` - its own alpha times `:alpha` (`polyline/area-color`, `draw/faded`).
+- `:fill` - a colour (`:color` = the mark's colour at `:alpha` - faded by it in the area fills above, `:none`);
+  flags and accessors get other names (contour `:filled`, alluvial `:strand-color`).
 - `:padding` - span fractions `{dim [lo hi]}` only; pixels between marks are `:gap` (pack, treemap, theme), inside a
   label box `:inset` (text roles, the text chart).
 - `:gap` - a gap: a fraction (sankey, alluvial, waffle) or pixels (pack, treemap, theme, line / segment `:start-gap`
@@ -137,7 +146,8 @@ the theme: banned names, and one type family per name across all owners). One na
   accessors of wide rows' variables (parallel, alluvial, pairs), their display names `:variable-names`; `:columns` -
   a count of grid columns (arrange, facets, waffle); `:axes` - a 3D or parallel flag; `:cell-shape` - a waffle cell's
   shape (`:shape` is a point shape); `:length-scale` - the arrows' length factor (`:scale` is violin's width mode).
-- `:as` - the output key of a data function; booleans never end in `?`; one flag one key; label toggles are named
+- `:as` - the output key of a data function; booleans never end in `?` (also data fields a function returns and keys of internal data -
+  `:closed`, `:leaf`, `:flip`; only local names and predicate functions end in `?`); one flag one key; label toggles are named
   after what they label (`:labels`, `:group-labels`, `:n-label`, `:value-label`).
 - `:none` always means draw nothing (also an empty `pairs` slot); automatic black-or-white contrast is `:contrast`;
   `nil` means the default. The one exception: `sequence-levels :end nil` - no end marker.
@@ -297,12 +307,16 @@ the theme: banned names, and one type family per name across all owners). One na
   primitives are drawn far to near in one scene per panel.
 - Point functions (projections, placements) take and give `Vec2`.
 - Randomness: a chart's `:rng` option goes through `rng/for-build`, and random values are drawn in compute, so every
-  render of one build draws the same image.
+  render of one build draws the same image. Interpolators drawing random values while fitting (`:kriging`,
+  `:microsphere-projection`) get a fresh generator of a fixed seed per fit (`data.interpolation/fit-fn`) unless their
+  params give an `:rng` - a fit is a function of its points.
 - A `nil` facet value is a real level (the NA panel, last; `:facets {:na-panel false}` drops it).
 - `case` matches boxed values by `=`: a double never matches a long literal - coerce first; compare numbers across
   types with `m/==`, not `=` or set membership (`(contains? #{1} 1.0)` is false).
 - Padding: a chart's `:padding` are fractions of the span, `:padding-explicit` its requests (see
-  `data/padding-stats`); an extent with `:companion? true` counts only beside another chart's extents.
+  `data/padding-stats`); an extent with `:companion true` counts only beside another chart's extents; an aesthetic
+  extent with `:fallback true` only when no other chart has extents of that aesthetic (correlation / pairwise cells
+  give their statistic's range).
 - Datasets: every file in `notebooks/data/` has an entry in `datasets.edn` (source, licence, via); scripts that make
   data are the only scripts kept in the repo; every book example drawn from an outside source credits it with
   `nu/source-note` (`:source` and `:url`).

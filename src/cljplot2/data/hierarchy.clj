@@ -133,14 +133,14 @@
 
   - `groups` (map): panel -> rows.
   - `mapping` (map): the merged mapping - `:value`, `:hierarchy`, optional `:color`.
-  - `env` (map): `:plot-scales` - the plot's scale specs (the `:color` one decides which colours are kept); `:na-level?` - keep rows with a `nil` colour (default true).
+  - `env` (map): `:plot-scales` - the plot's scale specs (the `:color` one decides which colours are kept); `:na-level` - keep rows with a `nil` colour (default true).
 
   Returns `{:trees {panel root} :top-count n :extents {panel {:color e}} :na #{..} :dropped {:value n :color n}}` - panels without kept rows left out; top-level children carry `:top-index` (first-appearance order over all panels, so default colours agree across panels, `:top-count` of them); `:na` - `#{:color}` when a leaf has a `nil` colour; `:dropped` - rows without a valid value, and (with a mapped colour) rows whose colour isn't kept.
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite mapped `:value`.
 
   See also [[root]], [[fill-fn]]."
-  [groups mapping {:keys [na-level? plot-scales] :or {na-level? true}}]
+  [groups mapping {:keys [na-level plot-scales] :or {na-level true}}]
   (let [value-of (data/row-accessor :value (:value mapping))
         accessors (level-accessors (:hierarchy mapping))
         color-of (when (some? (:color mapping)) (data/row-accessor :color (:color mapping)))
@@ -149,7 +149,7 @@
         color-ok? (fn [row] (or (nil? color-of)
                                 (let [cv (color-of row)]
                                   (if (nil? cv)
-                                    na-level?
+                                    na-level
                                     (aesthetic/kept-value? :color color-spec cv)))))
         kept? #(and (value-ok? %) (color-ok? %))
         all-rows (mapcat val groups)
@@ -230,20 +230,20 @@
 
   Parameters:
 
-  - `panel` (map): `:top-count` - the number of top-level nodes; `:colored?` - `:color` is mapped; `:named?` - colours by node name.
+  - `panel` (map): `:top-count` - the number of top-level nodes; `:colored` - `:color` is mapped; `:named` - colours by node name.
   - `scales` (map): the plot's aesthetic scales; `:color` used when colouring by a mapped colour or by name.
   - `theme` (map): the merged theme; `[:palette :na]` fills the root and nodes without a colour.
 
-  Returns a function of a drawn node `{:depth :top-index :leaf? :color :name}` giving its fill: by name - every named node its name's colour under the colour scale, the root and unnamed nodes the NA colour; with a mapped colour - leaves their colour under the scale, groups and the root the NA colour; else the top-level node's palette colour ([[top-color-fn]]) shaded by depth ([[depth-shade]]), the root the NA colour."
-  [{:keys [top-count colored? named?]} scales theme]
+  Returns a function of a drawn node `{:depth :top-index :leaf :color :name}` giving its fill: by name - every named node its name's colour under the colour scale, the root and unnamed nodes the NA colour; with a mapped colour - leaves their colour under the scale, groups and the root the NA colour; else the top-level node's palette colour ([[top-color-fn]]) shaded by depth ([[depth-shade]]), the root the NA colour."
+  [{:keys [top-count colored named]} scales theme]
   (let [na (get-in theme [:palette :na])]
     (cond
-      named?
+      named
       (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
         (fn [{:keys [^long depth] node-name :name}] (if (or (m/zero? depth) (nil? node-name)) na (or (color-fn node-name) na))))
-      colored?
+      colored
       (let [color-fn (aesthetic/attribute-fn :color (:color scales) na)]
-        (fn [{:keys [leaf? color]}] (if leaf? (color-fn color) na)))
+        (fn [{:keys [leaf color]}] (if leaf (color-fn color) na)))
       :else
       (let [top-color (top-color-fn theme top-count)]
         (fn [{:keys [^long depth top-index]}]

@@ -2391,10 +2391,10 @@
 (let [wheat (map #(update % :year parse-long) (nu/dataset :wheat))
       monarchs (for [{:keys [index commonwealth start end] :as monarch} (nu/dataset :monarchs)
                      :let [low? (and (not commonwealth) (odd? (long index)))]]
-                 (assoc monarch :y0 95 :y1 (if low? 93 97) :low? low? :mid (* 0.5 (+ (long start) (long end)))
+                 (assoc monarch :y0 95 :y1 (if low? 93 97) :low low? :mid (* 0.5 (+ (long start) (long end)))
                         :fill (if commonwealth "commonwealth" "crown")))
       names (fn [low? y anchor dy]
-              (chart/text {:data (filter #(= low? (:low? %)) monarchs) :mapping {:x :mid :y (constantly y) :label :name}
+              (chart/text {:data (filter #(= low? (:low %)) monarchs) :mapping {:x :mid :y (constantly y) :label :name}
                            :size 9 :font-style :italic :anchor [:center anchor] :offset [0 dy] :background [255 255 255 170]
                            :inset 1}))]
   (plot/render-image

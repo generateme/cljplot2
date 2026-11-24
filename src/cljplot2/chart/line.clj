@@ -5,13 +5,14 @@
   x, ties in data order; `:data` keeps data order), `:color`, `:line-width`, `:dash`, `:fill` (area chart: the area
   between the line and y = 0 - or the nearer panel edge when 0 is outside the y range - default `:none`),
   `:padding {:x [lo hi] :y [lo hi]}` (default 5% each side; stacked `[0 0.05]` for y).
-  `:fill :color` - the area in the line (group) colour at `:alpha` (0..1, theme default 0.6). `:fill-gradient` (a
+  `:fill :color` - the area in the line (group) colour faded by `:alpha` (0..1, theme default 0.6): its own alpha
+  times `:alpha` (a colour with alpha 128 fills at half `:alpha`; see [[cljplot2.graphics.polyline/area-color]]). `:fill-gradient` (a
   clojure2d gradient: preset, colours or function of `t`) colours areas along `:fill-gradient-axis` - `:x` (default,
   over the x scale's range) or `:y` (a linear gradient over the y scale's range); it wins over `:fill`.
   `:position` (see [[cljplot2.data.position]]): `:overlay` (default), `:stack`, `:normalize` (y title
   \"Proportion\"), streamgraphs `:silhouette` / `:wiggle` - groups aligned on the union of their x values (numeric
   or temporal; linear between a group's points, 0 outside its range; NA y left out and interpolated across; repeated
-  x in a group - `ex-info {:key :mapping}`), stacked, every band filled (`:fill`, default the group colour at `:alpha`)
+  x in a group - `ex-info {:key :mapping}`), stacked, every band filled (`:fill`, default the group colour faded by `:alpha`)
   and its top stroked; `:interpolator` smooths the bands; `:curve`, `:gaps` and a line coloured along its length
   can't be stacked.
   Curves (see [[cljplot2.graphics.curve]]): `:interpolator` (a fastmath 1D method or a function) with
@@ -46,7 +47,8 @@
   Functions: [[positions]] and [[schemas]] - the chart's positions and schemas; [[compute]] - the lines of every
   panel (stacked by [[stacked-lines]]); [[stacked-band-points]] - stacked bands in pixels; [[draw]] - one panel's
   lines; [[legend]] - the key glyph."
-  (:require [clojure2d.core :as c2d]
+  (:require [clojure2d.color :as c]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [cljplot2.chart.common :as common]
             [cljplot2.data.rows :as data]
@@ -69,9 +71,9 @@
 (def ^:private style-entries
   "Map entries of the line style: the line style, area `:fill` and `:alpha`, `:bridge`, the area pattern."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :style :description "area between the line and y = 0: :color (the line colour at :alpha), a colour or :none"}
+              (schema/optional :fill {:cljplot2/section :style :description "area between the line and y = 0: :color (the line colour, its own alpha times :alpha), a colour or :none"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :style :description "area fill opacity of :fill :color and of stacked areas"} schema/fraction)
+              (schema/optional :alpha {:cljplot2/section :style :description "factor of the line colour's alpha filling :fill :color and stacked areas"} schema/fraction)
               (schema/optional :bridge {:cljplot2/section :path :description "style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash"}
                                polyline/bridge-schema))
         draw/pattern-style-entries))
@@ -319,7 +321,7 @@
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
         [colored-groups colored-mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
-        sized (group/continuous :size colored-groups colored-mapping (cond-> env trail? (assoc :na-level? false)))
+        sized (group/continuous :size colored-groups colored-mapping (cond-> env trail? (assoc :na-level false)))
         size-of (:value-of sized)
         sizes? (and trail? (some? sized))
         {:keys [panels dropped]} (if sized
@@ -370,7 +372,7 @@
                                                      [panel {:x (data/extent :x xs) :y (data/extent :y ys)}]))))
                                       data))
            :axis-titles (when (= :normalize position) {:y "Proportion"})
-           :na (cond-> (group/na-dims panels) (:na? color-stats) (conj :color) (:na? size-stats) (conj :size))
+           :na (cond-> (group/na-dims panels) (:na color-stats) (conj :color) (:na size-stats) (conj :size))
            :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows))
                       gradient? (assoc :color (:dropped color-stats))
                       sized (assoc :size (:dropped size-stats)))})))
@@ -603,7 +605,7 @@
         (mapv (fn [ys] [(mapv (fn [t [_ y1]] (point t y1)) grid ys) (mapv (fn [t [y0 _]] (point t y0)) grid ys)]) stacks)))))
 
 (defn- draw-stacked!
-  "Draws the stacked lines of a panel (see [[stacked-band-points]]): every band filled - `gradient` along `axis`, else `:fill` or the group colour at `:alpha` - then every upper boundary stroked.
+  "Draws the stacked lines of a panel (see [[stacked-band-points]]): every band filled - `gradient` along `axis`, else `:fill` or the group colour faded by `:alpha` - then every upper boundary stroked.
 
   Parameters: `canvas`; `lines` - the stacked lines; `style` - the chart's resolved style; `position`; `opts` - curve options; `gradient` (function or `nil`) and `axis` - the fill gradient; `scales`; `theme`.
 
@@ -675,11 +677,11 @@
   Parameters:
 
   - `run` (sequence): pixel points `[x y]`.
-  - `area` (map): `:baseline` (pixels), `:horizontal?` - the baseline runs horizontally.
+  - `area` (map): `:baseline` (pixels), `:horizontal` - the baseline runs horizontally.
 
   Returns a vector of the points moved onto the baseline."
-  [run {:keys [baseline horizontal?]}]
-  (mapv (fn [[x y]] (if horizontal? [x baseline] [baseline y])) run))
+  [run {:keys [baseline horizontal]}]
+  (mapv (fn [[x y]] (if horizontal [x baseline] [baseline y])) run))
 
 (defn draw
   "Draws the lines of one panel, the area fill first.
@@ -702,7 +704,7 @@
           geometry (scale/coord-geometry scales)
           y-scale (:y scales)
           y-horizontal? (scale/horizontal? :y y-scale)
-          area {:baseline (curve/area-baseline y-scale w h) :horizontal? (not y-horizontal?)}
+          area {:baseline (curve/area-baseline y-scale w h) :horizontal (not y-horizontal?)}
           opts (curve-options options (scale/flipped? scales))
           curved? (curve/curved? opts)
           gaps (data/option options :gaps :break)
@@ -738,14 +740,14 @@
                              range-points (mapv (fn [run] (mapv curve/drawn-point (coord/line-path geometry (mapv range-points run) true)))
                                                 index-runs)
                              :else (mapv (fn [run] (mapv (fn [i] (curve/drawn-point [(px i) (py i)])) run)) index-runs))
-                st (assoc line-st :fill (polyline/area-color line-st false))]
+                st (assoc line-st :fill (polyline/area-color group-st false))]
             (cond
               (:trail options)
               (draw-trail! canvas {:line line :px px :py py :index-runs index-runs
                                    :arcs (when range-points {:geometry geometry :range-points range-points})}
                            st scales)
               color-keys
-              (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) (:fill st)
+              (do (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal area) (:fill st)
                                                    (draw/pattern-fill st (:fill st)))
                   (if range-points
                     (draw-arc-gradient! canvas geometry range-points px py color-keys index-runs st gaps scales (:theme env))

@@ -455,14 +455,14 @@ cells. A row is a plain map; `:section` names its table slice:
 {:description
  "rows (a sequence of maps) or columns (a map of sequences) the charts read",
  :path [:data],
- :required? false,
  :key :data,
  :fragment nil,
  :default nil,
  :section :content,
  :type
  "a sequence of rows (maps) or a map of columns (sequences) or nil",
- :default-doc nil}
+ :default-doc nil,
+ :required false}
 
 ```
 :::

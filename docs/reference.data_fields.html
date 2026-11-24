@@ -726,7 +726,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th">points</th>
-<th data-quarto-table-cell-role="th">closed?</th>
+<th data-quarto-table-cell-role="th">closed</th>
 <th data-quarto-table-cell-role="th">level</th>
 </tr>
 </thead>
@@ -748,8 +748,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Drawn as lines - every point row with its level and line number, a closed line’s first point repeated at its end - for six levels:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [level [-<span class="fl">1.0</span> -<span class="fl">0.5</span> <span class="fl">0.0</span> <span class="fl">0.5</span> <span class="fl">1.0</span> <span class="fl">1.5</span>]</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                [i {<span class="at">:keys</span> [points closed?]}] (map-indexed <span class="kw">vector</span> (contour/isolines grid level))</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                [x y] (cond-&gt; points closed? (<span class="kw">conj</span> (<span class="kw">first</span> points)))]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                [i {<span class="at">:keys</span> [points closed]}] (map-indexed <span class="kw">vector</span> (contour/isolines grid level))</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                [x y] (cond-&gt; points closed (<span class="kw">conj</span> (<span class="kw">first</span> points)))]</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                            {<span class="at">:level</span> level <span class="at">:line</span> (<span class="kw">str</span> level <span class="st">"/"</span> i) <span class="at">:x</span> x <span class="at">:y</span> y})</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:level</span> <span class="va">%</span>)) <span class="at">:group</span> <span class="at">:line</span>}</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:line-width</span> <span class="dv">2</span>})]</span>

@@ -3,12 +3,12 @@
 
   The book's reference part renders these rows; nothing here validates. An entry with `:cljplot2/entries-fragment g` isn't flattened: its map's entries are the shared group `g`'s table, its row keeps its value as the default.
 
-  A row: `{:key k :path [k ...] :type text :required? bool :default v :default-doc text :description text :fragment kw :section kw}`:
+  A row: `{:key k :path [k ...] :type text :required bool :default v :default-doc text :description text :fragment kw :section kw}`:
 
   - `:path` - longer than `[k]` for the entries of nested closed maps (each nested map also has its own row).
   - `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a nested map's with [[rows-under]].
   - `:default` / `:default-doc` / `:description` / `:fragment` / `:section` - `nil` when absent.
-  - `:required?` - false in a merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides).
+  - `:required` - false in a merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides).
   - `:default` is the value used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines).
 
   Entries rejecting every value ([[cljplot2.schema/forbidden]]) and internal entries (`:cljplot2/internal`) have no row.
@@ -62,7 +62,7 @@
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
-  {:common {:title "Data and mapping" :doc "the chart's own data and mapping, taken by every chart"
+  {:common {:title "Common options" :doc "the chart's own data and mapping and its legend glyph, taken by every chart"
             :entries rows/common-options}
    :strip {:title "Strip options" :doc "placement, width and grouping of strip charts - one item per level on a categorical axis"
            :entries strip/options}
@@ -277,13 +277,13 @@
   - `merged?` (boolean): the entry belongs to a merged map (theme, render options: every key is there after merging, users give partial overrides - so not required).
   - `section` (keyword or `nil`): the enclosing entry's section, taken when the entry has no `:cljplot2/section` of its own.
 
-  The row's metadata `::container?` marks an entry holding entries of its own (see [[with-defaults]]) - not one whose entries a shared group documents (`:cljplot2/entries-fragment`): that row keeps its own value as the default (e.g. a text role's style)."
+  The row's metadata `::container` marks an entry holding entries of its own (see [[with-defaults]]) - not one whose entries a shared group documents (`:cljplot2/entries-fragment`): that row keeps its own value as the default (e.g. a text role's style)."
   [[path k props s] merged? section]
   (with-meta {:key k :path path :type (if (flattened? props s) "map" (type-text s))
-              :required? (and (not merged?) (not (:optional props)))
+              :required (and (not merged?) (not (:optional props)))
               :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
               :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
-    {::container? (and (container? s) (not (:cljplot2/entries-fragment props)))}))
+    {::container (and (container? s) (not (:cljplot2/entries-fragment props)))}))
 
 (defn- map-rows
   "Returns the rows of the entries of a map schema, nested closed maps flattened after their own row.
@@ -346,7 +346,7 @@
   [rows defaults]
   (mapv (fn [{:keys [path] :as row}]
           (let [v (get-in defaults path)]
-            (cond-> row (and (nil? (:default row)) (some? v) (not (::container? (meta row)))) (assoc :default v))))
+            (cond-> row (and (nil? (:default row)) (some? v) (not (::container (meta row)))) (assoc :default v))))
         rows))
 
 (defn- text-roles-schema
@@ -430,7 +430,7 @@
 
   Returns truthy for a container row, `nil` otherwise - also for a row map built by hand (without the row metadata). See also [[top-level-rows]]."
   [row]
-  (::container? (meta row)))
+  (::container (meta row)))
 
 (defn top-level-rows
   "Returns the rows for the top-level keys (`:path` of one key) - a schema's own table without its nested maps' entries (those have tables, and sections, of their own).

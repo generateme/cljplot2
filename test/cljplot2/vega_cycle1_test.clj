@@ -53,8 +53,8 @@
   (testing "absent or 0 - square (nil); :corner-radius-end wins, also at 0"
     (is (nil? (draw/corner-rounding {})))
     (is (nil? (draw/corner-rounding {:corner-radius 0})))
-    (is (= {:radius 8.0 :end? false} (draw/corner-rounding {:corner-radius 8})))
-    (is (= {:radius 4.0 :end? true} (draw/corner-rounding {:corner-radius 8 :corner-radius-end 4})))
+    (is (= {:radius 8.0 :value-end false} (draw/corner-rounding {:corner-radius 8})))
+    (is (= {:radius 4.0 :value-end true} (draw/corner-rounding {:corner-radius 8 :corner-radius-end 4})))
     (is (nil? (draw/corner-rounding {:corner-radius 8 :corner-radius-end 0}))))
   (testing "the value axis: where the baseline and value-end points differ"
     (is (= :v (draw/value-axis [10 50] [10 5])))
@@ -65,7 +65,7 @@
 
 (deftest cartesian-corners-test
   (testing "r = 8: corner pixels background, the centre filled; the opposite corner too"
-    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 10 10) (Vec2. 50 40) :red :none 0 nil {:radius 8.0 :end? false}))]
+    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 10 10) (Vec2. 50 40) :red :none 0 nil {:radius 8.0 :value-end false}))]
       (is (= white (px img 10 10)))
       (is (= white (px img 49 39)))
       (is (= red (px img 30 25)))
@@ -80,13 +80,13 @@
     (let [sh (sh/rounded-rect 0 0 10 10 [0 0 0 0])]
       (is (.contains sh 0.1 0.1))))
   (testing "end rounding: the value-end corners only (upright bar, value at the top)"
-    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 10 40) (Vec2. 50 10) :red :none 0 nil {:radius 8.0 :end? true :axis :v}))]
+    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 10 40) (Vec2. 50 10) :red :none 0 nil {:radius 8.0 :value-end true :axis :v}))]
       (is (= white (px img 10 10)))
       (is (= white (px img 49 10)))
       (is (= red (px img 10 39)))
       (is (= red (px img 49 39)))))
   (testing "end rounding of a horizontal bar growing left (negative value)"
-    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 50 10) (Vec2. 10 40) :red :none 0 nil {:radius 8.0 :end? true :axis :h}))]
+    (let [img (drawn 60 50 #(draw/bar! % (Vec2. 50 10) (Vec2. 10 40) :red :none 0 nil {:radius 8.0 :value-end true :axis :h}))]
       (is (= white (px img 10 10)))
       (is (= white (px img 10 39)))
       (is (= red (px img 49 10)))
@@ -106,7 +106,7 @@
   (let [g (polar-geometry)
         draw-sector (fn [rounding] (drawn 200 200 #(draw/range-bar! % g [0.2 30.0] [1.2 80.0] :red :none 0 nil rounding)))]
     (testing "r = 6: the four corners background, the middle filled"
-      (let [img (draw-sector {:radius 6.0 :end? false})]
+      (let [img (draw-sector {:radius 6.0 :value-end false})]
         (doseq [[a r] [[0.205 79.0] [1.195 79.0] [0.205 31.0] [1.195 31.0]]]
           (is (= white (apply px img (polar-pixel g a r))) (str "corner " a " " r)))
         (is (= red (apply px img (polar-pixel g 0.7 55.0))))))
@@ -114,23 +114,23 @@
       (let [img (draw-sector nil)]
         (is (= red (apply px img (polar-pixel g 0.21 78.0))))))
     (testing "end rounding along the radius: outer corners round, inner square"
-      (let [img (draw-sector {:radius 6.0 :end? true :axis :v})]
+      (let [img (draw-sector {:radius 6.0 :value-end true :axis :v})]
         (is (= white (apply px img (polar-pixel g 0.205 79.0))))
         (is (= red (apply px img (polar-pixel g 0.21 32.0))))))
     (testing "end rounding along the angle: the corners at the second angle only"
-      (let [img (draw-sector {:radius 6.0 :end? true :axis :h})]
+      (let [img (draw-sector {:radius 6.0 :value-end true :axis :h})]
         (is (= white (apply px img (polar-pixel g 1.195 79.0))))
         (is (= red (apply px img (polar-pixel g 0.21 78.0)))))))
   (testing "a full-circle ring has no corners: the plain annulus"
     (let [g (polar-geometry)]
       (is (= (coord/rect-path g 0.0 30.0 m/TWO_PI 80.0)
-             (draw/rounded-sector-path g [0.0 30.0] [m/TWO_PI 80.0] {:radius 6.0 :end? false})))))
+             (draw/rounded-sector-path g [0.0 30.0] [m/TWO_PI 80.0] {:radius 6.0 :value-end false})))))
   (testing "a wedge (inner radius 0): outer corners only, every point finite"
-    (let [pts (draw/rounded-sector-path (polar-geometry) [0.0 0.0] [1.0 80.0] {:radius 10.0 :end? false})]
+    (let [pts (draw/rounded-sector-path (polar-geometry) [0.0 0.0] [1.0 80.0] {:radius 10.0 :value-end false})]
       (is (every? (fn [[x y]] (and (m/valid-double? (double x)) (m/valid-double? (double y)))) pts))))
   (testing "a radius above the thickness is clamped (no NaN, the middle filled)"
     (let [g (polar-geometry)
-          img (drawn 200 200 #(draw/range-bar! % g [0.2 70.0] [1.2 80.0] :red :none 0 nil {:radius 100.0 :end? false}))]
+          img (drawn 200 200 #(draw/range-bar! % g [0.2 70.0] [1.2 80.0] :red :none 0 nil {:radius 100.0 :value-end false}))]
       (is (= red (apply px img (polar-pixel g 0.7 75.0)))))))
 
 (defn- stacked-plot
@@ -158,12 +158,12 @@
 (deftest key-corners-test
   (testing "a bar legend key rounded, clamped to its square"
     (let [img (drawn 20 20 #(draw/bar-key! % {:x 0 :y 0 :w 20 :h 20} {:color :red :stroke-color :none :stroke-width 0} false
-                                           {:radius 100.0 :end? false}))]
+                                           {:radius 100.0 :value-end false}))]
       (is (= red (px img 10 10)))
       (is (= white (px img 3 3)) "the key's corner (square from 3 to 17)")))
   (testing "end rounding: the key's top corners round, the bottom square"
     (let [img (drawn 20 20 #(draw/bar-key! % {:x 0 :y 0 :w 20 :h 20} {:color :red :stroke-color :none :stroke-width 0} false
-                                           {:radius 5.0 :end? true}))]
+                                           {:radius 5.0 :value-end true}))]
       (is (= white (px img 3 3)))
       (is (= red (px img 3 16))))))
 
@@ -344,8 +344,8 @@
 
 (deftest key-rounding-test
   (testing "the key radius is at most a quarter of its side; end rounding at the top"
-    (is (= {:radius 2.5 :end? false :axis :v} (draw/key-rounding {:radius 6.0 :end? false} 10.0)))
-    (is (= {:radius 1.0 :end? true :axis :v} (draw/key-rounding {:radius 1.0 :end? true} 10.0)))
+    (is (= {:radius 2.5 :value-end false :axis :v} (draw/key-rounding {:radius 6.0 :value-end false} 10.0)))
+    (is (= {:radius 1.0 :value-end true :axis :v} (draw/key-rounding {:radius 1.0 :value-end true} 10.0)))
     (is (nil? (draw/key-rounding nil 10.0))))
   (testing "a rect legend key is rounded too"
     (let [rect-chart (chart/rect {:corner-radius 40})

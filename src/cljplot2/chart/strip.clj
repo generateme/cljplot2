@@ -35,11 +35,11 @@
 
   Parameters:
 
-  - `item` (map): the item - `:mirrored?`.
+  - `item` (map): the item - `:mirrored`.
 
-  Returns `-1.0` for a `:mirrored?` item, else `1.0`."
+  Returns `-1.0` for a `:mirrored` item, else `1.0`."
   ^double [item]
-  (if (:mirrored? item) -1.0 1.0))
+  (if (:mirrored item) -1.0 1.0))
 
 (defn- n-label-text
   "Gives the n label text of an item.
@@ -70,10 +70,10 @@
   Parameters:
 
   - `labels` (sequence): end labels `{:text t :side s :role r}` (see [[draw-end-labels!]]).
-  - `env` (map): `:theme`, `:hint` (measuring), `:flip?` (sizes along the value axis are label heights when flipped).
+  - `env` (map): `:theme`, `:hint` (measuring), `:flip` (sizes along the value axis are label heights when flipped).
 
   Returns `{:x [lo hi]}`: per side of the value axis the largest label's size along it, measured in its role, plus the gap; 0 on a side without labels. `nil` without labels."
-  [labels {:keys [theme flip? hint]}]
+  [labels {:keys [theme flip hint]}]
   (when (seq labels)
     (measure/call-with-scratch-canvas
      hint
@@ -84,30 +84,30 @@
                       (if (seq contents)
                         (m/+ (v/mx (map (fn [content] (let [^Vec2 size (measure/natural-size content
                                                                                             {:canvas c :theme theme})]
-                                                       (if flip? (.y size) (.x size))))
+                                                       (if flip (.y size) (.x size))))
                                         contents))
                              n-label-gap)
                         0.0)))]
          {:x [(room -1.0) (room 1.0)]})))))
 
 (def ^{:private true :const true :tag 'double} outer-label-gap
-  "Pixels between a polar plot's outer radius and an `:outer?` end label."
+  "Pixels between a polar plot's outer radius and an `:outer` end label."
   6.0)
 
 (def ^{:private true :const true :tag 'double} leader-label-gap
-  "Pixels between a polar plot's outer radius and an `:outer?` end label with a leader line (`:leader?`)."
+  "Pixels between a polar plot's outer radius and an `:outer` end label with a leader line (`:leader`)."
   16.0)
 
 (defn- outer-gap
-  "Gives the pixels between a polar plot's outer radius and an `:outer?` end label.
+  "Gives the pixels between a polar plot's outer radius and an `:outer` end label.
 
   Parameters:
 
-  - `label` (map): the end label - `:leader?` (a leader line).
+  - `label` (map): the end label - `:leader` (a leader line).
 
-  Returns [[leader-label-gap]] with `:leader?`, else [[outer-label-gap]]."
-  ^double [{:keys [leader?]}]
-  (if leader? leader-label-gap outer-label-gap))
+  Returns [[leader-label-gap]] with `:leader`, else [[outer-label-gap]]."
+  ^double [{:keys [leader]}]
+  (if leader leader-label-gap outer-label-gap))
 
 (declare polar-end-label-placements cartesian-end-label-placements)
 
@@ -120,7 +120,7 @@
   - `labels` (sequence): end labels (see [[draw-end-labels!]]).
   - `scales` (map): finalized position scales.
 
-  Returns a vector of `{:label l :content c :anchor [h v] :x px :y py :leader [[x0 y0] [x1 y1]]}`: `:content` - the label content, `:leader` (an `:outer?` label with `:leader?`) - a line from its segment's outer edge. Labels without a placeable position are left out."
+  Returns a vector of `{:label l :content c :anchor [h v] :x px :y py :leader [[x0 y0] [x1 y1]]}`: `:content` - the label content, `:leader` (an `:outer` label with `:leader`) - a line from its segment's outer edge. Labels without a placeable position are left out."
   [{:keys [geometry] :as pl} labels scales]
   (if geometry
     (polar-end-label-placements pl labels scales)
@@ -155,19 +155,19 @@
            {:label l :content (label-content l) :anchor anchor :x x :y y}))))
 
 (defn- outer-placement
-  "Gives the placement of an `:outer?` end label in a polar plot.
+  "Gives the placement of an `:outer` end label in a polar plot.
 
   Parameters:
 
   - `pl` (map): the chart's [[cljplot2.chart.strip/placement]] - `:range-point`, `:geometry`.
-  - `label` (map): the end label - `:level`, `:slot`, `:at` (the value of its segment's middle), `:span` (its segment's values), `:leader?`.
+  - `label` (map): the end label - `:level`, `:slot`, `:at` (the value of its segment's middle), `:span` (its segment's values), `:leader`.
 
-  Returns the placement past the outer radius (by [[outer-gap]]) at the angle of the segment's middle, anchored away from the centre, with a `:leader` from the segment's farthest corner for `:leader?`; `nil` at a non-finite pixel."
-  [{:keys [range-point geometry]} {:keys [level slot at span leader?] :as l}]
+  Returns the placement past the outer radius (by [[outer-gap]]) at the angle of the segment's middle, anchored away from the centre, with a `:leader` from the segment's farthest corner for `:leader`; `nil` at a non-finite pixel."
+  [{:keys [range-point geometry]} {:keys [level slot at span leader] :as l}]
   (let [[^double h] (range-point at level (strip/in-slot slot 0.0))
         r (m/+ (double (:radius geometry)) (outer-gap l))
         ^Vec2 p (coord/to-pixel geometry h r)
-        edge (when leader?
+        edge (when leader
                (v/mx (for [value span cross [-0.5 0.5]] (double (second (range-point value level (strip/in-slot slot cross)))))))]
     (when (data/finite-point? p)
       (cond-> {:label l :content (label-content l) :anchor (coord/outward-anchor h) :x (.x p) :y (.y p)}
@@ -177,7 +177,7 @@
                          [[(.x a) (.y a)] [(.x b) (.y b)]]))))))
 
 (defn- polar-end-label-placements
-  "Gives the [[end-label-placements]] of a polar plot: past the value along the radius (anchored away from the centre) or along the angle (centred), by [[n-label-gap]] pixels; `:outer?` labels past the outer radius (see [[outer-placement]]).
+  "Gives the [[end-label-placements]] of a polar plot: past the value along the radius (anchored away from the centre) or along the angle (centred), by [[n-label-gap]] pixels; `:outer` labels past the outer radius (see [[outer-placement]]).
 
   Parameters:
 
@@ -193,8 +193,8 @@
         up (if (m/< r1 r0) -1.0 1.0)
         ;; the gap in range units: pixels along the radius, radians at the outer radius along the angle
         pad (if radial? n-label-gap (m// n-label-gap (double (:radius geometry))))]
-    (vec (keep (fn [{:keys [level slot at ^double side outer?] :as l}]
-                 (if outer?
+    (vec (keep (fn [{:keys [level slot at ^double side outer] :as l}]
+                 (if outer
                    (outer-placement pl l)
                    (let [dir (m/* up side)
                          [^double h ^double v] (range-point at level (strip/in-slot slot 0.0))
@@ -256,7 +256,7 @@
 
   - `canvas`: the canvas.
   - `pl` (map): the chart's [[cljplot2.chart.strip/placement]].
-  - `labels` (sequence): `{:level l :slot s :at v :side d :text t}` - past value `v` toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a stacked bar; no room needed); optional `:role` (text role, default `:annotation`), `:color` (overrides the role's); `:outer?` - past the outer radius of a polar plot at its segment's middle angle, anchored outward, with `:span [v0 v1]` (its segment's values) and `:leader?` (a leader line).
+  - `labels` (sequence): `{:level l :slot s :at v :side d :text t}` - past value `v` toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a stacked bar; no room needed); optional `:role` (text role, default `:annotation`), `:color` (overrides the role's); `:outer` - past the outer radius of a polar plot at its segment's middle angle, anchored outward, with `:span [v0 v1]` (its segment's values) and `:leader` (a leader line).
   - `scales` (map): finalized position scales.
   - `env` (map): the drawing environment (`:theme`).
 
@@ -265,16 +265,16 @@
   (draw-label-placements! canvas (without-collisions canvas (end-label-placements pl labels scales) env) env))
 
 (defn outer-label-room
-  "Gives the room `:outer?` end labels need around a polar plot's circle.
+  "Gives the room `:outer` end labels need around a polar plot's circle.
 
   Parameters:
 
-  - `labels` (sequence): end labels (see [[draw-end-labels!]]); only `:outer?` ones count.
+  - `labels` (sequence): end labels (see [[draw-end-labels!]]); only `:outer` ones count.
   - `env` (map): `:theme`, `:hint` (measuring).
 
-  Returns `[horizontal vertical]` pixels: the widest and the tallest label, measured in its role, plus the gap (16 pixels when some label has a leader, else 6); `nil` without `:outer?` labels."
+  Returns `[horizontal vertical]` pixels: the widest and the tallest label, measured in its role, plus the gap (16 pixels when some label has a leader, else 6); `nil` without `:outer` labels."
   [labels {:keys [theme hint]}]
-  (let [outer (filter :outer? labels)]
+  (let [outer (filter :outer labels)]
     (when-let [contents (seq (distinct (map #(label-content (dissoc % :color)) outer)))]
       (measure/call-with-scratch-canvas
        hint
@@ -290,9 +290,9 @@
 
   - `chart-options` (map): chart options - `:n-label` (default false), `:n-format`.
   - `items` (map): `{panel [item ...]}` (see [[cljplot2.data.strip/split]]).
-  - `env` (map): `:theme`, `:hint`, `:flip?` (see [[end-label-room]]).
+  - `env` (map): `:theme`, `:hint`, `:flip` (see [[end-label-room]]).
 
-  Returns room past the largest values for the count labels, past the smallest for `:mirrored?` items; `nil` without n labels or items."
+  Returns room past the largest values for the count labels, past the smallest for `:mirrored` items; `nil` without n labels or items."
   [chart-options items env]
   (when (data/option chart-options :n-label false)
     (end-label-room (map (fn [item] {:text (n-label-text chart-options item) :side (n-label-side item)}) (mapcat val items))
@@ -308,7 +308,7 @@
   - `canvas`: the canvas.
   - `pl` (map): the chart's [[cljplot2.chart.strip/placement]].
   - `items` (sequence): one panel's items.
-  - `top-value` (function): item -> its largest drawn value (the smallest for a `:mirrored?` item, which is labelled toward decreasing values).
+  - `top-value` (function): item -> its largest drawn value (the smallest for a `:mirrored` item, which is labelled toward decreasing values).
   - `chart-options` (map): chart options - `:n-label` (default false), `:n-format` (default `n=%d`).
   - `scales` (map): finalized position scales.
   - `env` (map): the drawing environment.

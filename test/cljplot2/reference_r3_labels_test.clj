@@ -101,7 +101,7 @@
         ;; every label at one point: all collide
         same-place (fn [_] [50.0 50.0 [:center :middle]])
         count-placed (fn [finalized] (measure/call-with-scratch-canvas
-                                      :high #(count (placements % finalized same-place {:theme cljplot2.theme/default-theme}))))]
+                                      :high #(count (placements % :x finalized same-place {:theme cljplot2.theme/default-theme}))))]
     (testing "colliding polar labels: only the first kept"
       (is (= 1 (count-placed (polar-x {})))))
     (testing ":overlapping-labels :keep and explicit ticks keep every label"

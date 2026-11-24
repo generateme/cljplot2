@@ -7,6 +7,9 @@
   top-level group takes the next `[:palette :color]` color, its leaves sharing it.
 
   Options (style defaults from theme `[:chart :treemap]`): `:layout` `:squarify` (default) or `:slice-dice`,
+  `:order` of siblings - `:value` (descending) or `:data` (first appearance; a group's unnamed leaf comes last), as in
+  the partition; default `:value` for `:squarify`, `:data` for `:slice-dice` (`:slice-dice` with `:value` - a mosaic
+  ordered by size; `:squarify` with `:data` keeps the data order, cells less square),
   `:group-labels` / `:leaf-labels` (default true - the node's name; `false` - none; a function of the node info
   `{:name :value :depth :path :share :parent-share}` (see [[cljplot2.data.hierarchy/node-info]]) returning the text,
   `nil` / `\"\"` - none; e.g. `#(format \"%s\\n%.1f%%\" (:name %) (* 100 (:share %)))`; unnamed nodes get no label),
@@ -50,7 +53,10 @@
                 (into theme/theme-style-entries)
                 (conj (schema/optional :layout {:description "rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)"
                                                 :default :squarify}
-                                       [:enum :squarify :slice-dice]))
+                                       [:enum :squarify :slice-dice])
+                      (schema/optional :order {:description "order of siblings: :value (descending) or :data (first appearance)"
+                                               :cljplot2/default-doc ":value for :squarify, :data for :slice-dice"}
+                                       [:enum :value :data]))
                 (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 
@@ -67,15 +73,16 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping (`:value`, `:hierarchy`, optional `:color`).
   - `env` (map): `:theme` and the rest of the compute environment (see [[cljplot2.data.hierarchy/panel-trees]]).
 
-  Returns `{:data {panel computed} :extents :na :dropped}`: `computed` - `{:tree root :top-count n :style st :options o :colored? b}` (`root` - see [[cljplot2.data.hierarchy]], top-level children with `:top-index`; `o` - `:layout`, `:group-labels`, `:leaf-labels` with their defaults; `:colored?` - a mapped `:color`); aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
+  Returns `{:data {panel computed} :extents :na :dropped}`: `computed` - `{:tree root :top-count n :style st :options o :colored b}` (`root` - see [[cljplot2.data.hierarchy]], top-level children with `:top-index`; `o` - `:layout`, `:order`, `:group-labels`, `:leaf-labels` with their defaults; `:colored` - a mapped `:color`); aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
 
   See also [[draw]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)
         st (theme/resolved-style theme chart)
-        opts (data/options-with-defaults defaults options)]
+        with-defaults (data/options-with-defaults defaults options)
+        opts (assoc with-defaults :order (data/option options :order (if (= :slice-dice (:layout with-defaults)) :data :value)))]
     {:data (update-vals trees (fn [tree] {:tree tree :top-count top-count :style st :options opts
-                                          :colored? (some? (:color mapping))}))
+                                          :colored (some? (:color mapping))}))
      :extents extents
      :na na
      :dropped dropped}))
@@ -138,17 +145,17 @@
   - `node` (map): a group node (with `:children`).
   - `content` (map): `:x`, `:y`, `:w`, `:h` - the room inside the group.
   - `depth` (long): the node's depth (root 0); slice-and-dice turns its slices by it.
-  - `layout-kind` (keyword): `:squarify` (children by descending value) or `:slice-dice` (in data order).
+  - `options` (map): `:layout` - `:squarify` or `:slice-dice`; `:order` - `:value` (descending) or `:data` (see [[cljplot2.data.hierarchy/ordered-children]]).
 
-  Returns a sequence of `[child rect]` pairs.
+  Returns a sequence of `[child rect]` pairs, children in `:order`.
 
   See also [[cljplot2.layout.treemap/squarify]], [[cljplot2.layout.treemap/slice-dice]]."
-  [node content depth layout-kind]
-  (if (= layout-kind :slice-dice)
-    (let [children (hierarchy/ordered-children node :data)]
-      (map vector children (layout/slice-dice (map :value children) content depth)))
-    (let [sorted (hierarchy/ordered-children node :value)]
-      (map vector sorted (layout/squarify (map :value sorted) content)))))
+  [node content depth {layout-kind :layout order :order}]
+  (let [children (hierarchy/ordered-children node order)
+        values (map :value children)]
+    (map vector children (if (= layout-kind :slice-dice)
+                           (layout/slice-dice values content depth)
+                           (layout/squarify values content)))))
 
 (defn- label-text
   "Gives the label text of a node.
@@ -179,7 +186,7 @@
   - `rect` (map): `:x`, `:y`, `:w`, `:h` in pixels.
   - `at` (map): `:depth` (root 0), `:path` (names from the top), `:parent-value`.
   - `color`: the node's fill; `nil` for the root (no fill, no header).
-  - `ctx` (map): `:style` (`:gap`, outlines, pattern), `:options` (`:layout`, `:group-labels`, `:leaf-labels`), `:leaf-color` (function of a leaf - its mapped colour or `nil`), `:top-color` (function of a top-level node), `:pattern-fill`, `:total`.
+  - `ctx` (map): `:style` (`:gap`, outlines, pattern), `:options` (`:layout`, `:order`, `:group-labels`, `:leaf-labels`), `:leaf-color` (function of a leaf - its mapped colour or `nil`), `:top-color` (function of a top-level node), `:pattern-fill`, `:total`.
   - `env` (map): the drawing environment.
 
   Returns `nil`."
@@ -211,7 +218,7 @@
                           :h (long (m/ceil header-h))}
                          env))
           (when (and (m/pos? (double (:w content))) (m/pos? (double (:h content))))
-            (doseq [[child child-rect] (children-rects node content depth (:layout options))]
+            (doseq [[child child-rect] (children-rects node content depth options)]
               (draw-node! c child child-rect
                           {:depth (m/long-inc depth)
                            :path (cond-> (:path at) (some? (:name child)) (conj (:name child)))
@@ -232,7 +239,7 @@
   Parameters:
 
   - `_chart`: the chart value (unused).
-  - `computed` (map): the panel's stats - `:tree`, `:top-count`, `:style`, `:options`, `:colored?` (see [[compute]]).
+  - `computed` (map): the panel's stats - `:tree`, `:top-count`, `:style`, `:options`, `:colored` (see [[compute]]).
   - `canvas`: the panel canvas.
   - `box` (map): `:w`, `:h` - the panel size in pixels.
   - `scales` (map): the finalized scales (`:color` for mapped leaf colours).
@@ -241,16 +248,16 @@
   Returns `nil`; nothing is drawn without a tree.
 
   See also [[draw-node!]]."
-  [_chart {:keys [tree top-count style options colored?]} canvas {:keys [w h]} scales env]
+  [_chart {:keys [tree top-count style options colored]} canvas {:keys [w h]} scales env]
   (when tree
     (let [canvas-env (assoc env :canvas canvas)
           theme (:theme env)
           na (get-in theme [:palette :na])
-          color-fn (when colored? (aesthetic/attribute-fn :color (:color scales) na))
+          color-fn (when colored (aesthetic/attribute-fn :color (:color scales) na))
           palette-fn (hierarchy/top-color-fn theme top-count)
           ctx {:style style :options options :pattern-fill (draw/pattern-fill-cache) :total (:value tree)
                :leaf-color (fn [leaf] (when color-fn (color-fn (:color leaf))))
-               :top-color (fn [child] (if colored? na (palette-fn (:top-index child))))}]
+               :top-color (fn [child] (if colored na (palette-fn (:top-index child))))}]
       (draw-node! canvas tree {:x 0.0 :y 0.0 :w (double w) :h (double h)} {:depth 0 :path [] :parent-value (:value tree)}
                   nil ctx canvas-env))))
 

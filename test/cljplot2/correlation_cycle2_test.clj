@@ -111,7 +111,7 @@
     (doseq [level [0.2 0.5 0.8]]
       (let [[ring & more] (contour/isolines cone level)]
         (is (nil? more))
-        (is (:closed? ring))
+        (is (:closed ring))
         (is (every? (fn [[x y]] (< (m/abs (- (m/hypot (double x) (double y)) (- 1.0 level))) 0.01)) (:points ring))))))
   (testing "4.1 a saddle resolved by the cell average"
     (let [saddle (field/sample (fn [[x y]] (* (double x) (double y))) [[-1 1] [-1 1]] [2 2])]
@@ -125,7 +125,7 @@
     (let [holed (field/sample (fn [[x y]] (when-not (and (< 0.4 (double x) 0.6)) (- 1.0 (m/hypot (double x) (double y))))) [[-1 1] [-1 1]] [41 41])
           lines (contour/isolines holed 0.5)]
       (is (= 1 (count lines)))
-      (is (not (:closed? (first lines)))))))
+      (is (not (:closed (first lines)))))))
 
 (defn- shoelace [ring]
   (* 0.5 (reduce + (map (fn [[x1 y1] [x2 y2]] (- (* (double x1) (double y2)) (* (double x2) (double y1))))
@@ -266,7 +266,7 @@
       (is (= {:kind :categorical :values ["a" "b"]} (select-keys (get-in s [:extents :panel :color]) [:kind :values])))))
   (testing "4.2 filled regions drawn lowest first; lines otherwise"
     (let [d (get-in (stats {:data cloud :mapping {:x :x :y :y} :charts [(chart/contour {:filled true :levels 3})]}) [:data :panel])]
-      (is (:fill? d))
+      (is (:filled d))
       (is (every? :rings (:contours d)))))
   (testing "F3 filled bands colored by their middle; the color extent spans the values"
     (let [s (stats {:charts [(chart/contour {:f (fn [[x _]] x) :domain {:x [0 1] :y [0 1]} :filled true :levels [0.2 0.6]})]})

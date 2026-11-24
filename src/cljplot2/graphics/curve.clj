@@ -362,7 +362,7 @@
   - `canvas`: the canvas in graphics context.
   - `point-runs` (sequence of vectors of `[x y]`): the drawn runs in pixels (see [[curve-points]]).
   - `style` (map): the line style with `:fill` (default `:none`; its `:pattern` too, see [[cljplot2.graphics.draw/pattern-fill]]) and `:bridge`.
-  - `area`: `{:baseline px :horizontal? h}` - filled to the baseline (see [[cljplot2.graphics.polyline/fill-runs-to-baseline!]]), `:closed` - each run's own polygon, `nil` - none.
+  - `area`: `{:baseline px :horizontal h}` - filled to the baseline (see [[cljplot2.graphics.polyline/fill-runs-to-baseline!]]), `:closed` - each run's own polygon, `nil` - none.
   - `gaps`: `:bridge` strokes the [[bridges]] between the runs in the bridge style; else none.
 
   Returns `nil`."
@@ -371,7 +371,7 @@
         pattern-fill (draw/pattern-fill style fill)]
     (cond
       (= :closed area) (polyline/fill-closed-runs! canvas point-runs fill pattern-fill)
-      (map? area) (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal? area) fill pattern-fill))
+      (map? area) (polyline/fill-runs-to-baseline! canvas point-runs (:baseline area) (:horizontal area) fill pattern-fill))
     (polyline/stroke-runs! canvas point-runs style)
     (when (= :bridge gaps)
       (polyline/stroke-runs! canvas (bridges point-runs) (polyline/bridge-style style (:bridge style))))))

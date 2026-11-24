@@ -238,7 +238,7 @@
   (testing "R2 a continuous color doesn't group (and colors no glyph)"
     (let [s (stats {:data cloud :mapping {:x :a :y :b :color :c} :charts [(chart/correlation {:glyph :pie})]})]
       (is (nil? (get-in s [:data :panel :groups])))
-      (is (false? (get-in s [:data :panel :by-r?]))))
+      (is (false? (get-in s [:data :panel :by-r]))))
     (is (instance? BufferedImage (plot/render-image (plot/pairs cloud {:variables [:a :b :c] :mapping {:color :c}}) {:width 500 :height 500}))))
   (testing "R3 NA for a missing r on every glyph; the :color option colors the number"
     (let [[img box] (glyph-image :pie (repeat 10 1))]
@@ -252,7 +252,7 @@
     (is (= 3 (:columns (:arrange (plot/pairs cloud {:variables [:a :b :c]}))))))
   (testing "R6 grouped pairs with glyph charts: the theme color, one group legend"
     (let [b (plot/build (plot/pairs cloud {:variables [:a :b] :mapping {:color :g} :upper (chart/correlation {:glyph :pie})}) {:width 500 :height 400})]
-      (is (false? (get-in b [:subplots [:plot 1] :stats 0 :data :panel :by-r?])))))
+      (is (false? (get-in b [:subplots [:plot 1] :stats 0 :data :panel :by-r])))))
   (testing "R1 a plot too small for its axes still builds, panels at least 1 px"
     (let [b (plot/build (plot/pairs cloud {:variables [:a :b :c :d]}) {:width 420 :height 420})]
       (is (every? #(>= (long (:w %)) 1) (panel-boxes b)))))

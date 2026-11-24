@@ -186,8 +186,8 @@
                    {:width 1000 :height 320})
 
 ;; Where labels sit: past the bar's end (`:end`, the default unstacked) or inside it (`:center`, the default
-;; stacked); with the value and the row count (`:n-label`) the two texts join side by side or one above the other
-;; (`:label-stack`):
+;; stacked; `:base` - at its base, shown further down); with the value and the row count (`:n-label`) the two
+;; texts join side by side or one above the other (`:label-stack`):
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-length}
@@ -209,6 +209,22 @@
                                    :labels {:title ":label-stack :vertical"}}]
                                  {:columns 2})
                    {:width 900 :height 560})
+
+;; `:base` writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment's
+;; own base when stacked. With 0 outside the value domain (e.g. `:scales {:x {:domain [4 nil]}}`) the label sits at
+;; the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where
+;; labels rarely fit their wedge and are skipped:
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :species}
+                                   :charts [(chart/bar {:stat :mean :value-label true :label-position :base})]
+                                   :labels {:title ":label-position :base"}}
+                                  {:data sales
+                                   :mapping {:x :quarter :y :amount :color :product}
+                                   :charts [(chart/bar {:position :stack :value-label true :label-position :base})]
+                                   :labels {:title ":stack, :label-position :base"}}]
+                                 {:columns 2 :widths [1 1.3]})
+                   {:width 900 :height 320})
 
 ;; In a polar plot `:outer` puts the labels past the outer radius, with a leader line from each bar
 ;; (`:label-leader`):

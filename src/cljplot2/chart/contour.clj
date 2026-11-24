@@ -149,7 +149,7 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed?} ..]} ..] :style st :fill? b :by-level? b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels, or groups when grouped, with rows but no field).
+  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed} ..]} ..] :style st :filled b :by-level b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels, or groups when grouped, with rows but no field).
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x`, `:y` (or gridded `:value`), see [[cljplot2.data.field/check-mapped!]].
 
@@ -165,34 +165,34 @@
         sampled (mapv (fn [[panel aesthetics {:keys [f]}]] [panel aesthetics (field/sample f domain size transforms)]) fields)
         [lo hi :as value-range] (field/value-range (map #(nth % 2) sampled))
         levels (contour/levels value-range (data/option options :levels 10))
-        fill? (true? (:filled options))
-        by-level? (not (or (:color options) (grouped? mapping)))
+        filled (true? (:filled options))
+        by-level (not (or (:color options) (grouped? mapping)))
         ;; a filled band's color - the middle of its level and the next (the top band: up to the largest value)
-        color-values (if (and fill? (seq levels))
+        color-values (if (and filled (seq levels))
                        (mapv (fn [^double l ^double nxt] (m/* 0.5 (m/+ l nxt))) levels (concat (rest levels) [(m/max (double hi) (double (peek levels)))]))
                        levels)
         in-data (fn [grid points] (mapv #(field/to-data grid %) points))
         panels (reduce (fn [acc [panel aesthetics grid]]
                          (update acc panel (fnil into [])
                                  (for [[level color-value] (map vector levels color-values)]
-                                   (if fill?
+                                   (if filled
                                      {:level level :color-value color-value :aesthetics aesthetics
                                       :rings (mapv #(in-data grid %) (contour/level-rings grid level))}
                                      {:level level :color-value color-value :aesthetics aesthetics
                                       :lines (mapv #(update % :points (partial in-data grid)) (contour/isolines grid level))}))))
                        {} sampled)
         st (cond-> (theme/resolved-style theme chart)
-             (and fill? (grouped? mapping) (nil? (:alpha-factor options))) (update :alpha-factor (fn [factor] (m/* grouped-fill-alpha (double (or factor 1.0))))))
+             (and filled (grouped? mapping) (nil? (:alpha-factor options))) (update :alpha-factor (fn [factor] (m/* grouped-fill-alpha (double (or factor 1.0))))))
         [[x0 x1] [y0 y1]] domain
         group-extents (when (grouped? mapping)
                         (group/aesthetic-extents (update-vals (group-by first fields)
                                                               (fn [fs] (map (fn [[_ a]] {:aesthetics a}) fs)))
                                                  plot-scales))]
-    {:data (update-vals panels (fn [cs] {:contours cs :style st :fill? fill? :by-level? by-level? :labels (:labels options)}))
+    {:data (update-vals panels (fn [cs] {:contours cs :style st :filled filled :by-level by-level :labels (:labels options)}))
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {:x {:kind :numeric :min (double x0) :max (double x1)}
                                               :y {:kind :numeric :min (double y0) :max (double y1)}}
-                                       (and by-level? (seq levels))
+                                       (and by-level (seq levels))
                                        ;; the value range (with any given level outside it): the lowest line or band
                                        ;; isn't the gradient's end (a near-white line on a light panel)
                                        (assoc :color {:kind :numeric :min (m/min (double lo) (double (first levels)))
@@ -213,11 +213,11 @@
   - `st` (map): the chart's style.
   - `scales` (map): the panel's scales.
   - `env` (map): the drawing environment.
-  - `by-level?`: colour by the value through the colour scale.
+  - `by-level`: colour by the value through the colour scale.
 
   Returns the style: by level - `st` with the value's colour (`nil` for a value outside the colour scale); else the group's style over `st` (see [[cljplot2.data.group/style]])."
-  [{:keys [color-value aesthetics]} st scales env by-level?]
-  (if by-level?
+  [{:keys [color-value aesthetics]} st scales env by-level]
+  (if by-level
     (when-let [col (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))]
       (some->> (col color-value) (assoc st :color)))
     (group/style st aesthetics scales (:theme env))))
@@ -289,8 +289,8 @@
   (reduce (fn [drawn {:keys [level lines]}]
             (if-let [text (level-text labels level)]
               (let [content {:kind :label :role :contour-label :text text}]
-                (reduce (fn [kept {:keys [points closed?]}]
-                          (if-let [[[x y] ^double length] (line-midpoint (to-pixels (if closed? (conj points (first points)) points)))]
+                (reduce (fn [kept {:keys [points closed]}]
+                          (if-let [[[x y] ^double length] (line-midpoint (to-pixels (if closed (conj points (first points)) points)))]
                             (let [box (label/box-at canvas content [:center :middle] x y env)]
                               (if (or (m/< length (m/* 2.0 (double (:w box)))) (not (inside? box panel))
                                       (some #(measure/boxes-overlap? box %) kept))
@@ -315,24 +315,24 @@
   - `env` (map): the drawing environment.
 
   A contour whose colour is outside the colour scale or `:none` isn't drawn and gets no label."
-  [_chart {:keys [contours style fill? by-level? labels]} canvas box scales env]
+  [_chart {:keys [contours style filled by-level labels]} canvas box scales env]
   (let [projection (scale/projection scales)
         to-pixels (fn [points] (mapv (fn [[x y]] (let [^fastmath.vector.Vec2 p (projection x y)] [(.x p) (.y p)])) points))
         alpha-factor (:alpha-factor style)
         ;; contours with a drawn color, lowest level first: only their lines get labels
         visible (keep (fn [contour]
-                        (let [st (level-style contour style scales env by-level?)]
+                        (let [st (level-style contour style scales env by-level)]
                           (when (and st (not (theme/none? (:color st)))) [contour st])))
                       (sort-by :level contours))]
     (doseq [[contour st] visible]
-      (if fill?
+      (if filled
         (do (c2d/set-color canvas (cond-> (:color st) alpha-factor (draw/faded alpha-factor)))
             (c2d/shape canvas (polyline/rings-path (map to-pixels (:rings contour))) false))
         (polyline/stroke-runs! canvas
-                               (map (fn [{:keys [points closed?]}] (to-pixels (if closed? (conj points (first points)) points)))
+                               (map (fn [{:keys [points closed]}] (to-pixels (if closed (conj points (first points)) points)))
                                     (:lines contour))
                                (assoc st :color (cond-> (:color st) alpha-factor (draw/faded alpha-factor))))))
-    (when (and labels (not fill?))
+    (when (and labels (not filled))
       (draw-labels! canvas (map first visible) to-pixels labels (assoc env :panel box)))))
 
 (defn legend

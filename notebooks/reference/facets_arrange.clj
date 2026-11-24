@@ -78,6 +78,16 @@
                                  {:columns 3 :widths [2 1 1] :title "mtcars"})
                    {:width 900 :height 350})
 
+;; A cell too small for its sub-plot's axes, labels, legends and margins is an error naming the cell (`[:plot i]`,
+;; row by row; a nested cell by its whole path, outer cells first), its title - else its mapped `:x` / `:y` - its
+;; size and the pixels needed, keyed `:width` or `:height`. Eight plots side by side in 400 pixels:
+
+(try (plot/build (plot/arrange (repeat 8 {:data mtcars :mapping {:x :hp :y :mpg} :charts [(chart/scatter)]})
+                               {:columns 8})
+                 {:width 400 :height 200})
+     (catch clojure.lang.ExceptionInfo e
+       {:message (ex-message e) :data (ex-data e)}))
+
 ;; It returns a plot whose `:arrange` key holds the plots and the layout - also written by hand. Here a legend
 ;; shown once, in its own cell: the two plots hide their legends (`:legend false`), a third plot draws only its
 ;; legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend slice) in a column sized to fit
@@ -104,6 +114,17 @@
 (plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt :qsec]
                                        :upper [(chart/correlation)]})
                    {:width 700 :height 700})
+
+;; `:row-variables` and `:column-variables` (each defaulting to `:variables`) put other variables, or another order,
+;; on the rows than on the columns - here 3 rows x 2 columns. Such a matrix has no triangles: every cell of two
+;; different variables draws `:lower`, a cell whose row and column variable are the same draws `:diagonal`
+;; (wherever it is), and `:upper` is an error.
+
+(plot/render-image (plot/pairs mtcars {:row-variables [:hp :wt :mpg]
+                                       :column-variables [:mpg :disp]
+                                       :lower [(chart/scatter) (chart/smooth {:method :lm})]
+                                       :mapping {:color #(str (:cyl %) " cyl")}})
+                   {:width 600 :height 700})
 
 ;; ## Margins
 

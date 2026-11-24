@@ -208,7 +208,7 @@ have no colour of their own - their fill is a theme key of `[:chart :tile]`, not
 :::
 
 
-Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## bin2d
@@ -342,7 +342,7 @@ area (the legend shows the scale):
 :::
 
 
-Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Cell style](reference.shared_options.html#cell-style) (`:cell` `:cell-scale` `:stroke-color` `:stroke-width` `:alpha-factor`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## field
@@ -520,7 +520,7 @@ the domain reaches past the points (`:cut`, in bandwidths):
 :::
 
 
-Shared options: [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## contour
@@ -633,7 +633,7 @@ values and a density with its own bandwidth:
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:line-width` `:dash`); [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Line style](reference.shared_options.html#line-style) (`:line-width` `:dash`); [Fields](reference.shared_options.html#fields) (`:f` `:domain` `:kernel` `:bandwidth` `:binned` `:cut` `:interpolation` `:n`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## correlation
@@ -753,7 +753,7 @@ glyphs below (`:lower`) and above (`:upper`) the diagonal, and the variables' na
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ## pairwise
@@ -858,7 +858,7 @@ the one colour bar agrees; the cells share one text size:
 :::
 
 
-Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

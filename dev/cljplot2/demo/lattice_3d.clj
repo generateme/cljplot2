@@ -47,7 +47,7 @@
   {:data (filterv #(>= (double (:mag %)) 5.5) quakes)
    :mapping {:x :long :y :lat :z :stations :color :mag}
    :scales {:color {:range [[120 170 220] [10 40 110]]}}
-   :charts [(chart/cloud {:type :spikes :stroke-width 2 :domain {:z [0 140]} :view {:azimuth 30 :elevation 25}
+   :charts [(chart/cloud {:type :spikes :line-width 2 :domain {:z [0 140]} :view {:azimuth 30 :elevation 25}
                           :axis-titles {:x "Longitude" :y "Latitude" :z "Stations"}})]})
 
 (def groups

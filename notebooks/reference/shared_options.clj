@@ -6,6 +6,7 @@
 
 (ns reference.shared-options
   (:require [fastmath.core :as m]
+            [fastmath.kernel :as k]
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
@@ -38,10 +39,10 @@
 
 ;; ## Charts
 
-;; ### Data and mapping
+;; ### Common options
 
 ;; Every chart may read its own rows and merge its own mapping over the plot's - e.g. a reference curve beside the
-;; data (Data and mapping chapter).
+;; data (Data and mapping chapter) - and leave its key glyph out of the legends.
 
 (nu/options-table (describe/fragment-rows :common))
 
@@ -50,6 +51,18 @@
                     :charts [(chart/scatter)
                              (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (m/sin (m/* 0.3 t))})})]}
                    {:width 500 :height 250})
+
+;; `:legend false` keeps a chart's glyph out of the legend while its colours still follow the scale: the rug's
+;; ticks would otherwise be drawn over the scatter's dots in every key (left). A legend no chart draws a key into is
+;; dropped.
+
+(plot/render-image (plot/arrange (for [legend [true false]]
+                                   {:data wave
+                                    :mapping {:x :t :y :v :color #(if (m/pos? (double (:v %))) "up" "down")}
+                                    :charts [(chart/scatter) (chart/rug {:mapping {:y nil} :legend legend})]
+                                    :labels {:title (str "rug :legend " legend)}})
+                                 {:columns 2})
+                   {:width 800 :height 250})
 
 ;; ### Annotation options
 
@@ -108,8 +121,9 @@
 
 ;; Every interpolation method (`schema/interpolation-methods`) through the same points, with default parameters -
 ;; most pass through them or smooth them; `:pava` and `:cir` fit a monotone curve - `:pava` flat runs joined by a
-;; step, `:cir` flat, then sloping; `:kriging` stays near a constant, and `:gp` / `:rbf` use a kernel too narrow for
-;; points this far apart (their `:interpolator-params` set it):
+;; step, `:cir` flat, then sloping; `:kriging` stays near a constant (its variogram is fitted to the points, by a
+;; seeded search, so every render draws the same curve), and `:gp` / `:rbf` use a kernel too narrow for points this
+;; far apart:
 
 (plot/render-image (plot/arrange (for [interpolator (sort schema/interpolation-methods)]
                                    {:data points
@@ -118,6 +132,23 @@
                                     :labels {:title (str interpolator)}})
                                  {:columns 4})
                    {:width 1000 :height 800})
+
+;; `:interpolator-params` are the method's arguments after the points - for `:gp` and `:rbf` a fastmath kernel. A
+;; curve is fitted in pixels along the line's horizontal axis, so the kernel's width is in pixels: here 60, a bit
+;; more than the gap between the points:
+
+(plot/render-image (plot/arrange [{:data points
+                                   :mapping {:x :x :y :y}
+                                   :charts [(chart/line {:interpolator :gp :interpolator-params [(k/kernel :gaussian {:sigma 60.0})]})
+                                            (chart/scatter {:size 4})]
+                                   :labels {:title ":gp, gaussian kernel sigma 60"}}
+                                  {:data points
+                                   :mapping {:x :x :y :y}
+                                   :charts [(chart/line {:interpolator :rbf :interpolator-params [(k/rbf :gaussian {:scale 60.0})]})
+                                            (chart/scatter {:size 4})]
+                                   :labels {:title ":rbf, gaussian scale 60"}}]
+                                 {:columns 2})
+                   {:width 800 :height 280})
 
 ;; Without an interpolator, `:curve` draws a smooth path through the points in their order - also a closed or
 ;; looping one (`:parametric`, a Catmull-Rom curve; `:bezier`, bezier pieces); `:sample-step` sets how densely a

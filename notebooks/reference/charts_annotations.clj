@@ -186,6 +186,33 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
+;; `:select` keeps one label per group and label text (`:select-within :group-and-label`, the default) - a label
+;; that changes along a line (here its phase; beta's early phase is shorter) gives one end label per text.
+;; `:select-within :group` keeps one per group, whatever its label. A `[:panel f]` position also works on an axis no
+;; chart maps - the dot plot's vertical:
+
+(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group-and-label"}
+                                   :legend false}
+                                  {:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group"}
+                                   :legend false}
+                                  {:data faithful :mapping {:x :eruptions}
+                                   :charts [(chart/dotplot {:binwidth 0.1})
+                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
+                                                         :text "eruption lengths"})]
+                                   :labels {:title "[:panel f] without a y scale"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
 ;; The labels' style is a [theme text role](reference.theme.html#text), `:annotation` by default; `:role` picks
 ;; another - a role the theme adds (here `:callout`, in the bottom right corner), or a builder's (here
 ;; `:network-label`, small names on white boxes), the inline style keys still over it:

@@ -1,7 +1,7 @@
 (ns cljplot2.chart.pairwise
   "Pairwise statistic: a statistic of the panel's `:x` / `:y` samples - an error, an association, an effect size, a distance (see [[cljplot2.data.pairwise/statistics]]) or a user function - drawn as one cell filling the panel; with [[cljplot2.multiplot/pairs]] a matrix of them. A cell shows the statistic of its x variable against its y variable `(f xs ys)` - in `pairs` the column variable against the row variable - so the mirrored cell of an asymmetric statistic shows the reverse order.
 
-  Unlike [[cljplot2.chart.correlation]] the values have no fixed range: a colour shows the value on the colour scale's domain - by default the values' range over the panels, symmetric around 0 for a signed statistic (`:signed?`, coloured on the diverging [[cljplot2.chart.statistic-cell/diverging-range]]); `:scales {:color {:domain ..}}` fixes it; in `pairs` the matrix's range, shared by every cell (see [[matrix-settings]]).
+  Unlike [[cljplot2.chart.correlation]] the values have no fixed range: a colour shows the value on the colour scale's domain - by default the values' range over the panels, symmetric around 0 for a signed statistic (`:signed`, coloured on the diverging [[cljplot2.chart.statistic-cell/diverging-range]]); `:scales {:color {:domain ..}}` fixes it; in `pairs` the matrix's range, shared by every cell (see [[matrix-settings]]).
 
   Mapping: numeric `:x`, `:y`; a paired statistic takes the rows where both are finite (pairwise-complete rows), an independent-sample one each variable's own finite values (see [[cljplot2.data.pairwise/statistic-samples]]); fewer than 2 values, a non-finite result or a statistic that throws give no value (`NA`, counted in `:dropped :value`).
 
@@ -137,15 +137,18 @@
 
   Parameters:
 
-  - `variables` (vector of keywords): the matrix's variables.
-  - `slot` (keyword): `:lower` (below the diagonal) or `:upper`.
+  - `variables` (map): the matrix's variables `{:rows ks :columns ks}`; equal rows and columns - a square matrix, else a rectangular one, whose cells with two different variables are all `:lower` (off-diagonal).
+  - `slot` (keyword): `:lower` (below the diagonal; off-diagonal in a rectangular matrix) or `:upper`.
 
-  Returns a sequence of `[x y]`."
-  [variables slot]
-  (for [[^long i y] (map-indexed vector variables)
-        [^long j x] (map-indexed vector variables)
-        :when (if (= slot :lower) (m/> i j) (m/< i j))]
-    [x y]))
+  Returns a sequence of `[x y]`; none for `:upper` of a rectangular matrix."
+  [{row-variables :rows column-variables :columns} slot]
+  (if (= row-variables column-variables)
+    (for [[^long i y] (map-indexed vector row-variables)
+          [^long j x] (map-indexed vector column-variables)
+          :when (if (= slot :lower) (m/> i j) (m/< i j))]
+      [x y])
+    (when (= slot :lower)
+      (for [y row-variables x column-variables :when (not= x y)] [x y]))))
 
 (defn- color-encoding
   "Gives what a pairs slot chart colours by, for comparing the slots' colour bars.
@@ -171,7 +174,7 @@
 
   - `slots` (map): `{:lower charts :upper charts}`, vectors of chart values.
   - `rows` (sequence of maps): the matrix's rows.
-  - `variables` (vector of keywords): the matrix's variables.
+  - `variables` (map): the matrix's variables `{:rows ks :columns ks}` (vectors of keywords); equal - a square matrix, else a rectangular one (its off-diagonal cells are `:lower`).
   - `mapping` (map): a cell's mapping (`:x`, `:y` and the matrix's extra mapping).
 
   Returns `{:domain d :slots s}`: `d` - the colour domain of the value-coloured pairwise statistic over its cells (see [[value-domain]]), `nil` without one; `s` - the slots with every pairwise chart given `:text-template` (its widest cell text).
@@ -213,7 +216,7 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, grouping aesthetics).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:value v :groups [{:aesthetics a :value v} ..] :glyph g :label l :format f :by-value? b :style st :text-color c :template t}` (`t` - the widest line of the panels, so they get one text size); no x / y extents; a colour extent when coloured by value - the finite panel values' domain (see [[value-domain]]; a plot `:scales {:color {:domain ..}}` wins); the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y` - non-finite values, `:value` - panels without a value).
+  Returns per panel `{:value v :groups [{:aesthetics a :value v} ..] :glyph g :label l :format f :by-value b :style st :text-color c :template t}` (`t` - the widest line of the panels, so they get one text size); no x / y extents; a colour extent when coloured by value - the finite panel values' domain (see [[value-domain]]; a plot `:scales {:color {:domain ..}}` wins); with a mapped colour it doesn't draw (a continuous one) that domain as a `:fallback` extent - it counts only for a plot without other colour data, so a partial colour domain finds its open end; the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y` - non-finite values, `:value` - panels without a value).
 
   See also [[cljplot2.data.pairwise/statistic-value]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
@@ -233,21 +236,23 @@
         template (let [own (text-template label-text format-fn (concat (vals values) (map :value (mapcat val panel-groups))))
                        given (:text-template options)]
                    (if (and given (m/>= (count given) (count own))) given own))
-        [lo hi :as domain] (when by-value? (value-domain (vals values) (pairwise/signed-statistic? method)))]
+        [lo hi :as domain] (when (or by-value? (some? (:color mapping))) (value-domain (vals values) (pairwise/signed-statistic? method)))]
     {:data (into {} (map (fn [panel]
                            [panel {:value (values panel)
                                    :groups (get panel-groups panel)
                                    :glyph (data/option options :glyph :number)
                                    :label label-text
                                    :format format-fn
-                                   :by-value? by-value?
+                                   :by-value by-value?
                                    :style st
                                    :text-color (:color options)
                                    :template template}]))
                  (keys groups))
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {}
-                                       domain (assoc :color (aesthetic/value-extent :color (:color plot-scales) [lo hi]))
+                                       (and domain by-value?) (assoc :color (aesthetic/value-extent :color (:color plot-scales) [lo hi]))
+                                       ;; a mapped continuous colour it doesn't draw: the values' range only for a plot without other colour data
+                                       (and domain (not by-value?)) (assoc :color {:kind :numeric :min lo :max hi :fallback true})
                                        grouped (merge (get (group/aesthetic-extents (:panels split) plot-scales) panel)))]))
                     (keys groups))
      :na (if grouped (group/na-dims (:panels split)) #{})
@@ -268,9 +273,9 @@
   - `env` (map): the drawing environment.
 
   Returns `nil`. A missing value draws `NA` and no shade. Text over a shade - every line - takes the `:pairwise` text role's colour against the fill (`:contrast` - black or white); without a shade the first line takes the `:color` option, else the text role's colour against the panel, group lines their group's colour."
-  [_chart {:keys [glyph text-color style by-value? template groups] label-text :label format-fn :format ^double v :value} canvas {:keys [^double w ^double h] :as box} scales env]
+  [_chart {:keys [glyph text-color style by-value template groups] label-text :label format-fn :format ^double v :value} canvas {:keys [^double w ^double h] :as box} scales env]
   (let [theme (:theme env)
-        fill (when (#{:shade :shade-number} glyph) (cell/value-fill v by-value? (:color style) scales env))
+        fill (when (#{:shade :shade-number} glyph) (cell/value-fill v by-value (:color style) scales env))
         backdrop (or fill (draw/painted-color canvas (m/* 0.5 w) (m/* 0.5 h)) (draw/plot-backdrop theme))
         role-color (draw/text-color theme :pairwise backdrop)
         text-of #(formatted-value format-fn (double %))

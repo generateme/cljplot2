@@ -79,18 +79,18 @@
   (testing "1.5 circular: leaves at radius 1 from the top clockwise, the root in the centre, arcs at the parent radius"
     (let [{:keys [nodes paths]} (tree/layout three {:circular true})
           r (fn [{:keys [x y]}] (m/hypot (double x) (double y)))]
-      (is (every? #(< (m/abs (- 1.0 (r %))) 1.0e-9) (filter :leaf? nodes)))
+      (is (every? #(< (m/abs (- 1.0 (r %))) 1.0e-9) (filter :leaf nodes)))
       (is (< (r (first nodes)) 1.0e-9))
-      (is (= [0.0 120.0 240.0] (mapv #(m/approx (double (:angle %)) 6) (filter :leaf? nodes))))
+      (is (= [0.0 120.0 240.0] (mapv #(m/approx (double (:angle %)) 6) (filter :leaf nodes))))
       (let [p (nodes 1) arc (rest (map (juxt :x :y) (filter #(= 2 (:id %)) paths)))]
         (is (every? (fn [[x y]] (< (m/abs (- (double (:radius p)) (m/hypot (double x) (double y)))) 1.0e-9)) arc)))))
   (testing "1.5 partial span: the leaves spread over it"
-    (is (= [0.0 90.0 180.0] (mapv #(m/approx (double (:angle %)) 6) (filter :leaf? (:nodes (tree/layout three {:circular true :span 180})))))))
+    (is (= [0.0 90.0 180.0] (mapv #(m/approx (double (:angle %)) 6) (filter :leaf (:nodes (tree/layout three {:circular true :span 180})))))))
   (testing "1.6 :k - the same partition as fastmath cut; above the cut nil"
     (let [t (tree/from-hclust result names)]
       (doseq [k [1 2 3 5]]
         (let [{:keys [nodes]} (tree/layout t {:k k})
-              ours (set (vals (group-by :cluster (filter :leaf? nodes))))
+              ours (set (vals (group-by :cluster (filter :leaf nodes))))
               theirs (set (map (comp set :indices) (:clusters (cl/cut result points {:k k}))))]
           (is (= theirs (set (map #(set (map :index %)) ours))) (str "k = " k))))
       (is (= #{1 2} (set (keep :cluster (:nodes (tree/layout t {:k 2}))))))

@@ -110,7 +110,7 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged; `:x`, `:y`, grouping aesthetics).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:r r :groups [{:aesthetics a :value r} ..] :glyph g :glyph-size s :method m :by-r? b :style st :text-color c}`; no x / y extents, color extent [-1 1] when colored by r, the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y`).
+  Returns per panel `{:r r :groups [{:aesthetics a :value r} ..] :glyph g :glyph-size s :method m :by-r b :style st :text-color c}`; no x / y extents, color extent [-1 1] when colored by r (with a mapped colour it doesn't draw - a continuous one - a `:fallback` extent: it counts only for a plot without other colour data, so a partial colour domain finds its open end), the groups' aesthetic extents when grouped; `:na`, `:dropped` (`:x`, `:y`).
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x` (or `:y`).
 
@@ -122,7 +122,7 @@
         y-of (data/row-accessor :y (:y mapping))
         _ (data/check-mapped! (mapcat val groups) [[:x x-of] [:y y-of]] (fn [_ v] (schema/finite? v)))
         {:keys [grouped split]} (cell/grouping groups mapping env)
-        by-r? (cell/colored-by-value? options mapping)
+        by-r (cell/colored-by-value? options mapping)
         st (theme/resolved-style theme chart)
         rows-r (fn [rows-of] (let [[xs ys] (pairwise/pair-samples rows-of x-of y-of)] (pairwise/statistic-value method xs ys)))]
     {:data (into {} (map (fn [[panel panel-rows]]
@@ -133,13 +133,15 @@
                                    :glyph glyph
                                    :glyph-size (data/option options :glyph-size default-glyph-size)
                                    :method method
-                                   :by-r? by-r?
+                                   :by-r by-r
                                    :style st
                                    :text-color (:color options)}]))
                  groups)
      :extents (into {} (map (fn [panel]
                               [panel (cond-> {}
-                                       by-r? (assoc :color {:kind :numeric :min -1.0 :max 1.0})
+                                       by-r (assoc :color {:kind :numeric :min -1.0 :max 1.0})
+                                       ;; a mapped continuous colour it doesn't draw: r's range only for a plot without other colour data
+                                       (and (not by-r) (some? (:color mapping))) (assoc :color {:kind :numeric :min -1.0 :max 1.0 :fallback true})
                                        grouped (merge (get (group/aesthetic-extents (:panels split) plot-scales) panel)))]))
                     (keys groups))
      :na (if grouped (group/na-dims (:panels split)) #{})
@@ -248,7 +250,7 @@
   (let [cx (m/* 0.5 w)
         cy (m/* 0.5 h)
         side (m/* glyph-size (m/min w h))
-        fill (cell/value-fill coefficient (:by-r? computed) (:color style) scales env)]
+        fill (cell/value-fill coefficient (:by-r computed) (:color style) scales env)]
     (if (and (m/nan? coefficient) (not= glyph :number))
       (draw-text-lines! canvas [{:text "NA"}] "NA" box env)
       (case glyph

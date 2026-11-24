@@ -2640,7 +2640,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image4.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#rounded-corners">Rounded corners</a> (<code>:corner-radius</code> <code>:corner-radius-end</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#rounded-corners">Rounded corners</a> (<code>:corner-radius</code> <code>:corner-radius-end</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
 </section>
 <section id="density" class="level2" data-number="18.2">
 <h2 data-number="18.2" class="anchored" data-anchor-id="density"><span class="header-section-number">18.2</span> density</h2>
@@ -2726,13 +2726,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:fill</td>
 <td>:color or a clojure2d color or :none</td>
 <td>:none</td>
-<td>area under the curve: a colour, :color (the curve's colour with opacity :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set</td>
+<td>area under the curve: a colour, :color (the curve's colour, its own alpha times :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set</td>
 </tr>
 <tr class="even">
 <td>:alpha</td>
 <td>a number in [0 1]</td>
 <td>0.6</td>
-<td>fill opacity of areas in the curve's colour</td>
+<td>factor of the curve colour's alpha filling areas in the curve's colour</td>
 </tr>
 <tr class="odd">
 <td>:zero-line-color</td>
@@ -2980,7 +2980,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#ridgelines">Ridgelines</a> (<code>:overlap</code>).</p>
 </section>
 </section>
 <section id="ecdf" class="level2" data-number="18.3">
@@ -3069,7 +3069,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image13.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 <section id="qq" class="level2" data-number="18.4">
 <h2 data-number="18.4" class="anchored" data-anchor-id="qq"><span class="header-section-number">18.4</span> qq</h2>
@@ -3562,7 +3562,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="style-1" class="level3" data-number="18.4.1">
 <h3 data-number="18.4.1" class="anchored" data-anchor-id="style-1"><span class="header-section-number">18.4.1</span> Style</h3>
-<p>The point style and the reference line’s width:</p>
+<p>The point style (<code>:alpha</code> - the points’ opacity, not the line’s) and the reference line’s width:</p>
 <div class="clay-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -3606,6 +3606,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>point shape (a mapped :shape wins)</td>
 </tr>
 <tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1] or nil</td>
+<td>the colours' own alpha</td>
+<td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td>
+</tr>
+<tr class="odd">
 <td>:line-width</td>
 <td>a non-negative number</td>
 <td>1</td>
@@ -3618,7 +3624,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"t(3)"</span> (<span class="at">:sample</span> <span class="va">%</span>)) samples)</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">9</span> <span class="at">:shape</span> <span class="ch">\S</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">120</span>]</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/qq {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">9</span> <span class="at">:shape</span> <span class="ch">\S</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span>] <span class="at">:alpha</span> <span class="fl">0.47</span></span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="fl">0.5</span> <span class="at">:line-width</span> <span class="dv">3</span>})]</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"squares, :line-width 3"</span>}}</span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3699,7 +3705,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image16.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
 </section>
 <section id="pp" class="level2" data-number="18.5">
@@ -3813,6 +3819,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>point shape (a mapped :shape wins)</td>
 </tr>
 <tr class="even">
+<td>:alpha</td>
+<td>a number in [0 1] or nil</td>
+<td>the colours' own alpha</td>
+<td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td>
+</tr>
+<tr class="odd">
 <td>:line-width</td>
 <td>a non-negative number</td>
 <td>1</td>
@@ -3825,7 +3837,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"t(3)"</span> (<span class="at">:sample</span> <span class="va">%</span>)) samples)</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:v</span>}</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/pp {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\O</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">140</span>]</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/pp {<span class="at">:x-distribution</span> [<span class="at">:normal</span>] <span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\O</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span>] <span class="at">:alpha</span> <span class="fl">0.55</span></span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">:stroke-color</span> <span class="at">:black</span> <span class="at">:stroke-width</span> <span class="dv">1</span> <span class="at">:line-width</span> <span class="dv">3</span>})]</span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"outlined points, :line-width 3"</span>}}</span>
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3912,7 +3924,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_distribution_stats_files/image19.png" class="img-fluid"></p>
 </div>
-<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+<p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_distribution_stats.clj</small></small></pre></div>
 

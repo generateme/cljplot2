@@ -348,7 +348,7 @@
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
   - `env` (map): `:theme`.
 
-  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade?`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y, `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
+  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y, `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
 
   Throws `ex-info {:key :mapping}` for a missing position ([[check-mapping!]]) or one without a finite value in non-empty rows, `{:key :domain}` for a function without a domain."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
@@ -367,7 +367,7 @@
         st (merge (theme/resolved-style theme chart)
                   (select-keys options [:color])
                   {:surface-style (data/option options :style :surface)
-                   :shade? (not (false? (:shade options)))})
+                   :shade (not (false? (:shade options)))})
         colored? (nil? (:color options))]
     {:data (update-vals meshes (fn [panel-mesh] {:mesh panel-mesh :domains domains :frame frame
                                                  :frame-overrides (space/frame-overrides options) :style st
@@ -486,7 +486,7 @@
                 pixels (mapv first projected)]]
       (if (= look :wireframe)
         {:kind :polygon :points pixels :depth depth :fill back :stroke-color col :stroke-width width}
-        (let [fill (if (:shade? style) (shade col (quad-normal rotate (mapv normalize ps))) col)]
+        (let [fill (if (:shade style) (shade col (quad-normal rotate (mapv normalize ps))) col)]
           (cond
             (= look :both) {:kind :polygon :points pixels :depth depth :fill fill :stroke-color (:stroke-color style) :stroke-width width}
             ;; outlined in its own fill: no anti-aliased seams between neighbours (an opaque fill only - a translucent

@@ -25,7 +25,8 @@
   - `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved.
 
   Facet mapping keys (`:facet`, `:facet-col`, `:facet-row`) split rows into panels, see [[cljplot2.data.facet]]. Aesthetic mapping keys (`:color`, `:shape`, `:size`, `:dash`, `:pattern`) style marks, see [[cljplot2.scale.aesthetic]]; `:group` splits rows into groups for charts drawing one mark per group, see [[cljplot2.data.group]]."
-  (:require [fastmath.core :as m]
+  (:require [clojure.string :as str]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart :as chart]
             [cljplot2.schema :as schema]
@@ -44,7 +45,7 @@
             ;; built-in content kinds (natural-size / draw-content methods)
             [cljplot2.content.label]
             [cljplot2.content.panel]
-            [cljplot2.content.axis]
+            [cljplot2.content.axis :as axis]
             [cljplot2.content.strip]
             [cljplot2.content.legend :as legend]
             [cljplot2.content.subplot :as subplot]))
@@ -69,11 +70,11 @@
 
   Parameters:
 
-  - `input` (map): a chart input `{:rows :mapping :own-data?}` - its rows, merged mapping and whether the rows are the chart's own `:data`.
+  - `input` (map): a chart input `{:rows :mapping :own-data}` - its rows, merged mapping and whether the rows are the chart's own `:data`.
 
-  Returns `true` when `:own-data?` is set and every facet accessor of the mapping gives `nil` for every row; falsy otherwise (a chart reading the plot's data is never such a chart)."
-  [{:keys [rows mapping own-data?]}]
-  (and own-data?
+  Returns `true` when `:own-data` is set and every facet accessor of the mapping gives `nil` for every row; falsy otherwise (a chart reading the plot's data is never such a chart)."
+  [{:keys [rows mapping own-data]}]
+  (and own-data
        (not-any? (fn [d] (let [acc (data/row-accessor d (mapping d))] (some #(some? (acc %)) rows)))
                  (facet/facet-dims mapping))))
 
@@ -84,7 +85,7 @@
 
   Parameters:
 
-  - `chart-inputs` (sequence of maps): per chart `{:rows :mapping :own-data?}`.
+  - `chart-inputs` (sequence of maps): per chart `{:rows :mapping :own-data}`.
   - `scales` (map): the plot `:scales` (facet scale specs order and select levels).
   - `na-panel?` (boolean): `nil` facet values form an NA panel.
 
@@ -142,7 +143,7 @@
         inputs (mapv (fn [{:keys [options] :as chart}]
                        {:mapping (chart-mapping mapping chart)
                         :rows (if (some? (:data options)) (data/rows (:data options)) plot-rows)
-                        :own-data? (some? (:data options))})
+                        :own-data (some? (:data options))})
                      charts)
         {split-facets :facets chart-splits :charts} (facet-split inputs scales (get facets :na-panel true))]
     (assoc plot :split {:facets (assoc split-facets :dropped {:facet (reduce m/long-add (map :dropped chart-splits))})
@@ -237,7 +238,7 @@
                                        {:key :margins :in [:margins side] :value shared-key}))
                      inherited (assoc (select-keys mapping (conj (groupable-aesthetics mapping (:plot-scales env) @plot-rows) :group))
                                       :x shared)
-                     side-env (assoc env :flip? (= side :right))
+                     side-env (assoc env :flip (= side :right))
                      ;; annotation charts (:inherit-mapping :facets) take only their own mapping, as in the panel
                      mappings (mapv (fn [{:keys [options inherit-mapping]}]
                                       (merge (if (= :facets inherit-mapping) {} inherited) (:mapping options)))
@@ -294,7 +295,7 @@
   Returns `plot` with `:stats` (one computed map per chart, see [[cljplot2.chart]]) and `:margin-stats`."
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [facet-dims (get-in split [:facets :dims])
-        env {:theme theme :na-level? (get groups :na true) :plot-scales scales :flip? (true? flip)
+        env {:theme theme :na-level (get groups :na true) :plot-scales scales :flip (true? flip)
              :hint (:hint options) :coord (:coord plot) :aspect aspect
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
              :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
@@ -312,12 +313,14 @@
 
   - `stats` (sequence of maps): computed chart data (`:extents {panel {dim extent}}`, `:na #{dim}`).
 
-  Returns `{dim {:extent e :na? bool}}` for each aesthetic with an extent or NA values: `e` - the extents merged over charts and panels (see [[cljplot2.data.rows/merge-extents]], `nil` with NA values only), `:na?` - some chart has NA values of it."
+  Returns `{dim {:extent e :na-level bool}}` for each aesthetic with an extent or NA values: `e` - the extents merged over charts and panels (see [[cljplot2.data.rows/merge-extents]], `nil` with NA values only; extents marked `:fallback true` - e.g. a correlation cell's statistic range beside a mapped continuous colour it doesn't draw - count only when no chart has other extents of it), `:na-level` - some chart has NA values of it."
   [stats]
   (into {} (keep (fn [k]
-                   (let [extent (data/merge-extents k (mapcat #(keep (fn [e] (get e k)) (vals (:extents %))) stats))
-                         na? (true? (some #(contains? (:na %) k) stats))]
-                     (when (or extent na?) [k {:extent extent :na? na?}]))))
+                   (let [per-chart (keep (fn [st] (seq (keep #(get % k) (vals (:extents st))))) stats)
+                         main (remove #(every? :fallback %) per-chart)
+                         extent (data/merge-extents k (apply concat (if (seq main) main per-chart)))
+                         na-level (true? (some #(contains? (:na %) k) stats))]
+                     (when (or extent na-level) [k {:extent extent :na-level na-level}]))))
         aesthetic/dims))
 
 (defn- per-side-max
@@ -366,7 +369,7 @@
 (defn- position-extent
   "Extent, padding and pixel room of a position dimension over the charts' stats.
 
-  A chart whose extents of the dimension are all companions (`:companion? true`) joins only when another chart has extents of it.
+  A chart whose extents of the dimension are all companions (`:companion true`) joins only when another chart has extents of it.
 
   Parameters:
 
@@ -380,9 +383,9 @@
                               {:extent (data/merge-extents k es) :padding (get-in st [:padding k] [0 0])
                                :explicit (get-in st [:padding-explicit k])
                                :padding-px (get-in st [:padding-px k] [0 0])
-                               :companion? (every? :companion? es)}))
+                               :companion (every? :companion es)}))
                           stats)]
-    (when (some (complement :companion?) with-extent)
+    (when (some (complement :companion) with-extent)
       (let [extent (data/merge-extents k (map :extent with-extent))]
         {:extent extent
          :padding (merged-padding extent with-extent)
@@ -397,7 +400,7 @@
 
   - `plot` (map): the plot map after the `:stats` stage.
 
-  Returns `plot` with `:extents {dim ...}`: position dimensions `{:extent :padding :padding-px}`, aesthetics `{:extent :na?}`."
+  Returns `plot` with `:extents {dim ...}`: position dimensions `{:extent :padding :padding-px}`, aesthetics `{:extent :na-level}`."
   [{:keys [stats] :as plot}]
   ;; aesthetic extents also over margin charts: margins share (and may extend) the plot's aesthetic scales
   (assoc plot :extents
@@ -576,9 +579,9 @@
   Returns `{panel-key {k spec}}` of the dimensions with such a relation; `nil` when the facets ask for no panel-local scales or the plot has no facets."
   [{:keys [facets split scales flip extents] :as plot} specs]
   (when (and (facet/panel-scales? facets) (seq (get-in split [:facets :dims])))
-    (let [{:keys [panels wrap?]} (plot-grid/facet-panels (:facets split) scales facets)
+    (let [{:keys [panels wrap]} (plot-grid/facet-panels (:facets split) scales facets)
           horizontal (scale/horizontal-key flip)
-          group-of (fn [k panel] (cond wrap? (:key panel) (= k horizontal) (:col panel) :else (:row panel)))]
+          group-of (fn [k panel] (cond wrap (:key panel) (= k horizontal) (:col panel) :else (:row panel)))]
       (reduce (fn [acc k]
                 (let [relation (facet/scale-relation facets k)
                       shared (get specs k)
@@ -618,9 +621,9 @@
                                           m)))
            :scale-specs
            (into {} (keep (fn [k]
-                            (let [{:keys [extent na?] :as e} (get extents k)]
+                            (let [{:keys [extent na-level] :as e} (get extents k)]
                               (if (aesthetic/dim? k)
-                                (some->> (aesthetic/scale-spec k (aesthetic-spec k) extent na? (:palette theme)) (vector k))
+                                (some->> (aesthetic/scale-spec k (aesthetic-spec k) extent na-level (:palette theme)) (vector k))
                                 [k (ordered-position-spec plot k (get scales k {}) (position-spec stats k (get scales k {}) e))]))))
                  ks))))
 
@@ -830,7 +833,8 @@
          (fn [c]
            (m/+ (->> labels
                      (map (fn [[tick t]]
-                            (let [^fastmath.vector.Vec2 size (measure/label-size :tick-label t {:canvas c :theme (:theme plot)})
+                            (let [^fastmath.vector.Vec2 size (measure/natural-size (axis/tick-label (:theme plot) k t)
+                                                                                   {:canvas c :theme (:theme plot)})
                                   a (double (forward tick))]
                               (if (m/valid-double? a)
                                 (m/+ (m/* (m/abs (m/sin a)) (.x size))
@@ -897,6 +901,26 @@
       theta (assoc horizontal (assoc theta :direction :horizontal :coord geometry))
       r (assoc vertical (assoc r :direction :vertical :coord geometry)))))
 
+(defn- plot-space-checked
+  "Runs a grid solve, wording a space error of the plot's own tracks for a plot.
+
+  Parameters:
+
+  - `solve` (function of no arguments): solves the plot's grid (see [[cljplot2.layout.grid/solve]]).
+
+  Returns what `solve` returns. Throws `ex-info` with the same data when the plot's tracks don't fit its box
+  ([[cljplot2.layout.grid/space-error?]], not a sub-plot's), its message (and `:errors`) naming the plot's fixed
+  parts; other errors pass unchanged."
+  [solve]
+  (try (solve)
+       (catch clojure.lang.ExceptionInfo e
+         (let [data (ex-data e)]
+           (if (and (grid/space-error? data) (nil? (:subplot data)))
+             (schema/fail! (str "Not enough space: the plot's fixed parts (axes, labels, legends, strips, margins, gaps) need "
+                                (:required data) " px of " (name (:key data)) ", " (:available data) " px given.")
+                           (dissoc data :errors))
+             (throw e))))))
+
 (defn- solve-layout
   "The layout of the plot's grid at its render size.
 
@@ -921,7 +945,7 @@
                                           layout))]
     (loop [round (long 1)
            measurements (measure-for nil)]
-      (let [layout (grid/solve prepared box measurements)
+      (let [layout (plot-space-checked #(grid/solve prepared box measurements))
             remeasured (measure-for layout)]
         (if (or (= measurements remeasured) (m/>= round max-layout-rounds))
           (assoc layout :rounds round)
@@ -1044,6 +1068,37 @@
     (cond-> (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales))
       (facet/panel-scales? (:facets plot)) (assoc :panel-scales (panel-scales plot (:layout plot) scales)))))
 
+(defn- subplot-prefix
+  "Gives the start of the message of a sub-plot whose tracks don't fit its cell, naming the cell path.
+
+  Parameters:
+
+  - `path` (sequence): grid item ids of the nested cells, outer first.
+
+  Returns `\"Sub-plot \"` followed by the ids joined with ` > `, e.g. `Sub-plot [:plot 1] > [:plot 0]`."
+  [path]
+  (apply str "Sub-plot " (interpose " > " (map pr-str path))))
+
+(defn- subplot-name
+  "Gives how the message of a sub-plot whose tracks don't fit its cell names the sub-plot.
+
+  Parameters:
+
+  - `p` (map): the sub-plot - `[:labels :title]`, `:mapping` (`:x`, `:y`).
+
+  Returns its title in quotes (a space first), else its mapped `:x` / `:y` variables (keywords or strings, e.g. the
+  two variables of a [[cljplot2.multiplot/pairs]] cell) in parentheses, else an empty string."
+  [p]
+  (let [title-label (get-in p [:labels :title])
+        title (if (map? title-label) (:text title-label) title-label)
+        variables (keep (fn [k] (let [a (get-in p [:mapping k])]
+                                  (when (or (keyword? a) (string? a)) (str (name k) " " (pr-str a)))))
+                        [:x :y])]
+    (cond
+      (string? title) (str " \"" title "\"")
+      (seq variables) (str " (" (str/join ", " variables) ")")
+      :else "")))
+
 (defn- build-subplot
   "A sub-plot built at its grid item's size.
 
@@ -1056,7 +1111,7 @@
 
   Returns the built sub-plot (see [[build]]).
 
-  Throws `ex-info` with `{:key :cvd}` when the sub-plot has `:cvd` in its `:options` (it applies to the whole rendering). Any error is re-thrown as `ex-info` with `:subplot id` and `:subplot-path` (outer item ids first) added, the original as its cause: an `ex-info` keeps its message and data, another exception gets `{:key :subplot}`."
+  Throws `ex-info` with `{:key :cvd}` when the sub-plot has `:cvd` in its `:options` (it applies to the whole rendering). Any error is re-thrown as `ex-info` with `:subplot id` and `:subplot-path` (outer item ids first) added, the original as its cause: an `ex-info` keeps its message and data (but a sub-plot whose own tracks don't fit its cell - [[cljplot2.layout.grid/space-error?]] - gets a message naming the cell path - outer cells first -, its title or else its mapped `:x` / `:y` variables (see [[subplot-name]]), its size and the size needed), another exception gets `{:key :subplot}`."
   [p id {:keys [w h]} hint]
   (try (when (some? (get-in p [:options :cvd]))
          (schema/fail! "Option :cvd applies to the whole rendering, not to a sub-plot; give it to the outer plot."
@@ -1064,10 +1119,19 @@
        (build p {:width w :height h :hint hint})
        (catch Exception e
          (let [data (if (instance? clojure.lang.ExceptionInfo e) (ex-data e) {:key :subplot})
-               message (if (instance? clojure.lang.ExceptionInfo e)
-                         (ex-message e)
-                         (str "Sub-plot failed: " (or (ex-message e) (.getName (class e)))))]
-           (throw (ex-info message (assoc data :subplot id :subplot-path (into [id] (:subplot-path data))) e))))))
+               path (into [id] (:subplot-path data))
+               inner-prefix (subplot-prefix (:subplot-path data))
+               message (cond
+                         ;; the sub-plot's own tracks don't fit its cell: name the cell and the sizes
+                         (and (grid/space-error? data) (nil? (:subplot data)))
+                         (str (subplot-prefix path) (subplot-name p) " is " w "x" h " px; its axes, labels, legends and margins need "
+                              (:required data) " px of " (name (:key data)) ". Enlarge the image or the cell, or shrink the sub-plot's fixed parts.")
+                         ;; a nested cell's: name the whole cell path, outer cells first
+                         (and (grid/space-error? data) (str/starts-with? (str (ex-message e)) inner-prefix))
+                         (str (subplot-prefix path) (subs (ex-message e) (count inner-prefix)))
+                         (instance? clojure.lang.ExceptionInfo e) (ex-message e)
+                         :else (str "Sub-plot failed: " (or (ex-message e) (.getName (class e)))))]
+           (throw (ex-info message (assoc data :subplot id :subplot-path path) e))))))
 
 (declare stage-order stage-extra-keys)
 
@@ -1365,7 +1429,7 @@
 (defn- facet-scale-errors
   "Errors of plot `:facets` options asking for panel-local scales.
 
-  Free / sliced relations and panel `:widths` / `:heights` need facets and the generated cartesian grid, not `:aspect :iso` or polar coordinates, and no explicit `:domain` on a free / sliced scale.
+  Free / sliced relations and panel `:widths` / `:heights` need facets and the generated cartesian grid, not `:aspect :iso` or polar coordinates, and no explicit `:domain` on a free / sliced scale (`[nil nil]` is none; a partial `[lo nil]` / `[nil hi]` is refused too, see [[cljplot2.data.rows/given-domain]]).
 
   Parameters:
 
@@ -1381,8 +1445,15 @@
                     (or custom-grid arrange) "free / sliced scales and panel :widths / :heights need the generated grid"
                     (= :iso aspect) "free / sliced scales and panel :widths / :heights can't be combined with :aspect :iso"
                     (coord/polar? (:coord plot)) "free / sliced scales and panel :widths / :heights can't be combined with polar coordinates"
-                    :else (some (fn [k] (when (and (not= :same (facet/scale-relation facets k)) (some? (get-in scales [k :domain])))
-                                          (str "a " (facet/scale-relation facets k) " " k " scale takes its domains from the data, it can't have a :domain")))
+                    :else (some (fn [k]
+                                  (let [relation (facet/scale-relation facets k)
+                                        domain (get-in scales [k :domain])]
+                                    (when (not= :same relation)
+                                      (cond
+                                        (data/partial-domain? domain)
+                                        (str "a " relation " " k " scale takes each panel's domain from its data, it can't have a partial :domain [lo nil] / [nil hi] (use :same scales to fix one end)")
+                                        (data/given-domain domain)
+                                        (str "a " relation " " k " scale takes its domains from the data, it can't have a :domain")))))
                                 [:x :y]))]
       (when problem [(error [:facets] facets problem)]))))
 

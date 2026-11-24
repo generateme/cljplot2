@@ -58,7 +58,7 @@
     (let [data (conj rows {:v 1.0 :g nil} {:v 2.0 :g nil})
           built (build {:data data :mapping {:x :v :color :g} :charts [(chart/density)]})]
       (is (= [{:color "a"} {:color "b"} {:color nil}] (map :aesthetics (:curves (panel built)))) "NA last")
-      (is (true? (get-in built [:scale-specs :color :na?])))
+      (is (true? (get-in built [:scale-specs :color :na-level])))
       (is (= 2 (get-in (build {:data data :mapping {:x :v :color :g} :groups {:na false} :charts [(chart/density)]})
                        [:stats 0 :dropped :color])))))
   (testing "explicit domain orders groups; group outside the domain gets no style"
@@ -127,8 +127,8 @@
                (error #(build {:data rows :mapping {:x :v :color :n} :scales {:color {:kind :ordinal}}
                                     :charts [(chart/histogram {:position :mirror})]}))))
         (is (= {:key :position :groups 1} (error #(build {:data rows :mapping {:x :v} :charts [(chart/histogram {:position :mirror})]}))))
-        (is (true? (:translucent? (panel (build {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram)]})))))
-        (is (false? (:translucent? (panel (build {:data rows :mapping {:x :v} :charts [(chart/histogram)]})))) "single group opaque")))
+        (is (true? (:translucent (panel (build {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram)]})))))
+        (is (false? (:translucent (panel (build {:data rows :mapping {:x :v} :charts [(chart/histogram)]})))) "single group opaque")))
     (testing "overlay blends group colours"
       (let [p {:data [{:x 1.0 :g "a"} {:x 1.0 :g "b"}] :mapping {:x :x :color :g} :theme plain
                :scales {:color {:range [[255 0 0] [0 0 255]]}}

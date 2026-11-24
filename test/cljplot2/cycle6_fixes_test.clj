@@ -92,11 +92,11 @@
     (is (< 0.99 (zero-row-black-share {:data rows :mapping {:x :v :color :g} :theme plain
                                         :charts [(chart/histogram {:position :mirror :bins 40})]})))
     (is (true? (get-in (built {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram {:position :mirror})]})
-                       [:stats 0 :data facet/single-panel :zero-line?])))
+                       [:stats 0 :data facet/single-panel :zero-line])))
     (is (false? (get-in (built {:data rows :mapping {:x :v :color :g} :charts [(chart/histogram {:position :mirror :zero-line false})]})
-                        [:stats 0 :data facet/single-panel :zero-line?])))
+                        [:stats 0 :data facet/single-panel :zero-line])))
     (is (false? (get-in (built {:data rows :mapping {:x :v} :charts [(chart/histogram)]})
-                        [:stats 0 :data facet/single-panel :zero-line?]))
+                        [:stats 0 :data facet/single-panel :zero-line]))
         "only mirror histograms"))
   (testing "sub-half-pixel bars aren't drawn; visible ones are"
     (doseq [[n-left drawn?] [[20000 false] [20 true]]

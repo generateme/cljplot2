@@ -172,7 +172,7 @@ vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :x :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
 ```
 
 :::
@@ -209,12 +209,47 @@ vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-
 :::
 
 
+`:tick-label` restyles one axis's tick labels over the `:tick-label` text role (polar guides too) - here emoji
+levels drawn in the bundled Noto Emoji font, larger, while the y axis keeps the role's font:
+
+
+::: {.sourceClojure}
+```clojure
+(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
+            {:fruit "🍒" :count 81}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>fruit</th><th>count</th></tr></thead><tbody><tr><td>🍎</td><td>28</td></tr><tr><td>🍌</td><td>55</td></tr><tr><td>🍇</td><td>43</td></tr><tr><td>🍑</td><td>91</td></tr><tr><td>🍒</td><td>81</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data fruit
+                    :mapping {:x :fruit :y :count}
+                    :charts [(chart/bar)]
+                    :theme {:axis {:x {:tick-label {:font "Noto Emoji" :size 22}}}}}
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image4.png)
+:::
+
+
 The y axis has the same keys:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :y :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
 ```
 
 :::
@@ -230,19 +265,20 @@ The y axis has the same keys:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image4.png)
+![](reference.theme_files/image5.png)
 :::
 
 
 
 ## Strips
 
-Facet strip boxes; the shingle fill marks a shingle level's range.
+Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
+down to `:min-text-size` points, then is cut with an ellipsis.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr><tr><td>:strip :min-text-size</td><td>a positive number</td><td>7</td><td>smallest font size in points a strip text too long for its strip shrinks to before it is cut with an ellipsis</td></tr></tbody></table>
 ```
 
 :::
@@ -267,7 +303,30 @@ Facet strip boxes; the shingle fill marks a shingle level's range.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image5.png)
+![](reference.theme_files/image6.png)
+:::
+
+
+Long level names in row strips: the first two fit; the third shrinks to `:min-text-size` and is cut - at the
+default 7 points (left) later than at 9 (right).
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [min-text-size [7 9]]
+                                   (assoc iris-plot
+                                          :mapping {:x :sepal-length :y :petal-length
+                                                    :facet-row #(str "Iris " (:species %) (when (= "virginica" (:species %)) " (Anderson)"))}
+                                          :labels {:title (str ":min-text-size " min-text-size)}
+                                          :theme {:strip {:min-text-size min-text-size}}))
+                                 {:columns 2})
+                   {:width 800 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image7.png)
 :::
 
 
@@ -294,7 +353,7 @@ The gap between facet panels.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image6.png)
+![](reference.theme_files/image8.png)
 :::
 
 
@@ -323,7 +382,7 @@ The gap between arranged plots.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image7.png)
+![](reference.theme_files/image9.png)
 :::
 
 
@@ -335,7 +394,7 @@ Legend key sizes, spacing, the legend box and the colour bar.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>map</td><td></td><td>legends and colour bars</td></tr><tr><td>:legend :gap</td><td>a non-negative number</td><td>5</td><td>pixels between key and label and between legends</td></tr><tr><td>:legend :key-size</td><td>a non-negative number</td><td>14</td><td>side of a legend key box in pixels</td></tr><tr><td>:legend :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box fill</td></tr><tr><td>:legend :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box border colour</td></tr><tr><td>:legend :border-width</td><td>a non-negative number</td><td>1</td><td>legend box border width in pixels</td></tr><tr><td>:legend :bar-length</td><td>:stretch or a positive number</td><td>:stretch</td><td>colour bar length: :stretch (the space left) or pixels</td></tr><tr><td>:legend :bar-width</td><td>a positive number or nil</td><td></td><td>colour bar width in pixels (nil - the key size)</td></tr><tr><td>:legend :bar-ticks</td><td>a positive integer</td><td>5</td><td>colour bar tick count (a scale's :ticks wins)</td></tr><tr><td>:legend :bar-tick-length</td><td>a non-negative number</td><td>3</td><td>colour bar tick length in pixels (labels follow it)</td></tr><tr><td>:legend :bar-tick-width</td><td>a non-negative number</td><td>1</td><td>colour bar tick width in pixels (0 - no tick lines)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>map</td><td></td><td>legends and colour bars</td></tr><tr><td>:legend :gap</td><td>a non-negative number</td><td>5</td><td>pixels between key and label and between legends</td></tr><tr><td>:legend :key-size</td><td>a non-negative number</td><td>14</td><td>side of a legend key box in pixels</td></tr><tr><td>:legend :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box fill</td></tr><tr><td>:legend :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box border colour</td></tr><tr><td>:legend :border-width</td><td>a non-negative number</td><td>1</td><td>legend box border width in pixels</td></tr><tr><td>:legend :bar-length</td><td>:stretch or a positive number</td><td>:stretch</td><td>colour bar length: :stretch (the space left) or pixels</td></tr><tr><td>:legend :bar-width</td><td>a positive number or nil</td><td></td><td>colour bar width in pixels (nil - the key size)</td></tr><tr><td>:legend :bar-ticks</td><td>a positive integer</td><td>5</td><td>colour bar tick count (a scale's :ticks wins)</td></tr><tr><td>:legend :bar-tick-length</td><td>a non-negative number</td><td>3</td><td>colour bar tick length in pixels (labels follow it)</td></tr><tr><td>:legend :bar-tick-width</td><td>a non-negative number</td><td>1</td><td>colour bar tick width in pixels (0 - no tick lines)</td></tr><tr><td>:legend :min-key-line-width</td><td>a non-negative number</td><td>2</td><td>least width in pixels of the line marks drawn in legend keys (thinner visible lines are drawn this wide there, width 0 stays 0; 0 - as in the panel)</td></tr></tbody></table>
 ```
 
 :::
@@ -351,7 +410,29 @@ Legend key sizes, spacing, the legend box and the colour bar.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image8.png)
+![](reference.theme_files/image10.png)
+:::
+
+
+Line marks thinner than `:min-key-line-width` are drawn that wide in legend keys, so a key's colour reads (the
+lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width 0 - no line - stays undrawn.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [min-key-line-width [0 2 4]]
+                                   (assoc iris-plot
+                                          :charts [(chart/line)]
+                                          :labels {:title (str ":min-key-line-width " min-key-line-width)}
+                                          :theme {:legend {:min-key-line-width min-key-line-width}}))
+                                 {:columns 3})
+                   {:width 900 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image11.png)
 :::
 
 
@@ -370,7 +451,7 @@ A colour bar with more, longer and thicker ticks.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image9.png)
+![](reference.theme_files/image12.png)
 :::
 
 
@@ -401,7 +482,7 @@ The dash of a 3D box's hidden edges; the box edges and axes take the x axis styl
 
 
 ::: {.clay-image}
-![](reference.theme_files/image10.png)
+![](reference.theme_files/image13.png)
 :::
 
 
@@ -432,7 +513,7 @@ numbers, shapes, sizes, dashes and patterns.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image11.png)
+![](reference.theme_files/image14.png)
 :::
 
 
@@ -470,7 +551,7 @@ Titles, strips and axis texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image12.png)
+![](reference.theme_files/image15.png)
 :::
 
 
@@ -496,7 +577,7 @@ Legend texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image13.png)
+![](reference.theme_files/image16.png)
 :::
 
 
@@ -542,7 +623,7 @@ the default):
 
 
 ::: {.clay-image}
-![](reference.theme_files/image14.png)
+![](reference.theme_files/image17.png)
 :::
 
 
@@ -578,7 +659,7 @@ what's behind them by default). The bars write their values in their middle
 
 
 ::: {.clay-image}
-![](reference.theme_files/image15.png)
+![](reference.theme_files/image18.png)
 :::
 
 
@@ -609,7 +690,7 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 
 
 ::: {.clay-image}
-![](reference.theme_files/image16.png)
+![](reference.theme_files/image19.png)
 :::
 
 
@@ -636,7 +717,7 @@ The keys of a text style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image17.png)
+![](reference.theme_files/image20.png)
 :::
 
 
@@ -725,7 +806,7 @@ The kinds with a theme style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image18.png)
+![](reference.theme_files/image21.png)
 :::
 
 

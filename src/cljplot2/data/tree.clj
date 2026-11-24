@@ -231,13 +231,13 @@
   - `[nodes next-x]`: the nodes placed so far and the x of the next leaf.
   - `cut-of` (function): of a node, its cluster number when it is a cut subtree root (by identity), else `nil`.
 
-  Returns `[nodes next-x]` - the nodes with this subtree's appended and the x after its last leaf. Each node gets `:x` (a leaf its position in leaf order, a group the mean of its children), `:y` (its height), `:depth`, `:parent`, `:leaf?` and `:cluster` (its own cut cluster, else the inherited one); `:children` is removed."
+  Returns `[nodes next-x]` - the nodes with this subtree's appended and the x after its last leaf. Each node gets `:x` (a leaf its position in leaf order, a group the mean of its children), `:y` (its height), `:depth`, `:parent`, `:leaf` and `:cluster` (its own cut cluster, else the inherited one); `:children` is removed."
   [node [parent depth inherited] [nodes ^long next-x] cut-of]
   (let [i (count nodes)
         cluster (or (cut-of node) inherited)]
     (if (leaf? node)
       [(conj nodes (assoc (dissoc node :children) :x (double next-x) :y (double (:height node)) :depth depth
-                          :parent parent :leaf? true :cluster cluster))
+                          :parent parent :leaf true :cluster cluster))
        (m/long-inc next-x)]
       (let [[nodes' x' kid-indices] (reduce (fn [[placed-so-far x ks] child]
                                               (let [[placed' x'] (placed child [i (m/long-inc depth) cluster] [placed-so-far x] cut-of)]
@@ -245,7 +245,7 @@
                                             [(conj nodes nil) next-x []] (:children node))
             kids (map nodes' kid-indices)]
         [(assoc nodes' i (assoc (dissoc node :children) :x (m// (v/sum (map :x kids)) (double (count kids)))
-                                :y (double (:height node)) :depth depth :parent parent :leaf? false :cluster cluster))
+                                :y (double (:height node)) :depth depth :parent parent :leaf false :cluster cluster))
          x']))))
 
 (def ^{:const true :private true :tag 'double} arc-step
@@ -305,7 +305,7 @@
     - `:circular` - `true`: x as the angle over `:span` degrees (leaves one step apart, the last one step before the first on a full circle), height as the radius from 1 (leaves) to 0 (the root's height); elbows' cross pieces become arcs; points in [-1, 1] (default false).
     - `:span` - degrees a circular layout covers, clockwise from the top (default 360).
 
-  Returns `{:nodes [node ..] :paths [{:id i :x x :y y :cluster c} ..]}` - nodes in depth-first order with `:x`, `:y`, `:depth`, `:parent` (index), `:leaf?`, `:cluster` (circular: also `:angle` in degrees clockwise from the top, `:radius`, `:leaf-x`, `:height`); path rows in point order, `:id` the node's index, `:cluster` set when the node and its parent share it.
+  Returns `{:nodes [node ..] :paths [{:id i :x x :y y :cluster c} ..]}` - nodes in depth-first order with `:x`, `:y`, `:depth`, `:parent` (index), `:leaf`, `:cluster` (circular: also `:angle` in degrees clockwise from the top, `:radius`, `:leaf-x`, `:height`); path rows in point order, `:id` the node's index, `:cluster` set when the node and its parent share it.
 
   Throws `ex-info {:key :k}` for more clusters than leaves; `{:key k}` for an invalid option `k` (checked first, see [[layout-options]]).
 
@@ -530,7 +530,7 @@
     - `:circular` - `true`: breadth as the angle over `:span` degrees (on a full circle the breadth range plus one step, so the ends don't meet), depth as the radius from 0 (the root) to 1 (the deepest node); diagonal links are curves in (angle, radius) - d3 `linkRadial`; points in [-1, 1]. Default false: depth along x from 0 (the root), breadth along y (the first node of a depth on top: y = -breadth).
     - `:span` - degrees a circular layout covers, clockwise from the top (default 360).
 
-  Returns `{:nodes [node ..] :links [{:id i :x x :y y} ..]}` - nodes in depth-first order with `:depth`, `:parent` (index), `:leaf?`, `:breadth`, `:depth-pos`, `:x`, `:y` (circular: also `:angle` in degrees clockwise from the top and `:radius`); one link path per non-root node, `:id` the node's index, points from the parent to the node.
+  Returns `{:nodes [node ..] :links [{:id i :x x :y y} ..]}` - nodes in depth-first order with `:depth`, `:parent` (index), `:leaf`, `:breadth`, `:depth-pos`, `:x`, `:y` (circular: also `:angle` in degrees clockwise from the top and `:radius`); one link path per non-root node, `:id` the node's index, points from the parent to the node.
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[node-link-layout-options]]).
 
@@ -542,7 +542,7 @@
    (let [[placed-nodes] (placed root [nil 0 nil] [[] 0] (constantly nil))
          breadths (if (= :cluster layout-kind) (mapv :x placed-nodes) (tidy-breadths placed-nodes))
          max-depth (m/max 1.0 (v/mx (map :depth placed-nodes)))
-         depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf? node)) max-depth (double (:depth node))))
+         depth-pos-of (fn ^double [node] (if (and (= :cluster layout-kind) (:leaf node)) max-depth (double (:depth node))))
          lo (v/mn breadths)
          hi (v/mx breadths)
          breadth-nodes (map (fn [node ^double b] (assoc node :breadth (m/- b lo) :depth-pos (depth-pos-of node))) placed-nodes breadths)
@@ -697,7 +697,7 @@
   ([edges laid {:keys [from to ^double beta] :or {from :from to :to beta 0.85} :as options}]
    (schema/check-options! bundle-paths-options options)
    (let [nodes (:nodes laid)
-         leaf-index (reduce (fn [acc [i node]] (cond-> acc (and (:leaf? node) (not (contains? acc (leaf-key node))))
+         leaf-index (reduce (fn [acc [i node]] (cond-> acc (and (:leaf node) (not (contains? acc (leaf-key node))))
                                                  (assoc (leaf-key node) i)))
                             {} (map-indexed vector nodes))
          from-of (data/row-accessor :from from)

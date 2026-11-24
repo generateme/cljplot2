@@ -51,6 +51,20 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
+;; A partial domain fixes one end and takes the other from the data, as if there were no domain: `[0 nil]` starts
+;; the axis at zero (padded and made nice as any explicit domain), `[nil hi]` fixes the top; `[nil nil]` is no domain.
+;; Continuous kinds only (not `:interpolated`); the data must reach past the fixed end. Left: the data's range;
+;; right: life expectancy from zero.
+
+(plot/render-image (plot/arrange (for [[title y-scale] [["the data's range" {}] [":domain [0 nil]" {:domain [0 nil]}]]]
+                                   {:data gapminder
+                                    :mapping {:x :gdp-per-cap :y :life-exp}
+                                    :charts [(chart/scatter)]
+                                    :scales {:x {:kind :log} :y y-scale}
+                                    :labels {:title title}})
+                                 {:columns 2})
+                   {:width 800 :height 320})
+
 ;; Which kind a plot's scales get - from the data and what the charts compute - is in the built plot's
 ;; `:scale-specs`: here a bar chart's levels on x, a histogram's bins and counts:
 

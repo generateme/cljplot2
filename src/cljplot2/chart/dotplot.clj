@@ -168,7 +168,7 @@
   - `chart-split` (map): the chart's rows split per panel.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n :mirror? b}` (see [[slot-stacks]]; `:max-count` - the tallest stack over all panels, at least 1); x extents - the dots' positions widened by half a bin."
+  Returns `{:data :extents :padding :padding-explicit :padding-px :na :dropped}`: per panel `{:slots [..] :items [..] :style st :place p :options o :binwidth w :max-count n :mirror b}` (see [[slot-stacks]]; `:max-count` - the tallest stack over all panels, at least 1); x extents - the dots' positions widened by half a bin."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [split-options (cond-> options (nil? (:position options)) (assoc :position :overlay))
         {:keys [place position items panels dropped]} (strip/split chart-split split-options :center env)
@@ -182,7 +182,7 @@
         dot-style (theme/resolved-style theme chart)]
     {:data (into {} (map (fn [[panel ss]]
                            [panel {:slots ss :items (labelled panel) :style dot-style :place place :options options
-                                   :binwidth binwidth :max-count max-count :mirror? (= :mirror position)}])
+                                   :binwidth binwidth :max-count max-count :mirror (= :mirror position)}])
                          slots))
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                           (strip/extents place
@@ -220,16 +220,16 @@
   Parameters:
 
   - `slot` (`[lo hi]`): the stack's slot, cross units.
-  - `stacking` (map): `:stack-dir` (`:up` - from the slot's low edge, `:center` - centred on the slot), `:mirror?` (from the centre line toward the slot's side).
+  - `stacking` (map): `:stack-dir` (`:up` - from the slot's low edge, `:center` - centred on the slot), `:mirror` (from the centre line toward the slot's side).
   - `[rank n]` (longs): the dot's rank in a stack of `n`.
   - `d` (double): the diameter in cross units.
 
   Returns the dot centre's cross coordinate."
-  ^double [slot {:keys [stack-dir mirror?]} [^long rank ^long n] ^double d]
+  ^double [slot {:keys [stack-dir mirror]} [^long rank ^long n] ^double d]
   (let [[^double lo ^double hi] slot]
     (cond
       (= :center stack-dir) (m/+ (m/* 0.5 (m/+ lo hi)) (m/* d (m/- (double rank) (m/* 0.5 (m/long-dec n)))))
-      mirror? (m/* (strip/slot-side slot) d (m/+ (double rank) 0.5))
+      mirror (m/* (strip/slot-side slot) d (m/+ (double rank) 0.5))
       :else (m/+ lo (m/* d (m/+ (double rank) 0.5))))))
 
 (defn- draw-in-strip-frame
@@ -238,7 +238,7 @@
   Parameters:
 
   - `_chart` (map): the chart value (unused).
-  - `computed` (map): the panel's stats - `:slots`, `:items`, `:style`, `:place`, `:options` (`:stack-dir` default `:up`), `:binwidth`, `:max-count`, `:mirror?`.
+  - `computed` (map): the panel's stats - `:slots`, `:items`, `:style`, `:place`, `:options` (`:stack-dir` default `:up`), `:binwidth`, `:max-count`, `:mirror`.
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales (in the strip frame).
@@ -247,13 +247,13 @@
   Dots are drawn at [[dot-diameter]] unless the style has a `:size`; a group outside its scale's domain, a level without span and dots the scales can't place are skipped.
 
   See also [[cross-of]]."
-  [_chart {:keys [slots items style place options binwidth max-count mirror?]} canvas box scales env]
+  [_chart {:keys [slots items style place options binwidth max-count mirror]} canvas box scales env]
   (let [{:keys [point span value-pixel] :as pl} (strip-chart/placement box scales options place)
         x0 (some (fn [{:keys [stacks]}] (some #(:x (first (:dots %))) stacks)) slots)
         stack-dir (data/option options :stack-dir :up)]
     (when x0
       (let [d (dot-diameter value-pixel span slots {:x0 x0 :binwidth binwidth :max-count max-count})
-            stacking {:stack-dir stack-dir :mirror? mirror?}]
+            stacking {:stack-dir stack-dir :mirror mirror}]
         (c2d/set-stroke-custom canvas {:size (:stroke-width style)})
         (doseq [{:keys [level slot stacks]} slots
                 :let [s (double (span level))]

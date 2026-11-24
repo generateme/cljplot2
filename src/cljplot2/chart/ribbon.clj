@@ -2,8 +2,8 @@
   "Ribbon: the band between `:ymin` and `:ymax` along `:x`, per panel and group.
 
   Options (style defaults from theme `[:chart :ribbon]`): `:color` (the group colour), `:fill` - the band: `:color`
-  (default, the group colour at `:alpha`, default 0.3), a colour (as given) or `:none`; the edge - both bounds
-  stroked in `:stroke-color` (default `:none`; `:color` - the group colour) with `:stroke-width` and `:dash`.
+  (default, the group colour faded by `:alpha` - its own alpha times `:alpha`, default 0.3), a colour (as given) or
+  `:none`; the edge - both bounds stroked in `:stroke-color` (default `:none`; `:color` - the group colour) with `:stroke-width` and `:dash`.
   `:fill-gradient` (a clojure2d gradient: preset, colours or function of `t`) fills along `:fill-gradient-axis` -
   `:x` (default) or `:y`, over that scale's range; it wins over `:fill`.
   `:interpolator` (a fastmath 1D method or a function) with `:interpolator-params` smooths both bounds - each run
@@ -37,9 +37,9 @@
   "Map entries of a band's fill style: `:color`, `:fill` (`:color`, a colour or `:none`), `:alpha`, `:pattern`,
   `:pattern-color` (see [[cljplot2.graphics.draw/pattern-style-entries]])."
   (into [(schema/optional :color {:description "band colour (a mapped :color wins)"} schema/color)
-         (schema/optional :fill {:description "band fill: :color (the band colour at :alpha), a colour or :none"}
+         (schema/optional :fill {:description "band fill: :color (the band colour, its own alpha times :alpha), a colour or :none"}
                           [:or [:= :color] schema/color])
-         (schema/optional :alpha {:description "fill opacity of :fill :color"} schema/fraction)]
+         (schema/optional :alpha {:description "factor of the band colour's alpha filling :fill :color"} schema/fraction)]
         draw/pattern-style-entries))
 
 (def ^:private style-entries

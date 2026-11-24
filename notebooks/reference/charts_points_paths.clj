@@ -73,6 +73,16 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 360})
 
+;; `:alpha` sets the opacity of every point colour, mapped or not - overlapping bubbles stay visible; the white
+;; outline keeps its own colour:
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
+                    :charts [(chart/scatter {:alpha 0.45 :stroke-color :white :stroke-width 1})]
+                    :scales {:color {:title "cylinders"} :size {:range [8 30]}}
+                    :labels {:title ":alpha 0.45" :x "weight [1000 lbs]" :y "miles per gallon"}}
+                   {:width 600 :height 380})
+
 (nu/shared-groups (describe/options (chart/scatter)))
 
 ;; ## line
@@ -122,6 +132,18 @@
                                    :charts [(chart/line {:line-width 3 :stroke-alpha-factor 0.4})]
                                    :labels {:title ":stroke-alpha-factor 0.4"}}]
                                  {:columns 2 :widths [1 1.4]})
+                   {:width 1000 :height 300})
+
+;; `:fill :color` keeps the line colour's own opacity: a dimmed line (alpha 60 of 255) fills dimmed too, here beside
+;; the same line at full opacity:
+
+(plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:color [200 80 40] :fill :color :alpha 0.5})]
+                                   :labels {:title "opaque colour, :alpha 0.5"}}
+                                  {:data wave :mapping {:x :t :y :v}
+                                   :charts [(chart/line {:color [200 80 40 60] :fill :color :alpha 0.5})]
+                                   :labels {:title "colour alpha 60, :alpha 0.5"}}]
+                                 {:columns 2})
                    {:width 1000 :height 300})
 
 ;; ### Path

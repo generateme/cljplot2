@@ -2,7 +2,7 @@
   "Treemap layouts: rectangles with areas proportional to positive values, filling a rectangle `{:x :y :w :h}`
   (doubles). Both functions return one rectangle per value, in the order of `values`.
 
-  * [[squarify]] - Bruls, Huizing, van Wijk (2000): values (callers sort them descending) are laid out in rows along
+  * [[squarify]] - Bruls, Huizing, van Wijk (2000): values (normally sorted descending; any order works, cells less square) are laid out in rows along
     the shorter side of the free rectangle; a value joins the current row while that doesn't worsen the row's worst
     aspect ratio.
   * [[slice-dice]] - the rectangle is cut along x at even depths and along y at odd depths, in value order."

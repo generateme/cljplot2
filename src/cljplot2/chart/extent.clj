@@ -175,15 +175,15 @@
   - `chart-split` (map): `:groups`, `:mapping`.
   - `env` (map): the compute environment (`:theme`, `:plot-scales` ...).
 
-  Returns per panel `{:items [..] :style st :place p :options o}`, items with their [[interval]] (negated for `:mirrored?` items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (`:absolute` with a mirror).
+  Returns per panel `{:items [..] :style st :place p :options o}`, items with their [[interval]] (negated for `:mirrored` items); extents (x - the intervals and centres), padding, `:na`, `:dropped`, `:tick-format` (`:absolute` with a mirror).
 
   Throws as [[interval]]."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
-  (let [{:keys [place panels dropped mirror?] split-items :items} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
+  (let [{:keys [place panels dropped mirror] split-items :items} (strip/split chart-split (cond-> options (:mirror options) (assoc ::strip/mirror (:mirror options)))
                                                                                :center env)
         method (data/option options :method :min-max)
         rng (rng/for-build (:rng options))
-        side (fn [it iv] (if (:mirrored? it) (mirrored iv) iv))
+        side (fn [it iv] (if (:mirrored it) (mirrored iv) iv))
         items (update-vals split-items (fn [its] (mapv #(merge % (side % (interval (:values %) method {:method-args (:method-args options) :rng rng
                                                                                               :statistic (:statistic options)}))) its)))
         st (theme/resolved-style theme chart)]
@@ -197,7 +197,7 @@
      :padding-px (strip-chart/n-label-room options items env)
      :na (group/na-dims panels)
      :dropped dropped
-     :tick-format (when mirror? {:x :absolute})}))
+     :tick-format (when mirror {:x :absolute})}))
 
 (defn- draw-in-strip-frame
   "Draws the intervals of one panel in the strip frame: the line, end caps (half the item's cross range) and the centre mark.
@@ -215,7 +215,7 @@
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)
         center? (not= :none (data/option options :center :method))]
-    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [^double lo ^double hi center mirrored?]}]
+    (strip-chart/draw-n-labels! canvas pl items (fn [{:keys [^double lo ^double hi center] mirrored? :mirrored}]
                                             (if mirrored?
                                               (m/min lo (double (or center lo)))
                                               (m/max hi (double (or center hi)))))

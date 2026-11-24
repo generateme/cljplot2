@@ -135,7 +135,7 @@
 
   - `segs` (vector): segments `[edge-id edge-id]` of [[segments]].
 
-  Returns a vector of `{:edges [id ...] :closed? bool}`: open chains first (each from an edge used once), then closed loops (without the repeated first edge)."
+  Returns a vector of `{:edges [id ...] :closed bool}`: open chains first (each from an edge used once), then closed loops (without the repeated first edge)."
   [segs]
   (let [by-edge (reduce (fn [acc [idx [a b]]] (-> acc
                                                  (update a (fnil conj []) idx)
@@ -157,13 +157,13 @@
         [used-open open] (reduce (fn [[used acc] [edge seg]]
                                    (if (used seg)
                                      [used acc]
-                                     (let [[walked path] (walk used edge seg)] [walked (conj acc {:edges path :closed? false})])))
+                                     (let [[walked path] (walk used edge seg)] [walked (conj acc {:edges path :closed false})])))
                                  [#{} []] ends)
         [_ loops] (reduce (fn [[used acc] seg]
                             (if (used seg)
                               [used acc]
                               (let [[walked path] (walk used (first (segs seg)) seg)]
-                                [walked (conj acc {:edges (pop path) :closed? true})])))
+                                [walked (conj acc {:edges (pop path) :closed true})])))
                           [used-open []] (range (count segs)))]
     (into open loops)))
 
@@ -175,13 +175,13 @@
   - `grid` (map): a sampled field of [[cljplot2.data.field/sample]].
   - `level` (double): the contour level; a value equal to it counts as above.
 
-  Returns a vector of `{:points [[x y] ...] :closed? bool}` - open lines first, then closed ones; `[]` when the field doesn't cross the level.
+  Returns a vector of `{:points [[x y] ...] :closed bool}` - open lines first, then closed ones; `[]` when the field doesn't cross the level.
 
   See also [[level-rings]], [[levels]]."
   {:cljplot2/api true}
   [grid ^double level]
-  (mapv (fn [{:keys [edges closed?]}]
-          {:points (mapv #(apply crossing level (edge-ends grid %)) edges) :closed? closed?})
+  (mapv (fn [{:keys [edges closed]}]
+          {:points (mapv #(apply crossing level (edge-ends grid %)) edges) :closed closed})
         (chains (segments grid level))))
 
 (defn- padded

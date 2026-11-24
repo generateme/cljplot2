@@ -399,7 +399,7 @@
                                                                 {:circular true :span 180}) true]]]
                                    (cond-> {:charts [(chart/line {:data links :order :data :color [150 150 150] :mapping {:x :x :y :y :group :id}})
                                                      (chart/scatter {:data nodes :size 8 :mapping {:x :x :y :y} :padding {:x [0.1 0.25] :y [0.1 0.1]}})
-                                                     (chart/text {:data (filter :leaf? nodes) :size 7 :anchor [:left :middle] :offset [5 0]
+                                                     (chart/text {:data (filter :leaf nodes) :size 7 :anchor [:left :middle] :offset [5 0]
                                                                   :mapping {:x :x :y :y :label #(str (:name %))}})]
                                             :scales {:x {:axis false} :y {:axis false}}
                                             :labels {:title title}}
@@ -439,7 +439,7 @@
                                                                                            (tree/layout (tree/from-parents modules {}) {:circular true})
                                                                                            {:from :module :to :uses :beta beta}))
                                                           :order :data :mapping {:x :x :y :y :group :id :color :module}})
-                                             (chart/text {:data (filter :leaf? (:nodes (tree/layout (tree/from-parents modules {}) {:circular true})))
+                                             (chart/text {:data (filter :leaf (:nodes (tree/layout (tree/from-parents modules {}) {:circular true})))
                                                           :size 8 :mapping {:x :x :y :y :label :id}})]
                                     :aspect :iso
                                     :scales {:x {:axis false} :y {:axis false}}

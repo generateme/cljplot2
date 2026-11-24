@@ -106,14 +106,14 @@
   - `options` (map): the chart's options - `:view`, `:aspect`, `:box`, `:axes`, `:axis-titles` (see [[frame-options]]).
   - `mapping` (map): the merged mapping, `:x` `:y` `:z` read for default titles.
 
-  Returns `{:view :aspect :box? :axes? :titles}`: `:view` merged over [[default-view]], `:aspect` of [[box-aspect]], `:box?` and `:axes?` true unless false, `:titles` - `:axis-titles` when given (even `nil`), else the names of keyword accessors.
+  Returns `{:view :aspect :box :axes :titles}`: `:view` merged over [[default-view]], `:aspect` of [[box-aspect]], `:box` and `:axes` true unless false, `:titles` - `:axis-titles` when given (even `nil`), else the names of keyword accessors.
 
   See also [[frame-overrides]]."
   [options mapping]
   {:view (merge default-view (:view options))
    :aspect (box-aspect (:aspect options))
-   :box? (not (false? (:box options)))
-   :axes? (not (false? (:axes options)))
+   :box (not (false? (:box options)))
+   :axes (not (false? (:axes options)))
    :titles (if (contains? options :axis-titles)
              (:axis-titles options)
              (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes))})
@@ -127,13 +127,13 @@
 
   - `options` (map): the chart's options.
 
-  Returns a map with the keys of [[frame-settings]] the options set: `:view` as given, `:aspect`, `:box?`, `:axes?`, `:titles` from `:axis-titles`."
+  Returns a map with the keys of [[frame-settings]] the options set: `:view` as given, `:aspect`, `:box`, `:axes`, `:titles` from `:axis-titles`."
   [options]
   (cond-> {}
     (:view options) (assoc :view (:view options))
     (:aspect options) (assoc :aspect (:aspect options))
-    (some? (:box options)) (assoc :box? (:box options))
-    (some? (:axes options)) (assoc :axes? (:axes options))
+    (some? (:box options)) (assoc :box (:box options))
+    (some? (:axes options)) (assoc :axes (:axes options))
     (contains? options :axis-titles) (assoc :titles (:axis-titles options))))
 
 (defn axis-index

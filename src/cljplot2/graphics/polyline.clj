@@ -426,17 +426,21 @@
 ;; areas
 
 (defn area-color
-  "Gives the fill of a group's area.
+  "Gives the fill of a group's area: the group colour faded by `:alpha`.
 
   Parameters:
 
   - `st` (map): the line style with the group's attributes merged - `:color`, `:alpha` (0..1), `:fill`.
   - `stacked?`: truthy for stacked areas.
 
-  Returns the group colour with opacity `:alpha` for `:fill :color` or for stacked areas without a fill, else `:fill` (`:none` - no area)."
-  [st stacked?]
-  (if (or (= :color (:fill st)) (and stacked? (theme/none? (:fill st :none))))
-    (draw/with-alpha (:color st) (:alpha st))
+  Returns, for `:fill :color` or for stacked areas without a fill, the group colour with its own alpha times `:alpha`
+  (an opaque colour - at opacity `:alpha`; a colour at alpha 128 - at half `:alpha`; a `nil` `:alpha` - the colour
+  unchanged); else `:fill` (`:none` - no area).
+
+  See also [[cljplot2.graphics.draw/faded]]."
+  [{:keys [color alpha fill] :as st} stacked?]
+  (if (or (= :color fill) (and stacked? (theme/none? (:fill st :none))))
+    (if (nil? alpha) color (draw/faded color alpha))
     (:fill st :none)))
 
 (def fill-gradient-schema

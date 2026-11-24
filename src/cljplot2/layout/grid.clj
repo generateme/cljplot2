@@ -25,7 +25,9 @@
   Workflow: [[prepare]] (validate, resolve spans) -> [[measure-items]] -> [[solve]].
   Coordinates are integer pixels, `y` grows downward; track edges (not lengths) are rounded.
 
-  Functions: [[grid?]], [[content-items]], [[item-box]], [[find-item-box]], [[find-content-box]]."
+  Tracks that don't fit their box throw `ex-info` keyed by the dimension too small, `:width` or `:height`, and marked `:cause :track-space` (see [[space-error?]]; [[cljplot2.pipeline]] words the message for a plot).
+
+  Functions: [[grid?]], [[space-error?]], [[content-items]], [[item-box]], [[find-item-box]], [[find-content-box]]."
   (:require [cljplot2.schema :as schema]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -324,6 +326,35 @@
 
 ;; solving
 
+(def ^:private axis->dimension
+  "The box dimension (a render option) a grid axis spans."
+  {:columns :width :rows :height})
+
+(defn- space-error-data
+  "Gives the data of the error thrown when the tracks of a grid axis don't fit its box.
+
+  Parameters:
+
+  - `axis` (keyword): `:columns` or `:rows`.
+  - `available` (long): the box's length along the axis, pixels.
+  - `required` (double): the length the fixed, fraction and measured tracks need, pixels.
+
+  Returns `{:key :axis :available :required :cause :track-space}`: `:key` - the dimension too small, `:width` (columns) or `:height` (rows), the render option to raise; `:required` rounded up to whole pixels (`##Inf` stays, fractions summing to 1 or more); `:cause` - the marker [[space-error?]] tests."
+  [axis ^long available ^double required]
+  {:key (axis->dimension axis) :axis axis :available available :cause :track-space
+   :required (if (m/valid-double? required) (long (m/ceil (m/- required overflow-tolerance))) required)})
+
+(defn space-error?
+  "Tests whether error data is that of a grid axis whose tracks don't fit its box.
+
+  Parameters:
+
+  - `data` (map or `nil`): `ex-data` of an error.
+
+  Returns true for data marked `:cause :track-space` (see [[solve]]: `:key` `:width` / `:height`, `:axis`, `:available`, `:required` pixels), else false."
+  [data]
+  (= :track-space (:cause data)))
+
 (defn- axis-edges
   "Gives the integer track edges along an axis.
 
@@ -336,12 +367,13 @@
 
   Returns a vector of `(inc (count tracks))` longs, the first `start`. Cumulative edges are rounded (not lengths), so tracks tile without gaps. With flexible tracks the last edge is `start + length`; without them the remaining space stays after the last track.
 
-  Throws `ex-info {:axis :available :required}` when the fixed, fraction and measured tracks don't fit."
+  Throws `ex-info {:key :axis :available :required :cause :track-space}` when the fixed, fraction and measured tracks don't fit (see [[space-error-data]])."
   [tracks axis measured [^long start ^long length]]
   (let [base (base-lengths tracks measured length)
         used (v/sum base)]
     (when (m/> (m/- used length) overflow-tolerance)
-      (schema/fail! "Not enough space for tracks." {:key axis :axis axis :available length :required used}))
+      (let [data (space-error-data axis length used)]
+        (schema/fail! (str "Not enough space: the grid's fixed and measured tracks need " (:required data) " px of " (name (:key data)) ", " length " px given.") data)))
     (let [weights (mapv flexible-weight tracks)
           total-weight (v/sum weights)
           free (m/- length used)
@@ -380,7 +412,7 @@
 
   Returns a layout map: `:box` - the grid's box; `:columns`, `:rows` - tracks as `{:index :id :offset :size}`; `:items` - in input order, `{:id :box :span}`, plus `:layout` for a nested grid.
 
-  Throws `ex-info` with `{:axis :available :required}` when fixed, fraction and measured tracks don't fit, and with `{:key ...}` when `box` or `measurements` are malformed."
+  Throws `ex-info` with `{:key :axis :available :required :cause :track-space}` when fixed, fraction and measured tracks don't fit (see [[space-error?]]), and with `{:key ...}` when `box` or `measurements` are malformed."
   [grid box measurements]
   (let [{:keys [x y w h]} box
         items (:items grid)]

@@ -8,12 +8,13 @@
   * `:n` - evaluation points (default 512), `:cut` - the curve spans `[min - cut*h, max + cut*h]` (default 3, as R)
   * `:position` - grouped curves (see [[cljplot2.data.position]]): `:overlay` (default), `:stack` and `:normalize` (every
     group on one common range, stacked; normalize - summing to 1, y title \"Proportion\"; areas filled with `:fill` or
-    the group colour with opacity `:alpha`), streamgraphs `:silhouette` and `:wiggle` (stacked around a moving
+    the group colour faded by `:alpha`), streamgraphs `:silhouette` and `:wiggle` (stacked around a moving
     baseline, see [[cljplot2.data.position]]), `:mirror` (exactly two groups, the second drawn downward; y tick labels show
     magnitudes); `:symmetric` - mirror only: both halves on one y range `[-M M]`; `:zero-line` - mirror only: draw
     the y = 0 line (default true; `:zero-line-color`, `:zero-line-width`)
   * `:color`, `:line-width`, `:dash` (line), `:fill` (area under the curve: a colour, `:color` - the curve's (group) colour
-    with opacity `:alpha`, or `:none`, default), `:alpha` (0..1, default 0.6; also stacked areas without `:fill`)
+    faded by `:alpha`: its own alpha times `:alpha` - or `:none`, default), `:alpha` (0..1, default 0.6; also stacked
+    areas without `:fill`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}`
 
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`; a group with
@@ -22,7 +23,7 @@
   Ridgelines - `:y` mapped to categorical levels or on a `:bands` scale (see [[cljplot2.data.strip/ridges?]]; a
   numeric `:y` otherwise is ignored): one curve per level and group, drawn from its band's centre toward the next
   level, all on one height scale - the tallest curve is `:overlap` (default 0.9) band steps high; the y scale leaves room for the outer ridges (bands `:padding-out` / `:align-outer` unless the
-  plot sets them). Areas are filled (`:fill`, else the group colour with `:alpha`) and drawn from the farthest level
+  plot sets them). Areas are filled (`:fill`, else the group colour faded by `:alpha`) and drawn from the farthest level
   on, so nearer ridges cover farther ones. `:position` `:overlay` (default) or `:mirror` (two groups, the second
   growing away from the next level); `:fill-gradient` (ridges only) - fill colour: a clojure2d gradient (keyword
   preset, colour list or function of `t` in `[0 1]`) along `:fill-gradient-axis` - `:x` (default, over the x scale's
@@ -52,9 +53,9 @@
 (def ^:private style-entries
   "Map entries of the density style (theme `[:chart :density]`), also its options."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :style :description "area under the curve: a colour, :color (the curve's colour with opacity :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
+              (schema/optional :fill {:cljplot2/section :style :description "area under the curve: a colour, :color (the curve's colour, its own alpha times :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :style :description "fill opacity of areas in the curve's colour"} schema/fraction)
+              (schema/optional :alpha {:cljplot2/section :style :description "factor of the curve colour's alpha filling areas in the curve's colour"} schema/fraction)
               (schema/optional :zero-line-color {:cljplot2/section :style :description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
               (schema/optional :zero-line-width {:cljplot2/section :style :description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg))
         draw/pattern-style-entries))
@@ -158,9 +159,9 @@
 
   - `chart` (map): the chart value - `:options` (`:overlap` default 0.9, `:position`, `:fill-gradient`, `:fill-gradient-axis` default `:x`, the density options, style options).
   - `chart-split` (map): the chart's rows split per panel.
-  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip?` ...
+  - `env` (map): the compute environment - `:theme`, `:plot-scales`, `:flip` ...
 
-  Returns the chart stats with `:ridges? true`: per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g :gradient-axis a}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels; `:dropped` `:group` - items with fewer than 2 distinct values."
+  Returns the chart stats with `:ridges true`: per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g :gradient-axis a}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels; `:dropped` `:group` - items with fewer than 2 distinct values."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [{:keys [position items panels dropped]} (strip/ridge-split chart-split options env)
         n (long (or (:n options) default-points))
@@ -179,10 +180,10 @@
      (data/padding-stats {:x data/axis-padding} {} options)
      {:data (update-vals curved (fn [its] {:ridges its :top top :overlap overlap :style ridge-style
                                            :gradient gradient :gradient-axis (data/option options :fill-gradient-axis :x)}))
-      :ridges? true
+      :ridges true
       :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
                            (strip/extents :band curved (fn [{:keys [xs]}] [(first xs) (peek xs)])))
-      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip? env) (get-in env [:plot-scales :y]))
+      :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip env) (get-in env [:plot-scales :y]))
       :na (group/na-dims panels)
       :dropped (assoc dropped :group no-curve)})))
 
@@ -195,7 +196,7 @@
   - `chart-split` (map): `:groups` (`{panel rows}`) and the merged `:mapping`.
   - `env` (map): the compute environment - `:theme`, `:plot-scales` ...
 
-  Returns the chart stats: per panel `{:curves [..] :style st :zero-line? b}` (see [[panel-curves]]); y extents from 0 (mirror with `:symmetric` - one range `[-M M]` over all panels); `:dropped` `:x` - rows without a finite x, `:group` - groups without a curve; y titled `Density` (`:normalize` - `Proportion`); mirror ticks show magnitudes.
+  Returns the chart stats: per panel `{:curves [..] :style st :zero-line b}` (see [[panel-curves]]); y extents from 0 (mirror with `:symmetric` - one range `[-M M]` over all panels); `:dropped` `:x` - rows without a finite x, `:group` - groups without a curve; y titled `Density` (`:normalize` - `Proportion`); mirror ticks show magnitudes.
 
   Throws `ex-info {:key :position}` for `:mirror` without exactly two groups, `{:key :mapping}` when rows exist but none has a finite x."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
@@ -215,7 +216,7 @@
         centred? (#{:mirror :silhouette :wiggle} position)
         data (into {} (map (fn [[panel gs]]
                              [panel {:curves (panel-curves gs (xs panel) group-keys position options) :style st
-                                     :zero-line? (and (= position :mirror) (data/option options :zero-line true))}]))
+                                     :zero-line (and (= position :mirror) (data/option options :zero-line true))}]))
                    panels)
         curve-ys (fn [curves] (concat (mapcat :y curves) (mapcat :y0 curves)))
         [lo hi] (position/symmetric-extent (curve-ys (mapcat :curves (vals data))))]
@@ -308,7 +309,7 @@
   [(mapv #(.x ^Vec2 %) points) (mapv #(.y ^Vec2 %) points)])
 
 (defn- draw-ridges!
-  "Draws the ridgelines of one panel, farthest level first: the area (a gradient, `:fill` or the colour with `:alpha`), then the line.
+  "Draws the ridgelines of one panel, farthest level first: the area (a gradient, `:fill` or the colour faded by `:alpha`), then the line.
 
   Parameters:
 
@@ -357,34 +358,34 @@
   Parameters:
 
   - `_chart` (map): the chart value (unused).
-  - `computed` (map): the panel's stats - `:curves`, `:style`, `:zero-line?`, or ridgeline stats (`:ridges`).
+  - `computed` (map): the panel's stats - `:curves`, `:style`, `:zero-line`, or ridgeline stats (`:ridges`).
   - `canvas`: the clojure2d canvas.
   - `box` (map): the panel box.
   - `scales` (map): finalized scales.
   - `env` (map): the draw environment - `:theme`.
 
-  Draws every group's area (under the curve to y = 0 with `:fill`; stacked curves - between `:y0` and `:y`, `:fill` or the group colour with `:alpha`), then every curve's line, then - mirror with `:zero-line` (default on) - the y = 0 line on top (curve tails along y = 0 don't hide it); ridgelines by [[draw-ridges!]] (none without an x scale, see [[cljplot2.chart.strip/placeable?]]). A group outside its scale's domain is skipped."
-  [_chart {:keys [curves style zero-line? ridges] :as computed} canvas box scales env]
+  Draws every group's area (under the curve to y = 0 with `:fill`; stacked curves - between `:y0` and `:y`, `:fill` or the group colour faded by `:alpha`), then every curve's line, then - mirror with `:zero-line` (default on) - the y = 0 line on top (curve tails along y = 0 don't hide it); ridgelines by [[draw-ridges!]] (none without an x scale, see [[cljplot2.chart.strip/placeable?]]). A group outside its scale's domain is skipped."
+  [_chart {:keys [curves style zero-line ridges] :as computed} canvas box scales env]
   (if ridges
     (when (strip-chart/placeable? scales) (draw-ridges! computed canvas box scales env))
     (when (seq curves)
       (let [projection (scale/projection scales)
             drawn (vec (keep (fn [{:keys [x y y0 aesthetics]}]
                                (when-let [st (group/style style aesthetics scales (:theme env))]
-                                 {:st st :y0? (some? y0)
+                                 {:st st :stacked (some? y0)
                                   :curve (coordinates (mapv projection x y))
                                   :base (coordinates (mapv projection x (or y0 (repeat 0.0))))}))
                              curves))]
-        (doseq [{:keys [st y0? curve base]} drawn
+        (doseq [{:keys [st stacked curve base]} drawn
                 :let [[px py] curve
                       [bx by] base]]
-          (if y0?
+          (if stacked
             (let [fill (polyline/area-color st true)] (polyline/fill-between! canvas px py bx by fill (draw/pattern-fill st fill)))
             (let [fill (polyline/area-color st false)] (polyline/fill-under! canvas px py bx by fill (draw/pattern-fill st fill)))))
         (doseq [{:keys [st curve]} drawn
                 :let [[px py] curve]]
           (polyline/draw! canvas px py st))
-        (when zero-line?
+        (when zero-line
           (draw/zero-line! canvas box scales style))))))
 
 (defn legend
@@ -398,10 +399,10 @@
   - `attributes` (map): the key's mapped style attributes - `:color`, `:dash`, `:pattern` are used.
   - `canvas`: the clojure2d canvas.
   - `box` (map): the key box in pixels.
-  - `env` (map): the legend environment - `:theme`, `:chart-stats` (`:ridges?`).
+  - `env` (map): the legend environment - `:theme`, `:chart-stats` (`:ridges`).
 
   See also [[cljplot2.graphics.polyline/key-glyph!]]."
   [{:keys [options] :as chart} attributes canvas box env]
   (let [st (theme/key-style env chart attributes [:color :dash :pattern])
-        area (polyline/area-color st (or (contains? stacked-positions (:position options)) (:ridges? (:chart-stats env))))]
+        area (polyline/area-color st (or (contains? stacked-positions (:position options)) (:ridges (:chart-stats env))))]
     (polyline/key-glyph! canvas box st area (draw/pattern-fill st area))))

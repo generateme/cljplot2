@@ -242,19 +242,23 @@
              [(v/mn ps) (v/mx ps)])))))))
 
 (defn axis-pixel-fn
-  "Gives the pixel function of text positions along a finalized scale's axis.
+  "Gives the pixel function of text positions along a panel axis.
 
   Parameters:
 
-  - `finalized` (map): a finalized scale, or `nil`.
+  - `finalized` (map or `nil`): the axis's finalized scale.
+  - `fallback` (vector, optional): the range `[r0 r1]` of the axis without a scale, from its low-value end (e.g. the
+    panel's width for the cross axis of a dot plot no chart maps).
 
-  Returns a function of a position giving its pixel: `[:panel f]` - fraction `f` of the range from its low-value end, other positions as [[pixel-fn]]; always `##NaN` without a scale."
-  [finalized]
-  (if-not finalized
-    (fn ^double [_] ##NaN)
-    (let [[^double r0 ^double r1] (:range finalized)
-          pixel (pixel-fn finalized)]
-      (fn ^double [v]
-        (if (and (vector? v) (= :panel (first v)))
-          (m/+ r0 (m/* (double (second v)) (m/- r1 r0)))
-          (pixel v))))))
+  Returns a function of a position giving its pixel: `[:panel f]` - fraction `f` of the scale's range (without a
+  scale, of `fallback`) from its low-value end, other positions as [[pixel-fn]]. Without a scale every other
+  position - and `[:panel f]` too without `fallback` - gives `##NaN`."
+  ([finalized] (axis-pixel-fn finalized nil))
+  ([finalized fallback]
+   (if-let [[^double r0 ^double r1] (if finalized (:range finalized) fallback)]
+     (let [pixel (pixel-fn finalized)]
+       (fn ^double [v]
+         (if (and (vector? v) (= :panel (first v)))
+           (m/+ r0 (m/* (double (second v)) (m/- r1 r0)))
+           (pixel v))))
+     (fn ^double [_] ##NaN))))

@@ -104,8 +104,8 @@
 ;; end - for six levels:
 
 (plot/render-image {:data (for [level [-1.0 -0.5 0.0 0.5 1.0 1.5]
-                                [i {:keys [points closed?]}] (map-indexed vector (contour/isolines grid level))
-                                [x y] (cond-> points closed? (conj (first points)))]
+                                [i {:keys [points closed]}] (map-indexed vector (contour/isolines grid level))
+                                [x y] (cond-> points closed (conj (first points)))]
                             {:level level :line (str level "/" i) :x x :y y})
                     :mapping {:x :x :y :y :color #(str (:level %)) :group :line}
                     :charts [(chart/line {:order :data :line-width 2})]

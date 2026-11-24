@@ -100,9 +100,9 @@
              (by (bars {:data (remove #(= ["q" "x"] [(:l %) (:c %)]) two-groups) :mapping {:x :v :y :l :color :c}
                         :charts [(chart/bar {:position :stack})]})))))
     (testing "1.3.4 overlay groups are translucent, a single group isn't"
-      (is (true? (get-in (stats (p {:position :overlay}) 0) [:data :panel :translucent?])))
+      (is (true? (get-in (stats (p {:position :overlay}) 0) [:data :panel :translucent])))
       (is (not (get-in (stats {:data two-groups :mapping {:x :v :y :l} :charts [(chart/bar {:position :overlay})]} 0)
-                          [:data :panel :translucent?]))))
+                          [:data :panel :translucent]))))
     (testing "1.3.3 negative values: down from 0, stacked separately; normalize rejects them"
       (let [neg [{:l "p" :c "x" :v -2} {:l "p" :c "y" :v 3} {:l "p" :c "z" :v -1}]
             q (fn [opts] {:data neg :mapping {:x :v :y :l :color :c} :charts [(chart/bar opts)]})]
@@ -150,8 +150,8 @@
       (is (= :mirror (:key (error #(build {:data (filter (fn [r] (= "f" (:sex r))) pyramid)
                                           :mapping {:x :n :y :age :color :sex} :charts [(chart/bar {:mirror :color})]}))))))
     (testing "1.3.5.7 the 0 line on top by default with mirror"
-      (is (true? (get-in (stats (p {:color :sex} {:mirror :color}) 0) [:data :panel :zero-line?])))
-      (is (false? (get-in (stats (p {:color :sex} {:mirror :color :zero-line false}) 0) [:data :panel :zero-line?]))))))
+      (is (true? (get-in (stats (p {:color :sex} {:mirror :color}) 0) [:data :panel :zero-line])))
+      (is (false? (get-in (stats (p {:color :sex} {:mirror :color :zero-line false}) 0) [:data :panel :zero-line]))))))
 
 (deftest geometry
   (testing "1.4.1 :width is the bar's share of the band"
@@ -282,10 +282,10 @@
              (labels {:position :stack})))
       (is (every? #(zero? (second %)) (vals (labels {:position :normalize}))))
       (is (= [5.0 1.0 "5"] (get (labels {:position :dodge}) ["q" "x"])) "dodged labels stay past the end")
-      (is (= [0.0 0.0] (get-in (stats (p {:position :stack}) 0) [:padding-px :x])) "centred labels need no room")
+      (is (every? zero? (get-in (stats (p {:position :stack}) 0) [:padding-px :x] [0 0])) "centred labels need no room")
       (testing "mirrored stacks centre on the negative side"
         (is (every? #(and (neg? (:at %)) (zero? (:side %)))
-                    (keep :label (filter :mirrored? (bars {:data pyramid :mapping {:x :n :y :age :color :sex :group :region}
+                    (keep :label (filter :mirrored (bars {:data pyramid :mapping {:x :n :y :age :color :sex :group :region}
                                                            :charts [(chart/bar {:mirror :color :position :stack :value-label true})]}))))))
       (testing "contrast colour: white text on a dark fill"
         (let [img (plot/render-image {:data [{:l "a" :v 10}] :mapping {:x :v :y :l} :theme white
@@ -317,7 +317,7 @@
       (is (= bar-slots (slots 1 :items)))
       (is (= 2 (count (distinct (vals bar-slots)))))
       (is (= #{[-0.5 0.5]} (set (vals (slots 2 :items)))) "the :group recipe without the other dimension: one slot per side")
-      (is (every? #(neg? (:hi %)) (filter :mirrored? (get-in built [:stats 1 :data :panel :items]))))))
+      (is (every? #(neg? (:hi %)) (filter :mirrored (get-in built [:stats 1 :data :panel :items]))))))
   (testing "S5 a vertical stack is narrower along horizontal bars than side by side"
     (let [room (fn [stack] (second (get-in (stats {:data [{:l "a" :v 3}] :mapping {:x :v :y :l}
                                                    :charts [(chart/bar {:value-label true :n-label true :label-stack stack})]} 0)

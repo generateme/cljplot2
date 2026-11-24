@@ -40,7 +40,7 @@
   group on top of horizontal strips, on the left of vertical (`:flip`) ones.
 
   Mirror (bar, extent) - option `:mirror` (passed to [[split]] as `::mirror`): a grouping dimension (an ordinal
-  aesthetic or `:group`) with exactly two levels; items of the second level are `:mirrored? true` - the chart draws
+  aesthetic or `:group`) with exactly two levels; items of the second level are `:mirrored true` - the chart draws
   them on the negative side; groups differing only in that dimension share a slot (the default `:position` looks at
   the remaining groups). Not with `:position :mirror` (half slots).
 
@@ -271,7 +271,7 @@
   - `items` (map): `{panel [item ...]}`; an item's `:level` is `nil` without bands - the whole panel.
   - `slot-key` (function): an item's group key -> its slot key.
 
-  Returns a truthy value when some level of a panel holds items of two or more slot keys, else `nil` (charts keep it in their computed data, e.g. the bar's `:translucent?`)."
+  Returns a truthy value when some level of a panel holds items of two or more slot keys, else `nil` (charts keep it in their computed data, e.g. the bar's `:translucent`)."
   [items slot-key]
   (some (fn [its] (some (fn [[_ level-items]] (m/> (count (distinct (map (comp slot-key :key) level-items))) 1))
                         (group-by :level its)))
@@ -299,12 +299,12 @@
   - `chart-options` (map): chart options (see [[options]]) and the internal options of charts built on strips:
     - `::count-rows true` - `:x` isn't read: every item has `:values []` and `:n` - its count of rows (an item per level with rows; no `:x` errors or drops)
     - `::rows true` - items also carry their `:rows`
-    - `::mirror k` - the chart's `:mirror` dimension (see the namespace doc): items carry `:mirrored?`, the result `:mirror? true`; charts without a negative side never pass it
+    - `::mirror k` - the chart's `:mirror` dimension (see the namespace doc): items carry `:mirrored`, the result `:mirror true`; charts without a negative side never pass it
     - `::ridge true` - ridgelines: the first group takes the high cross end
   - `default-place`: the chart's placement without a `:y` mapping.
-  - `env` (map): `:plot-scales`, `:na-level?` (see [[cljplot2.data.group/split]]), `:flip?`.
+  - `env` (map): `:plot-scales`, `:na-level` (see [[cljplot2.data.group/split]]), `:flip`.
 
-  Returns `{:place :position :items :group-keys :slot-keys :shared-levels? :mirror? :dims :panels :dropped}`: `:items` - `{panel [item ...]}`, an item `{:level :key :aesthetics :values :n :slot}` (`:level` `nil` without bands, `:values` - the finite `:x` numbers, `:n` - their count); `:dims` - the grouping dimensions (the order of a group key's values); `:slot-keys` - the keys slots are given to (group keys without the mirror dimension); `:shared-levels?` - some level holds two or more of them (the default `:position` is then `:dodge`, else `:overlay`); `:panels` - the split groups; `:dropped` - `{dim n}`.
+  Returns `{:place :position :items :group-keys :slot-keys :shared-levels :mirror :dims :panels :dropped}`: `:items` - `{panel [item ...]}`, an item `{:level :key :aesthetics :values :n :slot}` (`:level` `nil` without bands, `:values` - the finite `:x` numbers, `:n` - their count); `:dims` - the grouping dimensions (the order of a group key's values); `:slot-keys` - the keys slots are given to (group keys without the mirror dimension); `:shared-levels` - some level holds two or more of them (the default `:position` is then `:dodge`, else `:overlay`); `:panels` - the split groups; `:dropped` - `{dim n}`.
 
   Throws `ex-info {:key :mapping}` when values aren't mapped, or there are rows but no finite `:x` value (or, placed in bands, no valid `:y` value); `ex-info {:key :mirror}` for a mirror dimension that isn't a grouping dimension, hasn't exactly two levels or comes with `:position :mirror`; `ex-info {:key :place}` for a placement that doesn't fit the mapping or levels."
   [{:keys [groups mapping]} chart-options default-place env]
@@ -336,13 +336,13 @@
                                         :when (or count-rows? (seq values))]
                                     (cond-> {:level level :key (:key g) :aesthetics (:aesthetics g) :values values
                                              :n (if count-rows? (count rows) (count values))}
-                                      mi (assoc :mirrored? (= mirrored (nth (:key g) mi)))
+                                      mi (assoc :mirrored (= mirrored (nth (:key g) mi)))
                                       (::rows chart-options) (assoc :rows rows))))))
         shared? (shared-levels? grouped-items slot-key)
         position (data/option chart-options :position (if shared? :dodge :overlay))
         ;; reading order: the first group on top of horizontal strips (the high cross end), on the left of vertical
         ;; (flipped) ones (the low end); ridgelines grow the first group toward the next level (the high end)
-        first-high? (or (::ridge chart-options) (not (:flip? env)))
+        first-high? (or (::ridge chart-options) (not (:flip env)))
         slot-of (if (seq slot-keys) (slots position slot-keys (double (data/option chart-options :dodge-gap 0.1)) first-high?) {})
         items (update-vals grouped-items (fn [its] (mapv #(assoc % :slot (slot-of (slot-key (:key %)))) its)))
         x-dropped (if x-of
@@ -354,8 +354,8 @@
      :items items
      :group-keys group-keys
      :slot-keys slot-keys
-     :shared-levels? shared?
-     :mirror? (some? mi)
+     :shared-levels shared?
+     :mirror (some? mi)
      :dims dims
      :panels panels
      :dropped (cond-> (assoc dropped :x x-dropped)
@@ -377,7 +377,7 @@
                       ;; numeric and date levels (on an explicit :bands scale) travel as the extent's :values
                       (cond-> e (#{:numeric :temporal} (:kind e)) (assoc :values (vec levels))))
     (map? place) {:kind :numeric :min (double (:at place)) :max (double (:at place))}
-    (= :bottom place) {:kind :numeric :min 0.0 :max 0.0 :companion? true}
+    (= :bottom place) {:kind :numeric :min 0.0 :max 0.0 :companion true}
     :else nil))
 
 (defn padding
@@ -668,14 +668,14 @@
 (defn compute-oriented
   "Computes a strip chart in the strip frame, with its levels on the mapping axis of [[level-axis]].
 
-  For levels on `:x` the chart computes the transposed input - mapping, the `:padding` option and the plot's scales with `:x` and `:y` exchanged, `:flip?` inverted - and its stats are transposed back (see [[transposed-stats]]).
+  For levels on `:x` the chart computes the transposed input - mapping, the `:padding` option and the plot's scales with `:x` and `:y` exchanged, `:flip` inverted - and its stats are transposed back (see [[transposed-stats]]).
 
   Parameters:
 
   - `frame-compute` (function): the chart's compute in the strip frame (levels on `:y`, values on `:x`), of `chart`, `chart-split`, `env`.
   - `chart` (map): the chart value.
   - `chart-split` (map): `{:groups {panel rows} :mapping m}`.
-  - `env` (map): the compute environment (`:plot-scales`, `:flip?`, ...).
+  - `env` (map): the compute environment (`:plot-scales`, `:flip`, ...).
 
   Returns the stats with `:level-axis`, every panel's data with `::level-axis` (for [[draw-oriented]]).
 
@@ -690,7 +690,7 @@
                   (transposed-stats
                    (frame-compute (cond-> chart (get-in chart [:options :padding]) (update-in [:options :padding] swap-xy))
                                   (assoc chart-split :mapping (swap-xy mapping))
-                                  (-> env (update :flip? not) (update :plot-scales swap-xy))))
+                                  (-> env (update :flip not) (update :plot-scales swap-xy))))
                   (catch clojure.lang.ExceptionInfo e (throw (user-frame-error e)))))]
     (-> stats
         (update :data update-vals #(assoc % ::level-axis axis))

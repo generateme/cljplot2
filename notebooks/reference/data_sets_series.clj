@@ -41,7 +41,7 @@
 
 ;; ## sets/membership-rows
 
-;; The dot matrix under the bars: a row per combination and set, `:member?` true where the set is in the combination.
+;; The dot matrix under the bars: a row per combination and set, `:member` true where the set is in the combination.
 
 (nu/data-table (sets/membership-rows members {:set :set :item :item}))
 
@@ -55,7 +55,7 @@
                                   {:data (sets/membership-rows members {:set :set :item :item} ["tea" "coffee" "juice"])
                                    :mapping {:x :combination :y :set}
                                    :charts [(chart/scatter {:size 12 :color [210 210 210]})
-                                            (chart/scatter {:data (filter :member? (sets/membership-rows members {:set :set :item :item}
+                                            (chart/scatter {:data (filter :member (sets/membership-rows members {:set :set :item :item}
                                                                                                          ["tea" "coffee" "juice"]))
                                                             :size 12 :color :black})]
                                    :scales {:y {:reverse true}}
@@ -97,7 +97,7 @@
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
                                    :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
                                             (chart/segment {:yend 0 :line-width 2})
-                                            (chart/scatter {:mapping {:color #(if (:significant? %) "yes" "no")}})]
+                                            (chart/scatter {:mapping {:color #(if (:significant %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]
                                                     :title "significant"}}
                                    :labels {:title "ACF, 95% band"}
@@ -106,7 +106,7 @@
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
                                    :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
                                             (chart/segment {:yend 0 :line-width 2})
-                                            (chart/scatter {:mapping {:color #(if (:significant? %) "yes" "no")}})]
+                                            (chart/scatter {:mapping {:color #(if (:significant %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]
                                                     :title "significant"}}
                                    :labels {:title "PACF, :level 0.99"}}]
@@ -168,12 +168,12 @@
 ;; family: `:symmetry` tells how a value changes when the samples swap (`:symmetric` - unchanged, `:antisymmetric` -
 ;; negated, `:reciprocal` - inverted, `:complementary` - `1 - v`, `:asymmetric` - otherwise); `:samples` - paired
 ;; statistics take the rows where both values are present, independent-sample ones (two groups compared) each
-;; variable's own values; `:signed?` - zero is the neutral value (a shaded `pairwise` chart centres its colours on
+;; variable's own values; `:signed` - zero is the neutral value (a shaded `pairwise` chart centres its colours on
 ;; it):
 
-(nu/data-table (map (fn [[k {:keys [label family symmetry samples signed? description]}]]
+(nu/data-table (map (fn [[k {:keys [label family symmetry samples signed description]}]]
                       {:family family :method k :label label :symmetry symmetry :samples samples
-                       :signed? (true? signed?) :description description})
+                       :signed (true? signed) :description description})
                     (sort-by (fn [[k {:keys [family]}]] [({:error 0 :association 1 :effect-size 2 :distance 3} family) (name k)])
                              pairwise/statistics)))
 

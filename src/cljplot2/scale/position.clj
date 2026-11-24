@@ -29,7 +29,9 @@
   only: axes and grid lines show the ticks of that linear domain over the panel instead (see [[display-scale]]), e.g.
   a variable's values beside a density drawn in its own magnitude scale. Bands scales: `:order-by f` - levels ordered by `(f rows)`
   over each level's rows (`:descending true` reverses; per panel under a `:free` facet scale), not with `:domain`
-  (consumed by the pipeline). `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
+  (consumed by the pipeline). A partial `:domain` `[lo nil]` / `[nil hi]` (continuous kinds, not `:interpolated`)
+  fixes one end, the other comes from the data as without a domain (see [[data-scale-spec]]); `[nil nil]` - no
+  domain. `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
   nice and padding) reversed - bands in reverse level order (not `:interpolated`: reverse its `:stops`).
 
   Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
@@ -77,6 +79,25 @@
     (every? rows/ordered-level? domain) :bands
     (every? rows/temporal? domain) :datetime))
 
+(defn- partial-domain-problem
+  "Explains why a partial domain of a position scale spec is invalid.
+
+  Parameters:
+
+  - `spec` (map): the scale spec - `:domain` with a `nil` end, `:kind` (inferred by [[domain-kind]] from the given end when missing).
+
+  Returns the error message (a wrong shape - [[cljplot2.data.rows/partial-domain-problem]]), or `nil` for `[lo nil]` / `[nil hi]` of a continuous kind other than `:interpolated`: a finite number (positive for `:log`) or a `java.time` value (`:datetime`)."
+  [{:keys [domain] :as spec}]
+  (let [given (first (remove nil? domain))
+        kind (or (:kind spec) (domain-kind [given]))]
+    (or (rows/partial-domain-problem domain)
+        (cond
+          (= :interpolated kind) "interpolated domain should be two or more strictly increasing finite numbers (no nil)"
+          (not (continuous-kinds kind)) "partial domain [lo nil] / [nil hi] needs a continuous scale (not :bands)"
+          (= :datetime kind) (when-not (rows/temporal? given) "datetime domain end should be a java.time value")
+          (not (schema/finite? given)) "domain end should be a finite number"
+          (and (= kind :log) (not (m/pos? (double given)))) "log domain should be positive"))))
+
 (defn- domain-problem
   "Explains why the explicit domain of a position scale spec is invalid.
 
@@ -84,9 +105,12 @@
 
   - `spec` (map): the scale spec - `:domain`, `:kind` (inferred by [[domain-kind]] when missing).
 
-  Returns the error message, or `nil` for a valid or absent domain: bands - distinct values; datetime - two different `java.time` values; interpolated - two or more strictly increasing finite numbers; other kinds - finite numbers, not a single value, positive for `:log`."
+  Returns the error message, or `nil` for a valid or absent domain (`[nil nil]` - absent): bands - distinct values; datetime - two different `java.time` values; interpolated - two or more strictly increasing finite numbers; other kinds - finite numbers, not a single value, positive for `:log`; a partial domain as [[partial-domain-problem]]."
   [{:keys [domain] :as spec}]
-  (when (some? domain)
+  (cond
+    (nil? (rows/given-domain domain)) nil
+    (rows/partial-domain? domain) (partial-domain-problem spec)
+    :else
     (let [kind (or (:kind spec) (domain-kind domain))]
       (case kind
         nil "domain values should be all numbers, all strings / keywords, all intervals or all java.time values"
@@ -148,7 +172,7 @@
                            (into [:enum] (sort position-kinds)))
           (schema/optional :type {:cljplot2/section :kind-domain :description "declare numbers or dates categorical (one band per value) or force a numeric scale"}
                            [:enum :categorical :numeric])
-          (schema/nilable :domain {:cljplot2/section :kind-domain :description "explicit domain: [lo hi] for continuous kinds, the levels in order for :bands"
+          (schema/nilable :domain {:cljplot2/section :kind-domain :description "explicit domain: [lo hi] for continuous kinds (nil at an end - the data's, e.g. [0 nil]), the levels in order for :bands"
                                    :cljplot2/default-doc "the charts' data extent"}
                           [:sequential {:min 1} any?])
           (schema/nilable :ticks {:cljplot2/section :ticks :description "a tick count hint, or the tick values themselves"
@@ -478,50 +502,74 @@
       (sequential? (:domain spec)) (update :domain #(mapv rows/period-start %))
       (sequential? (:ticks spec)) (update :ticks #(mapv rows/period-start %)))))
 
+(defn- data-domain
+  "Gives the kind and domain of a plot position scale from the data.
+
+  Parameters:
+
+  - `k` (keyword): the scale key.
+  - `spec` (map): the scale spec (period values read as dates) - `:kind`.
+  - `extent` (map): the merged data extent.
+
+  Returns `[kind domain]`: `kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`); numeric and temporal domains widened when collapsed to one value.
+
+  Throws `ex-info {:key :domain}` for numeric data or dates declared categorical (or on a bands scale) unless the extent carries its levels (`:values`, sorted)."
+  [k spec extent]
+  (let [kind (or (:kind spec) (extent-kinds (:kind extent)))]
+    [kind
+     (case (:kind extent)
+       :categorical (:values extent)
+       :temporal (cond
+                   ;; a Year / YearMonth extent spans the dates its periods start
+                   (= :datetime kind) (widen-temporal (rows/period-start (:min extent))
+                                                      (rows/period-start (:max extent)))
+                   ;; dates declared categorical: one band per distinct date, in time order
+                   (= :bands kind) (if (:values extent)
+                                     (vec (sort (:values extent)))
+                                     (schema/fail! "Dates declared categorical (or on a bands scale) have too many distinct values; give an explicit :domain."
+                                                   {:key :domain :in [:scales k :domain]}))
+                   :else [(:min extent) (:max extent)])
+       :numeric (cond
+                  (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
+                  ;; levels reported by the charts (strip charts' numeric :y levels)
+                  (:values extent) (vec (sort (:values extent)))
+                  :else (schema/fail! "Numeric data declared categorical (or on a bands scale) needs an explicit :domain unless its charts give the levels (strip charts do)."
+                                      {:key :domain :in [:scales k :domain]})))]))
+
 (defn data-scale-spec
   "Gives the phase-1 spec of a plot position scale from its spec and the data.
 
   Parameters:
 
   - `k` (keyword): the scale key.
-  - `spec` (map): the plot's scale spec (may be `{}`); an explicit `:domain` wins over data (`nil` - not set).
+  - `spec` (map): the plot's scale spec (may be `{}`); an explicit `:domain` wins over data (`nil` or `[nil nil]` - not set); a partial `[lo nil]` / `[nil hi]` (continuous kinds, not `:interpolated`) fixes one end, the other the data's.
   - `extent` (map or `nil`): the merged data extent.
   - `padding`: the charts' padding `[lo hi]`, fractions of the span.
 
-  Returns the [[scale-spec]] of the explicit domain, else of the data's: `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`); numeric and temporal data domains widened when collapsed to one value. Continuous domains - data or explicit, `:interpolated` aside - get `:padding`: the spec's `:expand`, else the charts' `padding` (only with data; `:radial` - none below the data); [[finalize]] applies it after nice, so the outermost ticks sit inside the panel (datetime domains in epoch milliseconds).
+  Returns the [[scale-spec]] of the explicit domain, else of the data's: `:kind` from the spec or the extent (numeric -> `:linear`, categorical -> `:bands`, temporal -> `:datetime`); numeric and temporal data domains widened when collapsed to one value; a partial domain completed by the data domain's end ([[cljplot2.data.rows/completed-domain]]). Continuous domains - data or explicit, `:interpolated` aside - get `:padding`: the spec's `:expand`, else the charts' `padding` (only with data; `:radial` - none below the data); [[finalize]] applies it after nice, so the outermost ticks sit inside the panel (datetime domains in epoch milliseconds).
 
-  Throws `ex-info {:key :domain}` for an `:interpolated` scale without a domain, and for numeric data or dates declared categorical (or on a bands scale) without a domain, unless the extent carries its levels (`:values`, sorted)."
+  Throws `ex-info {:key :domain}` for an `:interpolated` scale without a domain, a partial domain without data or leaving no data on its open side, and for numeric data or dates declared categorical (or on a bands scale) without a domain, unless the extent carries its levels (`:values`, sorted)."
   [k spec extent padding]
-  (when (and (= :interpolated (:kind spec)) (nil? (:domain spec)))
-    (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
-  (let [period-spec (period-starts spec)
-        built (if (or (some? (:domain period-spec)) (nil? extent))
-                (scale-spec k period-spec)
-                (let [kind (or (:kind period-spec) (extent-kinds (:kind extent)))
-                      domain (case (:kind extent)
-                               :categorical (:values extent)
-                               :temporal (cond
-                                           ;; a Year / YearMonth extent spans the dates its periods start
-                                           (= :datetime kind) (widen-temporal (rows/period-start (:min extent))
-                                                                              (rows/period-start (:max extent)))
-                                           ;; dates declared categorical: one band per distinct date, in time order
-                                           (= :bands kind) (if (:values extent)
-                                                             (vec (sort (:values extent)))
-                                                             (schema/fail! "Dates declared categorical (or on a bands scale) have too many distinct values; give an explicit :domain."
-                                                                           {:key :domain :in [:scales k :domain]}))
-                                           :else [(:min extent) (:max extent)])
-                               :numeric (cond
-                                          (not= :bands kind) (widen (double (:min extent)) (double (:max extent)))
-                                          ;; levels reported by the charts (strip charts' numeric :y levels)
-                                          (:values extent) (vec (sort (:values extent)))
-                                          :else (schema/fail! "Numeric data declared categorical (or on a bands scale) needs an explicit :domain unless its charts give the levels (strip charts do)."
-                                                              {:key :domain :in [:scales k :domain]})))]
-                  (scale-spec k (assoc period-spec :kind kind :domain domain))))
-        domain-padding (or (:expand period-spec)
-                           (when extent (if (= :radial (:kind built)) (assoc (vec padding) 0 0.0) padding)))]
-    (cond-> built
-      (and domain-padding (not= :interpolated (:kind built)) (continuous-kinds (:kind built)))
-      (assoc :padding (vec domain-padding)))))
+  (let [set-spec (cond-> spec (nil? (rows/given-domain (:domain spec))) (dissoc :domain))]
+    (when (and (= :interpolated (:kind set-spec)) (nil? (:domain set-spec)))
+      (schema/fail! "An :interpolated scale needs an explicit :domain (its stop values)." {:key :domain :in [:scales k :domain]}))
+    (let [period-spec (period-starts set-spec)
+          explicit (:domain period-spec)
+          partial? (rows/partial-domain? explicit)
+          built (cond
+                  (and partial? (nil? extent)) (rows/completed-domain k explicit nil)
+                  (or (and (some? explicit) (not partial?)) (nil? extent)) (scale-spec k period-spec)
+                  :else (let [[kind domain] (data-domain k period-spec extent)]
+                          ;; the kind may come from the data (e.g. a numeric end over categorical data)
+                          (when-let [problem (and partial? (partial-domain-problem (assoc period-spec :kind kind)))]
+                            (schema/fail! (str "Scale :domain: " problem ".") {:key :domain :in [:scales k :domain] :value explicit}))
+                          (scale-spec k (assoc period-spec :kind kind
+                                               :domain (if partial? (rows/completed-domain k explicit domain) domain)))))
+          domain-padding (or (:expand period-spec)
+                             (when extent (if (= :radial (:kind built)) (assoc (vec padding) 0 0.0) padding)))]
+      (cond-> built
+        (and domain-padding (not= :interpolated (:kind built)) (continuous-kinds (:kind built)))
+        (assoc :padding (vec domain-padding))))))
 
 (defn tick-hint
   "Gives the tick count hint for an axis.

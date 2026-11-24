@@ -91,7 +91,7 @@ right: fixed domains, x without padding.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds, the levels in order for :bands</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds (nil at an end - the data's, e.g. [0 nil]), the levels in order for :bands</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr></tbody></table>
 ```
 
 :::
@@ -132,6 +132,31 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 ::: {.clay-image}
 ![](reference.scales_axes_coords_files/image0.png)
+:::
+
+
+A partial domain fixes one end and takes the other from the data, as if there were no domain: `[0 nil]` starts
+the axis at zero (padded and made nice as any explicit domain), `[nil hi]` fixes the top; `[nil nil]` is no domain.
+Continuous kinds only (not `:interpolated`); the data must reach past the fixed end. Left: the data's range;
+right: life expectancy from zero.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [[title y-scale] [["the data's range" {}] [":domain [0 nil]" {:domain [0 nil]}]]]
+                                   {:data gapminder
+                                    :mapping {:x :gdp-per-cap :y :life-exp}
+                                    :charts [(chart/scatter)]
+                                    :scales {:x {:kind :log} :y y-scale}
+                                    :labels {:title title}})
+                                 {:columns 2})
+                   {:width 800 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.scales_axes_coords_files/image1.png)
 :::
 
 
@@ -188,7 +213,7 @@ the theme draws them (`[:panel :grid :minor]`, `:none` by default) - turned on h
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image1.png)
+![](reference.scales_axes_coords_files/image2.png)
 :::
 
 
@@ -226,7 +251,7 @@ The order of bands - by a function of each level's rows, optionally descending -
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image2.png)
+![](reference.scales_axes_coords_files/image3.png)
 :::
 
 
@@ -267,7 +292,7 @@ an axis, such as dendrogram leaves, set it).
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image3.png)
+![](reference.scales_axes_coords_files/image4.png)
 :::
 
 
@@ -299,7 +324,7 @@ ones it reads.
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image4.png)
+![](reference.scales_axes_coords_files/image5.png)
 :::
 
 
@@ -342,7 +367,7 @@ options above; the remaining attributes of a kind are the "wadogo:" options.
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image5.png)
+![](reference.scales_axes_coords_files/image6.png)
 :::
 
 
@@ -380,7 +405,7 @@ Positive values only; `:base` changes the tick values (here powers of two).
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image6.png)
+![](reference.scales_axes_coords_files/image7.png)
 :::
 
 
@@ -411,7 +436,7 @@ Positive values only; `:base` changes the tick values (here powers of two).
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image7.png)
+![](reference.scales_axes_coords_files/image8.png)
 :::
 
 
@@ -447,7 +472,7 @@ For data of both signs over many magnitudes. The constant `:C` isn't passed thro
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image8.png)
+![](reference.scales_axes_coords_files/image9.png)
 :::
 
 
@@ -494,7 +519,7 @@ Levels; the default kind for strings and keywords.
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image9.png)
+![](reference.scales_axes_coords_files/image10.png)
 :::
 
 
@@ -532,7 +557,7 @@ Levels; the default kind for strings and keywords.
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image10.png)
+![](reference.scales_axes_coords_files/image11.png)
 :::
 
 
@@ -626,7 +651,7 @@ of the axis - 40 to 60 is stretched, 1 to 40 and 60 to 100 are squeezed:
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image11.png)
+![](reference.scales_axes_coords_files/image12.png)
 :::
 
 
@@ -660,7 +685,7 @@ Radii of areas proportional to the values - for polar charts whose bar areas sho
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image12.png)
+![](reference.scales_axes_coords_files/image13.png)
 :::
 
 
@@ -723,7 +748,7 @@ Polar coordinates work with these charts:
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image13.png)
+![](reference.scales_axes_coords_files/image14.png)
 :::
 
 
@@ -766,7 +791,7 @@ In polar coordinates `:flip true` swaps the roles - the vertical scale on angles
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image14.png)
+![](reference.scales_axes_coords_files/image15.png)
 :::
 
 
@@ -801,7 +826,7 @@ points joined in data order, [line](reference.charts_points_paths.html#line) `:o
 
 
 ::: {.clay-image}
-![](reference.scales_axes_coords_files/image15.png)
+![](reference.scales_axes_coords_files/image16.png)
 :::
 
 
