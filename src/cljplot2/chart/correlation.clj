@@ -31,13 +31,12 @@
   Functions: [[r]] - the coefficient of two samples; [[computed-aesthetics]] - the computed color; [[compute]], [[draw]], [[legend]] - the chart contract."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
-            [fastmath.vector :as v]
             [fastmath.stats :as stats]
             [cljplot2.content.label :as label]
             [cljplot2.data.group :as group]
+            [cljplot2.data.pairwise :as pairwise]
             [cljplot2.data.rows :as data]
             [cljplot2.graphics.draw :as draw]
-            [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme]))
@@ -130,6 +129,44 @@
                       (stats/pearson-correlation xs ys)))]
       (if (m/valid-double? v) v ##NaN))))
 
+(defn computed-aesthetics
+  "Gives the correlation chart's computed aesthetics.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `mapping` (map): the merged mapping.
+
+  Returns `{:color {:title r :range :RColorBrewer/RdBu}}` - r on a diverging palette, with its colour bar; `{}` when a fixed `:color`, the `:number` glyph or a mapped aesthetic (the plot's colour then belongs to the mapping) colours the glyphs."
+  [options mapping]
+  (if (or (:color options) (= :number (get options :glyph :number)) (grouped? mapping))
+    {}
+    {:color {:title "r" :range :RColorBrewer/RdBu}}))
+
+(def method-labels
+  "Label of the coefficient of each `:method`."
+  {:pearson "Corr" :spearman "Spearman" :kendall "Kendall"})
+
+(defn r
+  "Computes the correlation coefficient of two samples.
+
+  Parameters:
+
+  - `method` (keyword): `:pearson` (any other value), `:spearman` or `:kendall`.
+  - `xs`, `ys` (sequences of doubles): the paired samples, of equal length.
+
+  Returns the coefficient in `[-1 1]`; `##NaN` for fewer than 2 points or a sample without spread.
+
+  See also [[compute]]."
+  ^double [method xs ys]
+  (if (m/< (count xs) 2)
+    ##NaN
+    (let [v (double (case method
+                      :spearman (stats/spearman-correlation xs ys)
+                      :kendall (stats/kendall-correlation xs ys)
+                      (stats/pearson-correlation xs ys)))]
+      (if (m/valid-double? v) v ##NaN))))
+
 (defn- pairs-of
   "Gives the paired samples of rows.
 
@@ -168,7 +205,7 @@
         by-r? (contains? (computed-aesthetics options mapping) :color)
         all-rows (mapcat val groups)
         st (theme/resolved-style theme chart)
-        rows-r (fn [rows-of] (let [[xs ys] (pairs-of rows-of x-of y-of)] (r method xs ys)))]
+        rows-r (fn [rows-of] (let [[xs ys] (pairwise/pair-samples rows-of x-of y-of)] (r method xs ys)))]
     {:data (into {} (map (fn [[panel panel-rows]]
                            [panel {:r (rows-r panel-rows)
                                    :groups (when grouped
@@ -260,41 +297,18 @@
                          [(m/+ cx (m/- (m/* u ca) (m/* w sa))) (m/+ cy (m/+ (m/* u sa) (m/* w ca)))]))
           (range ellipse-segments))))
 
-(def ^{:private true :const true :tag 'double} min-text-size
-  "Smallest font size text lines shrink to when the panel is narrow."
-  6.0)
-
-(def ^{:private true :const true :tag 'double} text-fit
-  "Share of the panel's width the widest text line may take before the font shrinks (text geometry, not a style)."
-  0.92)
-
-(def ^{:private true :const true :tag 'double} line-spacing
-  "Line height as a multiple of the font size (text geometry, not a style)."
-  1.3)
-
 (defn- draw-text-lines!
-  "Draws text lines centred in the panel, one under another.
-
-  The font shrinks (to [[min-text-size]] at least) so the widest line - and the `template` text, the widest a value can be, so equal panels get one size - fits [[text-fit]] of the panel's width.
+  "Draws text lines centred in the panel in the `:correlation` text role, shrunk to fit (see [[cljplot2.content.label/draw-fitted-lines!]]).
 
   Parameters:
 
   - `canvas`: the panel's canvas.
   - `lines` (vector): `[{:text :color} ..]` (`:color` optional - the text role's).
   - `template` (string): the widest text a line can hold.
-  - `panel-w`, `panel-h` (numbers): the panel's size in pixels.
-  - `env` (map): the drawing environment (the `:correlation` text role)."
-  [canvas lines template panel-w panel-h env]
-  (let [w (double panel-w)
-        h (double panel-h)
-        role-size (double (get-in env [:theme :text :correlation :size]))
-        content (fn [{:keys [text color]} size] (cond-> {:kind :label :role :correlation :text text :size size} color (assoc :color color)))
-        widest (m/max 0.0 (v/mx (map #(.x ^fastmath.vector.Vec2 (measure/natural-size (content % role-size) {:canvas canvas :theme (:theme env)})) (conj lines {:text template}))))
-        size (if (m/> widest (m/* text-fit w)) (m/max min-text-size (m/floor (m// (m/* role-size text-fit w) widest))) role-size)
-        line-h (m/* line-spacing size)
-        top (m/- (m/* 0.5 h) (m/* 0.5 line-h (m/long-dec (count lines))))]
-    (doseq [[^long i line] (map-indexed vector lines)]
-      (label/draw-at! canvas (content line size) [:center :middle] (m/* 0.5 w) (m/+ top (m/* line-h i)) env))))
+  - `box` (map): the panel box, `:w` and `:h`.
+  - `env` (map): the drawing environment."
+  [canvas lines template box env]
+  (label/draw-fitted-lines! canvas {:lines lines :template template :role :correlation} box env))
 
 (defn- draw-number!
   "Draws the `:number` glyph: `<method label>: r`, with a line per group.
@@ -314,7 +328,7 @@
                             (when-let [st (group/style {:color :black} aesthetics scales (:theme env))]
                               {:text (str (or (some-> (first (vals aesthetics)) str) "NA") ": " (number-text group-r)) :color (:color st)})))
                     panel-groups)]
-    (draw-text-lines! canvas lines (str (method-labels method) ": -0.00") w h env)))
+    (draw-text-lines! canvas lines (str (method-labels method) ": -0.00") {:w w :h h} env)))
 
 (defn draw
   "Draws one panel's glyph (see the namespace doc).
@@ -335,7 +349,7 @@
         side (m/* glyph-size (m/min w h))
         fill (glyph-color coefficient computed scales env)]
     (if (and (m/nan? coefficient) (not= glyph :number))
-      (draw-text-lines! canvas [{:text "NA"}] "NA" w h env)
+      (draw-text-lines! canvas [{:text "NA"}] "NA" box env)
       (case glyph
         :number (draw-number! canvas computed box scales env)
         :shade (when fill (c2d/set-color canvas fill) (c2d/rect canvas 0 0 w h))

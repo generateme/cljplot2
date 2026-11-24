@@ -19,7 +19,7 @@
 
   Context in every facet panel: a chart whose mapping sets the facet keys to `nil` (`{:facet nil}`, see [[cljplot2.data.facet/facet-dims]]) is drawn in every panel - e.g. all lines greyed behind the faceted ones: `(line {:mapping {:facet nil :color nil :group :g} :color [200 200 200]})` listed before `(line)`.
 
-  Functions: a constructor per built-in kind, each taking an optional options map - [[scatter]], [[line]], [[segment]], [[bar]], [[histogram]], [[density]], [[ecdf]], [[qq]], [[pp]], [[ribbon]], [[smooth]], [[candlestick]], [[parallel]], [[polygon]], [[treemap]], [[partition]], [[pack]], [[waffle]], [[venn]], [[tile]], [[bin2d]], [[field]], [[contour]], [[correlation]], [[cloud]], [[surface]], [[box]], [[bullet]], [[violin]], [[stripplot]], [[beeswarm]], [[dotplot]], [[rug]], [[extent]], [[rule]], [[rect]], [[function]], [[text]], [[image]]; [[builtin-styles]] - the style schema of every built-in kind; [[chart-value?]] - tests for a chart value."
+  Functions: a constructor per built-in kind, each taking an optional options map - [[scatter]], [[line]], [[segment]], [[bar]], [[histogram]], [[density]], [[ecdf]], [[qq]], [[pp]], [[ribbon]], [[smooth]], [[candlestick]], [[parallel]], [[polygon]], [[treemap]], [[partition]], [[pack]], [[waffle]], [[venn]], [[tile]], [[bin2d]], [[field]], [[contour]], [[correlation]], [[pairwise]], [[cloud]], [[surface]], [[box]], [[bullet]], [[violin]], [[stripplot]], [[beeswarm]], [[dotplot]], [[rug]], [[extent]], [[rule]], [[rect]], [[function]], [[text]], [[image]]; [[builtin-styles]] - the style schema of every built-in kind; [[chart-value?]] - tests for a chart value."
   (:refer-clojure :exclude [partition])
   (:require [cljplot2.chart.bar :as bar]
             [cljplot2.chart.beeswarm :as beeswarm]
@@ -30,6 +30,7 @@
             [cljplot2.chart.candlestick :as candlestick]
             [cljplot2.chart.contour :as contour]
             [cljplot2.chart.correlation :as correlation]
+            [cljplot2.chart.pairwise :as pairwise]
             [cljplot2.chart.density :as density]
             [cljplot2.chart.ecdf :as ecdf]
             [cljplot2.chart.extent :as extent]
@@ -109,6 +110,7 @@
    :field (:style field/schemas)
    :contour (:style contour/schemas)
    :correlation (:style correlation/schemas)
+   :pairwise (:style pairwise/schemas)
    :ecdf (:style ecdf/schemas)
    :box (:style box/schemas)
    :bullet (:style bullet/schemas)
@@ -681,3 +683,17 @@
   ([] (correlation {}))
   ([options] (assoc (chart-value :correlation correlation/compute correlation/draw correlation/legend correlation/schemas options)
                     :computed-aesthetics correlation/computed-aesthetics)))
+
+(defn pairwise
+  "Creates a pairwise statistic chart: a statistic of the panel's `:x` / `:y` samples - an error, an association, an effect size, a distance or a user function - as one cell filling the panel (a matrix of them with [[cljplot2.multiplot/pairs]]).
+
+  Parameters:
+
+  - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.pairwise]]), `:data` and `:mapping` (taken by every chart), and the style keys over the theme style `[:chart :pairwise]`, and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
+
+  Returns a chart value of kind `:pairwise` - it computes its own colour aesthetic (a colour scale without a mapping). Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
+
+  See also [[cljplot2.chart.pairwise]], [[cljplot2.data.pairwise/statistics]], [[correlation]]."
+  ([] (pairwise {}))
+  ([options] (assoc (chart-value :pairwise pairwise/compute pairwise/draw pairwise/legend pairwise/schemas options)
+                    :computed-aesthetics pairwise/computed-aesthetics)))

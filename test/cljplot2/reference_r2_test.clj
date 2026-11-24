@@ -28,7 +28,7 @@
      cljplot2.data.graph/arc-layout cljplot2.data.graph/chord-layout cljplot2.data.graph/sankey-layout
      cljplot2.data.graph/alluvial-graph cljplot2.data.hierarchy/sequence-levels cljplot2.data.field/domain-color
      cljplot2.data.contour/isolines cljplot2.data.vector-field/arrows cljplot2.data.vector-field/mapped-points
-     cljplot2.data.vector-field/traces cljplot2.graphics.font/resolve-font})
+     cljplot2.data.vector-field/traces cljplot2.graphics.font/resolve-font cljplot2.data.pairwise/matrix-rows})
 
 (defn- var-name [v] (symbol (str (:ns (meta v))) (str (:name (meta v)))))
 

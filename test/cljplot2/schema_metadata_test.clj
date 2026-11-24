@@ -32,7 +32,7 @@
   (vec (keep #(when-not (:description %) (:path %)) rows)))
 
 (deftest every-chart-test
-  (is (= 39 (count chart-constructors))))
+  (is (= 40 (count chart-constructors))))
 
 (def ^:private without-mapping
   "Chart kinds reading no mapping keys (only the plot's facet keys reach them)."
@@ -116,7 +116,10 @@
    :extent {:data (map (fn [i] {:x (* 1.5 i) :y (if (even? i) "a" "b")}) (range 10))
             :mapping {:x :x :y :y}
             :charts [(chart/extent)]}
-   :function {:charts [(chart/function {:f (fn [x] (* x x)) :domain [-1 1]})]}})
+   :function {:charts [(chart/function {:f (fn [x] (* x x)) :domain [-1 1]})]}
+   :pairwise {:data (map (fn [i] {:a i :b (* i i)}) (range 10))
+              :mapping {:x :a :y :b}
+              :charts [(chart/pairwise)]}})
 
 (defn- demo-plot
   "The first single plot of the demos with a chart of `kind`, as `[plot render-options]`, or `nil`."

@@ -1,7 +1,8 @@
 ;; # Charts: grids and fields
 
 ;; Charts colouring a plane: a cell per row (`tile`), a 2D histogram (`bin2d`), a scalar field drawn as a raster
-;; (`field`) or as level lines (`contour`), and the correlation of two variables as one glyph (`correlation`).
+;; (`field`) or as level lines (`contour`), the correlation of two variables as one glyph (`correlation`), and any
+;; other statistic of two variables as one cell (`pairwise`).
 
 (ns reference.charts-grids-fields
   (:require [cljplot2.chart :as chart]
@@ -373,3 +374,56 @@
                    {:width 700 :height 620})
 
 (nu/shared-groups (describe/options (chart/correlation)))
+
+;; ## pairwise
+
+;; Any statistic of two variables drawn as one cell filling the panel - an error, an association, an effect size,
+;; a distance (the keys of `cljplot2.data.pairwise/statistics`) or a function of the two samples. Unlike r the
+;; values have no fixed range. Alone it writes the value, one line per group.
+
+(nu/options-table (describe/mapping (chart/pairwise)))
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :petal-length :color :species}
+                    :charts [(chart/pairwise {:method :cohens-d})]}
+                   {:width 450 :height 300})
+
+;; Its options: the statistic and its label, the glyph, the colour domain and the number format (by default the
+;; value on the colour scale over the panels' range):
+
+(nu/options-table (describe/own-rows (describe/options (chart/pairwise))))
+
+;; The glyphs for one pair (the mean absolute error of sepal against petal length), a user function with its label
+;; and format, and one fixed colour:
+
+(plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :number})] :labels {:title ":glyph :number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade :domain [0 4]})]
+                                   :labels {:title ":glyph :shade, :domain [0 4]"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade-number :domain [0 4]})]
+                                   :labels {:title ":glyph :shade-number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method (fn [xs ys] (- (apply max xs) (apply max ys)))
+                                                             :label "max difference" :format #(format "%+.1f cm" %)})]
+                                   :labels {:title "a function, :label, :format"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :rmse :glyph :shade :color [120 160 90]})]
+                                   :labels {:title ":color"}}]
+                                 {:columns 5})
+                   {:width 1000 :height 260})
+
+;; In a matrix: a lower cell is the statistic of its column variable against its row variable, an upper cell the
+;; reverse - the mean error (asymmetric: the mirrored cells have opposite signs) below, the mean squared error above,
+;; every cell coloured on the domain of the whole matrix (one colour bar):
+
+(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                     :lower (chart/pairwise {:method :me})
+                                     :upper (chart/pairwise {:method :mse :glyph :shade-number})
+                                     :diagonal :names
+                                     :title "mean error below, mean squared error above"})
+                   {:width 700 :height 620})
+
+(nu/shared-groups (describe/options (chart/pairwise)))
+

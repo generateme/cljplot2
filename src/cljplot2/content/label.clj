@@ -319,3 +319,44 @@
   (c2d/with-isolated-canvas [isolated c]
     (draw/draw-content content isolated (box-at isolated content anchor x y env) env))
   nil)
+
+(def ^{:private true :const true :tag 'double} min-fitted-size
+  "Smallest font size fitted text lines shrink to in a narrow box."
+  6.0)
+
+(def ^{:private true :const true :tag 'double} fitted-share
+  "Share of the box's width the widest fitted line may take before the font shrinks (text geometry, not a style)."
+  0.92)
+
+(def ^{:private true :const true :tag 'double} fitted-line-spacing
+  "Line height of fitted text as a multiple of the font size (text geometry, not a style)."
+  1.3)
+
+(defn draw-fitted-lines!
+  "Draws text lines centred in a box, one under another, the font shrunk to fit the box's width.
+
+  The font shrinks (to 6 points at least) so the widest line - and the `:template` text, the widest a line can be, so equal boxes get one size - fits 92 % of the box's width; lines are 1.3 font sizes apart. Used by the cells of correlograms and pairwise statistics.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context, the box at its origin.
+  - `text` (map):
+    - `:lines` (vector) - `[{:text :color} ..]`, `:color` optional (the role's colour);
+    - `:template` (string) - the widest text a line can hold (an empty string - the lines alone);
+    - `:role` (keyword) - the text role.
+  - `box` (map): `:w` and `:h` in pixels.
+  - `env` (map): `:theme`.
+
+  Returns `nil`.
+
+  See also [[draw-at!]]."
+  [canvas {:keys [lines template role]} {:keys [^double w ^double h]} env]
+  (let [role-size (double (get-in env [:theme :text role :size]))
+        content (fn [{:keys [text color]} size] (cond-> {:kind :label :role role :text text :size size} color (assoc :color color)))
+        widest (m/max 0.0 (v/mx (map #(.x ^Vec2 (measure/natural-size (content % role-size) {:canvas canvas :theme (:theme env)})) (conj lines {:text template}))))
+        size (if (m/> widest (m/* fitted-share w)) (m/max min-fitted-size (m/floor (m// (m/* role-size fitted-share w) widest))) role-size)
+        line-h (m/* fitted-line-spacing size)
+        top (m/- (m/* 0.5 h) (m/* 0.5 line-h (m/long-dec (count lines))))]
+    (doseq [[^long i line] (map-indexed vector lines)]
+      (draw-at! canvas (content line size) [:center :middle] (m/* 0.5 w) (m/+ top (m/* line-h i)) env))
+    nil))

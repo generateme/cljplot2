@@ -39,7 +39,7 @@
              "charts_bars_ranges" [:bar :extent :bullet]
              "charts_strip_distributions" [:box :violin :stripplot :beeswarm :dotplot :rug]
              "charts_distribution_stats" [:histogram :density :ecdf :qq :pp]
-             "charts_grids_fields" [:tile :bin2d :field :contour :correlation]
+             "charts_grids_fields" [:tile :bin2d :field :contour :correlation :pairwise]
              "charts_part_of_whole" [:treemap :partition :pack :waffle :venn]
              "charts_multivariate_3d" [:parallel :cloud :surface]))
 
@@ -64,7 +64,8 @@
                                    cljplot2.data.hierarchy/sequence-levels]
              "data_sets_series" '[cljplot2.data.sets/membership-rows cljplot2.data.sets/upset-rows
                                   cljplot2.data.series/lag-rows cljplot2.data.series/acf-rows
-                                  cljplot2.data.series/horizon-rows cljplot2.data.series/horizon-bands]
+                                  cljplot2.data.series/horizon-rows cljplot2.data.series/horizon-bands
+                                  cljplot2.data.pairwise/matrix-rows]
              "data_fields" '[cljplot2.data.field/domain-color cljplot2.data.contour/isolines
                              cljplot2.data.vector-field/arrows cljplot2.data.vector-field/mapped-points
                              cljplot2.data.vector-field/traces]

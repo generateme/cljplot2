@@ -30,7 +30,8 @@ code-block-background: true
 # Charts: grids and fields
 
 Charts colouring a plane: a cell per row (`tile`), a 2D histogram (`bin2d`), a scalar field drawn as a raster
-(`field`) or as level lines (`contour`), and the correlation of two variables as one glyph (`correlation`).
+(`field`) or as level lines (`contour`), the correlation of two variables as one glyph (`correlation`), and any
+other statistic of two variables as one cell (`pairwise`).
 
 
 ::: {.sourceClojure}
@@ -747,6 +748,106 @@ In a correlogram:
 
 ::: {.clay-image}
 ![](reference.charts_grids_fields_files/image18.png)
+:::
+
+
+Shared options: [Data and mapping](reference.shared_options.html#data-and-mapping) (`:data` `:mapping`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+
+
+## pairwise
+
+Any statistic of two variables drawn as one cell filling the panel - an error, an association, an effect size,
+a distance (the keys of `cljplot2.data.pairwise/statistics`) or a function of the two samples. Unlike r the
+values have no fixed range. Alone it writes the value, one line per group.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>first sample, the statistic's xs (numbers)</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>second sample, the statistic's ys (numbers)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>categorical groups, each a line of the :number glyph in its colour</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each a line of the :number glyph</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :petal-length :color :species}
+                    :charts [(chart/pairwise {:method :cohens-d})]}
+                   {:width 450 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image19.png)
+:::
+
+
+Its options: the statistic and its label, the glyph, the colour domain and the number format (by default the
+value on the colour scale over the panels' range):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69.0 117.0 180.0 255.0]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td><td>one fixed colour: the shade's, the :number text's</td></tr><tr><td>:method</td><td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td><td>:pearson</td><td>the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)</td></tr><tr><td>:label</td><td>string or nil</td><td>the statistic's label, value for a function</td><td>the statistic's label (text, colour bar title)</td></tr><tr><td>:glyph</td><td>one of :number :shade :shade-number</td><td>:number</td><td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td></tr><tr><td>:domain</td><td>[lo hi], finite numbers, lo < hi or nil</td><td>the values' range over the panels; in pairs the matrix's range</td><td>the colour domain [lo hi] (pairs: shared by every cell)</td></tr><tr><td>:format</td><td>a function or nil</td><td>at most 2 decimals, whole numbers without them</td><td>the text of a value, a function of the number</td></tr></tbody></table>
+```
+
+:::
+
+
+The glyphs for one pair (the mean absolute error of sepal against petal length), a user function with its label
+and format, and one fixed colour:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :number})] :labels {:title ":glyph :number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade :domain [0 4]})]
+                                   :labels {:title ":glyph :shade, :domain [0 4]"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :mae :glyph :shade-number :domain [0 4]})]
+                                   :labels {:title ":glyph :shade-number"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method (fn [xs ys] (- (apply max xs) (apply max ys)))
+                                                             :label "max difference" :format #(format "%+.1f cm" %)})]
+                                   :labels {:title "a function, :label, :format"}}
+                                  {:data iris :mapping {:x :sepal-length :y :petal-length}
+                                   :charts [(chart/pairwise {:method :rmse :glyph :shade :color [120 160 90]})]
+                                   :labels {:title ":color"}}]
+                                 {:columns 5})
+                   {:width 1000 :height 260})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image20.png)
+:::
+
+
+In a matrix: a lower cell is the statistic of its column variable against its row variable, an upper cell the
+reverse - the mean error (asymmetric: the mirrored cells have opposite signs) below, the mean squared error above,
+every cell coloured on the domain of the whole matrix (one colour bar):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                     :lower (chart/pairwise {:method :me})
+                                     :upper (chart/pairwise {:method :mse :glyph :shade-number})
+                                     :diagonal :names
+                                     :title "mean error below, mean squared error above"})
+                   {:width 700 :height 620})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_grids_fields_files/image21.png)
 :::
 
 

@@ -7,6 +7,7 @@
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.chart :as chart]
+            [cljplot2.chart.pairwise :as pairwise]
             [cljplot2.data.accessor :as accessor]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
@@ -192,8 +193,13 @@
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
   density on the diagonal); R `corrgram` / `pairs` panel functions - `chart/correlation` glyphs in `:lower` / `:upper`
-  (`:shade`, `:pie`, `:ellipse`, ...) with `:diagonal :names`. A correlation matrix as a heatmap (one tile per pair)
-  is `chart/tile` over `fastmath.stats/correlation-matrix` rows instead."
+  (`:shade`, `:pie`, `:ellipse`, ...) with `:diagonal :names`. Other statistics (errors, effect sizes, distances, a
+  user function) are `chart/pairwise` cells: a lower cell shows the statistic of the column variable against the row
+  variable, an upper cell the reverse, and a `pairwise` chart without `:domain` gets the range of its statistic over the
+  whole matrix, so every cell and the colour bar share one domain (see
+  [[cljplot2.chart.pairwise/with-shared-domain]]; the legend column has one colour bar, so shade one statistic per
+  matrix). A matrix as a heatmap (one tile per pair) is `chart/tile` over
+  [[cljplot2.data.pairwise/matrix-rows]] (or `fastmath.stats/correlation-matrix` rows) instead."
   {:cljplot2/options pairs-options}
   [data {:keys [mapping labels theme title] variable-keys :variables lower-slot :lower upper-slot :upper diagonal-slot :diagonal
          :or {lower-slot ::default upper-slot ::default diagonal-slot ::default} :as options}]
@@ -205,8 +211,10 @@
         rows (data/rows data)
         domains (variable-domains rows variables)
         name-of (fn [k] (get labels k (name k)))
-        lower (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot))
-        upper (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot))
+        ;; pairwise charts share the colour domain of the whole matrix (their values have no fixed range)
+        shared-domain (fn [charts] (mapv #(pairwise/with-shared-domain % rows variables) charts))
+        lower (shared-domain (if (= ::default lower-slot) [(chart/scatter)] (slot-charts lower-slot)))
+        upper (shared-domain (if (= ::default upper-slot) [(chart/correlation {:glyph :number})] (slot-charts upper-slot)))
         diagonal (if (= ::default diagonal-slot) [(chart/density)] diagonal-slot)
         mapped? (seq (aesthetic/mapped-dims mapping))
         ;; aesthetics with continuous values (e.g. a numeric :color) color marks without grouping: left out on the

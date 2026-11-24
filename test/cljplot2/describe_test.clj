@@ -241,7 +241,7 @@
 (deftest chart-constructors-test
   (testing "every built-in chart kind, sorted, each var returning its kind's chart value"
     (let [cs (describe/chart-constructors)]
-      (is (= 39 (count cs)))
+      (is (= 40 (count cs)))
       (is (= (sort (keys cs)) (keys cs)))
       (is (every? (fn [[k v]] (= k (:kind (v)))) cs))
       (is (every? var? (vals cs))))))

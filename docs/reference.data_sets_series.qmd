@@ -30,8 +30,9 @@ code-block-background: true
 # Data functions: sets and series
 
 Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an
-UpSet plot, lag pairs, autocorrelation rows and the folded bands of a horizon chart. The builders `plot/acf` and
-`plot/horizon` (Builders: series) draw the last two directly.
+UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise
+statistic. The builders `plot/acf` and `plot/horizon` (Builders: series) draw autocorrelations and horizons
+directly, `chart/pairwise` one statistic per panel.
 
 
 ::: {.sourceClojure}
@@ -41,6 +42,7 @@ UpSet plot, lag pairs, autocorrelation rows and the folded bands of a horizon ch
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.pairwise :as pairwise]
             [cljplot2.data.series :as series]
             [cljplot2.data.sets :as sets]
             [cljplot2.describe :as describe]
@@ -322,6 +324,88 @@ ones - the colour domain above:
 [1 2 3 -1 -2 -3]
 
 ```
+:::
+
+
+
+## pairwise/matrix-rows
+
+A statistic for every pair of variables, a row per cell: the statistic of the x variable's sample against the y
+variable's over their complete rows, with the count of those rows. The built-in statistics:
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>method</th><th>label</th><th>symmetry</th><th>samples</th><th>description</th></tr></thead><tbody><tr><td>:ameasure</td><td>A</td><td>:complementary</td><td>:independent</td><td>Vargha-Delaney A, P(x > y)</td></tr><tr><td>:canberra</td><td>Canberra</td><td>:symmetric</td><td>:paired</td><td>Canberra distance</td></tr><tr><td>:chebyshev</td><td>Chebyshev</td><td>:symmetric</td><td>:paired</td><td>Chebyshev distance</td></tr><tr><td>:cliffs-delta</td><td>Cliff's δ</td><td>:antisymmetric</td><td>:independent</td><td>P(x > y) - P(x < y), non-parametric</td></tr><tr><td>:cohens-d</td><td>Cohen's d</td><td>:antisymmetric</td><td>:independent</td><td>standardized mean difference, pooled standard deviation</td></tr><tr><td>:cosine</td><td>Cosine</td><td>:symmetric</td><td>:paired</td><td>cosine similarity</td></tr><tr><td>:covariance</td><td>Cov</td><td>:symmetric</td><td>:paired</td><td>sample covariance</td></tr><tr><td>:euclidean</td><td>Euclidean</td><td>:symmetric</td><td>:paired</td><td>Euclidean distance</td></tr><tr><td>:glass-delta</td><td>Glass's Δ</td><td>:asymmetric</td><td>:independent</td><td>mean difference over the standard deviation of ys</td></tr><tr><td>:hedges-g</td><td>Hedges' g</td><td>:antisymmetric</td><td>:independent</td><td>standardized mean difference, unbiased pooled standard deviation</td></tr><tr><td>:kendall</td><td>Kendall</td><td>:symmetric</td><td>:paired</td><td>Kendall rank correlation (tau)</td></tr><tr><td>:mae</td><td>MAE</td><td>:symmetric</td><td>:paired</td><td>mean absolute error</td></tr><tr><td>:manhattan</td><td>Manhattan</td><td>:symmetric</td><td>:paired</td><td>Manhattan distance</td></tr><tr><td>:mape</td><td>MAPE</td><td>:asymmetric</td><td>:paired</td><td>mean absolute percentage error, relative to xs</td></tr><tr><td>:me</td><td>ME</td><td>:antisymmetric</td><td>:paired</td><td>mean error, mean of xs - ys</td></tr><tr><td>:means-ratio</td><td>Means ratio</td><td>:reciprocal</td><td>:independent</td><td>mean of xs over mean of ys</td></tr><tr><td>:mse</td><td>MSE</td><td>:symmetric</td><td>:paired</td><td>mean squared error</td></tr><tr><td>:pearson</td><td>Pearson</td><td>:symmetric</td><td>:paired</td><td>Pearson correlation</td></tr><tr><td>:r2</td><td>R²</td><td>:asymmetric</td><td>:paired</td><td>coefficient of determination of ys predicting xs</td></tr><tr><td>:rmse</td><td>RMSE</td><td>:symmetric</td><td>:paired</td><td>root mean squared error</td></tr><tr><td>:spearman</td><td>Spearman</td><td>:symmetric</td><td>:paired</td><td>Spearman rank correlation</td></tr></tbody></table></div>
+```
+
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables</td><td>sequential of keyword (at least 2)</td><td></td><td>the variables of a square matrix (x and y both), in matrix order</td></tr><tr><td>:x-variables</td><td>sequential of keyword (at least 1)</td><td></td><td>the x variables of a rectangular matrix (with :y-variables)</td></tr><tr><td>:y-variables</td><td>sequential of keyword (at least 1)</td><td></td><td>the y variables of a rectangular matrix (with :x-variables)</td></tr><tr><td>:method</td><td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td><td>:pearson</td><td>the statistic: a key of pairwise/statistics or a function of two samples</td></tr><tr><td>:label</td><td>string or nil</td><td>the statistic's label, value for a function</td><td>the statistic's label in the rows</td></tr><tr><td>:diagonal?</td><td>true or false</td><td>false</td><td>rows of a variable with itself</td></tr><tr><td>:triangle</td><td>one of :full :lower :upper</td><td>:full</td><td>the cells of a square matrix: :full, :lower (y after x in variable order) or :upper; :lower and :upper need a symmetric statistic</td></tr></tbody></table>
+```
+
+:::
+
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.7</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.7</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.6</td><td>1</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.3</td><td>1.7</td><td>0.5</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.9</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.6</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>3.5</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5.2</td><td>3.4</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.1</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>4.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.5</td><td>4.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.2</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.5</td><td>3.5</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.6</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.4</td><td>3</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.5</td><td>2.3</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.4</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.6</td><td>0.6</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.9</td><td>0.4</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.3</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>7</td><td>3.2</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.4</td><td>3.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.9</td><td>3.1</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.3</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.5</td><td>2.8</td><td>4.6</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.5</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>3.3</td><td>4.7</td><td>1.6</td><td>versicolor</td></tr><tr><td>4.9</td><td>2.4</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>6.6</td><td>2.9</td><td>4.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.2</td><td>2.7</td><td>3.9</td><td>1.4</td><td>versicolor</td></tr><tr><td>5</td><td>2</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3</td><td>4.2</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>2.2</td><td>4</td><td>1</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.9</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.9</td><td>3.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>4.1</td><td>1</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.5</td><td>3.9</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3.2</td><td>4.8</td><td>1.8</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.5</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4.7</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.4</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.6</td><td>3</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.8</td><td>2.8</td><td>4.8</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.7</td><td>3</td><td>5</td><td>1.7</td><td>versicolor</td></tr><tr><td>6</td><td>2.9</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.6</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.8</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.7</td><td>1</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>3.9</td><td>1.2</td><td>versicolor</td></tr><tr><td>6</td><td>2.7</td><td>5.1</td><td>1.6</td><td>versicolor</td></tr><tr><td>5.4</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>3.4</td><td>4.5</td><td>1.6</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.7</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.3</td><td>4.4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.5</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.6</td><td>4.4</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.1</td><td>3</td><td>4.6</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.6</td><td>4</td><td>1.2</td><td>versicolor</td></tr><tr><td>5</td><td>2.3</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.7</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.7</td><td>3</td><td>4.2</td><td>1.2</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.9</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.1</td><td>2.5</td><td>3</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+The lower triangle of a symmetric statistic, the diagonal included:
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>statistic</th><th>value</th><th>n</th></tr></thead><tbody><tr><td>:sepal-length</td><td>:sepal-length</td><td>Spearman</td><td>1.0</td><td>150</td></tr><tr><td>:sepal-length</td><td>:sepal-width</td><td>Spearman</td><td>-0.1667776582832349</td><td>150</td></tr><tr><td>:sepal-width</td><td>:sepal-width</td><td>Spearman</td><td>1.0</td><td>150</td></tr><tr><td>:sepal-length</td><td>:petal-length</td><td>Spearman</td><td>0.8818981264349858</td><td>150</td></tr><tr><td>:sepal-width</td><td>:petal-length</td><td>Spearman</td><td>-0.30963508601557777</td><td>150</td></tr><tr><td>:petal-length</td><td>:petal-length</td><td>Spearman</td><td>1.0</td><td>150</td></tr><tr><td>:sepal-length</td><td>:petal-width</td><td>Spearman</td><td>0.8342887759080054</td><td>150</td></tr><tr><td>:sepal-width</td><td>:petal-width</td><td>Spearman</td><td>-0.2890317486605838</td><td>150</td></tr><tr><td>:petal-length</td><td>:petal-width</td><td>Spearman</td><td>0.9376668235763418</td><td>150</td></tr><tr><td>:petal-width</td><td>:petal-width</td><td>Spearman</td><td>1.0</td><td>150</td></tr></tbody></table></div>
+```
+
+
+The upper triangle of the mean squared error of two variables (one row - the pair once):
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>statistic</th><th>value</th><th>n</th></tr></thead><tbody><tr><td>:petal-length</td><td>:sepal-length</td><td>MSE</td><td>5.593600000000002</td><td>150</td></tr></tbody></table></div>
+```
+
+
+A standalone matrix is a tile per row - Cohen's d of every ordered pair (left), and a rectangular matrix of sepal
+against petal measurements with a user function and its label (right):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                                     :method :cohens-d :triangle :full :diagonal? false})
+                                   :mapping {:x (comp name :x) :y (comp name :y) :color :value}
+                                   :charts [(chart/tile {:value-label true})]
+                                   :scales {:color {:range :RColorBrewer/RdBu :domain [-6 6] :title "Cohen's d"}}}
+                                  {:data (pairwise/matrix-rows iris {:x-variables [:sepal-length :sepal-width]
+                                                                     :y-variables [:petal-length :petal-width]
+                                                                     :method (fn [xs ys] (/ (reduce + xs) (reduce + ys)))
+                                                                     :label "sum ratio"})
+                                   :mapping {:x (comp name :x) :y (comp name :y) :color :value}
+                                   :charts [(chart/tile {:value-label true})]
+                                   :scales {:color {:title "sum ratio"}}}]
+                                 {:columns 2})
+                   {:width 1000 :height 400})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_sets_series_files/image4.png)
 :::
 
 

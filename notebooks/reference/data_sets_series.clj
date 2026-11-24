@@ -1,14 +1,16 @@
 ;; # Data functions: sets and series
 
 ;; Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an
-;; UpSet plot, lag pairs, autocorrelation rows and the folded bands of a horizon chart. The builders `plot/acf` and
-;; `plot/horizon` (Builders: series) draw the last two directly.
+;; UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise
+;; statistic. The builders `plot/acf` and `plot/horizon` (Builders: series) draw autocorrelations and horizons
+;; directly, `chart/pairwise` one statistic per panel.
 
 (ns reference.data-sets-series
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.data.pairwise :as pairwise]
             [cljplot2.data.series :as series]
             [cljplot2.data.sets :as sets]
             [cljplot2.describe :as describe]
@@ -160,3 +162,48 @@
 ;; ones - the colour domain above:
 
 (series/horizon-bands 3)
+
+;; ## pairwise/matrix-rows
+
+;; A statistic for every pair of variables, a row per cell: the statistic of the x variable's sample against the y
+;; variable's over their complete rows, with the count of those rows. The built-in statistics:
+
+(nu/data-table (map (fn [[k {:keys [label symmetry samples description]}]]
+                      {:method k :label label :symmetry symmetry :samples samples :description description})
+                    (sort-by key pairwise/statistics)))
+
+(nu/options-table (describe/options #'pairwise/matrix-rows))
+
+(nu/source-note {:dataset :iris})
+
+(def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
+;; The lower triangle of a symmetric statistic, the diagonal included:
+
+(nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                           :method :spearman :triangle :lower :diagonal? true}))
+
+;; The upper triangle of the mean squared error of two variables (one row - the pair once):
+
+(nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
+
+;; A standalone matrix is a tile per row - Cohen's d of every ordered pair (left), and a rectangular matrix of sepal
+;; against petal measurements with a user function and its label (right):
+
+(plot/render-image (plot/arrange [{:data (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                                                     :method :cohens-d :triangle :full :diagonal? false})
+                                   :mapping {:x (comp name :x) :y (comp name :y) :color :value}
+                                   :charts [(chart/tile {:value-label true})]
+                                   :scales {:color {:range :RColorBrewer/RdBu :domain [-6 6] :title "Cohen's d"}}}
+                                  {:data (pairwise/matrix-rows iris {:x-variables [:sepal-length :sepal-width]
+                                                                     :y-variables [:petal-length :petal-width]
+                                                                     :method (fn [xs ys] (/ (reduce + xs) (reduce + ys)))
+                                                                     :label "sum ratio"})
+                                   :mapping {:x (comp name :x) :y (comp name :y) :color :value}
+                                   :charts [(chart/tile {:value-label true})]
+                                   :scales {:color {:title "sum ratio"}}}]
+                                 {:columns 2})
+                   {:width 1000 :height 400})
+

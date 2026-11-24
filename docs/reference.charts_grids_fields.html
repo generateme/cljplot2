@@ -479,6 +479,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#contour-sources" id="toc-contour-sources" class="nav-link" data-scroll-target="#contour-sources"><span class="header-section-number">19.4.1</span> Contour sources</a></li>
   </ul></li>
   <li><a href="#correlation" id="toc-correlation" class="nav-link" data-scroll-target="#correlation"><span class="header-section-number">19.5</span> correlation</a></li>
+  <li><a href="#pairwise" id="toc-pairwise" class="nav-link" data-scroll-target="#pairwise"><span class="header-section-number">19.6</span> pairwise</a></li>
   </ul>
 </nav>
     </div>
@@ -516,7 +517,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Charts colouring a plane: a cell per row (<code>tile</code>), a 2D histogram (<code>bin2d</code>), a scalar field drawn as a raster (<code>field</code>) or as level lines (<code>contour</code>), and the correlation of two variables as one glyph (<code>correlation</code>).</p>
+<p>Charts colouring a plane: a cell per row (<code>tile</code>), a 2D histogram (<code>bin2d</code>), a scalar field drawn as a raster (<code>field</code>) or as level lines (<code>contour</code>), the correlation of two variables as one glyph (<code>correlation</code>), and any other statistic of two variables as one cell (<code>pairwise</code>).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-grids-fields</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -3385,6 +3386,148 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_grids_fields_files/image18.png" class="img-fluid"></p>
+</div>
+<p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
+</section>
+<section id="pairwise" class="level2" data-number="19.6">
+<h2 data-number="19.6" class="anchored" data-anchor-id="pairwise"><span class="header-section-number">19.6</span> pairwise</h2>
+<p>Any statistic of two variables drawn as one cell filling the panel - an error, an association, an effect size, a distance (the keys of <code>cljplot2.data.pairwise/statistics</code>) or a function of the two samples. Unlike r the values have no fixed range. Alone it writes the value, one line per group.</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:x (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>first sample, the statistic's xs (numbers)</td>
+</tr>
+<tr class="even">
+<td>:y (required)</td>
+<td>a keyword, a function or a categorical marker of one</td>
+<td></td>
+<td>second sample, the statistic's ys (numbers)</td>
+</tr>
+<tr class="odd">
+<td>:color</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>categorical groups, each a line of the :number glyph in its colour</td>
+</tr>
+<tr class="even">
+<td>:group</td>
+<td>a keyword, a function or a categorical marker of one or nil</td>
+<td></td>
+<td>groups without a visual aesthetic, each a line of the :number glyph</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:cohens-d</span>})]}</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">450</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_grids_fields_files/image19.png" class="img-fluid"></p>
+</div>
+<p>Its options: the statistic and its label, the glyph, the colour domain and the number format (by default the value on the colour scale over the panels’ range):</p>
+<div class="clay-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Option</th>
+<th data-quarto-table-cell-role="th">Type</th>
+<th data-quarto-table-cell-role="th">Default</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:color</td>
+<td>a clojure2d color or :none</td>
+<td>[69.0 117.0 180.0 255.0]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td>
+<td>one fixed colour: the shade's, the :number text's</td>
+</tr>
+<tr class="even">
+<td>:method</td>
+<td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td>
+<td>:pearson</td>
+<td>the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)</td>
+</tr>
+<tr class="odd">
+<td>:label</td>
+<td>string or nil</td>
+<td>the statistic's label, value for a function</td>
+<td>the statistic's label (text, colour bar title)</td>
+</tr>
+<tr class="even">
+<td>:glyph</td>
+<td>one of :number :shade :shade-number</td>
+<td>:number</td>
+<td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td>
+</tr>
+<tr class="odd">
+<td>:domain</td>
+<td>[lo hi], finite numbers, lo &lt; hi or nil</td>
+<td>the values' range over the panels; in pairs the matrix's range</td>
+<td>the colour domain [lo hi] (pairs: shared by every cell)</td>
+</tr>
+<tr class="even">
+<td>:format</td>
+<td>a function or nil</td>
+<td>at most 2 decimals, whole numbers without them</td>
+<td>the text of a value, a function of the number</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The glyphs for one pair (the mean absolute error of sepal against petal length), a user function with its label and format, and one fixed colour:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:mae</span> <span class="at">:glyph</span> <span class="at">:number</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph :number"</span>}}</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:mae</span> <span class="at">:glyph</span> <span class="at">:shade</span> <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">4</span>]})]</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph :shade, :domain [0 4]"</span>}}</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:mae</span> <span class="at">:glyph</span> <span class="at">:shade-number</span> <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">4</span>]})]</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph :shade-number"</span>}}</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">-</span> (<span class="kw">apply</span> <span class="kw">max</span> xs) (<span class="kw">apply</span> <span class="kw">max</span> ys)))</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:label</span> <span class="st">"max difference"</span> <span class="at">:format</span> #(<span class="kw">format</span> <span class="st">"%+.1f cm"</span> <span class="va">%</span>)})]</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"a function, :label, :format"</span>}}</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:rmse</span> <span class="at">:glyph</span> <span class="at">:shade</span> <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">90</span>]})]</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":color"</span>}}]</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">5</span>})</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_grids_fields_files/image20.png" class="img-fluid"></p>
+</div>
+<p>In a matrix: a lower cell is the statistic of its column variable against its row variable, an upper cell the reverse - the mean error (asymmetric: the mirrored cells have opposite signs) below, the mean squared error above, every cell coloured on the domain of the whole matrix (one colour bar):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:lower</span> (chart/pairwise {<span class="at">:method</span> <span class="at">:me</span>})</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:upper</span> (chart/pairwise {<span class="at">:method</span> <span class="at">:mse</span> <span class="at">:glyph</span> <span class="at">:shade-number</span>})</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:diagonal</span> <span class="at">:names</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:title</span> <span class="st">"mean error below, mean squared error above"</span>})</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">620</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_grids_fields_files/image21.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#data-and-mapping">Data and mapping</a> (<code>:data</code> <code>:mapping</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>
