@@ -15,7 +15,7 @@
             [clojure.tools.build.api :as b]
             [deps-deploy.deps-deploy :as dd]))
 
-(def lib 'generateme/cljplot2)
+(def lib 'org.clojars.generateme/cljplot2)
 (def version "0.1.0-SNAPSHOT")
 (def ^:private class-dir "target/classes")
 (def ^:private jar-file (format "target/%s-%s.jar" (name lib) version))

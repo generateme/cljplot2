@@ -2,3 +2,4 @@
 .nrepl-port
 playground.clj
 target/
+*.pom.asc
