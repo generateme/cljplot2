@@ -23,7 +23,14 @@
   [[label-options]]; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`.
 
-  Fitted text: [[draw-fitted-lines!]] (text lines fitted to a box)."
+  Fitted text: [[fitted-label]] (a label wrapped, shrunk, then cut to a length along its text, with [[along-text]]) is
+  the one shrinking rule of texts too long for their room (axis titles, facet strips, text charts with `:x-span`):
+  the least size is the text role's `:min-size` (a role without it doesn't shrink). Content with the internal key
+  `:fit true` (axis titles) is fitted to its item box when measured (from the second layout round, once the box is
+  known) and drawn: wrapped at word boundaries, then shrunk, then cut with an ellipsis; text that fits is unchanged.
+  A label rotated across its own track (a y title with `:rotation 0`, an x title with `:rotation 90`) sizes that
+  track in the first round, before any box is known, so it isn't fitted: a track too small for it is a layout error.
+  [[draw-fitted-lines!]] (text lines fitted to a box)."
   (:require [clojure.string :as str]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -69,7 +76,10 @@
 (def ^:private content-schema
   "Schema of label content (custom grid items, labels the layout builds): [[label-options]] with `:role` required - plot
   `:labels` get their role from the layout, content has no default."
-  (mu/required-keys label-options [:role]))
+  (-> (mu/required-keys label-options [:role])
+      (mu/merge [:map (schema/optional :fit {:cljplot2/internal true
+                                              :description "fit the text to its box: wrapped, shrunk down to its role's :min-size, then cut (axis titles)"}
+                                       schema/bool)])))
 
 (defmethod measure/validate-content :label
   [content]
@@ -154,11 +164,137 @@
             inset2 (m/* 2.0 (double (:inset spec)))]
         [(m/+ (m/ceil block-width) inset2) (m/+ (m/ceil block-height) inset2)]))))
 
+;; fitted text
+
+(def ^:private ellipsis
+  "The mark ending a cut text line."
+  "…")
+
+(def ^{:private true :const true :tag 'long} max-wrapped-lines
+  "Most lines one text line wraps into (see [[fitted-label]]); the last takes the rest of the words (text geometry, not a style)."
+  3)
+
+(defn along-text
+  "Gives the length of a label along its text direction.
+
+  Parameters:
+
+  - `content` (map): a label content, optional `:rotation`.
+  - `env` (map): `:canvas` (a canvas in graphics context; its font changes), `:theme`.
+
+  Returns the natural width of the unrotated label (its height for a rotation of 90 or 270), a double."
+  ^double [content env]
+  (let [^Vec2 size (measure/natural-size content env)]
+    (if (#{90 270} (quarter-turn (get content :rotation 0))) (.y size) (.x size))))
+
+(defn- cut-line
+  "Gives the longest start of a text line that, ended with an ellipsis, fits a length.
+
+  Parameters:
+
+  - `fits?` (function): tests whether a text fits.
+  - `line` (string): the line.
+
+  Returns `line` when it fits, else its longest start (whitespace trimmed) with the ellipsis that fits; the ellipsis
+  alone when no start fits."
+  [fits? line]
+  (if (fits? line)
+    line
+    (loop [lo 0 hi (count line)]
+      ;; invariant: a start of lo characters fits (0 - the ellipsis alone, taken as the fallback), hi doesn't
+      (if (m/<= (m/long-sub hi lo) 1)
+        (str (str/trimr (subs line 0 lo)) ellipsis)
+        (let [mid (m/long-quot (m/long-add lo hi) 2)]
+          (if (fits? (str (str/trimr (subs line 0 mid)) ellipsis)) (recur mid hi) (recur lo mid)))))))
+
+(defn- wrapped-line
+  "Gives a text line wrapped at word boundaries into lines that fit a length.
+
+  Parameters:
+
+  - `fits?` (function): tests whether a text fits.
+  - `line` (string): the line.
+
+  Returns a vector of at most [[max-wrapped-lines]] lines: words joined by single spaces, each line as long as fits,
+  the last one holding the words left (it may not fit); a word longer than the length takes a line of its own; a
+  blank line stays one empty line."
+  [fits? line]
+  (let [words (remove str/blank? (str/split line #"\s+"))]
+    (if (empty? words)
+      [""]
+      (let [lines (reduce (fn [acc word]
+                            (let [current (peek acc)
+                                  joined (str current " " word)]
+                              (if (and current (fits? joined)) (conj (pop acc) joined) (conj acc word))))
+                          [] words)]
+        (if (m/> (count lines) max-wrapped-lines)
+          (conj (subvec lines 0 (m/long-dec max-wrapped-lines))
+                (str/join " " (subvec lines (m/long-dec max-wrapped-lines))))
+          lines)))))
+
+(defn fitted-label
+  "Gives a label fitted to a length along its text: wrapped, then shrunk, then cut.
+
+  Text longer than the length is first wrapped at word boundaries (when `:wrap` is true; each line into at most 3
+  lines, given line breaks kept), then drawn smaller - its size scaled down to fit, rounded down, down to its text
+  role's `:min-size` (a role without one, or a size below it, isn't shrunk) - and when that is still too long each
+  line too long is cut, ending with an ellipsis (unless `:cut` is false: the text kept whole, longer than the length
+  at the least size). Used by facet strips (no wrapping), axis titles (see [[cljplot2.layout.plot-grid]]) and text
+  charts with `:x-span` (no cutting, see [[cljplot2.chart.text]]).
+
+  Parameters:
+
+  - `content` (map): the label content (its `:size` over its role's).
+  - `fit` (map): `:length` - pixels along the text; `:wrap` - true wraps first (default false); `:cut` - false keeps
+    the text whole (default true).
+  - `env` (map): `:canvas` (a canvas in graphics context; its font changes), `:theme`.
+
+  Returns `content` when it fits, else with a wrapped or cut `:text` (a string) and possibly a `:size`; a length too
+  short for any text leaves the ellipsis."
+  [content {:keys [^double length wrap cut] :or {cut true}} env]
+  (let [natural (along-text content env)]
+    (if (m/<= natural length)
+      content
+      (let [fits-for (fn [c] (fn [text] (m/<= (along-text (assoc c :text text) env) length)))
+            wrapped (when wrap
+                      (assoc content :text (str/join "\n" (mapcat (partial wrapped-line (fits-for content))
+                                                                  (text-lines (:text content))))))]
+        (if (and wrapped ((fits-for wrapped) (:text wrapped)))
+          wrapped
+          (let [base (or wrapped content)
+                base-natural (if wrapped (along-text wrapped env) natural)
+                {:keys [^double size min-size]} (theme/text-style (:theme env) base)
+                least (m/min size (double (or min-size size)))
+                sized (assoc base :size (m/max least (m/floor (m// (m/* size length) base-natural))))
+                fits? (fits-for sized)]
+            (if (or (not cut) (fits? (:text sized)))
+              sized
+              (assoc sized :text (str/join "\n" (map #(cut-line fits? %) (str/split-lines (str (:text sized)))))))))))))
+
+(defn- box-fitted
+  "Gives a label with `:fit` fitted to a box (see [[fitted-label]]).
+
+  Parameters:
+
+  - `content` (map): the label content; `:fit` - true fits it, `nil` or false - not fitted.
+  - `box` (map or `nil`): `{:w :h}` in pixels, `nil` - not known yet (the first layout round).
+  - `env` (map): `:canvas` (a canvas in graphics context; its font changes), `:theme`.
+
+  Returns `content` without `:fit`, wrapped, shrunk or cut to the box's length along its text (the height for a
+  rotation of 90 or 270); unchanged (without `:fit`) without a box or `:fit`."
+  [content box env]
+  (let [plain (dissoc content :fit)]
+    (if (and box (:fit content))
+      (fitted-label plain {:length (double (if (#{90 270} (quarter-turn (get content :rotation 0))) (:h box) (:w box)))
+                           :wrap true}
+                    env)
+      plain)))
+
 (defmethod measure/natural-size :label
-  [content {:keys [canvas theme]}]
+  [content {:keys [canvas theme box] :as env}]
   (when-not canvas
     (schema/fail! "Measuring a label needs a canvas." {:key :canvas}))
-  (let [spec (label-spec theme content)]
+  (let [spec (label-spec theme (box-fitted content box env))]
     (if (empty? (:lines spec))
       (v/vec2 0.0 0.0)
       (let [{:keys [^double block-width ^double block-height]} (text-metrics canvas spec)
@@ -190,8 +326,8 @@
     (:right :bottom) (m/- available size)))
 
 (defmethod draw/draw-content :label
-  [content canvas {:keys [^long x ^long y ^long w ^long h]} {:keys [theme]}]
-  (let [spec (label-spec theme content)]
+  [content canvas {:keys [^long x ^long y ^long w ^long h] :as box} {:keys [theme] :as env}]
+  (let [spec (label-spec theme (box-fitted content box (assoc env :canvas canvas)))]
     (when (seq (:lines spec))
       (let [{:keys [widths ^double line-height ^double ascent ^double block-width ^double block-height]}
             (text-metrics canvas spec)

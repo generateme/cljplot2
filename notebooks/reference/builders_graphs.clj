@@ -53,7 +53,7 @@
 (nu/options-table (describe/own-rows (describe/options #'plot/network)))
 
 ;; Node aesthetics from the node rows or the computed degree (whole numbers: `:integer-ticks` through the builder's
-;; `:scales`), labels beside the nodes:
+;; `:scales`), labels beside the nodes (a label overlapping that of a larger node is left out):
 
 (plot/render-image (plot/network friends {:nodes people :rng (r/rng :mersenne 1)
                                           :mapping {:color :team :size :degree}
@@ -167,7 +167,10 @@
 
 (nu/options-table (describe/own-rows (describe/options #'plot/sankey)))
 
-;; The UK energy flows of a 2050 scenario, bands in their source's colour (the default):
+;; The UK energy flows of a 2050 scenario, bands in their source's colour (the default). A node name too long for
+;; its room - up to the nearest node on its side in its line, half way when that node's name faces it across the
+;; gap - shrinks, down to the `:min-size` of the text role
+;; `:sankey-label` (here the farm wastes before Bio-conversion); a name overlapping that of a larger node is left out:
 
 (plot/render-image (plot/sankey energy {:link-color :source})
                    {:width 900 :height 550})

@@ -30,7 +30,8 @@
   theme `[:axis :y]`, its `:tick-label` too): right of the axis, below it in a flipped plot, beside the spoke in a polar one (outside the
   ring in a flipped polar one). In a radar (variables on angles) a label at a spoke's inner end repeating one at
   the inner end of an earlier spoke (the same text at the same radius - e.g. 0 at the centre) is drawn once, on the
-  first spoke. A label overlapping one drawn before it (any axis, in axis and tick order) is dropped.
+  first spoke; any other label whose box another spoke crosses (near the centre, where the spokes meet) is dropped.
+  A label overlapping one drawn before it (any axis, in axis and tick order) is dropped.
 
   `:curve :smooth` joins consecutive axes with smooth curves instead of straight segments: a cubic bezier in range
   space that meets every axis perpendicularly, at its value, and never leaves the range between the two values;
@@ -597,6 +598,30 @@
                  [[] #{}]
                  placed)))
 
+(defn- without-spoke-crossings
+  "Leaves out the radar tick labels crossing another spoke (near the centre, where the spokes meet).
+
+  Parameters:
+
+  - `canvas`: the canvas (for measuring).
+  - `placed` (sequence): per axis `{:path pts :ticks [{:label [content anchor x y] :centre c} ..]}` in axis order (see
+    [[without-repeated-centre-labels]]).
+  - `env` (map): the drawing environment.
+
+  Returns a vector of the axes, the ticks whose label box another axis's path crosses (see
+  [[cljplot2.graphics.measure/box-crosses-path?]]) without their `:label` (their marks stay); a label at a spoke's
+  inner end (`:centre`) is kept."
+  [canvas placed env]
+  (let [paths (mapv :path placed)
+        crosses-other? (fn [i [content anchor x y]]
+                         (let [box (label/box-at canvas content anchor x y env)]
+                           (some (fn [j] (and (not= i j) (measure/box-crosses-path? box (paths j)))) (range (count paths)))))]
+    (vec (map-indexed (fn [i {:keys [ticks] :as axis}]
+                        (assoc axis :ticks (mapv (fn [{:keys [label centre] :as tick}]
+                                                   (if (and label (not centre) (crosses-other? i label)) (dissoc tick :label) tick))
+                                                 ticks)))
+                      placed))))
+
 (defn- draw-axes!
   "Draws each variable's axis: its line, ticks and tick labels in theme `[:axis :y]`.
 
@@ -609,7 +634,7 @@
   - `flipped?`: is the plot flipped?
   - `env` (map): the drawing environment (`:theme`).
 
-  Returns `nil`; an axis the scales can't place is skipped; in a radar a label repeating an earlier spoke's at the inner end is drawn once (see [[without-repeated-centre-labels]]), colliding labels are dropped (see [[axis-labels]])."
+  Returns `nil`; an axis the scales can't place is skipped; in a radar a label repeating an earlier spoke's at the inner end is drawn once (see [[without-repeated-centre-labels]]) and a label crossing another spoke is dropped (see [[without-spoke-crossings]]); colliding labels are dropped (see [[axis-labels]])."
   [canvas axes rp geometry flipped? env]
   (let [{:keys [line-color line-width tick-color ^double tick-length tick-width ^double label-gap tick-spacing]} (get-in env [:theme :axis :y])
         off (m/+ tick-length label-gap)
@@ -633,7 +658,8 @@
       (polyline/stroke-runs! canvas [path] {:color line-color :line-width line-width})
       (doseq [{:keys [mark]} ticks]
         (polyline/stroke-runs! canvas [mark] {:color tick-color :line-width tick-width})))
-    (doseq [[content anchor x y] (axis-labels canvas (without-repeated-centre-labels placed) env)]
+    (doseq [[content anchor x y] (let [deduped (without-repeated-centre-labels placed)]
+                                   (axis-labels canvas (if spokes? (without-spoke-crossings canvas deduped env) deduped) env))]
       (label/draw-at! canvas content anchor x y env))))
 
 (defn- draw-web!

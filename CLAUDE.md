@@ -72,6 +72,22 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec). Every tick label of a
   position axis (axes, polar guides, parallel axes, 3D frames, the size estimate) is made by `content.axis/tick-label`:
   the `:tick-label` role with the theme's per-axis `[:axis k :tick-label]` merged over it.
+- Stat space: histogram, density and smooth take `:stat-space` (`:data` | `:scale` - the statistic in the position
+  scale's `scale/stat-transform` space, results back in data units; values the transform can't place are dropped
+  and counted); only `:log` transforms; the default is the chart's previous behaviour - `:data` for histogram and
+  density, `:scale` for smooth; charts without the option (bin2d, contour, field, scatter jitter) always work in
+  `:scale` space; helpers `scale.position/stat-transform-for`, `data.rows/transformed-numbers` (`chart.common`
+  holds only `stat-space-option`).
+- A per-mark continuous colour value lives in `:color-value` (bar, rect). Among strip charts only bar takes a numeric
+  `:color` (it never groups; `:color-stat` - how a bar's rows give it; an explicit colour domain filters no rows -
+  a bar whose value lies outside it is drawn in the NA colour); box / violin take a categorical one only. Strip end
+  labels go past the larger values (`scale.position/value-direction`, reversed axes too); an item's `:n-label-gap`
+  keeps its n label past drawn marks (box outliers).
+- Label collisions: the text chart's `:overlapping-labels :drop` keeps each label not overlapping one kept before it
+  (row order is the priority; `measure/kept-box-indices`); builders (sankey, network, alluvial) use it, larger nodes
+  first; mapping `:x-span` is a label's room along x in x units (fitted only for text along x: unrotated, unflipped
+  cartesian; negative - a mapping error); a radar tick label crossed by another spoke's path is
+  dropped (except at a spoke's inner end).
 - Pairwise statistics: the registry `cljplot2.data.pairwise/statistics` (fastmath functions with labels, families,
   symmetry, paired or independent samples, `:signed`) serves `chart/pairwise` and `chart/correlation` (one
   statistic per panel, cells of `plot/pairs`; shared cell parts in `cljplot2.chart.statistic-cell`) and
@@ -94,6 +110,23 @@ or sliced facet scale takes no partial domain.
 
 **Layout** is a track grid (`layout/grid`, `layout/plot-grid`) with a measure → solve → re-tick loop; a grid cell may
 hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
+- `:margins` take four sides (`content.axis/margin-sides`, the one list): a margin shares the main panel's scale
+  along it, its magnitude grows away from the panel, the main panel's axes stay outermost; left / bottom margins
+  have a measured inner track (as the overhang beside right / top ones), margin axes sit next to their own panel.
+- An arranged plot's cell comes only from `plot-grid/arrange-cells` (`:row-spans {plot-index rows}` - a cell
+  covering rows, later plots skip it; without `:rows` the rows follow the placement). A `:measured` column holds
+  legend cells (`plot-grid/legend-cell?`), measured at the height each cell gets (a wrapped legend widens it); a
+  `:measured` row holds `:legend-only` plots at their natural height, scaled down together when they don't fit.
+  Sub-plot errors name a legend cell `(legend)`.
+- `:equal-panels` rounds correct the tracks towards their mean panel (the total kept; rounds after the first by half
+  the difference) and keep the round of the smallest panel spread; a round that doesn't fit ends them.
+- Text fitting is one function, `content.label/fitted-label` (wrap, shrink, ellipsis; `:cut false` keeps the text
+  whole): strips (no wrap), axis titles (label content `:fit true`, internal; always on - a declared fix) and text
+  charts with `:x-span` (no cut) use it. One least size: the text role's `:min-size` (default `:axis-title` 8,
+  `:strip` 7, `:annotation` 6, `:sankey-label` 6, `:radial-label` 5); a role without it doesn't shrink.
+- Axis tick labels lying end to end (unrotated on a horizontal axis, ±90 on a vertical one) keep theme
+  `[:axis k :tick-label-gap]` pixels (default 3) apart (`measure/spans-overlap?` gap); stacked labels are spaced by
+  their line height (colour bars, vertical axes) and take no gap.
 
 **Source layout**: `chart/` (chart kinds; `chart.common` - schema pieces several charts share, `chart.legend` - shared key glyphs, `chart.strip` - the strip
 chart contract, placement and end labels, `chart.statistic-cell` - correlation / pairwise cells), `data/` (rows, groups, facets,

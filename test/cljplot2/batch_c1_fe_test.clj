@@ -1,13 +1,14 @@
 (ns cljplot2.batch-c1-fe-test
   "Batch C1 (fork fe): the chart option `:legend false`, per-axis tick label styles (theme `[:axis k :tick-label]`),
   the least line width of legend keys (theme `[:legend :min-key-line-width]`) and strip texts fitted to their strips
-  (theme `[:strip :min-text-size]`)."
+  (the `:strip` text role's `:min-size`)."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [fastmath.vector :as v]
             [cljplot2.chart :as chart]
             [cljplot2.content.axis :as axis]
             [cljplot2.content.legend :as legend]
+            [cljplot2.content.label]
             [cljplot2.content.strip]
             [cljplot2.core :as plot]
             [cljplot2.graphics.measure :as measure]
@@ -124,8 +125,8 @@
   [content available theme-overrides]
   (measure/call-with-scratch-canvas
    :high
-   (fn [c] (#'cljplot2.content.strip/fitted-label content (double available)
-                                                   {:canvas c :theme (theme/plot-theme theme-overrides)}))))
+   (fn [c] (cljplot2.content.label/fitted-label content {:length (double available)}
+                                                {:canvas c :theme (theme/plot-theme theme-overrides)}))))
 
 (defn- along
   "Length along the text of a label content."
@@ -154,7 +155,7 @@
         (is (<= (along f) 60.0))))
     (testing "a larger least size cuts earlier"
       (let [c (label "a very long facet level name indeed" 0)]
-        (is (< (count (:text (fitted c 80 {:strip {:min-text-size 9}})))
+        (is (< (count (:text (fitted c 80 {:text {:strip {:min-size 9}}})))
                (count (:text (fitted c 80 nil)))))))
     (testing "multi-line texts are cut per line"
       (let [f (fitted (label "max-price and more\nmin" 0) 50 nil)
@@ -165,4 +166,4 @@
       (is (= "…" (:text (fitted (label "long text" 0) 1 nil)))))
     (testing "a wrong type is a theme error"
       (is (seq (error-ins #(plot/build {:data rows :mapping {:x :x :y :y :facet :g} :charts [(chart/scatter)]
-                                        :theme {:strip {:min-text-size 0}}} {})))))))
+                                        :theme {:text {:strip {:min-size 0}}}} {})))))))

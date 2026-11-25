@@ -26,7 +26,7 @@
     bins `{:quantiles q :estimation e}` computed from the data values (see [[cljplot2.data.levels/bins]]; with an
     explicit `:domain` its ends are the outer breaks); bins `[a b)`, the last `[a b]`; bin
     colors - the range resampled to one color per bin (clojure2d `resample`: a palette of exactly that many colors
-    gives its colors); legend - a stepped color bar; bin sizes - bin `i` of `n` at `(i + 1) / n` of the `:range [min max]`
+    gives its colors; one bin - e.g. one distinct value - the gradient's middle, as a linear scale); legend - a stepped color bar; bin sizes - bin `i` of `n` at `(i + 1) / n` of the `:range [min max]`
     (in area with `:area`; the first bin above `min`, so `[0 max]` leaves none invisible), legend - one entry per bin labelled `a – b`
   * `:kind :identity` (never inferred) - the values are the attributes (colors, shapes, sizes); no domain, range or
     legend; groups in first-appearance order; an invalid value throws `{:key :mapping}`
@@ -949,7 +949,7 @@
   - `k` (keyword): the dimension, `:color` or `:size`.
   - `spec` (map): the binned scale - `:breaks`, `:range`, `:midpoint`, `:area`, `:reverse`, `:domain`.
 
-  Returns a vector, one attribute per bin: colours - the range resampled to the bin count (a palette of exactly that many colours gives its colours), with `:midpoint` the gradient at each bin centre's symmetric position (see [[unit-fn]]); sizes - bin `i` of `n` at `(i + 1) / n` of the size range, the last at its end (in area with `:area`, see [[bin-sizes]]). Reversed with `:reverse`."
+  Returns a vector, one attribute per bin: colours - the range resampled to the bin count (a palette of exactly that many colours gives its colours; one bin - the gradient's middle, as a linear scale with one value), with `:midpoint` the gradient at each bin centre's symmetric position (see [[unit-fn]]); sizes - bin `i` of `n` at `(i + 1) / n` of the size range, the last at its end (in area with `:area`, see [[bin-sizes]]). Reversed with `:reverse`."
   [k {:keys [breaks midpoint domain area] reversed? :reverse attribute-range :range}]
   (let [n (m/max 1 (m/long-dec (count breaks)))
         attributes (cond
@@ -957,6 +957,8 @@
                      (some? midpoint) (let [g (gradient-of attribute-range)
                                             t (unit-fn (first domain) (second domain) midpoint)]
                                         (mapv (fn [[^double a ^double b]] (g (t (m/* 0.5 (m/+ a b))))) (partition 2 1 breaks)))
+                     ;; one bin (e.g. one distinct value): the gradient's middle, as a linear scale with one value
+                     (and (m/one? n) (or (fn? attribute-range) (next attribute-range))) [((gradient-of attribute-range) 0.5)]
                      :else (vec (c/resample attribute-range n)))]
     (if reversed? (vec (rseq attributes)) attributes)))
 

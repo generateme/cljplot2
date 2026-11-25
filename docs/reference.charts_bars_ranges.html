@@ -1508,7 +1508,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:color</td>
 <td>a keyword, a function or a categorical marker of one or nil</td>
 <td></td>
-<td>fill colour per group (gives legend keys)</td>
+<td>fill colour: categorical values group the bars (legend keys), numeric ones colour each bar by its value (a colour bar)</td>
 </tr>
 <tr class="even">
 <td>:pattern</td>
@@ -1705,30 +1705,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td>
 </tr>
 <tr class="even">
+<td>:color-stat</td>
+<td>one of :mean :median :sum or a function or nil</td>
+<td>the :stat of value stats, :mean for count stats</td>
+<td>a bar's colour value from its rows' values of a linear or binned :color: :sum, :mean, :median or a function of the values</td>
+</tr>
+<tr class="odd">
 <td>:position</td>
 <td>one of :dodge :normalize :overlay :stack</td>
 <td>:dodge when a level holds two or more groups, else :overlay</td>
 <td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>:zero-line</td>
 <td>true or false or nil</td>
 <td>true</td>
 <td>draw the 0 line on top of mirrored bars (with :mirror only)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>:varwidth</td>
 <td>true or false or a keyword, a function or a categorical marker of one or nil</td>
 <td>false</td>
 <td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>:negative-order</td>
 <td>one of :forward :reverse</td>
 <td>:forward</td>
 <td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>:padding</td>
 <td>map of one of :x :y to [lo hi], non-negative numbers</td>
 <td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td>
@@ -1890,6 +1896,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image5.png" class="img-fluid"></p>
 </div>
+<p>A numeric <code>:color</code> doesn’t group the bars: each bar is filled by its own colour value - <code>:color-stat</code> over its rows’ colour values (default the bar’s <code>:stat</code>, <code>:mean</code> for counts) - with a colour bar. Mapped to the values with <code>:sum</code> it colours each bar by its length; stacked segments (groups from <code>:group</code> or a categorical aesthetic) take their own colours; a count can be coloured by a summary of another column:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:amount</span>}</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:color-stat</span> <span class="at">:sum</span>})]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":color-stat :sum"</span>}}</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:group</span> <span class="at">:product</span> <span class="at">:color</span> <span class="at">:amount</span>}</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:stack</span> <span class="at">:color-stat</span> <span class="at">:mean</span>})]</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"stacked, :mean"</span>}}</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:color</span> <span class="at">:petal-length</span>}</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:count</span> <span class="at">:color-stat</span> <span class="at">:median</span>})]</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":count, :median"</span>}}]</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_bars_ranges_files/image6.png" class="img-fluid"></p>
+</div>
+<p>An explicit colour <code>:domain</code> never drops rows: every bar keeps its length, and a bar whose colour value lies outside the domain is drawn in the NA colour (Q4’s mean, 45.7, is above 40). A <code>:value-label</code> function reads the bar’s colour value as <code>:color-value</code>:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> sales</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:amount</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bar {<span class="at">:color-stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> #(<span class="kw">format</span> <span class="st">"mean %.1f"</span> (<span class="at">:color-value</span> <span class="va">%</span>))})]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="dv">15</span> <span class="dv">40</span>]}}</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"colour :domain [15 40]"</span>}}</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_bars_ranges_files/image7.png" class="img-fluid"></p>
+</div>
 </section>
 <section id="labels" class="level3" data-number="16.1.3">
 <h3 data-number="16.1.3" class="anchored" data-anchor-id="labels"><span class="header-section-number">16.1.3</span> Labels</h3>
@@ -1941,85 +1979,85 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":value-label true"</span>}</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:normalize</span> <span class="at">:value-label</span> #(<span class="kw">format</span> <span class="st">"%.0f%%"</span> (<span class="kw">*</span> <span class="dv">100</span> (<span class="at">:share</span> <span class="va">%</span>)))})]</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":normalize, shares in %"</span>}</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:value-format</span> <span class="st">"%.2f cm"</span>})]</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":value-format"</span>}}]</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image6.png" class="img-fluid"></p>
-</div>
-<p>Where labels sit: past the bar’s end (<code>:end</code>, the default unstacked) or inside it (<code>:center</code>, the default stacked; <code>:base</code> - at its base, shown further down); with the value and the row count (<code>:n-label</code>) the two texts join side by side or one above the other (<code>:label-stack</code>):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:end</span>})]</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :end"</span>}}</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:center</span>})]</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :center"</span>}}</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:n-label</span> <span class="va">true</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                                                        <span class="at">:label-stack</span> <span class="at">:horizontal</span>})]</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-stack :horizontal"</span>}}</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:n-label</span> <span class="va">true</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                                                        <span class="at">:label-stack</span> <span class="at">:vertical</span>})]</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-stack :vertical"</span>}}]</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">560</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image7.png" class="img-fluid"></p>
-</div>
-<p><code>:base</code> writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment’s own base when stacked. With 0 outside the value domain (e.g.&nbsp;<code>:scales {:x {:domain [4 nil]}}</code>) the label sits at the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where labels rarely fit their wedge and are skipped:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:base</span>})]</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :base"</span>}}</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:stack</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:base</span>})]</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stack, :label-position :base"</span>}}]</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":value-label true"</span>}</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:normalize</span> <span class="at">:value-label</span> #(<span class="kw">format</span> <span class="st">"%.0f%%"</span> (<span class="kw">*</span> <span class="dv">100</span> (<span class="at">:share</span> <span class="va">%</span>)))})]</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":normalize, shares in %"</span>}</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:value-format</span> <span class="st">"%.2f cm"</span>})]</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":value-format"</span>}}]</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image8.png" class="img-fluid"></p>
 </div>
-<p>In a polar plot <code>:outer</code> puts the labels past the outer radius, with a leader line from each bar (<code>:label-leader</code>):</p>
+<p>Where labels sit: past the bar’s end (<code>:end</code>, the default unstacked) or inside it (<code>:center</code>, the default stacked; <code>:base</code> - at its base, shown further down); with the value and the row count (<code>:n-label</code>) the two texts join side by side or one above the other (<code>:label-stack</code>):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span>}</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:outer</span>})]</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span>}</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :outer"</span>}}</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span>}</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:outer</span> <span class="at">:label-leader</span> <span class="va">true</span>})]</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span>}</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-leader true"</span>}}]</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:end</span>})]</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :end"</span>}}</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:center</span>})]</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :center"</span>}}</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:n-label</span> <span class="va">true</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>                                                        <span class="at">:label-stack</span> <span class="at">:horizontal</span>})]</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-stack :horizontal"</span>}}</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:n-label</span> <span class="va">true</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>                                                        <span class="at">:label-stack</span> <span class="at">:vertical</span>})]</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-stack :vertical"</span>}}]</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">560</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_bars_ranges_files/image9.png" class="img-fluid"></p>
+</div>
+<p><code>:base</code> writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment’s own base when stacked. With 0 outside the value domain (e.g.&nbsp;<code>:scales {:x {:domain [4 nil]}}</code>) the label sits at the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where labels rarely fit their wedge and are skipped:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:stat</span> <span class="at">:mean</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:base</span>})]</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :base"</span>}}</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:position</span> <span class="at">:stack</span> <span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:base</span>})]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":stack, :label-position :base"</span>}}]</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_bars_ranges_files/image10.png" class="img-fluid"></p>
+</div>
+<p>In a polar plot <code>:outer</code> puts the labels past the outer radius, with a leader line from each bar (<code>:label-leader</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span>}</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:outer</span>})]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span>}</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-position :outer"</span>}}</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> sales</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span>}</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span> <span class="at">:label-position</span> <span class="at">:outer</span> <span class="at">:label-leader</span> <span class="va">true</span>})]</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:coord</span> {<span class="at">:kind</span> <span class="at">:polar</span>}</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":label-leader true"</span>}}]</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_bars_ranges_files/image11.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>); <a href="reference.shared_options.html#rounded-corners">Rounded corners</a> (<code>:corner-radius</code> <code>:corner-radius-end</code>).</p>
 </section>
@@ -2080,14 +2118,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/extent)]</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}}</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/extent)]</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}}</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image10.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image12.png" class="img-fluid"></p>
 </div>
 <p>Its options: the interval’s and centre’s style, the method giving the interval (and its arguments), the bootstrap’s statistic and random generator (seeded here), the centre mark and the padding:</p>
 <div class="clay-table">
@@ -2167,30 +2205,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:stddev</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span>] <span class="at">:line-width</span> <span class="dv">4</span> <span class="at">:shape</span> <span class="ch">\s</span>})]</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":method :stddev"</span>}}</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:percentile</span> <span class="at">:method-args</span> [<span class="fl">10.0</span> <span class="fl">90.0</span>] <span class="at">:center</span> <span class="at">:none</span>})]</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"10-90 percentiles, no centre"</span>}}</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:bootstrap-percentile</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">3</span>)})]</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"bootstrap mean"</span>}}]</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:stddev</span> <span class="at">:color</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span>] <span class="at">:line-width</span> <span class="dv">4</span> <span class="at">:shape</span> <span class="ch">\s</span>})]</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":method :stddev"</span>}}</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:percentile</span> <span class="at">:method-args</span> [<span class="fl">10.0</span> <span class="fl">90.0</span>] <span class="at">:center</span> <span class="at">:none</span>})]</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"10-90 percentiles, no centre"</span>}}</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:bootstrap-percentile</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">3</span>)})]</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"bootstrap mean"</span>}}]</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image11.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image13.png" class="img-fluid"></p>
 </div>
 <p>Every method on one sample (setosa sepal lengths), a level each: the range (<code>:min-max</code>), spreads around the mean (<code>:stddev</code>, <code>:sem</code>, <code>:mad</code> - around the median), quantile intervals (<code>:percentile</code>, <code>:quantile</code>, <code>:pi</code>, <code>:hpdi</code>, the bias-corrected <code>:percentile-bc</code> / <code>:percentile-bca</code>), Tukey’s whisker ends and fences (<code>:adjacent</code>, <code>:inner-fence</code>, <code>:outer-fence</code>), the mean’s confidence interval (<code>:ci</code>) and the bootstrap confidence intervals of the mean (<code>:bootstrap-*</code>, 500 resamples, seeded):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> setosa </span>(<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"setosa"</span> (<span class="at">:species</span> <span class="va">%</span>)) iris))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> setosa </span>(<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"setosa"</span> (<span class="at">:species</span> <span class="va">%</span>)) iris))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2560,39 +2598,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> setosa</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span>}</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> (<span class="kw">vec</span> (<span class="kw">for</span> [m [<span class="at">:min-max</span> <span class="at">:stddev</span> <span class="at">:sem</span> <span class="at">:mad</span> <span class="at">:percentile</span> <span class="at">:quantile</span> <span class="at">:pi</span> <span class="at">:hpdi</span> <span class="at">:percentile-bc</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:percentile-bca</span> <span class="at">:adjacent</span> <span class="at">:inner-fence</span> <span class="at">:outer-fence</span> <span class="at">:ci</span> <span class="at">:bootstrap-normal</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:bootstrap-percentile</span> <span class="at">:bootstrap-basic</span> <span class="at">:bootstrap-bc</span> <span class="at">:bootstrap-bca</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:bootstrap-studentized</span> <span class="at">:bootstrap-t</span> <span class="at">:bootstrap-mad-median</span>]]</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                              (chart/extent {<span class="at">:method</span> m <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">5</span>)</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">:mapping</span> {<span class="at">:y</span> (<span class="kw">constantly</span> (<span class="kw">name</span> m))}})))</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"sepal length [cm]"</span>}}</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> setosa</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span>}</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> (<span class="kw">vec</span> (<span class="kw">for</span> [m [<span class="at">:min-max</span> <span class="at">:stddev</span> <span class="at">:sem</span> <span class="at">:mad</span> <span class="at">:percentile</span> <span class="at">:quantile</span> <span class="at">:pi</span> <span class="at">:hpdi</span> <span class="at">:percentile-bc</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:percentile-bca</span> <span class="at">:adjacent</span> <span class="at">:inner-fence</span> <span class="at">:outer-fence</span> <span class="at">:ci</span> <span class="at">:bootstrap-normal</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:bootstrap-percentile</span> <span class="at">:bootstrap-basic</span> <span class="at">:bootstrap-bc</span> <span class="at">:bootstrap-bca</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:bootstrap-studentized</span> <span class="at">:bootstrap-t</span> <span class="at">:bootstrap-mad-median</span>]]</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                              (chart/extent {<span class="at">:method</span> m <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">5</span>)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">:mapping</span> {<span class="at">:y</span> (<span class="kw">constantly</span> (<span class="kw">name</span> m))}})))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"sepal length [cm]"</span>}}</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image12.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image14.png" class="img-fluid"></p>
 </div>
 <p>The bootstrap resamples the mean unless <code>:statistic</code> names another function - here the median (the bootstrap of the mean is the “bootstrap mean” panel above); <code>:center :method</code> (the default) marks the method’s centre, here sized up with <code>:size</code>:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:bootstrap-percentile</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">3</span>)</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:statistic</span> stats/median <span class="at">:size</span> <span class="dv">12</span>})]</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":statistic stats/median"</span>}}</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:padding</span> {<span class="at">:x</span> [<span class="fl">0.5</span> <span class="fl">0.5</span>]}})]</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":padding {:x [0.5 0.5]}"</span>}}]</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:method</span> <span class="at">:bootstrap-percentile</span> <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">3</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:statistic</span> stats/median <span class="at">:size</span> <span class="dv">12</span>})]</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":statistic stats/median"</span>}}</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/extent {<span class="at">:padding</span> {<span class="at">:x</span> [<span class="fl">0.5</span> <span class="fl">0.5</span>]}})]</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":padding {:x [0.5 0.5]}"</span>}}]</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image13.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image15.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code>); <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> (<code>:mirror</code>).</p>
 </section>
@@ -2652,9 +2690,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> kpis </span>[{<span class="at">:kpi</span> <span class="st">"revenue"</span> <span class="at">:ranges</span> [<span class="dv">60</span> <span class="dv">80</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">92</span> <span class="dv">75</span>] <span class="at">:markers</span> [<span class="dv">95</span>]}</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:kpi</span> <span class="st">"profit"</span> <span class="at">:ranges</span> [<span class="dv">50</span> <span class="dv">75</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">68</span> <span class="dv">60</span>] <span class="at">:markers</span> [<span class="dv">80</span>]}</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:kpi</span> <span class="st">"customers"</span> <span class="at">:ranges</span> [<span class="dv">70</span> <span class="dv">85</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">88</span>] <span class="at">:markers</span> [<span class="dv">90</span> <span class="dv">96</span>]}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> kpis </span>[{<span class="at">:kpi</span> <span class="st">"revenue"</span> <span class="at">:ranges</span> [<span class="dv">60</span> <span class="dv">80</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">92</span> <span class="dv">75</span>] <span class="at">:markers</span> [<span class="dv">95</span>]}</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:kpi</span> <span class="st">"profit"</span> <span class="at">:ranges</span> [<span class="dv">50</span> <span class="dv">75</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">68</span> <span class="dv">60</span>] <span class="at">:markers</span> [<span class="dv">80</span>]}</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:kpi</span> <span class="st">"customers"</span> <span class="at">:ranges</span> [<span class="dv">70</span> <span class="dv">85</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">88</span>] <span class="at">:markers</span> [<span class="dv">90</span> <span class="dv">96</span>]}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2691,15 +2729,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> kpis</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bullet)]</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"% of plan"</span>}}</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> kpis</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/bullet)]</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> <span class="st">"% of plan"</span>}}</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image14.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image16.png" class="img-fluid"></p>
 </div>
 <p>Its options: the shades of ranges and measures (from the first to the last), the measure bar’s width, the markers’ colour, width and length, and the padding (left: 20% past the largest value):</p>
 <div class="clay-table">
@@ -2761,24 +2799,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> kpis</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:measure-fraction</span> <span class="fl">0.2</span> <span class="at">:marker-width</span> <span class="dv">0</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="fl">0.2</span>]}})]</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"thin, no markers, :padding {:x [0 0.2]}"</span>}}</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> kpis</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:range-colors</span> [[<span class="dv">255</span> <span class="dv">230</span> <span class="dv">200</span>] [<span class="dv">255</span> <span class="dv">250</span> <span class="dv">240</span>]]</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-colors</span> [[<span class="dv">180</span> <span class="dv">60</span> <span class="dv">30</span>] [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">120</span>]]</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-fraction</span> <span class="fl">0.6</span> <span class="at">:marker-color</span> [<span class="dv">30</span> <span class="dv">30</span> <span class="dv">160</span>]</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:marker-width</span> <span class="dv">4</span> <span class="at">:marker-length</span> <span class="fl">0.9</span>})]</span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"custom colours and sizes"</span>}}]</span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> kpis</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:measure-fraction</span> <span class="fl">0.2</span> <span class="at">:marker-width</span> <span class="dv">0</span> <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="fl">0.2</span>]}})]</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"thin, no markers, :padding {:x [0 0.2]}"</span>}}</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> kpis</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bullet {<span class="at">:range-colors</span> [[<span class="dv">255</span> <span class="dv">230</span> <span class="dv">200</span>] [<span class="dv">255</span> <span class="dv">250</span> <span class="dv">240</span>]]</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-colors</span> [[<span class="dv">180</span> <span class="dv">60</span> <span class="dv">30</span>] [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">120</span>]]</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:measure-fraction</span> <span class="fl">0.6</span> <span class="at">:marker-color</span> [<span class="dv">30</span> <span class="dv">30</span> <span class="dv">160</span>]</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">:marker-width</span> <span class="dv">4</span> <span class="at">:marker-length</span> <span class="fl">0.9</span>})]</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"custom colours and sizes"</span>}}]</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">260</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.charts_bars_ranges_files/image15.png" class="img-fluid"></p>
+<p><img src="reference.charts_bars_ranges_files/image17.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#strip-options">Strip options</a> (<code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>

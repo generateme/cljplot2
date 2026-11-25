@@ -471,8 +471,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#plot-labels" id="toc-plot-labels" class="nav-link active" data-scroll-target="#plot-labels"><span class="header-section-number">7.1</span> Plot labels</a></li>
   <li><a href="#label-maps" id="toc-label-maps" class="nav-link" data-scroll-target="#label-maps"><span class="header-section-number">7.2</span> Label maps</a></li>
   <li><a href="#label-style" id="toc-label-style" class="nav-link" data-scroll-target="#label-style"><span class="header-section-number">7.3</span> Label style</a></li>
-  <li><a href="#text-in-the-panel" id="toc-text-in-the-panel" class="nav-link" data-scroll-target="#text-in-the-panel"><span class="header-section-number">7.4</span> Text in the panel</a></li>
-  <li><a href="#fontresolve-font" id="toc-fontresolve-font" class="nav-link" data-scroll-target="#fontresolve-font"><span class="header-section-number">7.5</span> font/resolve-font</a></li>
+  <li><a href="#long-axis-titles" id="toc-long-axis-titles" class="nav-link" data-scroll-target="#long-axis-titles"><span class="header-section-number">7.4</span> Long axis titles</a></li>
+  <li><a href="#text-in-the-panel" id="toc-text-in-the-panel" class="nav-link" data-scroll-target="#text-in-the-panel"><span class="header-section-number">7.5</span> Text in the panel</a></li>
+  <li><a href="#fontresolve-font" id="toc-fontresolve-font" class="nav-link" data-scroll-target="#fontresolve-font"><span class="header-section-number">7.6</span> font/resolve-font</a></li>
   </ul>
 </nav>
     </div>
@@ -546,13 +547,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:x</td>
 <td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td>
 <td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td>
-<td>x axis title (role :axis-title)</td>
+<td>x axis title (role :axis-title; too long - wrapped, shrunk, then cut to the panels' width)</td>
 </tr>
 <tr class="odd">
 <td>:y</td>
 <td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td>
 <td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td>
-<td>y axis title (role :axis-title, rotated 270)</td>
+<td>y axis title (role :axis-title, rotated 270; too long - wrapped, shrunk, then cut to the panels' height)</td>
 </tr>
 </tbody>
 </table>
@@ -1426,12 +1427,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.labels_text_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="text-in-the-panel" class="level2" data-number="7.4">
-<h2 data-number="7.4" class="anchored" data-anchor-id="text-in-the-panel"><span class="header-section-number">7.4</span> Text in the panel</h2>
+<section id="long-axis-titles" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="long-axis-titles"><span class="header-section-number">7.4</span> Long axis titles</h2>
+<p>An axis title longer than its panels - the width under them, the height beside them; one title spans all facet panels - is fitted to them: wrapped at word boundaries (a line into at most three, the title’s row or column grows), then drawn smaller down to the <code>:axis-title</code> text role’s <code>:min-size</code> (8 points by default, theme <code>[:text :axis-title :min-size]</code> - every text role takes one, see the Theme chapter), then cut with an ellipsis. Line breaks you give are kept, and a title that fits is drawn as given. Fitting is always on: earlier versions clipped such titles. A title rotated across its own track (a y title with <code>:rotation 0</code>) isn’t fitted.</p>
+<p>Wrapped titles beside a small panel; on the right a word too long for the panel shrinks to the least size and is cut (<code>:min-size 10</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"wrapped"</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal length of the iris flowers, measured in centimetres"</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width of the flowers in centimetres"</span>}}</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"shrunk and cut"</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal_length_in_centimetres_of_the_flowers_of_three_iris_species"</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width"</span>}</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:axis-title</span> {<span class="at">:min-size</span> <span class="dv">10</span>}}}}]</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="text-in-the-panel" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="text-in-the-panel"><span class="header-section-number">7.5</span> Text in the panel</h2>
 <p>The <code>text</code> chart writes literal text or a mapped <code>:label</code>; <code>:anchor</code>, <code>:offset</code> and <code>:rotation</code> place it, <code>:select :last</code> labels the end of each group (e.g.&nbsp;line ends). Its full table is on the chart’s page (<a href="reference.charts_annotations.html#text">text</a>).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> series </span>(<span class="kw">for</span> [[i g] (map-indexed <span class="kw">vector</span> [<span class="st">"alpha"</span> <span class="st">"beta"</span> <span class="st">"gamma"</span>]) t (<span class="kw">range</span> <span class="dv">10</span>)]</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> (<span class="kw">*</span> t (<span class="kw">inc</span> i) <span class="fl">0.5</span>) (<span class="kw">*</span> <span class="dv">3</span> i))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> series </span>(<span class="kw">for</span> [[i g] (map-indexed <span class="kw">vector</span> [<span class="st">"alpha"</span> <span class="st">"beta"</span> <span class="st">"gamma"</span>]) t (<span class="kw">range</span> <span class="dv">10</span>)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> (<span class="kw">*</span> t (<span class="kw">inc</span> i) <span class="fl">0.5</span>) (<span class="kw">*</span> <span class="dv">3</span> i))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1599,46 +1625,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> series</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:label</span> <span class="at">:g</span>} <span class="at">:select</span> <span class="at">:last</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]})</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> [<span class="at">:panel</span> <span class="fl">0.02</span>] <span class="at">:y</span> [<span class="at">:panel</span> <span class="fl">0.95</span>] <span class="at">:text</span> <span class="st">"literal text in panel units"</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:font-style</span> <span class="at">:italic</span>})]</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image3.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="fontresolve-font" class="level2" data-number="7.5">
-<h2 data-number="7.5" class="anchored" data-anchor-id="fontresolve-font"><span class="header-section-number">7.5</span> font/resolve-font</h2>
-<p>A text style’s <code>:font</code> is a family name or a <code>java.awt.Font</code>; <code>resolve-font</code> turns a name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>. It takes no options map.</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x5c66151c</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0xd6844ec</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> {<span class="at">:text</span> <span class="st">"Iris sepals"</span> <span class="at">:font</span> (font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">18</span>)}</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> {<span class="at">:text</span> <span class="st">"sepal length [cm]"</span> <span class="at">:font</span> <span class="st">"Serif"</span>}</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"sepal width [cm]"</span> <span class="at">:font</span> <span class="st">"Serif"</span> <span class="at">:font-style</span> <span class="at">:italic</span>}}}</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> series</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:label</span> <span class="at">:g</span>} <span class="at">:select</span> <span class="at">:last</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]})</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> [<span class="at">:panel</span> <span class="fl">0.02</span>] <span class="at">:y</span> [<span class="at">:panel</span> <span class="fl">0.95</span>] <span class="at">:text</span> <span class="st">"literal text in panel units"</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:font-style</span> <span class="at">:italic</span>})]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.labels_text_files/image4.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="fontresolve-font" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="fontresolve-font"><span class="header-section-number">7.6</span> font/resolve-font</h2>
+<p>A text style’s <code>:font</code> is a family name or a <code>java.awt.Font</code>; <code>resolve-font</code> turns a name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>. It takes no options map.</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x6f64412</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x38e0a084</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> {<span class="at">:text</span> <span class="st">"Iris sepals"</span> <span class="at">:font</span> (font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">18</span>)}</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> {<span class="at">:text</span> <span class="st">"sepal length [cm]"</span> <span class="at">:font</span> <span class="st">"Serif"</span>}</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"sepal width [cm]"</span> <span class="at">:font</span> <span class="st">"Serif"</span> <span class="at">:font-style</span> <span class="at">:italic</span>}}}</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image5.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/labels_text.clj</small></small></pre></div>

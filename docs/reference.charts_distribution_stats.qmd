@@ -78,6 +78,23 @@ Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991
 ```
 
 
+Random log-normal values (seeded) - skewed in data units, even on a log axis:
+
+
+::: {.sourceClojure}
+```clojure
+(def skewed (mapv (fn [v] {:value v})
+                  (r/->seq (r/distribution :log-normal {:scale 3.0 :shape 0.8 :rng (r/rng :mersenne 7)}) 400)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>33.128152887509515</td></tr><tr><td>5.432377544402306</td></tr><tr><td>14.669090820378228</td></tr><tr><td>40.82584739222101</td></tr><tr><td>13.078354465398991</td></tr><tr><td>14.137822374468604</td></tr><tr><td>13.037364020437549</td></tr><tr><td>19.17019582641185</td></tr><tr><td>14.824310847812232</td></tr><tr><td>10.690099015595523</td></tr><tr><td>28.60331090106137</td></tr><tr><td>9.116331220344927</td></tr><tr><td>37.37365506923162</td></tr><tr><td>27.21872176296663</td></tr><tr><td>19.75950164215408</td></tr><tr><td>14.018899728241257</td></tr><tr><td>43.681297034474724</td></tr><tr><td>16.52126012111423</td></tr><tr><td>27.24652538177213</td></tr><tr><td>6.4971111669608455</td></tr><tr><td>3.303464060771845</td></tr><tr><td>9.365691651907682</td></tr><tr><td>6.188200963581874</td></tr><tr><td>16.794077648589806</td></tr><tr><td>25.789767430154466</td></tr><tr><td>13.861968409711336</td></tr><tr><td>85.36707392832939</td></tr><tr><td>48.84903146693207</td></tr><tr><td>51.55975501397397</td></tr><tr><td>25.704128454393658</td></tr><tr><td>3.9608020259103474</td></tr><tr><td>28.26387556508628</td></tr><tr><td>22.808671145321608</td></tr><tr><td>164.8899896412492</td></tr><tr><td>8.933440707802696</td></tr><tr><td>12.566973359370992</td></tr><tr><td>8.563517526210143</td></tr><tr><td>38.80970744392038</td></tr><tr><td>179.32381325305346</td></tr><tr><td>6.217944013232817</td></tr><tr><td>7.580410593798208</td></tr><tr><td>16.783626566789373</td></tr><tr><td>6.715239831870871</td></tr><tr><td>11.072318196362922</td></tr><tr><td>65.70609084809114</td></tr><tr><td>21.766558881873173</td></tr><tr><td>149.62207161829264</td></tr><tr><td>17.373753114171812</td></tr><tr><td>35.29825370703353</td></tr><tr><td>15.446465117661427</td></tr><tr><td>35.863211106116644</td></tr><tr><td>27.428097151688846</td></tr><tr><td>7.216136515948157</td></tr><tr><td>20.57565015914731</td></tr><tr><td>25.518123500974436</td></tr><tr><td>9.69779422077072</td></tr><tr><td>4.228718478717844</td></tr><tr><td>26.31527384871188</td></tr><tr><td>84.31669956408959</td></tr><tr><td>48.99138258302952</td></tr><tr><td>7.8788325408130255</td></tr><tr><td>31.327608920151476</td></tr><tr><td>4.077815388301838</td></tr><tr><td>160.37141507976867</td></tr><tr><td>56.31767112909131</td></tr><tr><td>4.818642831209657</td></tr><tr><td>42.110789296459096</td></tr><tr><td>4.128142803815318</td></tr><tr><td>26.91053755932542</td></tr><tr><td>84.52901899102923</td></tr><tr><td>3.13088006801464</td></tr><tr><td>92.49406406232194</td></tr><tr><td>31.514898759565355</td></tr><tr><td>5.461635954077979</td></tr><tr><td>12.832204409857043</td></tr><tr><td>6.483204842307178</td></tr><tr><td>12.89047062750862</td></tr><tr><td>31.88639252472308</td></tr><tr><td>18.914979500602723</td></tr><tr><td>50.774172175453174</td></tr><tr><td>5.993744956441829</td></tr><tr><td>9.818920929752553</td></tr><tr><td>33.32035183391212</td></tr><tr><td>36.987383832918766</td></tr><tr><td>5.699193114963241</td></tr><tr><td>15.24625241736026</td></tr><tr><td>11.266728129740004</td></tr><tr><td>14.659160419530002</td></tr><tr><td>54.65931643728897</td></tr><tr><td>12.296033715416334</td></tr><tr><td>45.90589021728169</td></tr><tr><td>33.76854746628196</td></tr><tr><td>5.9756042226117865</td></tr><tr><td>50.58182962125001</td></tr><tr><td>72.20097526648814</td></tr><tr><td>19.670696515563076</td></tr><tr><td>37.80002676289402</td></tr><tr><td>54.01200626555873</td></tr><tr><td>71.1527041325656</td></tr><tr><td>9.751836705852464</td></tr><tr><td>…</td></tr></tbody></table></div>
+```
+
+
 Two species only - for the charts drawing two groups against each other:
 
 
@@ -126,13 +143,15 @@ gives one histogram per level (ridgelines).
 :::
 
 
-Its options: the bins (a method, a count or breaks), what a bar's height measures, how groups combine, the bar
-style and the zero line of mirrored groups:
+
+### Bins
+
+The bins (a method, a count or breaks), what a bar's height measures and the space the bins are made in:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of grouped bars with :position :overlay (other bars are opaque)</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott :freedman-diaconis), a bin count or increasing breaks (values outside dropped)</td></tr><tr><td>:y</td><td>one of :cumulative :percent :count :pmf :density</td><td>:percent</td><td>bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)</td></tr><tr><td>:position</td><td>one of :dodge :mirror :normalize :overlay :stack</td><td>:overlay</td><td>grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, the second downward); ridgelines: :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the bars</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott :freedman-diaconis), a bin count or increasing breaks (values outside dropped)</td></tr><tr><td>:y</td><td>one of :cumulative :percent :count :pmf :density</td><td>:percent</td><td>bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:data</td><td>space the bins are made in: :data (data units) or :scale (the x scale's coordinates - equal-width log10 bins on a :log axis, values it can't place dropped; :density per transformed unit)</td></tr></tbody></table>
 ```
 
 :::
@@ -192,6 +211,49 @@ What a bar's height measures - the same bins as shares summing to 1 (`:pmf`, the
 :::
 
 
+On a log axis bins of equal width in data units crowd into the last decades; `:stat-space :scale` makes them in
+the axis's log10 coordinates - equal-width on screen, `:density` per log10 unit (values a log axis can't place, 0
+and negatives, are dropped and counted). In either space the values are numbers: histogram and density take no
+dates.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/histogram {:bins 20 :y :count :stat-space :data})]
+                                   :labels {:title ":stat-space :data"}}
+                                  {:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/histogram {:bins 20 :y :count :stat-space :scale})]
+                                   :labels {:title ":stat-space :scale"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_distribution_stats_files/image3.png)
+:::
+
+
+
+### Position
+
+How groups combine and the zero line and y range of mirrored groups:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:position</td><td>one of :dodge :mirror :normalize :overlay :stack</td><td>:overlay</td><td>grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, the second downward); ridgelines: :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the bars</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+```
+
+:::
+
+
 How groups share the bins: translucent over each other (`:alpha` of `:overlay`), side by side, stacked, or
 stacked to 1 - the share of each species in every bin:
 
@@ -225,7 +287,7 @@ stacked to 1 - the share of each species in every bin:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image3.png)
+![](reference.charts_distribution_stats_files/image4.png)
 :::
 
 
@@ -257,7 +319,44 @@ line off; thick outlines and no padding above the bars:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image4.png)
+![](reference.charts_distribution_stats_files/image5.png)
+:::
+
+
+
+### Style
+
+The bar fill, outline and translucency, and the zero line of mirrored groups:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[69 117 180]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of grouped bars with :position :overlay (other bars are opaque)</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/histogram {:bins 20 :color [200 120 60] :stroke-color :none})]
+                                   :labels {:title ":color, :stroke-color :none"}}
+                                  {:data two-species
+                                   :mapping {:x :sepal-length :color :species}
+                                   :charts [(chart/histogram {:bins 12 :alpha 0.3 :stroke-color :darker :stroke-width 1.5})]
+                                   :labels {:title ":alpha 0.3 :stroke-width 1.5"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_distribution_stats_files/image6.png)
 :::
 
 
@@ -291,7 +390,7 @@ categorical `:y` gives ridgelines.
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image5.png)
+![](reference.charts_distribution_stats_files/image7.png)
 :::
 
 
@@ -335,7 +434,7 @@ The area under a curve, its opacity, a gradient fill of ridgelines and the zero 
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image6.png)
+![](reference.charts_distribution_stats_files/image8.png)
 :::
 
 
@@ -361,7 +460,7 @@ The ridgelines' gradient along x (over the x domain) or along y (from each ridge
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image7.png)
+![](reference.charts_distribution_stats_files/image9.png)
 :::
 
 
@@ -374,7 +473,7 @@ reaches past the data:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>fastmath KDE kernel</td></tr><tr><td>:bandwidth</td><td>a positive number or keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>512</td><td>number of evaluation points of each curve</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>3</td><td>how many bandwidths the curve extends past the extreme values on each side</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>fastmath KDE kernel</td></tr><tr><td>:bandwidth</td><td>a positive number or keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>512</td><td>number of evaluation points of each curve</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>3</td><td>how many bandwidths the curve extends past the extreme values on each side</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:data</td><td>space the density is estimated in: :data (data units) or :scale (the x scale's coordinates - log10 on a :log axis, values it can't place dropped; a numeric :bandwidth in those units)</td></tr></tbody></table>
 ```
 
 :::
@@ -402,7 +501,7 @@ reaches past the data:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image8.png)
+![](reference.charts_distribution_stats_files/image10.png)
 :::
 
 
@@ -431,7 +530,34 @@ reaching 1 bandwidth past the data (3 by default):
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image9.png)
+![](reference.charts_distribution_stats_files/image11.png)
+:::
+
+
+Skewed values: estimated in data units (the default) the curve is lopsided and its tail passes 0 - a log axis
+can't show it; `:stat-space :scale` estimates the density of the log10 values on a log axis (per log10 unit, a
+numeric `:bandwidth` in log10 units) and draws it back on the axis:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data skewed
+                                   :mapping {:x :value}
+                                   :charts [(chart/density {:stat-space :data :fill :color})]
+                                   :labels {:title ":stat-space :data"}}
+                                  {:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/density {:stat-space :scale :fill :color})]
+                                   :labels {:title ":stat-space :scale, a log x axis"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_distribution_stats_files/image12.png)
 :::
 
 
@@ -474,7 +600,7 @@ halves and the padding:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image10.png)
+![](reference.charts_distribution_stats_files/image13.png)
 :::
 
 
@@ -512,7 +638,7 @@ zero line and with no padding:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image11.png)
+![](reference.charts_distribution_stats_files/image14.png)
 :::
 
 
@@ -545,7 +671,7 @@ A step line per group: the share of values at or below each x.
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image12.png)
+![](reference.charts_distribution_stats_files/image15.png)
 :::
 
 
@@ -573,7 +699,7 @@ Its only own option is the padding - here none on y, so the steps start and end 
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image13.png)
+![](reference.charts_distribution_stats_files/image16.png)
 :::
 
 
@@ -624,7 +750,7 @@ on the reference line mean the same shape of distribution.
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image14.png)
+![](reference.charts_distribution_stats_files/image17.png)
 :::
 
 
@@ -656,7 +782,7 @@ The point style (`:alpha` - the points' opacity, not the line's) and the referen
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image15.png)
+![](reference.charts_distribution_stats_files/image18.png)
 :::
 
 
@@ -696,7 +822,7 @@ set (none on the right):
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image16.png)
+![](reference.charts_distribution_stats_files/image19.png)
 :::
 
 
@@ -730,7 +856,7 @@ side's at the same value; points on y = x mean the same distribution.
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image17.png)
+![](reference.charts_distribution_stats_files/image20.png)
 :::
 
 
@@ -762,7 +888,7 @@ The point style and the reference line's width:
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image18.png)
+![](reference.charts_distribution_stats_files/image21.png)
 :::
 
 
@@ -801,7 +927,7 @@ values over `:domain` (required then); the right panel has no line and wide padd
 
 
 ::: {.clay-image}
-![](reference.charts_distribution_stats_files/image19.png)
+![](reference.charts_distribution_stats_files/image22.png)
 :::
 
 

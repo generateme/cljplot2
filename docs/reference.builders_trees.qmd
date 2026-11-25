@@ -332,7 +332,7 @@ the tiles; the data are long rows (`:row`, `:col`, `:value` accessors).
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:row (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile row</td></tr><tr><td>:col (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile column</td></tr><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile value, a finite number</td></tr><tr><td>:method</td><td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td><td>:complete</td><td>fastmath hclust linkage of the rows and columns</td></tr><tr><td>:distance</td><td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td><td>:euclidean</td><td>fastmath hclust distance: a keyword or a function of two double arrays</td></tr><tr><td>:row-tree</td><td>true or false</td><td>true</td><td>the rows' dendrogram right of the tiles (false - order only)</td></tr><tr><td>:col-tree</td><td>true or false</td><td>true</td><td>the columns' dendrogram above the tiles (false - order only)</td></tr><tr><td>:tree-size</td><td>[a number in (0 1), a number in (0 1)]</td><td>[0.2 0.2]</td><td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:row (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile row</td></tr><tr><td>:col (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile column</td></tr><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>accessor of a row's tile value, a finite number</td></tr><tr><td>:method</td><td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td><td>:complete</td><td>fastmath hclust linkage of the rows and columns</td></tr><tr><td>:distance</td><td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td><td>:euclidean</td><td>fastmath hclust distance: a keyword or a function of two double arrays</td></tr><tr><td>:row-tree</td><td>true or false</td><td>true</td><td>the rows' dendrogram right of the tiles (false - order only)</td></tr><tr><td>:col-tree</td><td>true or false</td><td>true</td><td>the columns' dendrogram above the tiles (false - order only)</td></tr><tr><td>:tree-size</td><td>[a number in (0 1), a number in (0 1)]</td><td>[0.2 0.2]</td><td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td></tr><tr><td>:row-annotations</td><td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td><td>no strips</td><td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the tiles and the rows' tree, coloured by its values (categorical or continuous), with a legend</td></tr><tr><td>:col-annotations</td><td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td><td>no strips</td><td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the columns' tree and the tiles, coloured by its values (categorical or continuous), with a legend</td></tr><tr><td>:annotation-size</td><td>a positive number or nil</td><td>16</td><td>thickness of an annotation strip in pixels (not a fraction, as :tree-size)</td></tr><tr><td>:legend-span</td><td>one of :row :matrix or nil</td><td>:matrix with annotations, else :row</td><td>height of the legend column: :row - beside the tiles' row; :matrix - one cell beside every row (the trees' and the strips' too), stacking the value legend over the annotations' legends</td></tr></tbody></table>
 ```
 
 :::
@@ -422,6 +422,74 @@ default euclidean distance, no trees - only the order (right):
 :::
 
 
+Annotations (pheatmap's `annotation_row` / `annotation_col`): `:row-annotations` and `:col-annotations` are
+vectors of `[accessor colour-scale-spec]` pairs (spec `nil` - the default scale), drawn in order; each draws a strip
+along the tile rows (between the tiles and the rows' tree) or columns (under the columns' tree), named beside it,
+and adds its legend to the legend column. The rows of one tile row (column) must agree on the value.
+`:annotation-size` is the strips' thickness in pixels. With annotations the legend column spans every row
+(`:legend-span :matrix`, the default then): the value legend stretches over the room the annotations' legends,
+each as tall as it needs, leave below it:
+
+
+::: {.sourceClojure}
+```clojure
+(def annotated-scores (let [car-info (into {} (map (fn [r] [(:model r) r])) mtcars)]
+                        (mapv (fn [{:keys [car variable] :as r}]
+                                (assoc r :cylinders (str (:cyl (car-info car)))
+                                       :transmission (if (zero? (:am (car-info car))) "automatic" "manual")
+                                       :horsepower (:hp (car-info car))
+                                       :kind (if (#{"mpg" "qsec"} variable) "performance" "engine")))
+                              car-scores)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>car</th><th>variable</th><th>z</th><th>cylinders</th><th>transmission</th><th>horsepower</th><th>kind</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>mpg</td><td>0.6750876206931093</td><td>6</td><td>manual</td><td>110</td><td>performance</td></tr><tr><td>Mazda RX4</td><td>disp</td><td>-0.8010684219091876</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4</td><td>hp</td><td>-0.6554596090331999</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4</td><td>drat</td><td>1.1283722620337149</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4</td><td>wt</td><td>-1.1502784754134987</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4</td><td>qsec</td><td>-1.1015230645561858</td><td>6</td><td>manual</td><td>110</td><td>performance</td></tr><tr><td>Mazda RX4 Wag</td><td>mpg</td><td>0.6750876206931093</td><td>6</td><td>manual</td><td>110</td><td>performance</td></tr><tr><td>Mazda RX4 Wag</td><td>disp</td><td>-0.8010684219091876</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4 Wag</td><td>hp</td><td>-0.6554596090331999</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4 Wag</td><td>drat</td><td>1.1283722620337149</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4 Wag</td><td>wt</td><td>-0.838525042459661</td><td>6</td><td>manual</td><td>110</td><td>engine</td></tr><tr><td>Mazda RX4 Wag</td><td>qsec</td><td>-0.7741715999318604</td><td>6</td><td>manual</td><td>110</td><td>performance</td></tr><tr><td>Datsun 710</td><td>mpg</td><td>1.1090725197101083</td><td>4</td><td>manual</td><td>93</td><td>performance</td></tr><tr><td>Datsun 710</td><td>disp</td><td>-1.2597353595104843</td><td>4</td><td>manual</td><td>93</td><td>engine</td></tr><tr><td>Datsun 710</td><td>hp</td><td>-0.9790258770132912</td><td>4</td><td>manual</td><td>93</td><td>engine</td></tr><tr><td>Datsun 710</td><td>drat</td><td>1.014968014593141</td><td>4</td><td>manual</td><td>93</td><td>engine</td></tr><tr><td>Datsun 710</td><td>wt</td><td>-1.517047220065073</td><td>4</td><td>manual</td><td>93</td><td>engine</td></tr><tr><td>Datsun 710</td><td>qsec</td><td>0.15527273712649395</td><td>4</td><td>manual</td><td>93</td><td>performance</td></tr><tr><td>Hornet 4 Drive</td><td>mpg</td><td>0.7715287093635531</td><td>6</td><td>automatic</td><td>110</td><td>performance</td></tr><tr><td>Hornet 4 Drive</td><td>disp</td><td>0.06334234510864066</td><td>6</td><td>automatic</td><td>110</td><td>engine</td></tr><tr><td>Hornet 4 Drive</td><td>hp</td><td>-0.6554596090331999</td><td>6</td><td>automatic</td><td>110</td><td>engine</td></tr><tr><td>Hornet 4 Drive</td><td>drat</td><td>-0.7314573959917041</td><td>6</td><td>automatic</td><td>110</td><td>engine</td></tr><tr><td>Hornet 4 Drive</td><td>wt</td><td>-0.4228537985212105</td><td>6</td><td>automatic</td><td>110</td><td>engine</td></tr><tr><td>Hornet 4 Drive</td><td>qsec</td><td>0.6404543721946926</td><td>6</td><td>automatic</td><td>110</td><td>performance</td></tr><tr><td>Hornet Sportabout</td><td>mpg</td><td>0.1205513608380552</td><td>8</td><td>automatic</td><td>175</td><td>performance</td></tr><tr><td>Hornet Sportabout</td><td>disp</td><td>0.9630351842496456</td><td>8</td><td>automatic</td><td>175</td><td>engine</td></tr><tr><td>Hornet Sportabout</td><td>hp</td><td>0.5817055332436202</td><td>8</td><td>automatic</td><td>175</td><td>engine</td></tr><tr><td>Hornet Sportabout</td><td>drat</td><td>-0.5726914495749004</td><td>8</td><td>automatic</td><td>175</td><td>engine</td></tr><tr><td>Hornet Sportabout</td><td>wt</td><td>-0.14777724003252984</td><td>8</td><td>automatic</td><td>175</td><td>engine</td></tr><tr><td>Hornet Sportabout</td><td>qsec</td><td>-0.7741715999318604</td><td>8</td><td>automatic</td><td>175</td><td>performance</td></tr><tr><td>Valiant</td><td>mpg</td><td>-0.024110272167610528</td><td>6</td><td>automatic</td><td>105</td><td>performance</td></tr><tr><td>Valiant</td><td>disp</td><td>-0.2277347499075668</td><td>6</td><td>automatic</td><td>105</td><td>engine</td></tr><tr><td>Valiant</td><td>hp</td><td>-0.7506261584391091</td><td>6</td><td>automatic</td><td>105</td><td>engine</td></tr><tr><td>Valiant</td><td>drat</td><td>-1.4572445796113807</td><td>6</td><td>automatic</td><td>105</td><td>engine</td></tr><tr><td>Valiant</td><td>wt</td><td>-0.12332599038909156</td><td>6</td><td>automatic</td><td>105</td><td>engine</td></tr><tr><td>Valiant</td><td>qsec</td><td>1.096408197921431</td><td>6</td><td>automatic</td><td>105</td><td>performance</td></tr><tr><td>Duster 360</td><td>mpg</td><td>-0.9403006145368302</td><td>8</td><td>automatic</td><td>245</td><td>performance</td></tr><tr><td>Duster 360</td><td>disp</td><td>0.9630351842496456</td><td>8</td><td>automatic</td><td>245</td><td>engine</td></tr><tr><td>Duster 360</td><td>hp</td><td>1.9140372249263495</td><td>8</td><td>automatic</td><td>245</td><td>engine</td></tr><tr><td>Duster 360</td><td>drat</td><td>-0.43660635264621106</td><td>8</td><td>automatic</td><td>245</td><td>engine</td></tr><tr><td>Duster 360</td><td>wt</td><td>0.011155882649818772</td><td>8</td><td>automatic</td><td>245</td><td>engine</td></tr><tr><td>Duster 360</td><td>qsec</td><td>-1.4639479003902616</td><td>8</td><td>automatic</td><td>245</td><td>performance</td></tr><tr><td>Merc 240D</td><td>mpg</td><td>1.4948368743918843</td><td>4</td><td>automatic</td><td>62</td><td>performance</td></tr><tr><td>Merc 240D</td><td>disp</td><td>-0.9183813117187501</td><td>4</td><td>automatic</td><td>62</td><td>engine</td></tr><tr><td>Merc 240D</td><td>hp</td><td>-1.5690584833299286</td><td>4</td><td>automatic</td><td>62</td><td>engine</td></tr><tr><td>Merc 240D</td><td>drat</td><td>0.6520744227833027</td><td>4</td><td>automatic</td><td>62</td><td>engine</td></tr><tr><td>Merc 240D</td><td>wt</td><td>-0.45341786057550826</td><td>4</td><td>automatic</td><td>62</td><td>engine</td></tr><tr><td>Merc 240D</td><td>qsec</td><td>0.967805836819018</td><td>4</td><td>automatic</td><td>62</td><td>performance</td></tr><tr><td>Merc 230</td><td>mpg</td><td>1.1090725197101083</td><td>4</td><td>automatic</td><td>95</td><td>performance</td></tr><tr><td>Merc 230</td><td>disp</td><td>-0.9704223681004355</td><td>4</td><td>automatic</td><td>95</td><td>engine</td></tr><tr><td>Merc 230</td><td>hp</td><td>-0.9409592572509275</td><td>4</td><td>automatic</td><td>95</td><td>engine</td></tr><tr><td>Merc 230</td><td>drat</td><td>1.1737339610099446</td><td>4</td><td>automatic</td><td>95</td><td>engine</td></tr><tr><td>Merc 230</td><td>wt</td><td>-0.5023203598623848</td><td>4</td><td>automatic</td><td>95</td><td>engine</td></tr><tr><td>Merc 230</td><td>qsec</td><td>2.663018778623563</td><td>4</td><td>automatic</td><td>95</td><td>performance</td></tr><tr><td>Merc 280</td><td>mpg</td><td>0.2411027216761104</td><td>6</td><td>automatic</td><td>123</td><td>performance</td></tr><tr><td>Merc 280</td><td>disp</td><td>-0.734032484875152</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280</td><td>hp</td><td>-0.40802658057783586</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280</td><td>drat</td><td>1.1737339610099446</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280</td><td>wt</td><td>-0.14777724003252984</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280</td><td>qsec</td><td>-0.02593968079054295</td><td>6</td><td>automatic</td><td>123</td><td>performance</td></tr><tr><td>Merc 280C</td><td>mpg</td><td>-0.09644108867044382</td><td>6</td><td>automatic</td><td>123</td><td>performance</td></tr><tr><td>Merc 280C</td><td>disp</td><td>-0.734032484875152</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280C</td><td>hp</td><td>-0.40802658057783586</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280C</td><td>drat</td><td>1.1737339610099446</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280C</td><td>wt</td><td>-0.14777724003252984</td><td>6</td><td>automatic</td><td>123</td><td>engine</td></tr><tr><td>Merc 280C</td><td>qsec</td><td>0.32479403130694806</td><td>6</td><td>automatic</td><td>123</td><td>performance</td></tr><tr><td>Merc 450SE</td><td>mpg</td><td>-0.43398489901699894</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Merc 450SE</td><td>disp</td><td>0.2203475660567769</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SE</td><td>hp</td><td>0.6768720826495295</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SE</td><td>drat</td><td>-0.7541382454798196</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SE</td><td>wt</td><td>0.6224371237357761</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SE</td><td>qsec</td><td>-0.5520402489367825</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Merc 450SL</td><td>mpg</td><td>-0.21699244950849902</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Merc 450SL</td><td>disp</td><td>0.2203475660567769</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SL</td><td>hp</td><td>0.6768720826495295</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SL</td><td>drat</td><td>-0.7541382454798196</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SL</td><td>wt</td><td>0.2067658797973251</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SL</td><td>qsec</td><td>-0.43512901157095013</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Merc 450SLC</td><td>mpg</td><td>-0.7233081650283313</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Merc 450SLC</td><td>disp</td><td>0.2203475660567769</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SLC</td><td>hp</td><td>0.6768720826495295</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SLC</td><td>drat</td><td>-0.7541382454798196</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SLC</td><td>wt</td><td>0.26789400390592055</td><td>8</td><td>automatic</td><td>180</td><td>engine</td></tr><tr><td>Merc 450SLC</td><td>qsec</td><td>-0.20130653683928948</td><td>8</td><td>automatic</td><td>180</td><td>performance</td></tr><tr><td>Cadillac Fleetwood</td><td>mpg</td><td>-1.880601229073661</td><td>8</td><td>automatic</td><td>205</td><td>performance</td></tr><tr><td>Cadillac Fleetwood</td><td>disp</td><td>1.9509332036985922</td><td>8</td><td>automatic</td><td>205</td><td>engine</td></tr><tr><td>Cadillac Fleetwood</td><td>hp</td><td>1.1527048296790756</td><td>8</td><td>automatic</td><td>205</td><td>engine</td></tr><tr><td>Cadillac Fleetwood</td><td>drat</td><td>-1.071670138313427</td><td>8</td><td>automatic</td><td>205</td><td>engine</td></tr><tr><td>Cadillac Fleetwood</td><td>wt</td><td>2.065060852698634</td><td>8</td><td>automatic</td><td>205</td><td>engine</td></tr><tr><td>Cadillac Fleetwood</td><td>qsec</td><td>-0.2129976605758723</td><td>8</td><td>automatic</td><td>205</td><td>performance</td></tr><tr><td>Lincoln Continental</td><td>mpg</td><td>-1.880601229073661</td><td>8</td><td>automatic</td><td>215</td><td>performance</td></tr><tr><td>Lincoln Continental</td><td>disp</td><td>1.8450869873290623</td><td>8</td><td>automatic</td><td>215</td><td>engine</td></tr><tr><td>Lincoln Continental</td><td>hp</td><td>1.3430379284908942</td><td>8</td><td>automatic</td><td>215</td><td>engine</td></tr><tr><td>Lincoln Continental</td><td>drat</td><td>-0.9129041918966233</td><td>8</td><td>automatic</td><td>215</td><td>engine</td></tr><tr><td>Lincoln Continental</td><td>wt</td><td>2.277786724596547</td><td>8</td><td>automatic</td><td>215</td><td>engine</td></tr><tr><td>Lincoln Continental</td><td>qsec</td><td>-0.306526650468537</td><td>8</td><td>automatic</td><td>215</td><td>performance</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/clustered-heatmap annotated-scores
+                                           {:row :car :col :variable :value :z
+                                            :row-annotations [[:cylinders {:range :set2}] [:transmission {:range ["#999999" "#e08214"]}]]
+                                            :col-annotations [[:kind {:range :set1 :title "variable kind"}]]
+                                            :annotation-size 14 :legend-span :matrix
+                                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}})
+                   {:width 800 :height 600})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image10.png)
+:::
+
+
+An annotation is coloured as any colour mapping: categorical values get a palette, numbers a gradient (here
+horsepower, a continuous colour bar). `:legend-span :row` keeps the legend cell beside the tiles' row only:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/clustered-heatmap annotated-scores
+                                           {:row :car :col :variable :value :z
+                                            :row-annotations [[:horsepower {:range :viridis/magma}] [:cylinders nil]]
+                                            :legend-span :row
+                                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}})
+                   {:width 800 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.builders_trees_files/image11.png)
+:::
+
+
 Shared options: [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
 
 
@@ -465,7 +533,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image10.png)
+![](reference.builders_trees_files/image12.png)
 :::
 
 
@@ -485,7 +553,7 @@ One edge colour, more opaque, without leaf names (left); coloured by group (the 
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image11.png)
+![](reference.builders_trees_files/image13.png)
 :::
 
 
@@ -513,7 +581,7 @@ Thicker edges through the theme:
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image12.png)
+![](reference.builders_trees_files/image14.png)
 :::
 
 
@@ -538,7 +606,7 @@ Large square leaves through the theme:
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image13.png)
+![](reference.builders_trees_files/image15.png)
 :::
 
 
@@ -584,7 +652,7 @@ coloured by its name wherever it occurs, the end of a sequence a step of its own
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image14.png)
+![](reference.builders_trees_files/image16.png)
 :::
 
 
@@ -600,7 +668,7 @@ A smaller hole - more room for the rings - and the step names in the cells where
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image15.png)
+![](reference.builders_trees_files/image17.png)
 :::
 
 
@@ -616,7 +684,7 @@ Ending sequences left as their group's grey remainder, the end not a step of its
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image16.png)
+![](reference.builders_trees_files/image18.png)
 :::
 
 
@@ -643,7 +711,7 @@ Thick white cell borders through the theme:
 
 
 ::: {.clay-image}
-![](reference.builders_trees_files/image17.png)
+![](reference.builders_trees_files/image19.png)
 :::
 
 

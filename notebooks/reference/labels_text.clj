@@ -61,6 +61,34 @@
                              :y {:text "sepal width [cm]" :font-style :italic}}}
                    {:width 600 :height 350})
 
+;; ## Long axis titles
+
+;; An axis title longer than its panels - the width under them, the height beside them; one title spans all facet
+;; panels - is fitted to them: wrapped at word boundaries (a line into at most three, the title's row or column
+;; grows), then drawn smaller down to the `:axis-title` text role's `:min-size` (8 points by default, theme
+;; `[:text :axis-title :min-size]` - every text role takes one, see the Theme chapter), then cut with an ellipsis.
+;; Line breaks you give are kept, and a title that fits is drawn as given. Fitting is always on: earlier versions
+;; clipped such titles. A title rotated across its own track (a y title with `:rotation 0`) isn't fitted.
+
+;; Wrapped titles beside a small panel; on the right a word too long for the panel shrinks to the least size and is
+;; cut (`:min-size 10`):
+
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/scatter)]
+                                   :labels {:title "wrapped"
+                                            :x "sepal length of the iris flowers, measured in centimetres"
+                                            :y "sepal width of the flowers in centimetres"}}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/scatter)]
+                                   :labels {:title "shrunk and cut"
+                                            :x "sepal_length_in_centimetres_of_the_flowers_of_three_iris_species"
+                                            :y "sepal width"}
+                                   :theme {:text {:axis-title {:min-size 10}}}}]
+                                 {:columns 2})
+                   {:width 700 :height 300})
+
 ;; ## Text in the panel
 
 ;; The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,

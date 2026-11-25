@@ -23,10 +23,10 @@
     (is (= multiplot/pairs-options (:cljplot2/options (meta #'multiplot/pairs)))))
   (testing "arrange: the :arrange layout group but :plots, the builder's :title and :theme (no :scales)"
     (let [ks (map :key (describe/options #'multiplot/arrange))]
-      (is (= [:columns :rows :widths :heights :align :equal-panels :title :theme] ks))
+      (is (= [:columns :rows :widths :heights :row-spans :align :equal-panels :title :theme] ks))
       (is (every? #(= :arrange (:fragment %)) (take 6 (describe/options #'multiplot/arrange))))))
   (testing "pairs"
-    (is (= [:variables :row-variables :column-variables :mapping :lower :upper :diagonal :variable-names :scales :color :theme :title]
+    (is (= [:variables :row-variables :column-variables :mapping :variable-names :lower :upper :diagonal :scales :color :legend-span :theme :title]
            (map :key (describe/options #'multiplot/pairs))))))
 
 (deftest defaults-test
@@ -51,7 +51,7 @@
       {:rows -1} :rows
       {:widths [1 :wide]} :widths
       {:widths 2} :widths
-      {:heights [1 :measured]} :heights
+      {:heights [1 :wide]} :heights
       {:align 1} :align
       {:equal-panels "yes"} :equal-panels))
   (testing "unknown keys - :plots and :scales too - fail keyed by the key"

@@ -162,6 +162,37 @@
                                  {:columns 2})
                    {:width 900 :height 300})
 
+;; A numeric `:color` doesn't group the bars: each bar is filled by its own colour value - `:color-stat` over its
+;; rows' colour values (default the bar's `:stat`, `:mean` for counts) - with a colour bar. Mapped to the values with
+;; `:sum` it colours each bar by its length; stacked segments (groups from `:group` or a categorical aesthetic) take
+;; their own colours; a count can be coloured by a summary of another column:
+
+(plot/render-image (plot/arrange [{:data sales
+                                   :mapping {:x :quarter :y :amount :color :amount}
+                                   :charts [(chart/bar {:color-stat :sum})]
+                                   :labels {:title ":color-stat :sum"}}
+                                  {:data sales
+                                   :mapping {:x :quarter :y :amount :group :product :color :amount}
+                                   :charts [(chart/bar {:position :stack :color-stat :mean})]
+                                   :labels {:title "stacked, :mean"}}
+                                  {:data iris
+                                   :mapping {:x :species :color :petal-length}
+                                   :charts [(chart/bar {:stat :count :color-stat :median})]
+                                   :labels {:title ":count, :median"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+;; An explicit colour `:domain` never drops rows: every bar keeps its length, and a bar whose colour value lies
+;; outside the domain is drawn in the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
+;; bar's colour value as `:color-value`:
+
+(plot/render-image {:data sales
+                    :mapping {:x :quarter :y :amount :color :amount}
+                    :charts [(chart/bar {:color-stat :mean :value-label #(format "mean %.1f" (:color-value %))})]
+                    :scales {:color {:domain [15 40]}}
+                    :labels {:title "colour :domain [15 40]"}}
+                   {:width 500 :height 320})
+
 ;; ### Labels
 
 ;; Each bar's length written past its end or in its middle, formatted or as the text a function returns:

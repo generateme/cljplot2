@@ -1435,7 +1435,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Node aesthetics from the node rows or the computed degree (whole numbers: <code>:integer-ticks</code> through the builder’s <code>:scales</code>), labels beside the nodes:</p>
+<p>Node aesthetics from the node rows or the computed degree (whole numbers: <code>:integer-ticks</code> through the builder’s <code>:scales</code>), labels beside the nodes (a label overlapping that of a larger node is left out):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network friends {<span class="at">:nodes</span> people <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:team</span> <span class="at">:size</span> <span class="at">:degree</span>}</span>
@@ -1848,7 +1848,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The UK energy flows of a 2050 scenario, bands in their source’s colour (the default):</p>
+<p>The UK energy flows of a 2050 scenario, bands in their source’s colour (the default). A node name too long for its room - up to the nearest node on its side in its line, half way when that node’s name faces it across the gap - shrinks, down to the <code>:min-size</code> of the text role <code>:sankey-label</code> (here the farm wastes before Bio-conversion); a name overlapping that of a larger node is left out:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sankey energy {<span class="at">:link-color</span> <span class="at">:source</span>})</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">550</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

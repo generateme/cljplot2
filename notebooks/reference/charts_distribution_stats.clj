@@ -23,6 +23,13 @@
 
 (nu/data-table faithful)
 
+;; Random log-normal values (seeded) - skewed in data units, even on a log axis:
+
+(def skewed (mapv (fn [v] {:value v})
+                  (r/->seq (r/distribution :log-normal {:scale 3.0 :shape 0.8 :rng (r/rng :mersenne 7)}) 400)))
+
+(nu/data-table skewed)
+
 ;; Two species only - for the charts drawing two groups against each other:
 
 (def two-species (filter #(#{"setosa" "versicolor"} (:species %)) iris))
@@ -42,10 +49,11 @@
                     :labels {:x "petal length [cm]"}}
                    {:width 600 :height 350})
 
-;; Its options: the bins (a method, a count or breaks), what a bar's height measures, how groups combine, the bar
-;; style and the zero line of mirrored groups:
+;; ### Bins
 
-(nu/options-table (describe/own-rows (describe/options (chart/histogram))))
+;; The bins (a method, a count or breaks), what a bar's height measures and the space the bins are made in:
+
+(nu/options-table (describe/own-rows (describe/options (chart/histogram))) :bins)
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions}
@@ -78,6 +86,30 @@
                                    :labels {:title ":y :cumulative"}}]
                                  {:columns 2})
                    {:width 900 :height 300})
+
+;; On a log axis bins of equal width in data units crowd into the last decades; `:stat-space :scale` makes them in
+;; the axis's log10 coordinates - equal-width on screen, `:density` per log10 unit (values a log axis can't place, 0
+;; and negatives, are dropped and counted). In either space the values are numbers: histogram and density take no
+;; dates.
+
+(plot/render-image (plot/arrange [{:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/histogram {:bins 20 :y :count :stat-space :data})]
+                                   :labels {:title ":stat-space :data"}}
+                                  {:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/histogram {:bins 20 :y :count :stat-space :scale})]
+                                   :labels {:title ":stat-space :scale"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+
+;; ### Position
+
+;; How groups combine and the zero line and y range of mirrored groups:
+
+(nu/options-table (describe/own-rows (describe/options (chart/histogram))) :position)
 
 ;; How groups share the bins: translucent over each other (`:alpha` of `:overlay`), side by side, stacked, or
 ;; stacked to 1 - the share of each species in every bin:
@@ -125,6 +157,24 @@
                                    :labels {:title ":stroke-width 2 :padding {:y [0 0]}"}}]
                                  {:columns 3})
                    {:width 1000 :height 320})
+
+;; ### Style
+
+;; The bar fill, outline and translucency, and the zero line of mirrored groups:
+
+(nu/options-table (describe/own-rows (describe/options (chart/histogram))) :style)
+
+(plot/render-image (plot/arrange [{:data faithful
+                                   :mapping {:x :eruptions}
+                                   :charts [(chart/histogram {:bins 20 :color [200 120 60] :stroke-color :none})]
+                                   :labels {:title ":color, :stroke-color :none"}}
+                                  {:data two-species
+                                   :mapping {:x :sepal-length :color :species}
+                                   :charts [(chart/histogram {:bins 12 :alpha 0.3 :stroke-color :darker :stroke-width 1.5})]
+                                   :labels {:title ":alpha 0.3 :stroke-width 1.5"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
 
 (nu/shared-groups (describe/options (chart/histogram)))
 
@@ -220,6 +270,22 @@
                                    :labels {:title ":cut 1"}}]
                                  {:columns 3})
                    {:width 1000 :height 300})
+
+;; Skewed values: estimated in data units (the default) the curve is lopsided and its tail passes 0 - a log axis
+;; can't show it; `:stat-space :scale` estimates the density of the log10 values on a log axis (per log10 unit, a
+;; numeric `:bandwidth` in log10 units) and draws it back on the axis:
+
+(plot/render-image (plot/arrange [{:data skewed
+                                   :mapping {:x :value}
+                                   :charts [(chart/density {:stat-space :data :fill :color})]
+                                   :labels {:title ":stat-space :data"}}
+                                  {:data skewed
+                                   :mapping {:x :value}
+                                   :scales {:x {:kind :log}}
+                                   :charts [(chart/density {:stat-space :scale :fill :color})]
+                                   :labels {:title ":stat-space :scale, a log x axis"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
 
 ;; ### Position
 

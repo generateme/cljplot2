@@ -187,7 +187,7 @@ write the strip texts.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td><td>Multiplot layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td><td>Multiplot layout</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td><td>Multiplot layout</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td><td>Multiplot layout</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td><td>Multiplot layout</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td><td>Multiplot layout</td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides of the built plot</td><td>Builder options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td><td>Multiplot layout</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td><td>Multiplot layout</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td><td>Multiplot layout</td></tr><tr><td>:heights</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height</td><td>Multiplot layout</td></tr><tr><td>:row-spans</td><td>map of integer (at least 0) to a positive integer or nil</td><td>every plot one row</td><td>plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)</td><td>Multiplot layout</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td><td>Multiplot layout</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td><td>Multiplot layout</td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides of the built plot</td><td>Builder options</td></tr></tbody></table>
 ```
 
 :::
@@ -256,7 +256,7 @@ legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; [:fixed px] a fixed height</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height</td></tr><tr><td>:row-spans</td><td>map of integer (at least 0) to a positive integer or nil</td><td>every plot one row</td><td>plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td></tr></tbody></table>
 ```
 
 :::
@@ -282,16 +282,37 @@ legend (`:legend-only true` - no panel or axes, plot keys in the intro's Legend 
 :::
 
 
+`:row-spans` lets a plot cover several rows from its own down (`{plot-index rows}` - keyed by the plot's index,
+not its cell), and later plots skip the covered cells; without `:rows` a span reaching past the last row adds
+rows. Here one legend beside two rows of plots, its colour bar stretched over both:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data mtcars :mapping {:x :hp :y :mpg :color :wt} :charts [(chart/scatter)] :legend false}
+                                  {:data mtcars :mapping {:x :hp :y :mpg :color :wt} :charts [(chart/scatter)] :legend-only true}
+                                  {:data mtcars :mapping {:x :disp :y :mpg :color :wt} :charts [(chart/scatter)] :legend false}]
+                                 {:columns 2 :widths [1 :measured] :row-spans {1 2}})
+                   {:width 600 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image6.png)
+:::
+
+
 
 ## Scatter-plot matrix
 
 `plot/pairs` draws a cell for every pair of `:variables` (2 to 20 numeric columns); the cells below, above and on
-the diagonal take any charts.
+the diagonal take any charts. Its variables:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:variables</td><td>sequential of keyword (2..20) or nil</td><td>required unless :row-variables and :column-variables are given</td><td>the numeric columns, in matrix order (rows and columns)</td><td></td></tr><tr><td>:row-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix rows, top to bottom (on y)</td><td></td></tr><tr><td>:column-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix columns, left to right (on x)</td><td></td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>extra mapping of every cell (grouping aesthetics such as :color, :group)</td><td></td></tr><tr><td>:lower</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/scatter)</td><td>charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells</td><td></td></tr><tr><td>:upper</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/correlation {:glyph :number})</td><td>charts above the diagonal (a square matrix only); :none - empty cells</td><td></td></tr><tr><td>:diagonal</td><td>:names, :none, a chart or a vector of charts or nil or nil</td><td>(chart/density)</td><td>charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td><td></td></tr><tr><td>:variable-names</td><td>map of keyword to string or nil</td><td>the variable's name</td><td>display names of the variables, {variable text}</td><td></td></tr><tr><td>:scales</td><td>map</td><td></td><td>the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one</td><td></td></tr><tr><td>:scales :color</td><td>an aesthetic scale spec</td><td></td><td>the colour scale spec</td><td></td></tr><tr><td>:theme</td><td>any value or nil</td><td></td><td>theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)</td><td></td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables</td><td>sequential of keyword (2..20) or nil</td><td>required unless :row-variables and :column-variables are given</td><td>the numeric columns, in matrix order (rows and columns)</td></tr><tr><td>:row-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix rows, top to bottom (on y)</td></tr><tr><td>:column-variables</td><td>sequential of keyword (1..20) or nil</td><td>:variables</td><td>the numeric columns of the matrix columns, left to right (on x)</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>extra mapping of every cell (grouping aesthetics such as :color, :group)</td></tr><tr><td>:variable-names</td><td>map of keyword to string or nil</td><td>the variable's name</td><td>display names of the variables, {variable text}</td></tr></tbody></table>
 ```
 
 :::
@@ -308,7 +329,7 @@ the diagonal take any charts.
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image6.png)
+![](reference.facets_arrange_files/image7.png)
 :::
 
 
@@ -330,21 +351,85 @@ different variables draws `:lower`, a cell whose row and column variable are the
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image7.png)
+![](reference.facets_arrange_files/image8.png)
+:::
+
+
+Its cells:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:lower</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/scatter)</td><td>charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells</td></tr><tr><td>:upper</td><td>:none, a chart or a vector of charts or nil or nil</td><td>(chart/correlation {:glyph :number})</td><td>charts above the diagonal (a square matrix only); :none - empty cells</td></tr><tr><td>:diagonal</td><td>:names, :none, a chart or a vector of charts or nil or nil</td><td>(chart/density)</td><td>charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td></tr><tr><td>:scales</td><td>map</td><td></td><td>the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one</td></tr><tr><td>:scales :color</td><td>an aesthetic scale spec</td><td></td><td>the colour scale spec</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt]
+                                       :lower (chart/scatter {:alpha 0.6})
+                                       :upper (chart/correlation {:glyph :shade})
+                                       :diagonal :names
+                                       :scales {:color {:domain [-1 1]}}})
+                   {:width 500 :height 450})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image9.png)
+:::
+
+
+The matrix's title, legend column and theme:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th><th>Group</th></tr></thead><tbody><tr><td>:legend-span</td><td>one of :row :matrix or nil</td><td>:row</td><td>height of the legend column: :row - beside the first row, one row high; :matrix - beside the whole matrix (a legend taller than a row, e.g. of a many-variable matrix)</td><td></td></tr><tr><td>:theme</td><td>any value or nil</td><td></td><td>theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)</td><td></td></tr><tr><td>:title</td><td>any value</td><td></td><td>plot title (a text or label options)</td><td>Builder options</td></tr></tbody></table>
+```
+
+:::
+
+
+Only the outer cells have axes (x under the bottom row, y left of the left column), and every panel gets one size
+(the room between rows follows each row's end tick labels), so a matrix of many variables fits a page - up to 20,
+though at that count tick labels get dense: give such a matrix a large image. Its rows are low, so a legend taller
+than a row goes beside the whole matrix with `:legend-span :matrix` (the default `:row` keeps it beside the first
+row) - here every numeric column of mtcars, with the r colour bar of the shaded correlations as tall as the matrix.
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb]
+                                       :upper (chart/correlation {:glyph :shade})
+                                       :diagonal :names
+                                       :legend-span :matrix
+                                       :title "mtcars"})
+                   {:width 1000 :height 800})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image10.png)
 :::
 
 
 
 ## Margins
 
-`:margins` puts charts above (`:top`) and right of (`:right`) a single panel, sharing its horizontal / vertical
-scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart or a
-vector of charts ...
+`:margins` puts charts above (`:top`), right of (`:right`), below (`:bottom`) and left of (`:left`) a single panel,
+sharing its horizontal / vertical scale; margin charts read the plot's data with `:x` mapped to the shared
+dimension. A margin is a chart or a vector of charts ...
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:top</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts above the panel sharing its horizontal scale</td></tr><tr><td>:right</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts right of the panel sharing its vertical scale</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:top</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts above the panel sharing its horizontal scale</td></tr><tr><td>:right</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts right of the panel sharing its vertical scale</td></tr><tr><td>:bottom</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts below the panel (above its horizontal axis) sharing its horizontal scale</td></tr><tr><td>:left</td><td>a chart, a vector of charts or {:charts c :size px :axis bool}</td><td></td><td>charts left of the panel (right of its vertical axis) sharing its vertical scale</td></tr></tbody></table>
 ```
 
 :::
@@ -363,7 +448,7 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image8.png)
+![](reference.facets_arrange_files/image11.png)
 :::
 
 
@@ -391,7 +476,30 @@ vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image9.png)
+![](reference.facets_arrange_files/image12.png)
+:::
+
+
+Bottom and left margins sit between the panel and its axes - the panel keeps its axes on the outer side - and
+their magnitudes grow away from the panel (bars hang down, densities grow to the left). A margin's magnitude axis
+stays next to its own margin panel - with a left margin too, the bottom margin's axis sits between the left margin
+and the panel:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg}
+                    :charts [(chart/scatter)]
+                    :margins {:bottom {:charts (chart/histogram {:bins 10}) :size 60 :axis true}
+                              :left [(chart/density) (chart/rug)]}}
+                   {:width 600 :height 500})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image13.png)
 :::
 
 
@@ -427,7 +535,7 @@ items placed on them - labels (`{:kind :label :text t :role r}`, the role requir
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image10.png)
+![](reference.facets_arrange_files/image14.png)
 :::
 
 

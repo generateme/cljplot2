@@ -35,6 +35,7 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [wadogo.scale :as s]
+            [cljplot2.content.axis :as axis]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -242,7 +243,7 @@
 
 (defn legend-charts
   "Gives the charts whose glyphs the legends draw, in key index order: the plot's charts, then its margin charts
-  (`:top`, then `:right`; see `cljplot2.pipeline`).
+  (`:top`, `:right`, `:bottom`, then `:left` - [[cljplot2.content.axis/margin-sides]]; see `cljplot2.pipeline`).
 
   Parameters:
 
@@ -250,7 +251,7 @@
 
   Returns `{:charts [..] :mappings [..] :stats [..]}`, vectors indexed by a legend's `:chart`."
   [{:keys [charts split stats margin-stats]}]
-  (let [sides (keep margin-stats [:top :right])]
+  (let [sides (keep margin-stats axis/margin-sides)]
     {:charts (into (vec charts) (mapcat :charts sides))
      :mappings (into (mapv :mapping (:charts split)) (mapcat :mappings sides))
      :stats (into (vec stats) (mapcat :stats sides))}))
@@ -777,7 +778,8 @@
   "Draws a colour bar: its box, title, the bar, a mark per tick and the tick labels.
 
   Every label of an explicit `:ticks` vector is drawn, else from the lowest each label whose text block (padding
-  excluded, as axes measure) doesn't overlap the last drawn one (see
+  excluded, as axes measure) doesn't overlap the last drawn one - labels stacked across their text, spaced by their
+  line height, need no gap (see
   [[cljplot2.graphics.measure/kept-label-indices]]); texts in their roles' colours over the legend backdrop (see
   [[legend-text]]). Ticks are theme `[:legend :bar-tick-length]` long and `:bar-tick-width` wide (0 - none).
 

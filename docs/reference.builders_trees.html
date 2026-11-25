@@ -1268,6 +1268,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>[0.2 0.2]</td>
 <td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td>
 </tr>
+<tr class="odd">
+<td>:row-annotations</td>
+<td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td>
+<td>no strips</td>
+<td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the tiles and the rows' tree, coloured by its values (categorical or continuous), with a legend</td>
+</tr>
+<tr class="even">
+<td>:col-annotations</td>
+<td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td>
+<td>no strips</td>
+<td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the columns' tree and the tiles, coloured by its values (categorical or continuous), with a legend</td>
+</tr>
+<tr class="odd">
+<td>:annotation-size</td>
+<td>a positive number or nil</td>
+<td>16</td>
+<td>thickness of an annotation strip in pixels (not a fraction, as :tree-size)</td>
+</tr>
+<tr class="even">
+<td>:legend-span</td>
+<td>one of :row :matrix or nil</td>
+<td>:matrix with annotations, else :row</td>
+<td>height of the legend column: :row - beside the tiles' row; :matrix - one cell beside every row (the trees' and the strips' too), stacking the value legend over the annotations' legends</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -1816,6 +1840,923 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image9.png" class="img-fluid"></p>
 </div>
+<p>Annotations (pheatmap’s <code>annotation_row</code> / <code>annotation_col</code>): <code>:row-annotations</code> and <code>:col-annotations</code> are vectors of <code>[accessor colour-scale-spec]</code> pairs (spec <code>nil</code> - the default scale), drawn in order; each draws a strip along the tile rows (between the tiles and the rows’ tree) or columns (under the columns’ tree), named beside it, and adds its legend to the legend column. The rows of one tile row (column) must agree on the value. <code>:annotation-size</code> is the strips’ thickness in pixels. With annotations the legend column spans every row (<code>:legend-span :matrix</code>, the default then): the value legend stretches over the room the annotations’ legends, each as tall as it needs, leave below it:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> annotated-scores </span>(<span class="kw">let</span> [car-info (<span class="kw">into</span> {} (<span class="kw">map</span> (<span class="kw">fn</span> [r] [(<span class="at">:model</span> r) r])) mtcars)]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                        (<span class="kw">mapv</span> (<span class="kw">fn</span> [{<span class="at">:keys</span> [car variable] <span class="at">:as</span> r}]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                (<span class="kw">assoc</span> r <span class="at">:cylinders</span> (<span class="kw">str</span> (<span class="at">:cyl</span> (car-info car)))</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:transmission</span> (<span class="kw">if</span> (<span class="kw">zero?</span> (<span class="at">:am</span> (car-info car))) <span class="st">"automatic"</span> <span class="st">"manual"</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:horsepower</span> (<span class="at">:hp</span> (car-info car))</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:kind</span> (<span class="kw">if</span> (#{<span class="st">"mpg"</span> <span class="st">"qsec"</span>} variable) <span class="st">"performance"</span> <span class="st">"engine"</span>)))</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                              car-scores)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">car</th>
+<th data-quarto-table-cell-role="th">variable</th>
+<th data-quarto-table-cell-role="th">z</th>
+<th data-quarto-table-cell-role="th">cylinders</th>
+<th data-quarto-table-cell-role="th">transmission</th>
+<th data-quarto-table-cell-role="th">horsepower</th>
+<th data-quarto-table-cell-role="th">kind</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>mpg</td>
+<td>0.6750876206931093</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>disp</td>
+<td>-0.8010684219091876</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>drat</td>
+<td>1.1283722620337149</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4</td>
+<td>wt</td>
+<td>-1.1502784754134987</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4</td>
+<td>qsec</td>
+<td>-1.1015230645561858</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>mpg</td>
+<td>0.6750876206931093</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>disp</td>
+<td>-0.8010684219091876</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>drat</td>
+<td>1.1283722620337149</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Mazda RX4 Wag</td>
+<td>wt</td>
+<td>-0.838525042459661</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Mazda RX4 Wag</td>
+<td>qsec</td>
+<td>-0.7741715999318604</td>
+<td>6</td>
+<td>manual</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>mpg</td>
+<td>1.1090725197101083</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>disp</td>
+<td>-1.2597353595104843</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>hp</td>
+<td>-0.9790258770132912</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>drat</td>
+<td>1.014968014593141</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Datsun 710</td>
+<td>wt</td>
+<td>-1.517047220065073</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Datsun 710</td>
+<td>qsec</td>
+<td>0.15527273712649395</td>
+<td>4</td>
+<td>manual</td>
+<td>93</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>mpg</td>
+<td>0.7715287093635531</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>disp</td>
+<td>0.06334234510864066</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>hp</td>
+<td>-0.6554596090331999</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>drat</td>
+<td>-0.7314573959917041</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Hornet 4 Drive</td>
+<td>wt</td>
+<td>-0.4228537985212105</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Hornet 4 Drive</td>
+<td>qsec</td>
+<td>0.6404543721946926</td>
+<td>6</td>
+<td>automatic</td>
+<td>110</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>mpg</td>
+<td>0.1205513608380552</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>disp</td>
+<td>0.9630351842496456</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>hp</td>
+<td>0.5817055332436202</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>drat</td>
+<td>-0.5726914495749004</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Hornet Sportabout</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Hornet Sportabout</td>
+<td>qsec</td>
+<td>-0.7741715999318604</td>
+<td>8</td>
+<td>automatic</td>
+<td>175</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>mpg</td>
+<td>-0.024110272167610528</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>disp</td>
+<td>-0.2277347499075668</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>hp</td>
+<td>-0.7506261584391091</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>drat</td>
+<td>-1.4572445796113807</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Valiant</td>
+<td>wt</td>
+<td>-0.12332599038909156</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Valiant</td>
+<td>qsec</td>
+<td>1.096408197921431</td>
+<td>6</td>
+<td>automatic</td>
+<td>105</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>mpg</td>
+<td>-0.9403006145368302</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>disp</td>
+<td>0.9630351842496456</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>hp</td>
+<td>1.9140372249263495</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>drat</td>
+<td>-0.43660635264621106</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Duster 360</td>
+<td>wt</td>
+<td>0.011155882649818772</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Duster 360</td>
+<td>qsec</td>
+<td>-1.4639479003902616</td>
+<td>8</td>
+<td>automatic</td>
+<td>245</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>mpg</td>
+<td>1.4948368743918843</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>disp</td>
+<td>-0.9183813117187501</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>hp</td>
+<td>-1.5690584833299286</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>drat</td>
+<td>0.6520744227833027</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 240D</td>
+<td>wt</td>
+<td>-0.45341786057550826</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 240D</td>
+<td>qsec</td>
+<td>0.967805836819018</td>
+<td>4</td>
+<td>automatic</td>
+<td>62</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>mpg</td>
+<td>1.1090725197101083</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>disp</td>
+<td>-0.9704223681004355</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>hp</td>
+<td>-0.9409592572509275</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 230</td>
+<td>wt</td>
+<td>-0.5023203598623848</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 230</td>
+<td>qsec</td>
+<td>2.663018778623563</td>
+<td>4</td>
+<td>automatic</td>
+<td>95</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>mpg</td>
+<td>0.2411027216761104</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>disp</td>
+<td>-0.734032484875152</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>hp</td>
+<td>-0.40802658057783586</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 280</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 280</td>
+<td>qsec</td>
+<td>-0.02593968079054295</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>mpg</td>
+<td>-0.09644108867044382</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>disp</td>
+<td>-0.734032484875152</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>hp</td>
+<td>-0.40802658057783586</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>drat</td>
+<td>1.1737339610099446</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 280C</td>
+<td>wt</td>
+<td>-0.14777724003252984</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 280C</td>
+<td>qsec</td>
+<td>0.32479403130694806</td>
+<td>6</td>
+<td>automatic</td>
+<td>123</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>mpg</td>
+<td>-0.43398489901699894</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SE</td>
+<td>wt</td>
+<td>0.6224371237357761</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SE</td>
+<td>qsec</td>
+<td>-0.5520402489367825</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>mpg</td>
+<td>-0.21699244950849902</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SL</td>
+<td>wt</td>
+<td>0.2067658797973251</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SL</td>
+<td>qsec</td>
+<td>-0.43512901157095013</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>mpg</td>
+<td>-0.7233081650283313</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>disp</td>
+<td>0.2203475660567769</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>hp</td>
+<td>0.6768720826495295</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>drat</td>
+<td>-0.7541382454798196</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Merc 450SLC</td>
+<td>wt</td>
+<td>0.26789400390592055</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Merc 450SLC</td>
+<td>qsec</td>
+<td>-0.20130653683928948</td>
+<td>8</td>
+<td>automatic</td>
+<td>180</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>mpg</td>
+<td>-1.880601229073661</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>disp</td>
+<td>1.9509332036985922</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>hp</td>
+<td>1.1527048296790756</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>drat</td>
+<td>-1.071670138313427</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Cadillac Fleetwood</td>
+<td>wt</td>
+<td>2.065060852698634</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Cadillac Fleetwood</td>
+<td>qsec</td>
+<td>-0.2129976605758723</td>
+<td>8</td>
+<td>automatic</td>
+<td>205</td>
+<td>performance</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>mpg</td>
+<td>-1.880601229073661</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>performance</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>disp</td>
+<td>1.8450869873290623</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>hp</td>
+<td>1.3430379284908942</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>drat</td>
+<td>-0.9129041918966233</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>engine</td>
+</tr>
+<tr class="odd">
+<td>Lincoln Continental</td>
+<td>wt</td>
+<td>2.277786724596547</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>engine</td>
+</tr>
+<tr class="even">
+<td>Lincoln Continental</td>
+<td>qsec</td>
+<td>-0.306526650468537</td>
+<td>8</td>
+<td>automatic</td>
+<td>215</td>
+<td>performance</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:cylinders</span> {<span class="at">:range</span> <span class="at">:set2</span>}] [<span class="at">:transmission</span> {<span class="at">:range</span> [<span class="st">"#999999"</span> <span class="st">"#e08214"</span>]}]]</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:col-annotations</span> [[<span class="at">:kind</span> {<span class="at">:range</span> <span class="at">:set1</span> <span class="at">:title</span> <span class="st">"variable kind"</span>}]]</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:annotation-size</span> <span class="dv">14</span> <span class="at">:legend-span</span> <span class="at">:matrix</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image10.png" class="img-fluid"></p>
+</div>
+<p>An annotation is coloured as any colour mapping: categorical values get a palette, numbers a gradient (here horsepower, a continuous colour bar). <code>:legend-span :row</code> keeps the legend cell beside the tiles’ row only:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:horsepower</span> {<span class="at">:range</span> <span class="at">:viridis/magma</span>}] [<span class="at">:cylinders</span> <span class="va">nil</span>]]</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:legend-span</span> <span class="at">:row</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image11.png" class="img-fluid"></p>
+</div>
 <p>Shared options: <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 </section>
 <section id="bundle" class="level2" data-number="23.4">
@@ -1862,9 +2803,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> calls </span>[{<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Paris"</span>} {<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>} {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Lyon"</span>}</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Paris"</span> <span class="at">:to</span> <span class="st">"Osaka"</span>} {<span class="at">:from</span> <span class="st">"Lyon"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>}</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Tokyo"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Osaka"</span> <span class="at">:to</span> <span class="st">"Warsaw"</span>} {<span class="at">:from</span> <span class="st">"Delhi"</span> <span class="at">:to</span> <span class="st">"Paris"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> calls </span>[{<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Paris"</span>} {<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>} {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Lyon"</span>}</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Paris"</span> <span class="at">:to</span> <span class="st">"Osaka"</span>} {<span class="at">:from</span> <span class="st">"Lyon"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>}</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Tokyo"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Osaka"</span> <span class="at">:to</span> <span class="st">"Warsaw"</span>} {<span class="at">:from</span> <span class="st">"Delhi"</span> <span class="at">:to</span> <span class="st">"Paris"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1917,22 +2858,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.builders_trees_files/image10.png" class="img-fluid"></p>
+<p><img src="reference.builders_trees_files/image12.png" class="img-fluid"></p>
 </div>
 <p>One edge colour, more opaque, without leaf names (left); coloured by group (the default) and fainter (right):</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/bundle calls office-tree {<span class="at">:color-by</span> <span class="at">:none</span> <span class="at">:edge-color</span> [<span class="dv">120</span> <span class="dv">60</span> <span class="dv">160</span>]</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:alpha</span> <span class="fl">0.8</span> <span class="at">:labels</span> <span class="va">false</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by :none, :alpha 0.8"</span>})</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/bundle calls office-tree {<span class="at">:alpha</span> <span class="fl">0.15</span> <span class="at">:title</span> <span class="st">":alpha 0.15"</span>})]</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/bundle calls office-tree {<span class="at">:color-by</span> <span class="at">:none</span> <span class="at">:edge-color</span> [<span class="dv">120</span> <span class="dv">60</span> <span class="dv">160</span>]</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:alpha</span> <span class="fl">0.8</span> <span class="at">:labels</span> <span class="va">false</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by :none, :alpha 0.8"</span>})</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/bundle calls office-tree {<span class="at">:alpha</span> <span class="fl">0.15</span> <span class="at">:title</span> <span class="st">":alpha 0.15"</span>})]</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.builders_trees_files/image11.png" class="img-fluid"></p>
+<p><img src="reference.builders_trees_files/image13.png" class="img-fluid"></p>
 </div>
 <p>The theme styles of edge bundling - edges in <code>[:chart :bundle-edge]</code> (line - its colour, width and dash shown), leaves in <code>[:chart :bundle-leaf]</code> (scatter):</p>
 <div class="clay-table">
@@ -1971,11 +2912,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Thicker edges through the theme:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-edge</span> {<span class="at">:line-width</span> <span class="fl">2.5</span>}}}})</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-edge</span> {<span class="at">:line-width</span> <span class="fl">2.5</span>}}}})</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.builders_trees_files/image12.png" class="img-fluid"></p>
+<p><img src="reference.builders_trees_files/image14.png" class="img-fluid"></p>
 </div>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2031,11 +2972,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Large square leaves through the theme:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-leaf</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\s</span>}}}})</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-leaf</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\s</span>}}}})</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.builders_trees_files/image13.png" class="img-fluid"></p>
+<p><img src="reference.builders_trees_files/image15.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#edge-bundling">Edge bundling</a> (<code>:from</code> <code>:to</code> <code>:beta</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 </section>
@@ -2077,9 +3018,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> visits </span>[{<span class="at">:sequence</span> <span class="st">"home-search-product-end"</span> <span class="at">:n</span> <span class="dv">30</span>} {<span class="at">:sequence</span> <span class="st">"home-product-cart-end"</span> <span class="at">:n</span> <span class="dv">25</span>}</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-search-end"</span> <span class="at">:n</span> <span class="dv">20</span>} {<span class="at">:sequence</span> <span class="st">"home-end"</span> <span class="at">:n</span> <span class="dv">15</span>}</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-help-search-product-cart-end"</span> <span class="at">:n</span> <span class="dv">10</span>} {<span class="at">:sequence</span> <span class="st">"home-product-end"</span> <span class="at">:n</span> <span class="dv">18</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> visits </span>[{<span class="at">:sequence</span> <span class="st">"home-search-product-end"</span> <span class="at">:n</span> <span class="dv">30</span>} {<span class="at">:sequence</span> <span class="st">"home-product-cart-end"</span> <span class="at">:n</span> <span class="dv">25</span>}</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-search-end"</span> <span class="at">:n</span> <span class="dv">20</span>} {<span class="at">:sequence</span> <span class="st">"home-end"</span> <span class="at">:n</span> <span class="dv">15</span>}</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-help-search-product-cart-end"</span> <span class="at">:n</span> <span class="dv">10</span>} {<span class="at">:sequence</span> <span class="st">"home-product-end"</span> <span class="at">:n</span> <span class="dv">18</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2120,26 +3061,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image14.png" class="img-fluid"></p>
-</div>
-<p>A smaller hole - more room for the rings - and the step names in the cells where they fit (a larger image):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:inner-radius</span> <span class="fl">0.1</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">":inner-radius 0.1, :labels true"</span>})</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image15.png" class="img-fluid"></p>
-</div>
-<p>Ending sequences left as their group’s grey remainder, the end not a step of its own:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:keep-end</span> <span class="va">false</span> <span class="at">:title</span> <span class="st">":keep-end false"</span>})</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">550</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image16.png" class="img-fluid"></p>
+</div>
+<p>A smaller hole - more room for the rings - and the step names in the cells where they fit (a larger image):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:inner-radius</span> <span class="fl">0.1</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">":inner-radius 0.1, :labels true"</span>})</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image17.png" class="img-fluid"></p>
+</div>
+<p>Ending sequences left as their group’s grey remainder, the end not a step of its own:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:keep-end</span> <span class="va">false</span> <span class="at">:title</span> <span class="st">":keep-end false"</span>})</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">550</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image18.png" class="img-fluid"></p>
 </div>
 <p>The cells draw in the theme style <code>[:chart :sequences-cell]</code> (a partition style over <code>[:chart :partition]</code>):</p>
 <div class="clay-table">
@@ -2189,11 +3130,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Thick white cell borders through the theme:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:sequences-cell</span> {<span class="at">:stroke-width</span> <span class="dv">2</span>}}}})</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:sequences-cell</span> {<span class="at">:stroke-width</span> <span class="dv">2</span>}}}})</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
-<p><img src="reference.builders_trees_files/image17.png" class="img-fluid"></p>
+<p><img src="reference.builders_trees_files/image19.png" class="img-fluid"></p>
 </div>
 <p>Shared options: <a href="reference.shared_options.html#sequences">Sequences</a> (<code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code>); <a href="reference.shared_options.html#builder-options">Builder options</a> (<code>:title</code> <code>:scales</code> <code>:theme</code>).</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>

@@ -199,9 +199,10 @@
 ;; R8 - strip rotation
 
 (deftest strip-rotation-test
-  (let [rotated? #'strip/rotated?]
-    (is (rotated? {:rotation 90} [90 270]))
-    (is (rotated? {:rotation 90.0} [90 270]) "a double matches")
-    (is (rotated? {:rotation 270} [90 270]))
-    (is (not (rotated? {:rotation 0} [90 270])))
-    (is (not (rotated? {} [90])) "no rotation")))
+  ;; strips test their rotation with content.label/quarter-turn (numeric: a double matches)
+  (let [quarter-turn @(requiring-resolve 'cljplot2.content.label/quarter-turn)]
+    (is (= 90 (quarter-turn 90)))
+    (is (= 90 (quarter-turn 90.0)) "a double matches")
+    (is (= 270 (quarter-turn 270)))
+    (is (= 0 (quarter-turn 0)))
+    (is (nil? (quarter-turn 45)) "not a quarter turn")))

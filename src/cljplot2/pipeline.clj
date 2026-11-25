@@ -18,8 +18,8 @@
   - `:flip` - `true` draws the `:x` scale vertically and `:y` horizontally (generated grid only). Scales, extents, labels, tick formats and theme `[:axis k]` keep their keys; only the finalized scales' `:direction` changes, and axes, grid lines, axis titles and charts follow it (charts draw through [[cljplot2.scale.position/projection]]).
   - `:coord` - `{:kind :polar ...}`: polar coordinates - the horizontal scale maps to angles, the vertical one to radii (`:flip` swaps them; see [[cljplot2.scale.coord]]); polar guides inside the panel, no outer axes; only charts declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect, parallel, partition); not with `:aspect :iso`, `:margins`, `:custom-grid` or `:arrange` (sub-plots may be polar).
   - `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold whole plots (see [[cljplot2.content.subplot]]).
-  - `:arrange` - `{:plots [p ...] :columns :rows :widths :heights}`: a multiplot, its grid generated from the merged theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.layout.plot-grid/arrange-grid]]); only `:labels {:title t}` may accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`.
-  - `:margins` - `{:top m :right m}`: charts beside the panel sharing its horizontal (top) / vertical (right) scale, `m` a chart, a vector of charts or `{:charts c :size px :axis bool}` (thickness, default 80; `:axis` - the magnitude axis of histogram / density margins); margin charts read the plot's data and aesthetic mapping with `:x` mapped to the shared dimension (their own `:mapping` wins), no axes of their own; single-panel generated grids only (not with facets, `:arrange` or `:custom-grid` - put margins on the sub-plots), see [[margin-stats]].
+  - `:arrange` - `{:plots [p ...] :columns :rows :widths :heights :row-spans :align :equal-panels}`: a multiplot, its grid generated from the merged theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.layout.plot-grid/arrange-grid]]); only `:labels {:title t}` may accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`.
+  - `:margins` - `{:top m :right m :bottom m :left m}`: charts beside the panel sharing its horizontal (top, bottom) / vertical (right, left) scale - the main panel keeps its axes on the outer side: a bottom margin sits between the panel and its horizontal axis, a left margin between its vertical axis and the panel; each margin's magnitude grows away from the panel - `m` a chart, a vector of charts or `{:charts c :size px :axis bool}` (thickness, default 80; `:axis` - the magnitude axis of histogram / density margins); margin charts read the plot's data and aesthetic mapping with `:x` mapped to the shared dimension (their own `:mapping` wins), no axes of their own; single-panel generated grids only (not with facets, `:arrange` or `:custom-grid` - put margins on the sub-plots), see [[margin-stats]].
   - `:alignment-padding` - internal: `{:left :top :right :bottom}` pixels added to the generated grid's margins (set on sub-plots by multiplot alignment).
   - `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved.
   - `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved.
@@ -155,9 +155,9 @@
   "Tick count hint of a provisional finalization (before the first layout round)."
   10)
 
-(def ^:private margin-sides
-  "Plot margin sides, in grid order."
-  [:top :right])
+(def ^:private horizontal-margin-sides
+  "Plot margin sides above and below the panel: they share its horizontal scale (the others its vertical one)."
+  #{:top :bottom})
 
 (def ^:private magnitude-chart-kinds
   "Chart kinds with a magnitude dimension (counts, densities) a margin axis can show."
@@ -187,11 +187,11 @@
 
   Parameters:
 
-  - `plot` (map): a plot map with optional `:margins {:top m :right m}`.
+  - `plot` (map): a plot map with optional `:margins {:top m :right m :bottom m :left m}`.
 
-  Returns `{side spec}` of the sides present, each normalized by [[margin-spec]], in the order `:top`, `:right`; an empty map without margins. See [[margin-sides]]."
+  Returns `{side spec}` of the sides present, each normalized by [[margin-spec]], in the order of [[cljplot2.content.axis/margin-sides]]; an empty map without margins."
   [plot]
-  (into {} (keep (fn [side] (when-some [m (get-in plot [:margins side])] [side (margin-spec m)]))) margin-sides))
+  (into {} (keep (fn [side] (when-some [m (get-in plot [:margins side])] [side (margin-spec m)]))) axis/margin-sides))
 
 (defn- groupable-aesthetics
   "Aesthetic keys of the plot mapping whose scale groups rows.
@@ -216,7 +216,7 @@
 (defn- margin-stats
   "Computed charts of every plot margin.
 
-  A margin chart reads the plot's data (or its own) with the plot's grouping aesthetics (see [[groupable-aesthetics]]) and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the horizontal one for `:top`, the vertical one for `:right` - and its own `:mapping` merged over; annotation charts (`:inherit-mapping :facets`) take their own mapping only. Margins have one panel; the right margin computes as flipped (its values run vertically).
+  A margin chart reads the plot's data (or its own) with the plot's grouping aesthetics (see [[groupable-aesthetics]]) and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the horizontal one for `:top` and `:bottom`, the vertical one for `:right` and `:left` - and its own `:mapping` merged over; annotation charts (`:inherit-mapping :facets`) take their own mapping only. Margins have one panel; the right and left margins compute as flipped (their values run vertically).
 
   Parameters:
 
@@ -231,14 +231,14 @@
         vertical (if (= horizontal :x) :y :x)
         plot-rows (delay (data/rows data))]
     (into {} (for [[side {:keys [charts] :as spec}] (plot-margins plot)]
-               (let [shared-key (if (= side :top) horizontal vertical)
+               (let [shared-key (if (horizontal-margin-sides side) horizontal vertical)
                      shared (get mapping shared-key)
                      _ (when (nil? shared)
                          (schema/fail! (str "Plot :margins " side " needs the plot :mapping of " shared-key ".")
                                        {:key :margins :in [:margins side] :value shared-key}))
                      inherited (assoc (select-keys mapping (conj (groupable-aesthetics mapping (:plot-scales env) @plot-rows) :group))
                                       :x shared)
-                     side-env (assoc env :flip (= side :right))
+                     side-env (assoc env :flip (not (horizontal-margin-sides side)))
                      ;; annotation charts (:inherit-mapping :facets) take only their own mapping, as in the panel
                      mappings (mapv (fn [{:keys [options inherit-mapping]}]
                                       (merge (if (= :facets inherit-mapping) {} inherited) (:mapping options)))
@@ -260,28 +260,31 @@
   - `layout` (map or `nil`): the solved layout; `nil` - provisional (before the first layout round).
   - `scales` (map): the plot's finalized scales.
 
-  Returns `{side {:charts :stats :scales}}`; `:scales` holds the plot's aesthetic scales, `:x` - the plot's scale of the shared dimension (its direction kept) and `:y` - the margin's magnitude scale (counts, densities) finalized for the margin panel's size (provisional range `[0 1]` without a layout), across the shared one; no `:y` when the margin charts give no magnitude (e.g. strips only)."
+  Returns `{side {:charts :stats :scales}}`; `:scales` holds the plot's aesthetic scales, `:x` - the plot's scale of the shared dimension (its direction kept) and `:y` - the margin's magnitude scale (counts, densities) finalized for the margin panel's size (provisional range `[0 1]` without a layout), across the shared one, growing away from the main panel; no `:y` when the margin charts give no magnitude (e.g. strips only)."
   [plot layout scales]
   (let [horizontal (scale/horizontal-key (:flip plot))
         vertical (if (= horizontal :x) :y :x)]
     (into {} (for [[side {:keys [charts stats spec]}] (:margin-stats plot)]
-               (let [top? (= side :top)
-                     shared (get scales (if top? horizontal vertical))
+               (let [across (horizontal-margin-sides side)
+                     shared (get scales (if across horizontal vertical))
                      box (when layout (grid/find-content-box (:grid plot) layout #(= side (:margin %))))
                      spacing (double (get-in plot [:theme :axis :y :tick-spacing]))
+                     ;; the magnitude grows away from the main panel
                      magnitude (when spec
                                  (if-not box
                                    (scale/finalize spec [0.0 1.0] provisional-tick-hint)
                                    (let [{:keys [^long w ^long h]} box]
-                                     (if top?
-                                       (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing))
-                                       (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))))))]
+                                     (case side
+                                       :top (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing))
+                                       :bottom (scale/finalize spec [0.0 (double h)] (scale/tick-hint h spacing))
+                                       :right (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
+                                       :left (scale/finalize spec [(double w) 0.0] (scale/tick-hint w spacing))))))]
                  [side {:charts charts
                         :stats stats
                         ;; aesthetic scales shared with the plot: margins colour their groups as the panel does
                         :scales (cond-> (into {} (filter (comp aesthetic/dim? key)) scales)
                                   shared (assoc :x shared)
-                                  magnitude (assoc :y (assoc magnitude :direction (if top? :vertical :horizontal))))}])))))
+                                  magnitude (assoc :y (assoc magnitude :direction (if across :vertical :horizontal))))}])))))
 
 (defn- stats-stage
   "Pipeline stage `:stats`: every chart's computed data.
@@ -658,48 +661,170 @@
 
 (declare build)
 
-(defn- legend-only-width
-  "Pixels a `:legend-only` plot needs across.
+(declare solve-layout)
 
-  The plot is built up to its scale specs at the outer plot's size and hint; its legends are measured on a scratch canvas.
+(def ^{:private true :const true :tag 'long} unbounded-height
+  "Height in pixels a legend cell is laid out at when its natural (unwrapped) size is measured, see [[legend-only-size]]."
+  100000)
+
+(defn- track-size
+  "Gives the size of a solved layout's top-level track.
+
+  Parameters:
+
+  - `layout` (map or `nil`): a solved layout (see [[cljplot2.layout.grid/solve]]).
+  - `axis` (keyword): `:columns` or `:rows`.
+  - `id`: the track id.
+
+  Returns the track's size in pixels, a double; 0 without the track or the layout."
+  ^double [layout axis id]
+  (double (or (some (fn [track] (when (= id (:id track)) (:size track))) (get layout axis)) 0)))
+
+(defn- laid-out
+  "A plot built up to its layout at the outer plot's width and hint and a height, or `nil` when its tracks don't fit.
+
+  Parameters:
+
+  - `p` (map): the plot (a legend cell).
+  - `options` (map): the outer plot's render options (`:width`, `:hint`).
+  - `height` (long): the height in pixels.
+
+  Returns the built plot (see [[build]]); `nil` on a space error (see [[cljplot2.layout.grid/space-error?]]), other errors pass."
+  [p options ^long height]
+  (try (build p (assoc (select-keys options [:width :hint]) :height height :until :layout))
+       (catch clojure.lang.ExceptionInfo e
+         (when-not (grid/space-error? (ex-data e)) (throw e)))))
+
+(defn- legend-only-size
+  "Gives the size a `:legend-only` plot needs, at a height or unbounded.
+
+  The plot is laid out at the outer plot's width and the height; its legends are measured in the room its legend row
+  gets, so entries and legends taller than that room wrap into further columns (see [[cljplot2.content.legend]]) and the
+  width grows. A plot whose fixed parts don't fit the height is measured unbounded (its own build reports the error).
 
   Parameters:
 
   - `p` (map): the legend-only plot.
-  - `options` (map): the outer plot's render options (`:width`, `:height`, `:hint`).
+  - `options` (map): the outer plot's render options (`:width`, `:hint`).
+  - `height` (long or `nil`): the height the plot gets in pixels; `nil` - unbounded (the natural, unwrapped size).
 
-  Returns the legends' natural width plus the plot margin on both sides, a double (only the margins without legends)."
-  [p options]
-  (let [built (build p (assoc (select-keys options [:width :height :hint]) :until :scale-specs))
-        legends (legend/legends built)]
-    (measure/call-with-scratch-canvas
-     (:hint options)
-     (fn [canvas]
-       (m/+ (m/* 2.0 (double (get-in built [:theme :plot :margin])))
-            (if (seq legends)
-              (.x ^fastmath.vector.Vec2 (measure/natural-size {:kind :legends :legends legends} {:canvas canvas :theme (:theme built)}))
-              0.0))))))
+  Returns a `Vec2`: the legends' width plus the plot margins and their height plus the margins and the title row
+  (only these without legends)."
+  [p options height]
+  (let [built (or (when height (laid-out p options height)) (laid-out p options unbounded-height)
+                  (build p (assoc (select-keys options [:width :hint]) :until :scale-specs)))
+        layout (:layout built)
+        margins (m/* 2.0 (double (get-in built [:theme :plot :margin])))
+        legends (legend/legends built)
+        ^fastmath.vector.Vec2 size (if (seq legends)
+                                     (measure/call-with-scratch-canvas
+                                      (:hint options)
+                                      (fn [canvas]
+                                        (measure/natural-size {:kind :legends :legends legends}
+                                                              (cond-> {:canvas canvas :theme (:theme built)}
+                                                                (and height layout) (assoc :box {:h (track-size layout :rows :legend-row)})))))
+                                     (v/vec2 0.0 0.0))]
+    (v/vec2 (m/+ margins (.x size)) (m/+ margins (track-size layout :rows :title) (.y size)))))
 
-(defn- resolved-arrange
-  "An `:arrange` spec with its `:measured` widths as fixed pixels.
+(defn- legend-cell-width
+  "Pixels a legend cell needs across at the height it gets.
 
   Parameters:
 
-  - `arrange` (map): the plot `:arrange` - `:plots`, `:widths` (relative weights, `[:fixed px]` or `:measured`).
-  - `options` (map): the plot's render options.
+  - `p` (map): a `:legend-only` plot (see [[legend-only-size]]), or a one-column `:arrange` of them (see
+    [[cljplot2.layout.plot-grid/legend-cell?]]) - laid out at `height`, each of its plots measured at its row's height.
+  - `options` (map): the outer plot's render options (`:width`, `:hint`).
+  - `height` (long): the cell's height in pixels.
 
-  Returns `arrange` with each `:measured` width replaced by `[:fixed px]`, the widest legend-only plot of that column (see [[legend-only-width]]); `arrange` unchanged without measured widths."
-  [{:keys [plots widths] :as arrange} options]
-  (if-not (some #{:measured} widths)
-    arrange
-    (let [c (count widths)]
-      (assoc arrange :widths
-             (vec (map-indexed (fn [^long j w]
-                                 (if (= :measured w)
-                                   [:fixed (long (m/ceil (reduce m/max 0.0 (map #(legend-only-width % options)
-                                                                                (keep-indexed (fn [^long i p] (when (m/== j (m/rem i c)) p)) plots)))))]
-                                   w))
-                               widths))))))
+  Returns the width in pixels, a double; for an arrange, its widest plot's plus the arrange's own margins."
+  ^double [p options ^long height]
+  (if (:arrange p)
+    (let [built (or (laid-out p options height) (laid-out p options unbounded-height))
+          layout (:layout built)
+          margins (m/* 2.0 (double (get-in built [:theme :plot :margin])))]
+      (m/+ margins (double (reduce m/max 0.0 (map-indexed (fn [i sub] (legend-cell-width sub options (long (:h (grid/item-box layout [:plot i])))))
+                                                          (get-in p [:arrange :plots]))))))
+    (.x ^fastmath.vector.Vec2 (legend-only-size p options height))))
+
+(defn- measured-heights
+  "Gives an arrange's `:heights` with its `:measured` rows as fixed pixels.
+
+  A measured row gets the natural height of its tallest legend-only plot (see [[legend-only-size]]; plots spanning rows
+  don't count); when the measured rows don't fit the room the other rows leave, they are scaled down in proportion to fill
+  it (their legends then wrap into further columns), flexible rows of `:legend-only` plots keep their natural height
+  (e.g. a stretching colour bar's shortest) and other flexible rows get no room.
+
+  Parameters:
+
+  - `plot` (map): the arrange plot - `:arrange`, `:options` (`:width`, `:height`, `:hint`).
+  - `layout-of` (fn): the provisional layout of an arrange spec.
+  - `rows-of` (fn): the plots in a row, by index.
+
+  Returns a vector of `:heights` entries; `heights` unchanged without measured rows."
+  [{:keys [arrange options]} layout-of rows-of]
+  (let [{:keys [heights widths]} arrange
+        zeroed (fn [ws] (when ws (mapv #(if (= :measured %) [:fixed 0] %) ws)))]
+    (if-not (some #{:measured} heights)
+      heights
+      (let [layout (layout-of (assoc arrange :widths (zeroed widths) :heights (zeroed heights)))
+            row-size (fn [i] (track-size layout :rows [:row i]))
+            flexible (keep-indexed (fn [i h] (when (number? h) i)) heights)
+            free (m/+ (m/- (double (get-in layout [:box :h])) (v/sum (map :size (:rows layout))))
+                      (double (reduce m/+ 0.0 (map row-size flexible))))
+            natural-of (fn [i] (reduce m/max 0.0 (map #(.y ^fastmath.vector.Vec2 (legend-only-size % options nil)) (rows-of i))))
+            naturals (vec (map-indexed (fn [i h] (when (= :measured h) (natural-of i))) heights))
+            ;; flexible rows of legend-only plots keep their natural height when the measured rows overflow
+            kept (vec (map-indexed (fn [i h] (let [ps (rows-of i)]
+                                               (when (and (number? h) (seq ps) (every? :legend-only ps)) (natural-of i))))
+                                   heights))
+            target (m/- free (double (reduce m/+ 0.0 (keep identity kept))))
+            total (double (reduce m/+ 0.0 (keep identity naturals)))
+            overflow (m/> total target)
+            fit (if overflow (m// (m/max 0.0 target) total) 1.0)]
+        (mapv (fn [h natural least]
+                (cond
+                  natural [:fixed (long (if overflow (m/floor (m/* fit (double natural))) (m/ceil (double natural))))]
+                  (and overflow least) [:fixed (long (m/ceil (double least)))]
+                  :else h))
+              heights naturals kept)))))
+
+(defn- resolved-arrange
+  "An `:arrange` spec with its `:measured` heights and widths as fixed pixels.
+
+  Measured heights first (see [[measured-heights]]); then each `:measured` width is the widest legend cell of its column,
+  measured at the height its cell gets in a provisional layout of the arrange (see [[legend-cell-width]]), so a legend
+  taller than its cell is measured wrapped into further columns.
+
+  Parameters:
+
+  - `plot` (map): the arrange plot after the `:scale-specs` stage - `:arrange` (`:plots`, `:widths`, `:heights`:
+    relative weights, `[:fixed px]` or `:measured`), `:labels`, `:theme`, `:options`.
+
+  Returns the `:arrange` with each `:measured` entry replaced by `[:fixed px]`; unchanged without measured entries."
+  [{:keys [arrange labels theme options] :as plot}]
+  (let [{:keys [plots widths heights]} arrange]
+    (if-not (or (some #{:measured} widths) (some #{:measured} heights))
+      arrange
+      (let [cells (:cells (plot-grid/arrange-cells arrange))
+            placed (map vector plots cells)
+            layout-of (fn [spec] (measure/call-with-scratch-canvas
+                                  (:hint options)
+                                  (fn [canvas] (solve-layout (assoc plot :grid (plot-grid/arrange-grid spec labels theme)) canvas))))
+            rows-of (fn [^long i] (keep (fn [[p {:keys [^long row] row-span :span}]] (when (and (m/== i row) (m/one? (long row-span))) p)) placed))
+            resolved-heights (measured-heights plot layout-of rows-of)
+            with-heights (cond-> arrange heights (assoc :heights resolved-heights))]
+        (if-not (some #{:measured} widths)
+          with-heights
+          (let [layout (layout-of (assoc with-heights :widths (mapv #(if (= :measured %) [:fixed 0] %) widths)))]
+            (assoc with-heights :widths
+                   (vec (map-indexed (fn [^long j w]
+                                       (if (= :measured w)
+                                         [:fixed (long (m/ceil (reduce m/max 0.0 (keep-indexed (fn [k [p cell]]
+                                                                                                 (when (m/== j (long (:column cell)))
+                                                                                                   (legend-cell-width p options (long (:h (grid/item-box layout [:plot k]))))))
+                                                                                               placed))))]
+                                         w))
+                                     widths)))))))))
 
 (defn- grid-stage
   "Pipeline stage `:grid`: the plot's layout grid.
@@ -718,7 +843,7 @@
              (or (not= :linear (get-in scale-specs [:x :kind])) (not= :linear (get-in scale-specs [:y :kind]))))
     (schema/fail! "Plot :aspect :iso needs linear :x and :y scales." {:key :aspect :in [:aspect] :value aspect}))
   (assoc plot :grid (cond
-                      arrange (plot-grid/arrange-grid (resolved-arrange arrange (:options plot)) labels theme)
+                      arrange (plot-grid/arrange-grid (resolved-arrange plot) labels theme)
                       (:legend-only plot) (plot-grid/legend-only-grid (legend/legends plot) labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
@@ -1084,9 +1209,10 @@
 
   Parameters:
 
-  - `p` (map): the sub-plot - `[:labels :title]`, `:mapping` (`:x`, `:y`).
+  - `p` (map): the sub-plot - `[:labels :title]`, `:mapping` (`:x`, `:y`), `:legend-only`, `:arrange`.
 
-  Returns its title in quotes (a space first), else its mapped `:x` / `:y` variables (keywords or strings, e.g. the
+  Returns its title in quotes (a space first), else ` (legend)` for a legend cell (see
+  [[cljplot2.layout.plot-grid/legend-cell?]]), else its mapped `:x` / `:y` variables (keywords or strings, e.g. the
   two variables of a [[cljplot2.multiplot/pairs]] cell) in parentheses, else an empty string."
   [p]
   (let [title-label (get-in p [:labels :title])
@@ -1096,6 +1222,7 @@
                         [:x :y])]
     (cond
       (string? title) (str " \"" title "\"")
+      (plot-grid/legend-cell? p) " (legend)"
       (seq variables) (str " (" (str/join ", " variables) ")")
       :else "")))
 
@@ -1152,16 +1279,17 @@
         panel (if (seq flexible) (m/max 1.0 (m/floor (m// free (count flexible)))) 0.0)]
     (mapv (fn [size inset] [:fixed (long (if inset (m/+ panel (double inset)) size))]) sizes insets)))
 
-(defn- arrange-columns
-  "Column count of an `:arrange` spec.
+(defn- arrange-positions
+  "Grid position of every plot cell of an `:arrange` spec.
 
   Parameters:
 
-  - `arrange` (map): `:plots`, `:columns`, `:rows`.
+  - `arrange` (map): `:plots`, `:columns`, `:rows`, `:row-spans`.
 
-  Returns `:columns`, else the plot count over `:rows` rounded up, else 1."
-  ^long [{:keys [plots columns rows]}]
-  (long (or columns (if rows (long (m/ceil (m// (count plots) (double rows)))) 1))))
+  Returns `{:rows r :columns c :positions {[:plot k] {:row :column :span}}}`, see [[cljplot2.layout.plot-grid/arrange-cells]]."
+  [arrange]
+  (let [{:keys [rows columns cells]} (plot-grid/arrange-cells arrange)]
+    {:rows rows :columns columns :positions (into {} (map-indexed (fn [k cell] [[:plot k] cell])) cells)}))
 
 (defn- equal-panel-plot
   "The plot of an `:equal-panels` arrange with fixed tracks giving every panel one size.
@@ -1174,18 +1302,20 @@
 
   Returns the plot map without stage keys, its `:arrange` `:widths` and `:heights` as `[:fixed px]` tracks (see [[equal-panel-tracks]]; `:measured` and fixed columns kept) and `:equal-panels` dropped."
   [{:keys [arrange] :as plot} cells subplots]
-  (let [{:keys [plots rows widths]} arrange
-        n (count plots)
-        c (arrange-columns arrange)
-        r (long (or rows (m/ceil (m// (double n) (double c)))))
-        index (fn [[_ ^long k]] [(m/long-quot k c) (m/long-rem k c)])
-        by-cell (into {} (map (fn [{:keys [id box]}] [(index id) {:box box :insets (align/panel-insets (subplots id))}])) cells)
+  (let [{:keys [widths]} arrange
+        {r :rows c :columns positions :positions} (arrange-positions arrange)
+        index (fn [id] ((juxt :row :column) (positions id)))
+        ;; keyed by the cell's top row; a cell spanning rows counts for its column only (it has no row of its own)
+        by-cell (into {} (map (fn [{:keys [id box]}] [(index id) {:box box :insets (align/panel-insets (subplots id))
+                                                                   :span (get-in positions [id :span])}]))
+                      cells)
+        row-cell (fn [i j] (when-let [cell (by-cell [i j])] (when (m/one? (long (:span cell))) cell)))
         fixed-column? (fn [j] (let [w (get widths j)] (or (= :measured w) (vector? w))))
         column-size (fn [j] (long (or (some #(get-in by-cell [[% j] :box :w]) (range r)) 0)))
-        row-size (fn [i] (long (or (some #(get-in by-cell [[i %] :box :h]) (range c)) 0)))
+        row-size (fn [i] (long (or (some #(:h (:box (row-cell i %))) (range c)) 0)))
         room (fn [cells-of sides] (let [ins (keep :insets cells-of)] (when (seq ins) (v/mx (map #(v/sum (map % sides)) ins)))))
         column-insets (mapv (fn [j] (when-not (fixed-column? j) (or (room (keep #(by-cell [% j]) (range r)) [:left :right]) 0))) (range c))
-        row-insets (mapv (fn [i] (or (room (keep #(by-cell [i %]) (range c)) [:top :bottom]) 0)) (range r))]
+        row-insets (mapv (fn [i] (or (room (keep #(row-cell i %) (range c)) [:top :bottom]) 0)) (range r))]
     (-> (apply dissoc plot (concat stage-order (mapcat val stage-extra-keys)))
         (assoc-in [:arrange :widths] (equal-panel-tracks (mapv column-size (range c)) column-insets))
         (assoc-in [:arrange :heights] (equal-panel-tracks (mapv row-size (range r)) row-insets))
@@ -1195,65 +1325,98 @@
   "Upper bound on corrections of `:equal-panels` tracks, see [[equalized-arrange]]."
   3)
 
+(def ^{:private true :const true :tag 'double} later-round-step
+  "Fraction of the panel difference corrected in the `:equal-panels` rounds after the first, see [[equalized-arrange]]."
+  0.5)
+
 (defn- arranged-panel-sizes
   "Panel widths per column and heights per row of a built arrange plot.
 
   Parameters:
 
   - `built` (map): the built arrange plot (cells `[:plot k]` in `:subplots`).
-  - `columns` (long): its column count.
+  - `positions` (map): cell id -> `{:row :column :span}` (see [[arrange-positions]]).
 
-  Returns `{:columns {j [w ...]} :rows {i [h ...]}}`; cells without a panel (e.g. legend-only) are left out."
-  [built ^long columns]
-  (reduce (fn [acc [[_ ^long k] sub]]
+  Returns `{:columns {j [w ...]} :rows {i [h ...]}}`; cells without a panel (e.g. legend-only) are left out, cells spanning rows count for their column only."
+  [built positions]
+  (reduce (fn [acc [id sub]]
             (if-let [{:keys [w h]} (grid/find-content-box (:grid sub) (:layout sub) panel-content?)]
-              (let [i (m/long-quot k columns) j (m/long-rem k columns)]
-                (-> acc (update-in [:columns j] (fnil conj []) w) (update-in [:rows i] (fnil conj []) h)))
+              (let [{row-span :span :keys [row column]} (positions id)]
+                (cond-> (update-in acc [:columns column] (fnil conj []) w)
+                  (m/one? (long row-span)) (update-in [:rows row] (fnil conj []) h)))
               acc))
           {} (:subplots built)))
 
 (defn- corrected-tracks
-  "Fixed tracks corrected so every panel reaches the smallest panel size.
+  "Fixed tracks corrected so every panel reaches one size, keeping their total.
 
   Parameters:
 
   - `tracks` (vector): `[[kind px] ...]` fixed tracks.
   - `sizes` (map): track index -> the sizes of its panels.
+  - `step` (double): the fraction of the difference applied - 1.0 the whole difference, 0.5 half of it.
 
-  Returns the tracks with each panel track grown or shrunk by its smallest panel's difference to the smallest panel over all tracks (other tracks kept); `nil` when the panels are already equal."
-  [tracks sizes]
-  (let [target (v/mn (mapcat val sizes))]
-    (when-not (every? (fn [^double s] (m/== target s)) (mapcat val sizes))
-      (vec (map-indexed (fn [t [kind ^long px]]
-                          (if-let [panel (some->> (get sizes t) seq v/mn)]
-                            [kind (m/+ px (m/- (long target) (long panel)))]
-                            [kind px]))
-                        tracks)))))
+  Returns the tracks with each panel track grown or shrunk by `step` times the difference of its smallest panel to the target (rounded away from 0, so a difference of a pixel is always corrected) - the target the mean of the tracks' smallest panels, rounded, so the corrections sum to about 0 and the arrange keeps its size (other tracks kept); `nil` when the panels are already equal."
+  [tracks sizes ^double step]
+  (let [panel-sizes (mapcat val sizes)]
+    (when-not (apply m/== panel-sizes)
+      (let [smallest (into {} (keep (fn [[t s]] (when (seq s) [t (v/mn s)]))) sizes)
+            target (m/round (m// (double (v/sum (vals smallest))) (double (count smallest))))]
+        (vec (map-indexed (fn [t [kind ^long px]]
+                            (if-let [panel (smallest t)]
+                              (let [difference (double (m/- target (long panel)))]
+                                [kind (m/+ px (long (m/* (m/sgn difference) (m/ceil (m/* step (m/abs difference))))))])
+                              [kind px]))
+                          tracks))))))
+
+(defn- panel-spread
+  "Gives how far the panels of an arrange are from one size.
+
+  Parameters:
+
+  - `panel-sizes` (map): `{:columns {j [w ...]} :rows {i [h ...]}}` (see [[arranged-panel-sizes]]).
+
+  Returns the spread of the panel widths (largest less smallest) plus that of the heights, pixels; 0 for equal panels or none."
+  ^long [{:keys [columns rows]}]
+  (let [spread (fn ^long [sizes] (if (seq sizes) (m/long-sub (long (v/mx sizes)) (long (v/mn sizes))) 0))]
+    (m/long-add (spread (mapcat val columns)) (spread (mapcat val rows)))))
 
 (defn- equalized-arrange
-  "A built `:equal-panels` arrange with every panel the same size.
+  "A built `:equal-panels` arrange with every panel the same size, or as near to it as the rounds get.
 
-  The fixed tracks of [[equal-panel-plot]] come from the first layout's insets (alignment padding included), which a rebuild at the new sizes may change by a few pixels; each round measures the panels (see [[arranged-panel-sizes]]) and corrects the tracks (see [[corrected-tracks]]), at most [[max-equal-panel-rounds]] times.
+  The fixed tracks of [[equal-panel-plot]] come from the first layout's insets (alignment padding included), which a rebuild at the new sizes may change; each round measures the panels (see [[arranged-panel-sizes]]) and corrects the tracks towards their mean panel (see [[corrected-tracks]]), at most [[max-equal-panel-rounds]] times. A cell's insets depend on its track (tick choice, and so the overhang of end tick labels, follows the panel size), so a whole correction may overshoot: the first round corrects the whole difference, later ones [[later-round-step]] of it, and the rounds may still oscillate instead of converging - the plot with the smallest spread of panel sizes (see [[panel-spread]]) is kept, the later one of equal spreads. A round whose tracks don't fit (a cell narrower than its axis - [[cljplot2.layout.grid/space-error?]]) ends the rounds.
 
   Parameters:
 
   - `built` (map): the built arrange plot with fixed tracks.
   - `rebuild` (function): builds a plot map, `(rebuild plot)`.
 
-  Returns the last built plot - with equal panels, or after the last round."
+  Returns the built plot with equal panels, else the one of the smallest panel spread among the rounds built."
   [built rebuild]
-  (let [columns (arrange-columns (:arrange built))]
+  (let [positions (:positions (arrange-positions (:arrange built)))]
     (loop [current built
+           previous-best nil
+           previous-spread Long/MAX_VALUE
            round (long 1)]
-      (let [{panel-columns :columns panel-rows :rows} (arranged-panel-sizes current columns)
-            widths (when panel-columns (corrected-tracks (get-in current [:arrange :widths]) panel-columns))
-            heights (when panel-rows (corrected-tracks (get-in current [:arrange :heights]) panel-rows))]
+      (let [panel-sizes (arranged-panel-sizes current positions)
+            spread (panel-spread panel-sizes)
+            better (m/<= spread previous-spread)
+            best (if better current previous-best)
+            best-spread (if better spread previous-spread)
+            {panel-columns :columns panel-rows :rows} panel-sizes
+            step (if (m/one? round) 1.0 later-round-step)
+            widths (when panel-columns (corrected-tracks (get-in current [:arrange :widths]) panel-columns step))
+            heights (when panel-rows (corrected-tracks (get-in current [:arrange :heights]) panel-rows step))]
         (if (or (m/> round max-equal-panel-rounds) (and (nil? widths) (nil? heights)))
-          current
-          (recur (rebuild (cond-> (apply dissoc current (concat stage-order (mapcat val stage-extra-keys)))
-                            widths (assoc-in [:arrange :widths] widths)
-                            heights (assoc-in [:arrange :heights] heights)))
-                 (m/inc round)))))))
+          best
+          (let [next-plot (try (rebuild (cond-> (apply dissoc current (concat stage-order (mapcat val stage-extra-keys)))
+                                          widths (assoc-in [:arrange :widths] widths)
+                                          heights (assoc-in [:arrange :heights] heights)))
+                               (catch clojure.lang.ExceptionInfo e
+                                 (if (grid/space-error? (ex-data e)) ::no-fit (throw e))))]
+            (if (= ::no-fit next-plot)
+              best
+              (recur next-plot best best-spread (m/long-inc round)))))))))
 
 (defn- subplots-stage
   "Pipeline stage `:subplots`: every plot item of the grid built at its box size.
@@ -1358,10 +1521,12 @@
    [:spec margin-spec-schema]])
 
 (def margins-schema
-  "Schema of plot `:margins`: `{:top m :right m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."
+  "Schema of plot `:margins`: `{:top m :right m :bottom m :left m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."
   [:map {:closed true}
    (schema/optional :top {:description "charts above the panel sharing its horizontal scale"} margin-schema)
-   (schema/optional :right {:description "charts right of the panel sharing its vertical scale"} margin-schema)])
+   (schema/optional :right {:description "charts right of the panel sharing its vertical scale"} margin-schema)
+   (schema/optional :bottom {:description "charts below the panel (above its horizontal axis) sharing its horizontal scale"} margin-schema)
+   (schema/optional :left {:description "charts left of the panel (right of its vertical axis) sharing its vertical scale"} margin-schema)])
 
 (def plot-schema
   "Schema of a plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]], [[options-schema]])."

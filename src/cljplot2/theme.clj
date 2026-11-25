@@ -7,13 +7,13 @@
 
   - `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
   - `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box); `:alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off); `:grid {:x line :y line :minor line}` - grid lines at tick positions (`:minor` - at the minor ticks of scales with `:minor-ticks`, default `:none`), `line` is `{:color :line-width :dash}` or `:none` (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none` for a solid line); `:grid :bands` - the grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice `dotplot`; `:x` / `:y` `:none` still turns that scale's lines off); `:grid :bands-fill` - fill of every second band of a bands scale (from the second level), behind the charts, so levels with dodged groups read apart (default a light shade; `:none` turns it off).
-  - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-spacing :label-rotation :minor-tick-length :tick-label}` (pixels; `:tick-label` - text style keys of the axis's tick labels, axes and polar guides, merged over the `:tick-label` text role; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically. 3D boxes draw their axes, edges and ticks with `[:axis :x]` (`:line-color`, `:line-width` - the box edges too).
+  - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-label-gap :tick-spacing :label-rotation :minor-tick-length :tick-label}` (pixels; `:tick-label` - text style keys of the axis's tick labels, axes and polar guides, merged over the `:tick-label` text role; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-label-gap` - the least distance between neighbouring tick labels' texts lying end to end along the axis (unrotated on a horizontal axis, at -90 or 90 degrees on a vertical one; stacked labels are spaced by their line height), closer labels are thinned (1 px less allowed: measured sizes are rounded up); `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically. 3D boxes draw their axes, edges and ticks with `[:axis :x]` (`:line-color`, `:line-width` - the box edges too).
   - `:frame-3d` - `:hidden-edge-dash` - the dash of a 3D box's hidden edges (a dash as in `:panel :grid`).
-  - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level), `:min-text-size` (points: a strip text too long shrinks down to it, then is cut with an ellipsis); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
+  - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
   - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours, old cljplot `:category20`), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
   - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it), `:bar-width` (`nil` - `:key-size`), `:bar-ticks` (tick count unless the scale's `:ticks` gives one), `:bar-tick-length` and `:bar-tick-width` (pixels; width 0 - no tick lines), `:min-key-line-width` (least pixel width of line marks in keys, see [[key-line-style]]); text roles `:legend-title` and `:legend-label`.
   - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:gap`, `:stroke-color`, `:stroke-width`), `:partition` (`:stroke-color`, `:stroke-width`), `:pack` (`:gap`, `:stroke-color`, `:stroke-width`), `:waffle` (`:gap`, `:cell-shape`, outlines), `:cloud` (the point style; `:line-width` - spikes and lines; `:projection-alpha-factor`, `:band-alpha-factor` - alpha factors of projected points and density bands), `:venn` (`:alpha`, outlines, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha-factor`; tile `:size-key-fill` - a size legend key without a colour), `:field` (`:alpha-factor`), `:contour` (`:color`, `:line-width`, `:dash`, `:alpha-factor`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), `:pairwise` (`:color`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha-factor` multiplies the line alpha, optional `:line-width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
-  - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:inset` (pixels between the text and its box edge on every side), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:inset`; for layout labels - titles, axis titles, strips, legend labels - the whole item box).
+  - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:inset` (pixels between the text and its box edge on every side), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:inset`; for layout labels - titles, axis titles, strips, legend labels - the whole item box), `:min-size` (optional: the least size in points a text too long for its room shrinks to - axis titles, strips, text charts with `:x-span`, builder labels; a role without it doesn't shrink; see [[cljplot2.content.label/fitted-label]]).
 
   Functions and vars: [[default-theme]], [[plot-theme]], [[deep-merge]], [[none?]]; chart styles [[chart-style]], [[resolved-style]], [[key-style]], [[key-line-style]], [[named-styles]], [[theme-style-entries]]; text [[text-style]], [[style-keys]], [[text-roles]], [[text-style-schema]], [[text-style-overrides]]; validation [[theme-schema]], [[errors]]."
   (:require [clojure2d.color :as c]
@@ -68,8 +68,7 @@
                   :bands {:color (c/gray 180) :line-width 1 :dash [1.0 2.0]}
                   :bands-fill (c/gray 0 8)
                   :minor :none}}
-   :strip {:fill (c/gray 255 150) :border-color (c/gray 0 100) :border-width 1 :shingle-fill (c/color 255 165 0 110)
-           :min-text-size 7}
+   :strip {:fill (c/gray 255 150) :border-color (c/gray 0 100) :border-width 1 :shingle-fill (c/color 255 165 0 110)}
    :facet {:gap 5}
    :multiplot {:gap 10}
    :palette {:color :category20
@@ -154,12 +153,12 @@
            :sequences-cell {:stroke-width 0.3}
            :acf-point {:size 5}}
    :axis {:x {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 80 :label-rotation 0 :minor-tick-length 3 :tick-label {}}
+              :label-gap 2 :tick-label-gap 3 :tick-spacing 80 :label-rotation 0 :minor-tick-length 3 :tick-label {}}
           :y {:line-color :black :line-width 1 :tick-color :black :tick-length 6 :tick-width 1
-              :label-gap 2 :tick-spacing 50 :label-rotation 0 :minor-tick-length 3 :tick-label {}}}
+              :label-gap 2 :tick-label-gap 3 :tick-spacing 50 :label-rotation 0 :minor-tick-length 3 :tick-label {}}}
    :text {:title {:font "DejaVu Sans Mono" :size 14 :font-style :bold :color :black :inset 4 :align centered}
-          :strip {:font "DejaVu Sans Mono" :size 11 :font-style :plain :color :black :inset 2 :align centered}
-          :axis-title {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :black :inset 4 :align centered}
+          :strip {:font "DejaVu Sans Mono" :size 11 :min-size 7 :font-style :plain :color :black :inset 2 :align centered}
+          :axis-title {:font "DejaVu Sans Mono" :size 12 :min-size 8 :font-style :plain :color :black :inset 4 :align centered}
           :tick-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :inset 2 :align centered}
           :legend-title {:font "DejaVu Sans Mono" :size 11 :font-style :bold :color :black :inset 2 :align [:left :middle]}
           :legend-label {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :inset 2 :align [:left :middle]}
@@ -176,18 +175,18 @@
           :pairwise {:font "DejaVu Sans Mono" :size 12 :font-style :plain :color :contrast :inset 1 :align centered}
           :contour-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 1 :align centered
                           :background (c/gray 255 180)}
-          :annotation {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :black :inset 2 :align centered}
+          :annotation {:font "DejaVu Sans Mono" :size 10 :min-size 6 :font-style :plain :color :black :inset 2 :align centered}
           :bar-value {:font "DejaVu Sans Mono" :size 10 :font-style :plain :color :contrast :inset 2 :align centered}
           :network-label {:font "DejaVu Sans Mono" :size 8 :font-style :plain :color :black :inset 1 :align centered
                           :background (c/gray 255 170)}
-          :sankey-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 1 :align centered
+          :sankey-label {:font "DejaVu Sans Mono" :size 9 :min-size 6 :font-style :plain :color :black :inset 1 :align centered
                          :background (c/gray 255 170)}
           :dendrogram-group-label {:font "DejaVu Sans Mono" :size 8 :font-style :plain :color :black :inset 1 :align centered
                                    :background (c/gray 255 170)}
           :alluvial-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 1 :align centered
                            :background (c/gray 255 190)}
           :tree-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 2 :align centered}
-          :radial-label {:font "DejaVu Sans Mono" :size 9 :font-style :plain :color :black :inset 2 :align centered}
+          :radial-label {:font "DejaVu Sans Mono" :size 9 :min-size 5 :font-style :plain :color :black :inset 2 :align centered}
           :pairs-name {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color :black :inset 2 :align centered}}})
 
 (defn deep-merge
@@ -292,14 +291,16 @@
    :color "text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)"
    :inset "space between the text and its box edge on every side, in pixels"
    :align "alignment [horizontal vertical] of the text at its anchor"
-   :background "box colour behind the text (:none - no box)"})
+   :background "box colour behind the text (:none - no box)"
+   :min-size "smallest font size in points a text too long for its room shrinks to (a role without it doesn't shrink)"})
 
 (def text-style-schema
-  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align` and `:background` optional."
+  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align`, `:background` and `:min-size` (a role's least fitted size, not a key content overrides) optional."
   (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :inset :align :background)"}]
       (into (map (fn [[k s]] [k {:description (text-style-descriptions k)} s])) text-style-entries)
       (conj (schema/optional :align {:description (text-style-descriptions :align)} schema/align)
-            (schema/optional :background {:description (text-style-descriptions :background)} schema/color))))
+            (schema/optional :background {:description (text-style-descriptions :background)} schema/color)
+            (schema/nilable :min-size {:description (text-style-descriptions :min-size)} schema/pos))))
 
 (def text-style-overrides
   "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."
@@ -335,7 +336,7 @@
    :dendrogram-group-label {:section :builder-text :description "dendrogram group (inner node) labels"}
    :alluvial-label {:section :builder-text :description "alluvial stratum labels"}
    :tree-label {:section :builder-text :description "node-link tree node labels"}
-   :radial-label {:section :builder-text :description "leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks for many leaves, never above the role's"}
+   :radial-label {:section :builder-text :description "leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks with the leaf count (not to a room), down to the role's :min-size, never above its size"}
    :pairs-name {:section :builder-text :description "variable names on the diagonal of a scatter-plot matrix"}})
 
 (def ^:private grid-line
@@ -354,6 +355,7 @@
    [:tick-length {:description "tick length in pixels"} schema/non-neg]
    [:tick-width {:description "tick width in pixels (0 - not drawn)"} schema/non-neg]
    [:label-gap {:description "gap between ticks and tick labels in pixels"} schema/non-neg]
+   [:tick-label-gap {:description "least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn"} schema/non-neg]
    [:tick-spacing {:description "target distance between ticks in pixels (sets the tick count)"} schema/pos]
    [:label-rotation {:description "tick labels rotated clockwise, degrees"} [:and number? [:>= -90] [:<= 90]]]
    [:minor-tick-length {:description "minor tick length in pixels"} schema/non-neg]
@@ -386,8 +388,7 @@
      [:fill {:description "strip background colour"} schema/color]
      [:border-color {:description "strip border colour"} schema/color]
      [:border-width {:description "strip border width in pixels"} schema/non-neg]
-     [:shingle-fill {:description "colour of the bar marking a shingle level"} schema/color]
-     [:min-text-size {:description "smallest font size in points a strip text too long for its strip shrinks to before it is cut with an ellipsis"} schema/pos]]]
+     [:shingle-fill {:description "colour of the bar marking a shingle level"} schema/color]]]
    [:facet {:description "facet layout"}
     [:map {:closed true} [:gap {:description "pixels between facet panels"} schema/non-neg]]]
    [:multiplot {:description "arranged plots"}

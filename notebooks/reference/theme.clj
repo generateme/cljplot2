@@ -93,10 +93,21 @@
 (plot/render-image (assoc iris-plot :theme {:axis {:y {:tick-spacing 25 :tick-color [200 0 0] :tick-length 10}}})
                    {:width 500 :height 300})
 
+;; `:tick-label-gap` - the least pixels between neighbouring tick labels: a label closer to the last drawn one isn't
+;; drawn. Here dense ticks with no gap (left; labels may touch) and with a wide one (right):
+
+(plot/render-image (plot/arrange (for [gap [0 12]]
+                                   (assoc iris-plot
+                                          :scales {:x {:ticks 20}}
+                                          :labels {:title (str ":tick-label-gap " gap)}
+                                          :theme {:axis {:x {:tick-label-gap gap}}}))
+                                 {:columns 2})
+                   {:width 700 :height 280})
+
 ;; ## Strips
 
 ;; Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
-;; down to `:min-text-size` points, then is cut with an ellipsis.
+;; down to the `:strip` text role's `:min-size` points, then is cut with an ellipsis.
 
 (nu/options-table (describe/theme-rows :strip))
 
@@ -106,15 +117,15 @@
                                                :text {:strip {:color :white}}})
                    {:width 700 :height 280})
 
-;; Long level names in row strips: the first two fit; the third shrinks to `:min-text-size` and is cut - at the
-;; default 7 points (left) later than at 9 (right).
+;; Long level names in row strips: the first two fit; the third shrinks to the role's `:min-size` and is cut - at
+;; the default 7 points (left) later than at 9 (right).
 
-(plot/render-image (plot/arrange (for [min-text-size [7 9]]
+(plot/render-image (plot/arrange (for [min-size [7 9]]
                                    (assoc iris-plot
                                           :mapping {:x :sepal-length :y :petal-length
                                                     :facet-row #(str "Iris " (:species %) (when (= "virginica" (:species %)) " (Anderson)"))}
-                                          :labels {:title (str ":min-text-size " min-text-size)}
-                                          :theme {:strip {:min-text-size min-text-size}}))
+                                          :labels {:title (str ":min-size " min-size)}
+                                          :theme {:text {:strip {:min-size min-size}}}))
                                  {:columns 2})
                    {:width 800 :height 400})
 

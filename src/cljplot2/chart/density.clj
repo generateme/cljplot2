@@ -6,6 +6,10 @@
   * `:kernel` - fastmath KDE kernel keyword (default `:gaussian`)
   * `:bandwidth` - a number or a fastmath selector keyword (default `:nrd0`, as R)
   * `:n` - evaluation points (default 512), `:cut` - the curve spans `[min - cut*h, max + cut*h]` (default 3, as R)
+  * `:stat-space` - `:data` (default, the estimate in data units) or `:scale` (in the x scale's coordinates, see
+    [[cljplot2.scale.position/stat-transform-for]]: on a `:log` axis a density of the log10 values - per log10 unit,
+    area 1 on screen - its curve drawn back in data units, a numeric `:bandwidth` in log10 units; values the axis can't
+    place - 0, negatives - dropped and counted in `:dropped :x`)
   * `:position` - grouped curves (see [[cljplot2.data.position]]): `:overlay` (default), `:stack` and `:normalize` (every
     group on one common range, stacked; normalize - summing to 1, y title \"Proportion\"; areas filled with `:fill` or
     the group colour faded by `:alpha`), streamgraphs `:silhouette` and `:wiggle` (stacked around a moving
@@ -98,6 +102,7 @@
                        (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis of the :fill-gradient: :x (over the x scale's domain) or :y (from each ridge's baseline to the top of the tallest curve)"
                                                              :cljplot2/default-doc ":x; only with ridgelines and :fill-gradient"}
                                         [:enum :x :y])
+                       (first (schema/in-section :estimate [(common/stat-space-option :data "space the density is estimated in: :data (data units) or :scale (the x scale's coordinates - log10 on a :log axis, values it can't place dropped; a numeric :bandwidth in those units)")]))
                        (schema/optional :padding {:cljplot2/section :position :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                   :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (curves stand on the panel's bottom edge); y [0.05 0.05] with :mirror, :silhouette and :wiggle"}
                                         data/position-padding))
@@ -163,14 +168,18 @@
 
   Returns the chart stats with `:ridges true`: per panel `{:ridges [item ...] :top max-density :overlap o :style st :gradient g :gradient-axis a}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:xs` / `:ds` - the curve; one `:top` over all panels; `:dropped` `:group` - items with fewer than 2 distinct values."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
-  (let [{:keys [position items panels dropped]} (strip/ridge-split chart-split options env)
+  (let [{:keys [position panels dropped] split-items :items} (strip/ridge-split chart-split options env)
+        {:keys [inverse] :as tx} (scale/stat-transform-for (data/option options :stat-space :data) (get-in env [:plot-scales :x]))
+        placed (update-vals split-items (fn [its] (mapv #(merge % (data/transformed-numbers tx {:values (:values %) :dropped 0})) its)))
+        unplaced (long (reduce m/long-add 0 (map :dropped (mapcat val placed))))
+        items (update-vals placed (fn [its] (mapv #(dissoc % :dropped) its)))
         n (long (or (:n options) default-points))
         curve? #(m/>= (count (distinct (:values %))) 2)
         no-curve (count (remove curve? (mapcat val items)))
         curved (update-vals items (fn [its]
                                     (mapv (fn [it] (let [e (kde/estimate (:values it) options)
                                                          {:keys [x y]} (kde/curve e (kde/grid-points (:lo e) (:hi e) n))]
-                                                     (assoc it :xs x :ds y)))
+                                                     (assoc it :xs (mapv #(inverse (double %)) x) :ds y)))
                                           (filter curve? its))))
         top (double (reduce m/max 0.0 (mapcat :ds (mapcat val curved))))
         overlap (double (data/option options :overlap strip/default-ridge-overlap))
@@ -185,7 +194,8 @@
                            (strip/extents :band curved (fn [{:keys [xs]}] [(first xs) (peek xs)])))
       :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip env) (get-in env [:plot-scales :y]))
       :na (group/na-dims panels)
-      :dropped (assoc dropped :group no-curve)})))
+      :dropped (cond-> (assoc dropped :group no-curve)
+                 (m/pos? unplaced) (update :x #(m/long-add (long (or % 0)) unplaced)))})))
 
 (defn- flat-compute
   "Computes the density stats without ridgelines (no categorical or bands `:y`).
@@ -205,8 +215,9 @@
         {:keys [panels dims dropped]} (group/split groups mapping env)
         group-keys (group/panel-group-keys panels dims (:plot-scales env))
         x-of (data/row-accessor :x (:x mapping))
-        ;; per group: valid x values and the count of invalid ones
-        xs (group/finite-values panels x-of)
+        {:keys [inverse] :as tx} (scale/stat-transform-for (data/option options :stat-space :data) (get-in env [:plot-scales :x]))
+        ;; per group: valid x values (in the stat space) and the count of invalid ones
+        xs (update-vals (group/finite-values panels x-of) (fn [gs] (mapv #(data/transformed-numbers tx %) gs)))
         x-results (mapcat identity (vals xs))
         row-count (group/row-count panels)
         x-dropped (long (reduce m/long-add 0 (map :dropped x-results)))
@@ -215,7 +226,9 @@
             (schema/fail! "Density :position :mirror needs exactly two groups." {:key :position :groups (count group-keys)}))
         centred? (#{:mirror :silhouette :wiggle} position)
         data (into {} (map (fn [[panel gs]]
-                             [panel {:curves (panel-curves gs (xs panel) group-keys position options) :style st
+                             [panel {:curves (mapv (fn [c] (update c :x #(mapv (fn [x] (inverse (double x))) %)))
+                                                   (panel-curves gs (xs panel) group-keys position options))
+                                     :style st
                                      :zero-line (and (= position :mirror) (data/option options :zero-line true))}]))
                    panels)
         curve-ys (fn [curves] (concat (mapcat :y curves) (mapcat :y0 curves)))

@@ -22,6 +22,11 @@
   * `:corner-radius` - pixels, every bar corner rounded; `:corner-radius-end` - only the corners at the bar's top
     (value end), wins over `:corner-radius`; clamped to half the shorter side; the legend key rounded alike
     (default 0)
+  * `:stat-space` - `:data` (default, bins in data units) or `:scale` (bins in the x scale's coordinates, see
+    [[cljplot2.scale.position/stat-transform-for]]: equal-width log10 bins on a `:log` axis, a bin method or count
+    computed on the log10 values, `:density` per log10 unit; values the axis can't place - 0, negatives - dropped and
+    counted in `:dropped :x`; explicit breaks stay in data units, a break the axis can't place throws
+    `ex-info {:key :bins}`); bars are drawn back in data units
   * `:padding {:x [lo hi] :y [lo hi]}` - default `{:x [0.05 0.05] :y [0 0.05]}` (mirror: y `[0.05 0.05]`); bars
     stand on the panel's bottom edge, x padding keeps end ticks off facet panel joints
 
@@ -37,6 +42,7 @@
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[schemas]] - its style, options and mapping."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
+            [cljplot2.chart.common :as common]
             [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
@@ -55,13 +61,15 @@
 
 (def ^:private style-entries
   "Map entries of the histogram style (theme `[:chart :histogram]`), also its options."
-  (into [(schema/optional :color {:description "bar fill colour (a mapped :color wins)"} schema/solid-color)
-         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-         (schema/optional :alpha {:description "fill opacity of grouped bars with :position :overlay (other bars are opaque)"}
-                          schema/fraction)
-         (schema/optional :zero-line-color {:description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
-         (schema/optional :zero-line-width {:description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg)]
+  (into (schema/in-section
+         :style
+         [(schema/optional :color {:description "bar fill colour (a mapped :color wins)"} schema/solid-color)
+          (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
+          (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
+          (schema/optional :alpha {:description "fill opacity of grouped bars with :position :overlay (other bars are opaque)"}
+                           schema/fraction)
+          (schema/optional :zero-line-color {:description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
+          (schema/optional :zero-line-width {:description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg)])
         draw/pattern-style-entries))
 
 (def schemas
@@ -71,26 +79,27 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :bins {:description (str "bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott "
+                (conj (schema/optional :bins {:cljplot2/section :bins :description (str "bins shared by all panels and groups: a fastmath estimation method (:sturges :sqrt :rice :doane :scott "
                                                                   ":freedman-diaconis), a bin count or increasing breaks (values outside dropped)")
                                                 :default :sturges}
                                         [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
-                      (schema/optional :y {:description "bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)"
+                      (schema/optional :y {:cljplot2/section :bins :description "bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)"
                                            :default :percent}
                                        (into [:enum :cumulative] (keys measure/titles)))
-                      (schema/optional :position {:description (str "grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, "
+                      (schema/optional :position {:cljplot2/section :position :description (str "grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, "
                                                                       "the second downward); ridgelines: :overlay or :mirror")
                                                   :default :overlay}
                                        (into [:enum] (sort position/positions)))
-                      (schema/nilable :symmetric {:description "with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels"
+                      (schema/nilable :symmetric {:cljplot2/section :position :description "with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels"
                                                   :default false}
                                       schema/bool)
-                      (schema/nilable :zero-line {:description "with :position :mirror, draw the y = 0 line over the bars"
+                      (schema/nilable :zero-line {:cljplot2/section :position :description "with :position :mirror, draw the y = 0 line over the bars"
                                                   :default true}
                                       schema/bool)
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
+                      (schema/optional :padding {:cljplot2/section :position :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                  :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror"}
                                        data/position-padding)
+                      (first (schema/in-section :bins [(common/stat-space-option :data "space the bins are made in: :data (data units) or :scale (the x scale's coordinates - equal-width log10 bins on a :log axis, values it can't place dropped; :density per transformed unit)")]))
                       draw/corner-radius-option
                       draw/corner-radius-end-option)
                 (into strip/ridge-options))
@@ -161,6 +170,27 @@
       (count (remove #(m/<= lo (double %) hi) values)))
     0))
 
+(defn- stat-breaks
+  "Gives the bin breaks in a stat space (see [[cljplot2.scale.position/stat-transform-for]]).
+
+  Parameters:
+
+  - `transform` (map): the x stat transform - `:forward`.
+  - `values` (sequence of doubles): the values in the stat space.
+  - `bins`: the `:bins` option (see [[cljplot2.data.levels/breaks]]); explicit breaks are in data units.
+
+  Returns the breaks in the stat space: explicit breaks taken there, else computed over `values`; `nil` without values.
+
+  Throws `ex-info {:key :bins}` for an explicit break the transform can't place (e.g. 0 on a `:log` axis)."
+  [{:keys [forward]} values bins]
+  (if (vector? bins)
+    (let [placed (mapv #(forward (double %)) bins)]
+      (when-not (every? m/valid-double? placed)
+        (schema/fail! "Histogram :bins breaks must be placeable on the x scale with :stat-space :scale (positive on a :log axis)."
+                      {:key :bins :value bins}))
+      placed)
+    (levels/breaks values bins)))
+
 (defn- ridge-compute
   "Computes the histogram stats of ridgelines (a categorical or bands `:y`).
 
@@ -173,11 +203,15 @@
   Returns the chart stats with `:ridges true`: per panel `{:ridges [item ...] :top h :overlap o :style st :translucent b}`, items (see [[cljplot2.data.strip/ridge-split]]) with `:bars [[x0 x1 height] ...]` on the common breaks; one `:top` over all panels; values outside the breaks counted in `:dropped` `:x`."
   [{:keys [options] :as chart} chart-split {:keys [theme] :as env}]
   (let [y (data/option options :y :percent)
-        {:keys [position items panels dropped group-keys]} (strip/ridge-split chart-split options env)
+        {:keys [position panels dropped group-keys] split-items :items} (strip/ridge-split chart-split options env)
+        {:keys [inverse] :as tx} (scale/stat-transform-for (data/option options :stat-space :data) (get-in env [:plot-scales :x]))
+        placed (update-vals split-items (fn [its] (mapv #(merge % (data/transformed-numbers tx {:values (:values %) :dropped 0})) its)))
+        unplaced (long (reduce m/long-add 0 (map :dropped (mapcat val placed))))
+        items (update-vals placed (fn [its] (mapv #(dissoc % :dropped) its)))
         all-values (into [] (comp (mapcat val) (mapcat :values)) items)
-        brks (levels/breaks all-values (data/option options :bins :sturges))
+        brks (stat-breaks tx all-values (data/option options :bins :sturges))
         binned (if brks
-                 (update-vals items (fn [its] (mapv (fn [it] (assoc it :bars (mapv (fn [[a b] h] [a b h])
+                 (update-vals items (fn [its] (mapv (fn [it] (assoc it :bars (mapv (fn [[a b] h] [(inverse (double a)) (inverse (double b)) h])
                                                                                    (partition 2 1 brks)
                                                                                    (heights y brks (:counts (bin-counts brks (:values it)))))))
                                                     its)))
@@ -192,10 +226,10 @@
                                            :translucent (and (m/> (count group-keys) 1) (= :overlay position))}))
       :ridges true
       :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env))
-                           (strip/extents :band binned (fn [_] [(first brks) (peek brks)])))
+                           (strip/extents :band binned (fn [_] [(inverse (double (first brks))) (inverse (double (peek brks)))])))
       :scale-defaults (strip/ridge-scale-defaults overlap (= :mirror position) (:flip env) (get-in env [:plot-scales :y]))
       :na (group/na-dims panels)
-      :dropped (update dropped :x #(m/long-add (long (or % 0)) outside))})))
+      :dropped (update dropped :x #(m/long-add (long (or % 0)) (m/long-add outside unplaced)))})))
 
 (defn compute
   "Computes the histogram's stats.
@@ -208,7 +242,7 @@
 
   Returns ridgeline stats for a categorical or bands `:y` ([[ridge-compute]]), else per panel `{:bars [{:x0 :x1 :y0 :y1 :aesthetics}] :style st :translucent b :zero-line b}` in data units (bars in group order, `:y0` / `:y1` placed by [[cljplot2.data.position/stack-values]]; `:translucent` - grouped overlay, fill drawn with `:alpha`); x extents - the outer breaks, y - over 0 and every bar's ends, or `[-M M]` for a `:symmetric` mirror; `:dropped` `:x` - invalid values and values outside the breaks; `:tick-format {:y :absolute}` for mirror; the y axis titled by the measure (`:normalize` - `Proportion`).
 
-  Throws `ex-info {:key :mapping}` when rows exist but none has a finite x, `{:key :position}` for `:mirror` without exactly two groups."
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite x (placeable in `:stat-space :scale`), `{:key :bins}` - see [[stat-breaks]], `{:key :position}` for `:mirror` without exactly two groups."
   [{:keys [options] :as chart} {:keys [groups mapping] :as chart-split} {:keys [theme] :as env}]
   (if (strip/ridges? chart-split env)
     (ridge-compute chart chart-split env)
@@ -217,12 +251,13 @@
           position (data/option options :position :overlay)
           {:keys [panels dims dropped]} (group/split groups (dissoc mapping :y) env)
           x-of (data/row-accessor :x (:x mapping))
-          xs (group/finite-values panels x-of)
+          {:keys [inverse] :as tx} (scale/stat-transform-for (data/option options :stat-space :data) (get-in env [:plot-scales :x]))
+          xs (update-vals (group/finite-values panels x-of) (fn [gs] (mapv #(data/transformed-numbers tx %) gs)))
           all-values (into [] (comp (mapcat identity) (mapcat :values)) (vals xs))
           all-count (group/row-count panels)
           _ (when (and (m/pos? all-count) (empty? all-values))
               (data/fail-mapping! data/no-valid-values :x {:rows all-count}))
-          brks (levels/breaks all-values (data/option options :bins :sturges))
+          brks (stat-breaks tx all-values (data/option options :bins :sturges))
           group-keys (group/panel-group-keys panels dims (:plot-scales env))
           n-groups (count group-keys)
           _ (when (and (= position :mirror) (m/not== 2 n-groups) (seq all-values))
@@ -241,7 +276,7 @@
                                     :when g
                                     [[a b] [y0 y1]] (map vector (partition 2 1 brks) (ys i))]
                                 (let [[x0 x1] (if (= position :dodge) (position/dodge-interval [a b] i n-groups) [a b])]
-                                  {:x0 x0 :x1 x1 :y0 y0 :y1 y1 :aesthetics (:aesthetics g)})))))
+                                  {:x0 (inverse (double x0)) :x1 (inverse (double x1)) :y0 y0 :y1 y1 :aesthetics (:aesthetics g)})))))
           data (if brks
                  (into {} (map (fn [[panel gs]]
                                  [panel {:bars (panel-bars gs (xs panel)) :style st
@@ -252,7 +287,7 @@
           bar-ys (fn [bars] (mapcat (juxt :y0 :y1) bars))
           bar-extents (update-vals data (fn [{:keys [bars]}]
                                           (when (seq bars)
-                                            {:x {:kind :numeric :min (first brks) :max (peek brks)}
+                                            {:x {:kind :numeric :min (inverse (double (first brks))) :max (inverse (double (peek brks)))}
                                              :y {:kind :numeric
                                                  :min (reduce m/min 0.0 (bar-ys bars))
                                                  :max (reduce m/max 0.0 (bar-ys bars))}})))

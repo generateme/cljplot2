@@ -34,7 +34,7 @@
   domain. `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
   nice and padding) reversed - bands in reverse level order (not `:interpolated`: reverse its `:stops`).
 
-  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
+  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]], [[stat-transform-for]], [[value-direction]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
 
   Constants: [[position-kinds]], [[continuous-kinds]], [[max-tick-count]]."
   (:require [fastmath.core :as m]
@@ -941,6 +941,30 @@
   Returns `{:forward f :inverse g}`, functions of a double: log10 for `:log` (a non-positive value maps to `##NaN`), the identity otherwise (other non-linear kinds are not transformed)."
   [spec]
   (if (= :log (:kind spec)) log10-transform identity-transform))
+
+(defn stat-transform-for
+  "Gives the transform of one axis a chart's statistic runs in, by the chart's stat space (its `:stat-space` option, see [[cljplot2.chart.common/stat-space-option]]).
+
+  Parameters:
+
+  - `space` (keyword): `:scale` - the axis's [[stat-transform]], `:data` - data units.
+  - `spec` (map or `nil`): the plot's scale spec of the axis (`:kind`).
+
+  Returns `{:forward f :inverse g}`: log10 on a `:log` axis in `:scale` space, the identity otherwise."
+  [space spec]
+  (stat-transform (when (= :scale space) spec)))
+
+(defn value-direction
+  "Gives the pixel direction of increasing values of a finalized continuous scale.
+
+  Parameters:
+
+  - `finalized` (map): a [[finalize]]d scale - `:range [r0 r1]`, `:domain [d0 d1]` (reversed by `:reverse`).
+
+  Returns `1.0` when larger values lie toward larger range positions (pixels, or radians / radii in a polar plot), else `-1.0` - a decreasing range or a reversed domain flips it, both keep it."
+  ^double [{[^double r0 ^double r1] :range [d0 d1] :domain}]
+  (let [range-sign (if (m/< r1 r0) -1.0 1.0)]
+    (if (m/pos? (long (compare d0 d1))) (m/- range-sign) range-sign)))
 
 (defn forward-fn
   "Gives the mapping of values to pixel positions of a finalized scale.

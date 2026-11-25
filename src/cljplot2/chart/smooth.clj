@@ -20,9 +20,10 @@
     (its own alpha times `:alpha`, default 0.3) - a colour or `:none`: no band, as `:band :none`)
   * `:padding {:x [lo hi] :y [lo hi]}` - default 5% each side
 
-  On a `:log` x or y axis the fit runs in log10 coordinates of that axis (see
-  [[cljplot2.scale.position/stat-transform]]; lattice's `type = \"smooth\"` on log scales) and the curve and bands are
-  taken back to data units; values the axis can't place (0, negatives) are left out of the fit.
+  * `:stat-space` - `:scale` (default): on a `:log` x or y axis the fit runs in log10 coordinates of that axis (see
+    [[cljplot2.scale.position/stat-transform-for]]; lattice's `type = \"smooth\"` on log scales) and the curve and
+    bands are taken back to data units; values the axis can't place (0, negatives) are left out of the fit (counted);
+    `:data` - the fit in data units on every axis
 
   x is numeric or temporal (`java.time`, fitted in epoch milliseconds - see [[cljplot2.data.rows/x-key]]; parameters
   in x units, such as a `:gp` kernel's `:sigma`, are in milliseconds then); rows with an
@@ -33,7 +34,8 @@
 
   Functions: [[schemas]] - the chart's schemas; [[compute]] - the fitted curves and bands of every panel; [[draw]] -
   one panel's bands and curves; [[legend]] - the key glyph."
-  (:require [cljplot2.data.rows :as data]
+  (:require [cljplot2.chart.common :as common]
+            [cljplot2.data.rows :as data]
             [cljplot2.data.group :as group]
             [cljplot2.data.rng :as rng]
             [cljplot2.data.smooth :as smooth]
@@ -141,6 +143,7 @@
                        (schema/nilable :full-range {:cljplot2/section :fit :description "fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)"
                                                     :default false}
                                        schema/bool)
+                       (first (schema/in-section :fit [(common/stat-space-option :scale "space of the fit: :scale (the x and y scales' coordinates - log10 on a :log axis, values it can't place left out) or :data (data units)")]))
                        (schema/optional :padding {:cljplot2/section :fit :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
                                                   :cljplot2/default-doc "0.05 on every side"}
                                         data/position-padding)))
@@ -192,6 +195,28 @@
                            (when (and (m/valid-double? k) (m/valid-double? v))
                              [k x v]))))))
           (:rows g))))
+
+(defn- unplaced-counts
+  "Counts the rows a stat transform can't place.
+
+  Parameters:
+
+  - `rows` (sequence of maps): every row.
+  - `x-of`, `y-of` (functions): the x and y accessors.
+  - `[tx ty]`: the axes' stat transforms.
+
+  Returns `{:x n :y n}`: rows with a valid x and a finite y whose x the x transform can't place (e.g. 0 on a log axis), and of the others those whose y the y transform can't place - each row counted once."
+  [rows x-of y-of [tx ty]]
+  (let [fx (:forward tx) fy (:forward ty)]
+    (reduce (fn [acc r]
+              (let [x (x-of r) y (y-of r)
+                    k (when (and (data/valid-value? x) (schema/finite? y)) (data/x-key x))]
+                (cond
+                  (nil? k) acc
+                  (not (m/valid-double? (fx (double k)))) (update acc :x m/long-inc)
+                  (not (m/valid-double? (fy (double y)))) (update acc :y m/long-inc)
+                  :else acc)))
+            {:x 0 :y 0} rows)))
 
 (defn- ends
   "Gives the ends of fit points.
@@ -278,7 +303,7 @@
   - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales` - the plot's `:scales` (axis transforms, the x `:domain`).
 
-  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:curves [{:x [..] :y [..] :bands [{:level :lo :hi}] :ends [x0 x1] :aesthetics}] :style st}` (see [[fitted-curve]]), `st` the resolved style; extents - x over the curves' ends, y over the fits and finite band bounds; `:dropped` - `:x`, `:y`, `:group` (groups too small for the method).
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:curves [{:x [..] :y [..] :bands [{:level :lo :hi}] :ends [x0 x1] :aesthetics}] :style st}` (see [[fitted-curve]]), `st` the resolved style; extents - x over the curves' ends, y over the fits and finite band bounds; `:dropped` - `:x`, `:y` (also values the stat transform can't place, see [[unplaced-counts]]), `:group` (groups too small for the method).
 
   Throws `ex-info {:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[group-points]], [[fitted-curve]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
@@ -292,8 +317,10 @@
         y-of (data/row-accessor :y (:y mapping))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
         _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
-        transforms [(scale/stat-transform (:x plot-scales)) (scale/stat-transform (:y plot-scales))]
+        space (data/option options :stat-space :scale)
+        transforms [(scale/stat-transform-for space (:x plot-scales)) (scale/stat-transform-for space (:y plot-scales))]
         points (update-vals panels (fn [gs] (mapv #(group-points % x-of y-of transforms) gs)))
+        unplaced (unplaced-counts rows x-of y-of transforms)
         fittable? (fn [pts] (and (m/>= (count pts) (long required-rows)) (m/>= (count (distinct (map first pts))) (long required-x))))
         data (into {} (map (fn [[panel gs]]
                              (let [pts (points panel)
@@ -318,8 +345,8 @@
                                       data))
            :na (group/na-dims panels)
            :dropped (assoc dropped
-                           :x (data/invalid-count x-of rows)
-                           :y (count (remove #(schema/finite? (y-of %)) rows))
+                           :x (m/long-add (data/invalid-count x-of rows) (long (:x unplaced)))
+                           :y (m/long-add (count (remove #(schema/finite? (y-of %)) rows)) (long (:y unplaced)))
                            :group (count (remove fittable? (mapcat val points))))})))
 
 (defn draw

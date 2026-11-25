@@ -2128,7 +2128,7 @@
 
 ;; ### Simple Bar Chart with Labels and Emojis
 
-;; Fruit counts, bars coloured by count (rects - bars take only categorical colours), each labelled inside its end;
+;; Fruit counts, bars coloured by count (a numeric colour - each bar its own value), each labelled inside its end;
 ;; the emoji names are text in the bundled Noto Emoji font (the y axis labels can't take a font of their own).
 
 (nu/source-note {:source "Vega-Lite - Simple Bar Chart with Labels and Emojis" :url (vl-url "layer_bar_fruit")})
@@ -2137,7 +2137,7 @@
                  [["🍊" 21] ["🍇" 13] ["🍏" 8] ["🍌" 5] ["🍐" 3] ["🍋" 2] ["🍎" 1] ["🍉" 1]])]
   (plot/render-image
    {:data fruit
-    :charts [(chart/rect {:mapping {:x0 (constantly 0) :x1 :count :y0 :name :y1 :name :color :count} :width 0.9})
+    :charts [(chart/bar {:mapping {:x :count :y :name :color :count} :width 0.9 :stroke-color :none :padding {:x [0 0]}})
              (chart/text {:mapping {:x :count :y :name :label :count} :data (filter #(> (long (:count %)) 10) fruit)
                           :anchor [:right :middle] :offset [-4 0] :color :white})
              (chart/text {:mapping {:x :count :y :name :label :count} :data (remove #(> (long (:count %)) 10) fruit)

@@ -3354,17 +3354,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td>:heights</td>
-<td>sequential of a positive number or [:fixed, a non-negative number] or nil</td>
+<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
 <td>equal</td>
-<td>relative row weights; [:fixed px] a fixed height</td>
+<td>relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height</td>
 </tr>
 <tr class="even">
+<td>:row-spans</td>
+<td>map of integer (at least 0) to a positive integer or nil</td>
+<td>every plot one row</td>
+<td>plot index (not cell) -&gt; the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)</td>
+</tr>
+<tr class="odd">
 <td>:align</td>
 <td>true or false or nil</td>
 <td>true</td>
 <td>align the sub-plots' panels in rows and columns</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>:equal-panels</td>
 <td>true or false or nil</td>
 <td>false</td>

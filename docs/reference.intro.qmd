@@ -260,7 +260,7 @@ Panels split by data, several plots in a grid, charts beside the panel (Facets c
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:facets</td><td>map</td><td></td><td>facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights</td></tr><tr><td>:custom-grid</td><td>map or nil</td><td></td><td>a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)</td></tr><tr><td>:arrange</td><td>an arrange map {:plots :columns :rows :widths :heights :align :equal-panels} or nil</td><td></td><td>a multiplot: sub-plots in a grid (only :labels {:title t} beside it)</td></tr><tr><td>:margins</td><td>map</td><td></td><td>charts beside the panel sharing its scales (marginal plots)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:facets</td><td>map</td><td></td><td>facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights</td></tr><tr><td>:custom-grid</td><td>map or nil</td><td></td><td>a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)</td></tr><tr><td>:arrange</td><td>an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels} or nil</td><td></td><td>a multiplot: sub-plots in a grid (only :labels {:title t} beside it)</td></tr><tr><td>:margins</td><td>map</td><td></td><td>charts beside the panel sharing its scales (marginal plots)</td></tr></tbody></table>
 ```
 
 :::

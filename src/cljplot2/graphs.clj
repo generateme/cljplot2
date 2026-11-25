@@ -169,7 +169,7 @@
     - `:edge-mapping` - edge aesthetics (`:color`, `:size` - the width; edges have `:value` and their row's columns);
     - `:node-style` - scatter options of the nodes over the theme style `[:chart :network-node]` (larger than plain points, outlined, opaque);
     - `:edge-style` - segment options of the edges over the theme style `[:chart :network-edge]` (a translucent grey; a mapped colour wins); `:arrow` - the arrows of a directed graph;
-    - `:labels` - `true` (the node id) or an accessor of the node (`nil` or an empty string - no label), in the text role `:network-label` (white boxes) right of the nodes, offset by the largest node radius; default `false`;
+    - `:labels` - `true` (the node id) or an accessor of the node (`nil` or an empty string - no label), in the text role `:network-label` (white boxes) right of the nodes, offset by the largest node radius, a label overlapping that of a larger node left out; default `false`;
     - `:scales` (e.g. `:color`, `:size`), `:title`, `:theme`.
 
   Returns a plot map.
@@ -210,10 +210,12 @@
                                (chart/scatter (merge {:theme-style :network-node} node-style
                                                      {:data nodes :mapping (merge {:x :x :y :y} mapping)}))]
                         label-of (conj (chart/text {:role :network-label
-                                                    :data nodes
+                                                    ;; larger nodes first: their labels win collisions
+                                                    :data (vec (sort-by #(m/- (double (radius-of (:id %)))) nodes))
                                                     :mapping {:x :x :y :y :label label-of}
                                                     :anchor [:left :middle]
-                                                    :offset [(m/+ max-radius 3.0) 0]})))
+                                                    :offset [(m/+ max-radius 3.0) 0]
+                                                    :overlapping-labels :drop})))
               :aspect :iso
               :scales (theme/deep-merge {:x x-axis :y y-axis} scales)
               :labels {:title title :x nil :y nil}}
@@ -270,7 +272,7 @@
 (defn- radial-labels
   "Text charts of the leaf names around a circle, each turned along its angle and reading outward.
 
-  Labels sit just outside each leaf's radius: the right half anchored left, the left half anchored right; they draw in the text role `:radial-label`, the font smaller for many leaves (down to 5 pt, never above the role's size); pixel room for the labels is kept around the circle (`:reserve-room`).
+  Labels sit just outside each leaf's radius: the right half anchored left, the left half anchored right; they draw in the text role `:radial-label`, the font smaller for many leaves (down to the role's `:min-size`, never above its size; no `:min-size` - the role's size); pixel room for the labels is kept around the circle (`:reserve-room`).
 
   Parameters:
 
@@ -282,8 +284,8 @@
   See also [[circle-axis]]."
   [nodes user-theme]
   (let [leaves (filterv :leaf nodes)
-        role-size (double (get-in (theme/deep-merge theme/default-theme user-theme) [:text :radial-label :size]))
-        size (m/min role-size (m/max 5.0 (m// 1400.0 (m/max 1 (count leaves)))))
+        {role-size :size min-size :min-size} (get-in (theme/deep-merge theme/default-theme user-theme) [:text :radial-label])
+        size (m/min (double role-size) (m/max (double (or min-size role-size)) (m// 1400.0 (m/max 1 (count leaves)))))
         row (fn [{leaf-name :name :keys [^double angle ^double radius] :or {radius 1.0}}]
               (let [a (m/radians angle)
                     r (m/+ radius 0.03)]
@@ -522,6 +524,10 @@
   [matrix]
   (apply mapv vector matrix))
 
+(def ^:private annotations-schema
+  "Schema of clustered heatmap annotations: `[accessor colour-scale-spec]` pairs, the spec closed (or `nil`)."
+  [:sequential [:tuple schema/accessor [:maybe (aesthetic/scale-spec-schema :color)]]])
+
 (def clustered-heatmap-options
   "Options schema of [[clustered-heatmap]]: its own entries and the builder's."
   (schema/options-map
@@ -538,8 +544,86 @@
                      schema/bool)
     (schema/optional :tree-size {:description "[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)"
                                  :default [0.2 0.2]}
-                     [:tuple schema/open-fraction schema/open-fraction])]
+                     [:tuple schema/open-fraction schema/open-fraction])
+    (schema/nilable :row-annotations {:description "[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the tiles and the rows' tree, coloured by its values (categorical or continuous), with a legend"
+                                      :cljplot2/default-doc "no strips"}
+                    annotations-schema)
+    (schema/nilable :col-annotations {:description "[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the columns' tree and the tiles, coloured by its values (categorical or continuous), with a legend"
+                                      :cljplot2/default-doc "no strips"}
+                    annotations-schema)
+    (schema/nilable :annotation-size {:description "thickness of an annotation strip in pixels (not a fraction, as :tree-size)" :default 16} schema/pos)
+    (schema/nilable :legend-span {:description "height of the legend column: :row - beside the tiles' row; :matrix - one cell beside every row (the trees' and the strips' too), stacking the value legend over the annotations' legends"
+                                  :cljplot2/default-doc ":matrix with annotations, else :row"}
+                    [:enum :row :matrix])]
    plot/builder-entries))
+
+(defn- level-annotations
+  "Gives the annotation value of every row or column level of a clustered heatmap.
+
+  Parameters:
+
+  - `rows` (sequence of maps): the long rows.
+  - `level-of` (fn): a row's level (its tile row or column).
+  - `acc` (fn): the annotation's row accessor.
+  - `option` (keyword): the option naming the annotations, for errors.
+
+  Returns `{level value}` - the one value the level's rows give (`nil` a value too).
+
+  Throws `ex-info {:key option :value [level values]}` when the rows of one level give different values."
+  [rows level-of acc option]
+  (into {} (map (fn [[level level-rows]]
+                  (let [vs (distinct (map acc level-rows))]
+                    (when (next vs)
+                      (schema/fail! (str "Every row of one heatmap " (if (= option :row-annotations) "row" "column")
+                                         " needs one annotation value, " level " has " (vec vs) ".")
+                                    {:key option :value [level (vec vs)]}))
+                    [level (first vs)])))
+        (group-by level-of rows)))
+
+(defn- annotation-level
+  "Gives the tile row or column level of a row of a clustered heatmap annotation strip (its level-axis accessor - a function, so a sub-plot error names no internal key).
+
+  Parameters:
+
+  - `row` (map): an annotation row.
+
+  Returns the level."
+  [row]
+  (::level row))
+
+(defn- annotation-plots
+  "Gives the strip and legend plots of the annotations of one side of a clustered heatmap.
+
+  Each annotation is a one-band tile strip along the tiles' rows (`:row-annotations`) or columns (`:col-annotations`), coloured by the level's value with the annotation's own colour scale (categorical or continuous by the values, as any colour mapping); its band label (the scale's string `:title`, else the accessor's name, else `annotation i`) names it beside the strip. Strips have no plot margin (also under a user `[:plot :margin]`): a strip is as thick as its cell.
+
+  Parameters:
+
+  - `rows` (sequence of maps): the long rows.
+  - `annotations` (sequence): `[accessor colour-scale-spec]` pairs (spec `nil` - the default scale), in order.
+  - `side` (keyword): `:row` or `:col`.
+  - `context` (map): `:level-of` (a row's level), `:order` (the levels in tile order), `:option` (the option, for errors), `:theme` (the user theme or `nil`).
+
+  Returns a vector of `{:strip plot :legend plot}`, one per annotation."
+  [rows annotations side {:keys [level-of order option] user-theme :theme}]
+  (vec (map-indexed
+        (fn [i [k spec]]
+          (let [title (let [t (:title spec)] (cond (string? t) t (keyword? k) (name k) :else (str "annotation " (m/long-inc i))))
+                values (level-annotations rows level-of (data/row-accessor option k) option)
+                level-rows (mapv (fn [level] {::level level ::value (values level)}) order)
+                [level-dim band-dim] (if (= side :row) [:y :x] [:x :y])
+                base (cond-> {:data level-rows :mapping {level-dim annotation-level band-dim (constantly title) :color ::value}
+                              :charts [(chart/tile)]
+                              :scales {:color (merge {:title title} spec)}}
+                       user-theme (assoc :theme user-theme))]
+            ;; the name as an axis title (tick label role) beside the strip: a band tick label would overhang a thin strip
+            {:strip (-> base
+                        (assoc-in [:scales level-dim] {:domain order :axis false})
+                        (assoc-in [:scales band-dim] {:axis false})
+                        (assoc :legend false :labels {level-dim nil band-dim {:text title :role :tick-label :rotation (if (= side :row) 270 0)}})
+                        ;; no plot margin, also under a user margin: the strip is as thick as its cell
+                        (update :theme theme/deep-merge {:plot {:margin 0}}))
+             :legend (assoc base :legend-only true)}))
+        annotations)))
 
 (defn clustered-heatmap
   "Builds a clustered heatmap of long rows as an arrange plot map: tiles of the values, rows and columns ordered by fastmath `hclust` of the value matrix, with their dendrograms.
@@ -554,14 +638,19 @@
     - `:method` - the `hclust` linkage, default `:complete`;
     - `:distance` - the `hclust` distance, a keyword or a function of two double arrays, default `:euclidean`;
     - `:row-tree`, `:col-tree` - the rows' and the columns' dendrogram (`false` - order only), default `true`;
-    - `:tree-size` - `[w h]`, the dendrograms' share of the width and the height, default `[0.2 0.2]`;
+    - `:tree-size` - `[w h]`, the dendrograms' share of the width and the height (fractions), default `[0.2 0.2]`;
+    - `:row-annotations`, `:col-annotations` - `[[accessor colour-scale-spec] ...]` (a `nil` spec - the default scale; specs checked as plot colour scales), in order: per accessor of the long rows a strip along the tile rows (between the tiles and the rows' tree) or columns (between the columns' tree and the tiles), coloured by the values - categorical or continuous (a gradient), as any colour mapping -, named beside it (the spec's string `:title`, else the accessor's name, else `annotation i`), with its own colour scale and legend;
+    - `:annotation-size` - the strips' thickness in pixels (not a fraction, unlike `:tree-size`), default 16;
+    - `:legend-span` - the legend column's height: `:row` - one cell beside the tiles' row; `:matrix` - one cell spanning every row (`:row-spans`, beside the trees and the strips too); default `:matrix` with annotations, else `:row`. With annotations the legend cell stacks the value legend over the annotations' legends, each row as tall as its legend (arrange `:heights :measured`; scaled down when they don't fit, the legends then wrap into further columns and the column widens);
     - `:scales` - the tile plot's scales (e.g. `:color`), `:title`, `:theme`.
 
   Returns an arrange plot map (see [[cljplot2.multiplot/arrange]]).
 
   Throws `ex-info {:key :value}` for a missing or non-finite cell, `ex-info {:key :rows}` for fewer than 2 rows or columns, `ex-info {:key k}` for an invalid or missing option.
 
-  Equivalents: R `heatmap`, `pheatmap` (without annotations; the row tree on the right as cljplot2 margins).
+  Throws `ex-info {:key :row-annotations}` / `{:key :col-annotations}` (`:value` - `[level values]`) when the rows of one tile row / column give different annotation values.
+
+  Equivalents: R `heatmap` (`RowSideColors`, `ColSideColors`), `pheatmap` (`annotation_row`, `annotation_col`; the row tree on the right).
 
   See also [[dendrogram]]."
   {:cljplot2/options clustered-heatmap-options}
@@ -596,14 +685,55 @@
                         user-theme (assoc :theme user-theme))))
         blank {:charts [] :scales {:x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}} :labels {:x nil :y nil}}
         empty-legend {:legend-only true}
-        main-row (cond-> [heatmap] row-tree? (conj (tree-plot row-tree true)) true (conj legend))
-        top-row (when col-tree? (cond-> [(tree-plot col-tree false)] row-tree? (conj blank) true (conj empty-legend)))
-        columns (count main-row)]
-    (plot/arrange (vec (concat top-row main-row))
-                  (cond-> {:columns columns
-                           :widths (cond-> [(m/- 1.0 (if row-tree? tw 0.0))] row-tree? (conj tw) true (conj :measured))}
-                    col-tree? (assoc :heights [th (m/- 1.0 th)])
-                    title (assoc :title title)))))
+        annotated (fn [side option level-of order]
+                    (annotation-plots rows (get options option) side {:level-of (data/row-accessor side level-of) :order order
+                                                                      :option option :theme user-theme}))
+        row-annotations (annotated :row :row-annotations (:row options) (mapv :name (tree/leaves row-tree)))
+        col-annotations (annotated :col :col-annotations (:col options) (mapv :name (tree/leaves col-tree)))
+        annotations? (or (seq row-annotations) (seq col-annotations))
+        legend-span (data/option options :legend-span (if annotations? :matrix :row))]
+    (if (and (not annotations?) (= :row legend-span))
+      (let [main-row (cond-> [heatmap] row-tree? (conj (tree-plot row-tree true)) true (conj legend))
+            top-row (when col-tree? (cond-> [(tree-plot col-tree false)] row-tree? (conj blank) true (conj empty-legend)))
+            columns (count main-row)]
+        (plot/arrange (vec (concat top-row main-row))
+                      (cond-> {:columns columns
+                               :widths (cond-> [(m/- 1.0 (if row-tree? tw 0.0))] row-tree? (conj tw) true (conj :measured))}
+                        col-tree? (assoc :heights [th (m/- 1.0 th)])
+                        title (assoc :title title))))
+      ;; annotation strips between the tiles and the trees; the legend cell beside the tiles' row or spanning every
+      ;; row, with annotations a stack of the value legend over the annotations' legends, each row as tall as its legend
+      (let [size [:fixed (data/option options :annotation-size 16)]
+            ;; no plot margin: a blank fits a strip's thickness
+            tight-blank (assoc blank :theme {:plot {:margin 0}})
+            right-blanks (cond-> (vec (repeat (count row-annotations) tight-blank)) row-tree? (conj tight-blank))
+            legends (into [legend] (map :legend) (concat col-annotations row-annotations))
+            legend-cell (if annotations?
+                          (plot/arrange legends {:columns 1 :heights (into [1] (repeat (dec (count legends)) :measured)) :theme {:plot {:margin 0}}})
+                          legend)
+            ;; with strips the tiles and trees have no plot margin either (aligned panels take the largest margin of
+            ;; their row and column): tiles, strips and trees are evenly the arrange gap apart
+            tight (fn [p] (cond-> p annotations? (update :theme theme/deep-merge {:plot {:margin 0}})))
+            tree-rows (cond-> [] col-tree? (conj (into [(tight (tree-plot col-tree false))] right-blanks)))
+            top-rows (into tree-rows (map #(into [(:strip %)] right-blanks)) col-annotations)
+            main-row (cond-> (into [(tight heatmap)] (map :strip) row-annotations) row-tree? (conj (tight (tree-plot row-tree true))))
+            columns (m/long-inc (count main-row))
+            n-rows (m/long-inc (count top-rows))
+            spanning? (and (= :matrix legend-span) (m/> n-rows 1))
+            rows-of-cells (if spanning?
+                            (into [(conj (first top-rows) legend-cell)] (conj (vec (rest top-rows)) main-row))
+                            (conj (mapv #(conj % (assoc empty-legend :theme {:plot {:margin 0}})) top-rows) (conj main-row legend-cell)))]
+        (plot/arrange (vec (apply concat rows-of-cells))
+                      (cond-> {:columns columns
+                               :widths (-> [(m/- 1.0 (if row-tree? tw 0.0))]
+                                           (into (repeat (count row-annotations) size))
+                                           (cond-> row-tree? (conj tw))
+                                           (conj :measured))
+                               :heights (-> (if col-tree? [th] [])
+                                            (into (repeat (count col-annotations) size))
+                                            (conj (if col-tree? (m/- 1.0 th) 1.0)))}
+                        spanning? (assoc :row-spans {(m/long-dec columns) n-rows})
+                        title (assoc :title title)))))))
 
 (def ^:private bundle-edge-color
   "Default colour of bundled edges not coloured by group (`:edge-color`)."
@@ -836,22 +966,59 @@
   [node]
   (str (if (contains? node :name) (:name node) (:id node))))
 
-(defn- side-labels
-  "Text charts of the sankey node names at the middle of their sides, in the text role `:sankey-label` (white boxes), both inside the frame.
+(def ^{:private true :const true :tag 'double} label-line
+  "Half the height of a sankey label's line, a fraction of the unit square's height: nodes within it of the label's centre limit its room (layout geometry, about half a label's height in a plot 600 px high)."
+  0.02)
+
+(defn- label-room
+  "Gives the room of a sankey node's label along x: up to the nearest node on its side in the label's line - half way to it when that node's label faces this one -, else up to the frame.
+
+  Nodes in the left half (`:x0` below 0.5) are labelled right of the node, the others left of it, so the labels of a left-half node and a right-half node facing each other share the gap between the nodes (neither reaches past its middle); a node is in the label's line when its vertical span comes within [[label-line]] of the label's centre.
 
   Parameters:
 
-  - `nodes` (sequence of maps): laid-out nodes with `:x0`, `:x1`, `:y0`, `:y1` in the unit square.
+  - `nodes` (sequence of maps): all laid-out nodes, `:x0`, `:x1`, `:y0`, `:y1` in the unit square.
+  - `node` (map): the labelled node.
+
+  Returns the room in x units of the unit square."
+  ^double [nodes {:keys [^double x0 ^double x1 ^double y0 ^double y1]}]
+  (let [yc (m/* 0.5 (m/+ y0 y1))
+        in-line (filter (fn [{^double a :y0 ^double b :y1}]
+                          (and (m/< (m/- yc label-line) (m/max a b)) (m/> (m/+ yc label-line) (m/min a b))))
+                        nodes)]
+    (if (m/< x0 0.5)
+      (let [ahead (filter (fn [{^double s :x0}] (m/> s x1)) in-line)]
+        (if-let [{^double s :x0} (first (sort-by :x0 ahead))]
+          ;; a right-half node labels leftwards, towards this label
+          (m/* (if (m/< s 0.5) 1.0 0.5) (m/- s x1))
+          (m/- 1.0 x1)))
+      (let [behind (filter (fn [{^double e :x1}] (m/< e x0)) in-line)]
+        (if-let [{^double e :x1 ^double s :x0} (last (sort-by :x1 behind))]
+          ;; a left-half node labels rightwards, towards this label
+          (m/* (if (m/< s 0.5) 0.5 1.0) (m/- x0 e))
+          x0)))))
+
+(defn- side-labels
+  "Text charts of the sankey node names at the middle of their sides, in the text role `:sankey-label` (white boxes), both inside the frame.
+
+  Each label is fitted to its room (see [[label-room]]; labels facing each other across a gap share it): shrunk to fit, down to the role's `:min-size` (the text kept whole, so a label longer than its room even at that size still reaches past it); labels of one side overlapping one of a larger node are left out (text `:x-span` and `:overlapping-labels :drop`).
+
+  Parameters:
+
+  - `nodes` (sequence of maps): laid-out nodes with `:x0`, `:x1`, `:y0`, `:y1`, `:value` in the unit square.
 
   Returns a vector of up to two text chart values: names right of the nodes in the left half, left of those in the right half."
   [nodes]
-  (let [row (fn [x {:keys [^double y0 ^double y1] :as node}] {:x x :y (m/* 0.5 (m/+ y0 y1)) :label (node-label node)})
-        [left right] ((juxt filter remove) #(m/< (double (:x0 %)) 0.5) nodes)]
+  (let [row (fn [x {:keys [^double y0 ^double y1] :as node}]
+              {:x x :y (m/* 0.5 (m/+ y0 y1)) :label (node-label node) :room (label-room nodes node)})
+        ;; larger nodes first: their labels win collisions
+        [left right] ((juxt filter remove) #(m/< (double (:x0 %)) 0.5) (sort-by #(m/- (double (:value %))) nodes))
+        text (fn [rows anchor dx]
+               (chart/text {:role :sankey-label :data rows :mapping {:x :x :y :y :label :label :x-span :room}
+                            :anchor anchor :offset [dx 0] :overlapping-labels :drop}))]
     (cond-> []
-      (seq left) (conj (chart/text {:role :sankey-label :data (mapv #(row (:x1 %) %) left) :mapping {:x :x :y :y :label :label}
-                                    :anchor [:left :middle] :offset [4 0]}))
-      (seq right) (conj (chart/text {:role :sankey-label :data (mapv #(row (:x0 %) %) right) :mapping {:x :x :y :y :label :label}
-                                     :anchor [:right :middle] :offset [-4 0]})))))
+      (seq left) (conj (text (mapv #(row (:x1 %) %) left) [:left :middle] 4))
+      (seq right) (conj (text (mapv #(row (:x0 %) %) right) [:right :middle] -4)))))
 
 (def sankey-options
   "Options schema of [[sankey]]: its own entries, those of [[cljplot2.data.graph/graph]] (but `:directed` - flows are directed) and [[cljplot2.data.graph/sankey-layout]] (forwarded) and the builder's."
@@ -883,7 +1050,7 @@
     - `:mapping {:color acc}` - the node colour, an accessor of node rows (default the id; a legend unless it's the id);
     - `:link-color` - the band colour: that of its `:source` (default) or `:target` node, or `:theme` (the colour of the theme style `[:chart :sankey-link]`, grey);
     - `:alpha` - the bands' opacity, default 0.5;
-    - `:labels` - node names beside the nodes, inside the frame, in the text role `:sankey-label`, default `true`;
+    - `:labels` - node names beside the nodes, inside the frame, in the text role `:sankey-label`, default `true`; each fitted to its room - up to the nearest node on its side in its line, else the frame - shrunk, down to the role's `:min-size` (the text kept whole) - and left out when it overlaps the label of a larger node;
     - `:scales`, `:title`, `:theme`.
 
   Returns a plot map.
@@ -935,7 +1102,7 @@
 (defn alluvial
   "Builds an alluvial diagram of wide rows as a plot map: a column per variable with a stratum per level, strands between consecutive columns as bands coloured by the `:strand-color` level, variable names under the columns, no y axis.
 
-  Strata draw in the theme style `[:chart :alluvial-stratum]` (grey), the level's name centred in the text role `:alluvial-label` (a white box); levels are in natural order. The layout is [[cljplot2.data.graph/alluvial-graph]] and [[cljplot2.data.graph/sankey-layout]] (fixed columns, strata in level order, spread evenly).
+  Strata draw in the theme style `[:chart :alluvial-stratum]` (grey), the level's name centred in the text role `:alluvial-label` (a white box; a label overlapping that of a larger stratum is left out); levels are in natural order. The layout is [[cljplot2.data.graph/alluvial-graph]] and [[cljplot2.data.graph/sankey-layout]] (fixed columns, strata in level order, spread evenly).
 
   Parameters:
 
@@ -974,8 +1141,9 @@
                                                  {:x (m/* 0.5 (m/+ x0 x1))
                                                   :y (m/* 0.5 (m/+ y0 y1))
                                                   :label (node-label node)})
-                                               nodes)
-                                   :mapping {:x :x :y :y :label :label} :role :alluvial-label})]
+                                               ;; larger strata first: their labels win collisions
+                                               (sort-by #(m/- (double (:value %))) nodes))
+                                   :mapping {:x :x :y :y :label :label} :role :alluvial-label :overlapping-labels :drop})]
              :scales (theme/deep-merge {:x (assoc (dissoc unit-axis :axis) :ticks centres :formatter #(get names (nearest %) "")
                                                   :overlapping-labels :keep)
                                         :y unit-axis

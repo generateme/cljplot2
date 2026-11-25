@@ -146,6 +146,22 @@
                                  {:columns 2 :widths [1.2 1]})
                    {:width 1000 :height 420})
 
+;; Spokes on their own ranges (the default `:uniminmax`) start at different values, their first ticks close to the
+;; centre where the spokes meet; a tick label there crossing another spoke is dropped (here 3.0 of the drat axis):
+
+(nu/source-note {:dataset :mtcars})
+
+(def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
+(plot/render-image {:data (filter #(#{"Mazda RX4" "Merc 240D" "Lotus Europa" "Cadillac Fleetwood"} (:model %)) mtcars)
+                    :mapping {:color :model}
+                    :charts [(chart/parallel {:variables [:mpg :hp :wt :qsec :drat :disp] :fill :color})]
+                    :coord {:kind :polar}
+                    :labels {:x nil :y nil}}
+                   {:width 640 :height 420})
+
 (nu/shared-groups (describe/options (chart/parallel)))
 
 ;; ## cloud

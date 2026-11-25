@@ -13,7 +13,7 @@
   - rows and accessors: [[rows]], [[row-accessor]], [[as-coordinates]], [[weight]]
   - time: [[temporal?]], [[period-start]], [[x-key]], [[key->x]], [[->local-date-time]], [[local-date-time->like]]
   - scale domains (`[nil nil]` - no domain, `[lo nil]` / `[nil hi]` - partial): [[given-domain]], [[partial-domain?]], [[full-domain]], [[partial-domain-problem]], [[completed-domain]]
-  - values and extents: [[valid-value?]], [[ordered-level?]] (the marker interface `OrderedLevel`), [[finite-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]
+  - values and extents: [[valid-value?]], [[ordered-level?]] (the marker interface `OrderedLevel`), [[finite-numbers]], [[transformed-numbers]], [[finite-point?]], [[extent]], [[value-extent]] (with the distinct values, at most [[max-levels]]), [[sorted-levels]], [[merge-extents]]
 
   Checks and helpers: [[check-mapped!]] (with the message [[no-valid-values]]), [[fail-mapping!]], [[sortable?]], [[invalid-count]], [[widened-range]], [[padding-stats]], [[zero-padding]]."
   (:require [fastmath.core :as m]
@@ -538,6 +538,19 @@
   [vs]
   (let [ok (into [] (comp (filter schema/finite?) (map double)) vs)]
     {:values ok :dropped (m/- (count vs) (count ok))}))
+
+(defn transformed-numbers
+  "Takes finite numbers into a statistic's space (a chart's stat space).
+
+  Parameters:
+
+  - `transform` (map): `:forward` - a function of a double (see [[cljplot2.scale.position/stat-transform-for]]).
+  - `numbers` (map): `{:values [..] :dropped n}` (see [[finite-numbers]]).
+
+  Returns `{:values [..] :dropped n}`: the transformed values, those the transform can't place (`##NaN`, e.g. 0 on a `:log` axis) left out and added to `:dropped`."
+  [{:keys [forward]} {:keys [values ^long dropped]}]
+  (let [placed (into [] (comp (map #(forward (double %))) (filter m/valid-double?)) values)]
+    {:values placed :dropped (m/long-add dropped (m/long-sub (count values) (count placed)))}))
 
 (defn- value-kind
   "Gives the kind of extent a valid value belongs to.

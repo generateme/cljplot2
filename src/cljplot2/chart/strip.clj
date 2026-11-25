@@ -3,7 +3,7 @@
 
   Strip charts compute and draw in the strip frame of [[cljplot2.data.strip]] (levels on `:y`, values on `:x`). A strip chart value takes [[compute]] and [[draw]], which call its kind's strip-frame methods [[in-frame-compute]] and [[in-frame-draw]] (multimethods on the chart's `:kind`: a new strip kind adds a method of each - a kind without one throws `No method in multimethod`).
 
-  n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default `n=%d`), just past its largest drawn value (see [[draw-n-labels!]]); the chart asks for value-axis room for them (`:padding-px`, see [[n-label-room]]).
+  n labels (every strip chart): `:n-label true` draws each item's count, formatted by `:n-format` (default `n=%d`), just past its largest drawn value (see [[draw-n-labels!]]) - past increasing values also on a reversed axis; an item's `:n-label-gap` (pixels, e.g. half the mark drawn at that value - box outliers) moves it further; the chart asks for value-axis room for them (`:padding-px`, see [[n-label-room]]).
 
   Functions:
 
@@ -53,6 +53,20 @@
   [chart-options item]
   ((schema/text-formatter (data/option chart-options :n-format "n=%d")) (:n item)))
 
+(defn- n-end-label
+  "Gives the end label of an item's count (see [[draw-end-labels!]]).
+
+  Parameters:
+
+  - `chart-options` (map): chart options - `:n-format`.
+  - `top-value` (function): item -> its largest drawn value (see [[draw-n-labels!]]).
+  - `item` (map): the item - `:level`, `:slot`, `:n`, `:mirrored`, optional `:n-label-gap` (pixels).
+
+  Returns `{:level :slot :at :side :text}`, with `:gap` when the item has an `:n-label-gap`."
+  [chart-options top-value {:keys [level slot] item-gap :n-label-gap :as item}]
+  (cond-> {:level level :slot slot :at (top-value item) :side (n-label-side item) :text (n-label-text chart-options item)}
+    item-gap (assoc :gap item-gap)))
+
 (defn- label-content
   "Gives the label content of an end label.
 
@@ -69,10 +83,10 @@
 
   Parameters:
 
-  - `labels` (sequence): end labels `{:text t :side s :role r}` (see [[draw-end-labels!]]).
+  - `labels` (sequence): end labels `{:text t :side s :role r}`, optional `:gap` (see [[draw-end-labels!]]).
   - `env` (map): `:theme`, `:hint` (measuring), `:flip` (sizes along the value axis are label heights when flipped).
 
-  Returns `{:x [lo hi]}`: per side of the value axis the largest label's size along it, measured in its role, plus the gap; 0 on a side without labels. `nil` without labels."
+  Returns `{:x [lo hi]}`: per side of the value axis the largest label's size along it, measured in its role, plus the gap and the largest `:gap` there; 0 on a side without labels. `nil` without labels."
   [labels {:keys [theme flip hint]}]
   (when (seq labels)
     (measure/call-with-scratch-canvas
@@ -86,7 +100,8 @@
                                                                                             {:canvas c :theme theme})]
                                                        (if flip (.y size) (.x size))))
                                         contents))
-                             n-label-gap)
+                             n-label-gap
+                             (double (reduce m/max 0.0 (keep #(when (m/== side (double (:side %))) (:gap %)) labels))))
                         0.0)))]
          {:x [(room -1.0) (room 1.0)]})))))
 
@@ -135,22 +150,24 @@
   - `labels` (sequence): end labels (see [[draw-end-labels!]]).
   - `scales` (map): finalized position scales.
 
+  Past means toward larger values of the label's side ([[cljplot2.scale.position/value-direction]] - also on a reversed axis).
+
   Returns a vector of placements; labels at a non-finite pixel left out."
   [{:keys [point]} labels scales]
   (let [x-scale (:x scales)
-        [^double r0 ^double r1] (:range x-scale)
-        ;; pixel direction of increasing values
-        up (if (m/< r1 r0) -1.0 1.0)
+        ;; pixel direction of increasing values (a reversed axis reverses the domain)
+        up (scale/value-direction x-scale)
         horizontal? (scale/horizontal? :x x-scale)]
-    (vec (for [{:keys [level slot at ^double side] :as l} labels
+    (vec (for [{:keys [level slot at ^double side gap] :as l} labels
                :let [dir (m/* up side)
                      anchor (cond
                               (m/zero? dir) [:center :middle]
                               horizontal? (if (m/pos? dir) [:left :middle] [:right :middle])
                               :else (if (m/pos? dir) [:center :top] [:center :bottom]))
                      ^Vec2 p (point at level (strip/in-slot slot 0.0))
-                     x (if horizontal? (m/+ (.x p) (m/* dir n-label-gap)) (.x p))
-                     y (if horizontal? (.y p) (m/+ (.y p) (m/* dir n-label-gap)))]
+                     shift (m/* dir (m/+ n-label-gap (double (or gap 0.0))))
+                     x (if horizontal? (m/+ (.x p) shift) (.x p))
+                     y (if horizontal? (.y p) (m/+ (.y p) shift))]
                :when (data/finite-point? [x y])]
            {:label l :content (label-content l) :anchor anchor :x x :y y}))))
 
@@ -189,16 +206,16 @@
   [{:keys [range-point geometry] :as pl} labels scales]
   (let [x-scale (:x scales)
         radial? (not (scale/horizontal? :x x-scale))
-        [^double r0 ^double r1] (:range x-scale)
-        up (if (m/< r1 r0) -1.0 1.0)
+        up (scale/value-direction x-scale)
         ;; the gap in range units: pixels along the radius, radians at the outer radius along the angle
-        pad (if radial? n-label-gap (m// n-label-gap (double (:radius geometry))))]
-    (vec (keep (fn [{:keys [level slot at ^double side outer] :as l}]
+        radius (double (:radius geometry))]
+    (vec (keep (fn [{:keys [level slot at ^double side outer gap] :as l}]
                  (if outer
                    (outer-placement pl l)
                    (let [dir (m/* up side)
                          [^double h ^double v] (range-point at level (strip/in-slot slot 0.0))
-                         shift (m/* dir pad)
+                         gap-px (m/+ n-label-gap (double (or gap 0.0)))
+                         shift (m/* dir (if radial? gap-px (m// gap-px radius)))
                          ^Vec2 p (if radial?
                                    (coord/to-pixel geometry h (m/+ v shift))
                                    (coord/to-pixel geometry (m/+ h shift) v))
@@ -256,7 +273,7 @@
 
   - `canvas`: the canvas.
   - `pl` (map): the chart's [[cljplot2.chart.strip/placement]].
-  - `labels` (sequence): `{:level l :slot s :at v :side d :text t}` - past value `v` toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a stacked bar; no room needed); optional `:role` (text role, default `:annotation`), `:color` (overrides the role's); `:outer` - past the outer radius of a polar plot at its segment's middle angle, anchored outward, with `:span [v0 v1]` (its segment's values) and `:leader` (a leader line).
+  - `labels` (sequence): `{:level l :slot s :at v :side d :text t}` - past value `v` toward increasing values (`d` 1) or decreasing ones (`d` -1), or centred on `v` (`d` 0, e.g. inside a stacked bar; no room needed); optional `:gap` (pixels between `v` and the label besides the usual 3, e.g. past a mark drawn at `v`), `:role` (text role, default `:annotation`), `:color` (overrides the role's); `:outer` - past the outer radius of a polar plot at its segment's middle angle, anchored outward, with `:span [v0 v1]` (its segment's values) and `:leader` (a leader line).
   - `scales` (map): finalized position scales.
   - `env` (map): the drawing environment (`:theme`).
 
@@ -289,14 +306,13 @@
   Parameters:
 
   - `chart-options` (map): chart options - `:n-label` (default false), `:n-format`.
-  - `items` (map): `{panel [item ...]}` (see [[cljplot2.data.strip/split]]).
+  - `items` (map): `{panel [item ...]}` (see [[cljplot2.data.strip/split]]), optional `:n-label-gap` on an item (see [[draw-n-labels!]]).
   - `env` (map): `:theme`, `:hint`, `:flip` (see [[end-label-room]]).
 
-  Returns room past the largest values for the count labels, past the smallest for `:mirrored` items; `nil` without n labels or items."
+  Returns room past the largest values for the count labels (with the largest `:n-label-gap`), past the smallest for `:mirrored` items; `nil` without n labels or items."
   [chart-options items env]
   (when (data/option chart-options :n-label false)
-    (end-label-room (map (fn [item] {:text (n-label-text chart-options item) :side (n-label-side item)}) (mapcat val items))
-                    env)))
+    (end-label-room (map #(n-end-label chart-options (constantly nil) %) (mapcat val items)) env)))
 
 (defn draw-n-labels!
   "Draws each item's count just past its largest drawn value, when the chart has n labels.
@@ -307,7 +323,7 @@
 
   - `canvas`: the canvas.
   - `pl` (map): the chart's [[cljplot2.chart.strip/placement]].
-  - `items` (sequence): one panel's items.
+  - `items` (sequence): one panel's items, optional `:n-label-gap` - extra pixels between an item's largest drawn value and its label (the half size of a mark drawn there), default none.
   - `top-value` (function): item -> its largest drawn value (the smallest for a `:mirrored` item, which is labelled toward decreasing values).
   - `chart-options` (map): chart options - `:n-label` (default false), `:n-format` (default `n=%d`).
   - `scales` (map): finalized position scales.
@@ -316,12 +332,7 @@
   Returns `nil`. See also [[draw-end-labels!]]."
   [canvas pl items top-value chart-options scales env]
   (when (data/option chart-options :n-label false)
-    (draw-end-labels! canvas pl
-                      (map (fn [{:keys [level slot] :as item}]
-                             {:level level :slot slot :at (top-value item) :side (n-label-side item)
-                              :text (n-label-text chart-options item)})
-                           items)
-                      scales env)))
+    (draw-end-labels! canvas pl (map #(n-end-label chart-options top-value %) items) scales env)))
 (defn placement
   "Gives the pixel geometry of a strip chart's placement in a panel (see the namespace doc).
 

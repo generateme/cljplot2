@@ -229,6 +229,45 @@
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 
+;; Crowded labels: `:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
+;; order is the priority (here the larger cities first). A mapped `:x-span` gives each label a room along x in x
+;; units (here up to the next city east of it at about its latitude, else the panel's edge): a longer label shrinks,
+;; down to its text role's `:min-size` (the `:annotation` role's 6 points by default; a role without one doesn't
+;; shrink): on the right the labels with room keep their size, while Vienna (next to Bratislava) and Budapest (near
+;; the panel's edge) are drawn smaller to fit their room. Only labels running along x are fitted - unrotated, in an unflipped cartesian plot. Builders use both for their
+;; node labels:
+
+(def capitals [{:city "Paris" :lon 2.35 :lat 48.86 :pop 2.1} {:city "Berlin" :lon 13.40 :lat 52.52 :pop 3.7}
+               {:city "Vienna" :lon 16.37 :lat 48.21 :pop 2.0} {:city "Budapest" :lon 19.04 :lat 47.50 :pop 1.7}
+               {:city "Prague" :lon 14.42 :lat 50.08 :pop 1.3} {:city "Brussels" :lon 4.35 :lat 50.85 :pop 1.2}
+               {:city "Amsterdam" :lon 4.90 :lat 52.37 :pop 0.9} {:city "Bratislava" :lon 17.11 :lat 48.15 :pop 0.5}
+               {:city "Luxembourg" :lon 6.13 :lat 49.61 :pop 0.1} {:city "Ljubljana" :lon 14.51 :lat 46.06 :pop 0.3}
+               {:city "Zagreb" :lon 15.98 :lat 45.81 :pop 0.8} {:city "Bern" :lon 7.45 :lat 46.95 :pop 0.1}])
+
+(nu/data-table capitals)
+
+(plot/render-image (plot/arrange (map (fn [[title text-chart]]
+                                        {:data (sort-by (comp - :pop) capitals)
+                                         :mapping {:x :lon :y :lat}
+                                         :charts [(chart/scatter) text-chart]
+                                         :scales {:x {:domain [0 24]}}
+                                         :labels {:title title :x nil :y nil}})
+                                      [[":overlapping-labels :keep"
+                                        (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :middle] :offset [4 0]
+                                                     :overlapping-labels :keep})]
+                                       [":overlapping-labels :drop"
+                                        (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :middle] :offset [4 0]
+                                                     :overlapping-labels :drop})]
+                                       [":drop, :x-span to the next city"
+                                        (chart/text {:mapping {:x :lon :y :lat :label :city
+                                                               :x-span (fn [{:keys [lon lat]}]
+                                                                         (- (reduce min 24.0 (keep #(when (and (> (:lon %) lon) (< (abs (- (:lat %) lat)) 0.8)) (:lon %))
+                                                                                                   capitals))
+                                                                            lon))}
+                                                     :anchor [:left :middle] :offset [4 0] :overlapping-labels :drop})]])
+                                 {:columns 3})
+                   {:width 1000 :height 330})
+
 (nu/shared-groups (describe/options (chart/text)))
 
 ;; ## image

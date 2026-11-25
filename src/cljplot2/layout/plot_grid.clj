@@ -9,10 +9,31 @@
   Margins are fixed (theme `[:plot :margin]`), the panel is flexible, every other track is measured.
   Axis tracks are reserved for axes and hold no items yet.
 
+  Plot `:margins` (single panel) add a fixed track and a gap beside the panel per side: `:top-margin` rows above
+  `:y-overhang`, `:bottom-margin` rows between the panel and `:x-axis`, `:left-margin` columns between `:y-axis` and
+  the panel, `:right-margin` columns after `:x-overhang` - the main axes stay on the outer side. A left or bottom
+  margin also adds a measured inner track next to the panel (`:left-margin-inner`, `:bottom-margin-inner` - the
+  counterpart of `:x-overhang` / `:y-overhang` beside the right / top margins) holding the main axis's start
+  overhang, so a margin's magnitude axis labels never touch the main axis labels. A margin's magnitude axis takes
+  the `:y-axis` column (top, bottom; the `:left-margin-inner` column with a left margin, next to its own panel) or
+  the `:x-axis` row (right, left; the `:bottom-margin-inner` row with a bottom margin), its end overhang a measured
+  track on the margin's far side.
+
+  `:arrange` cells fill the grid row by row; a plot with a row span (`:row-spans`) covers that many rows and later
+  plots skip the covered cells ([[arrange-cells]] - the one place giving a plot's cell); a `:measured` column holds
+  legend cells only ([[legend-cell?]]: `:legend-only` plots or one-column arranges of them), measured at the height
+  its cells get (a legend taller than its cell wraps into further columns); a `:measured` row holds `:legend-only`
+  plots only, as tall as their legends (scaled down in proportion when the measured rows don't fit).
+
   Plot `:labels` - `{:title t :x t :y t}`, `t` a string or a map of label options (`:text`, style overrides,
   `:align`, `:rotation`) merged into the label content; a missing or `nil` label adds no item.
   `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
-  The label `:kind` can't be overridden.
+  The label `:kind` can't be overridden. An axis title longer than its panels (the width under them, the height
+  beside them - one title spanning all facet panels) is fitted to them: wrapped at word boundaries (each line into at
+  most 3, the title track grows), then shrunk down to its text role's `:min-size` (`:axis-title` 8 points in the
+  default theme), then cut with an ellipsis (label content `:fit true`, see [[cljplot2.content.label/fitted-label]];
+  always on - a clipped title is a defect); a title that fits is drawn as given. A title rotated across its own
+  track (a y title with `:rotation 0`, an x title with `:rotation 90`) isn't fitted.
 
   An axis item (`:x-axis` below the panel, `:y-axis` left of it) is added for each scale in `:scale-specs` (not for
   one with `:axis false`), with
@@ -28,7 +49,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall.
 
-  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]."
+  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
@@ -49,11 +70,11 @@
   "Plot label key -> grid item id, content defaults, placement and description, in item order."
   [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title
             :description "plot title above the panels (role :title)"}]
-   [:x {:id :x-title :defaults {:role :axis-title} :column :panel :row :x-title
-        :description "x axis title (role :axis-title)"
+   [:x {:id :x-title :defaults {:role :axis-title :fit true} :column :panel :row :x-title
+        :description "x axis title (role :axis-title; too long - wrapped, shrunk, then cut to the panels' width)"
         :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]
-   [:y {:id :y-title :defaults {:role :axis-title :rotation 270} :column :y-title :row :panel
-        :description "y axis title (role :axis-title, rotated 270)"
+   [:y {:id :y-title :defaults {:role :axis-title :rotation 270 :fit true} :column :y-title :row :panel
+        :description "y axis title (role :axis-title, rotated 270; too long - wrapped, shrunk, then cut to the panels' height)"
         :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]])
 
 (def labels-schema
@@ -92,25 +113,40 @@
   [scale-specs k]
   (and (contains? scale-specs k) (scale/axis-drawn? (get scale-specs k))))
 
+(defn- margin-track-id
+  "Gives the id of a plot margin track.
+
+  Parameters:
+
+  - `side` (keyword): the margin's side.
+  - `part` (string): `\"\"` - the margin panel's track, else a suffix (`\"-gap\"`, `\"-inner\"`, `\"-overhang\"`, `\"-axis\"`, `\"-axis-end\"`).
+
+  Returns a keyword, e.g. `:top-margin`, `:left-margin-gap`."
+  [side part]
+  (keyword (str (name side) "-margin" part)))
+
 (defn- axis-items
   "Gives the grid items of a scale's axis on a panel side.
 
-  The axis sits beside the panel; its end overhang (room for the last tick label) takes the `:x-overhang` column or the `:y-overhang` row, both start overhangs the corner cell (`:y-axis` column, `:x-axis` row).
+  The axis sits beside the panel; its end overhang (room for the last tick label) takes the `:x-overhang` column or the `:y-overhang` row, both start overhangs the corner cell (`:y-axis` column, `:x-axis` row) - with a left plot margin the horizontal start overhang takes the `:left-margin-inner` column instead, with a bottom one the vertical start overhang the `:bottom-margin-inner` row (between the margin and the panel, see [[plot-margin-tracks]]).
 
   Parameters:
 
   - `side` (keyword): `:bottom` (a horizontal scale, the axis under the panel) or `:left` (a vertical scale, the axis left of it).
   - `k` (keyword): the scale drawn there.
+  - `margins` (map): the plot's margin stats, side -> `{:size :axis}`.
 
   Returns a vector of the axis item and its two overhang items."
-  [side k]
-  (case side
-    :bottom [{:id :x-axis :column :panel :row :x-axis :content {:kind :axis :scale k}}
-             {:id :x-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale k :end :start}}
-             {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale k :end :end}}]
-    :left [{:id :y-axis :column :y-axis :row :panel :content {:kind :axis :scale k}}
-           {:id :y-axis-start :column :y-axis :row :x-axis :content {:kind :axis-overhang :scale k :end :start}}
-           {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale k :end :end}}]))
+  [side k margins]
+  (let [start-column (if (:left margins) (margin-track-id :left "-inner") :y-axis)
+        start-row (if (:bottom margins) (margin-track-id :bottom "-inner") :x-axis)]
+    (case side
+      :bottom [{:id :x-axis :column :panel :row :x-axis :content {:kind :axis :scale k}}
+               {:id :x-axis-start :column start-column :row :x-axis :content {:kind :axis-overhang :scale k :end :start}}
+               {:id :x-axis-end :column :x-overhang :row :x-axis :content {:kind :axis-overhang :scale k :end :end}}]
+      :left [{:id :y-axis :column :y-axis :row :panel :content {:kind :axis :scale k}}
+             {:id :y-axis-start :column :y-axis :row start-row :content {:kind :axis-overhang :scale k :end :start}}
+             {:id :y-axis-end :column :y-axis :row :y-overhang :content {:kind :axis-overhang :scale k :end :end}}])))
 
 (defn- side-scales
   "Gives the scale drawn on each axis side of a plot.
@@ -168,8 +204,8 @@
     [{:id :legends :column :legend :row row-span :content {:kind :legends :legends legends}}]
     []))
 
-(def ^:private margin-sides
-  "Margin track id -> the side its alignment padding is keyed by."
+(def ^:private theme-margin-sides
+  "Theme margin track id (`[:plot :margin]`, not a plot `:margins` side) -> the side its alignment padding is keyed by."
   {:margin-left :left :margin-right :right :margin-top :top :margin-bottom :bottom})
 
 (defn- margin-track-fn
@@ -182,32 +218,59 @@
   Returns `(fn [id] track)`: the track's size is the theme margin plus that side's alignment padding."
   [{:keys [theme alignment-padding]}]
   (let [margin (double (get-in theme [:plot :margin]))]
-    (fn [id] {:id id :size [:fixed (m/+ margin (double (get alignment-padding (margin-sides id) 0)))]})))
+    (fn [id] {:id id :size [:fixed (m/+ margin (double (get alignment-padding (theme-margin-sides id) 0)))]})))
+
+(defn- margin-axis-places
+  "Gives where a plot margin's magnitude axis and the axis's end overhang go.
+
+  The top and bottom margins' axes take the `:y-axis` column - the `:left-margin-inner` column with a left margin, so
+  the axis stays next to its own margin panel instead of beyond the left margin; the right and left margins' take the
+  `:x-axis` row - the `:bottom-margin-inner` row with a bottom margin. The end overhang is on the margin's far side
+  from the panel, in the axis's column or row.
+
+  Parameters:
+
+  - `side` (keyword): the margin's side.
+  - `margins` (map): the plot's margin stats, side -> `{:size :axis}`.
+
+  Returns `[axis-column axis-row overhang-column overhang-row]` (`:margin` - the margin's own track, `:overhang` - its
+  overhang track)."
+  [side margins]
+  (if (#{:top :bottom} side)
+    (let [column (if (:left margins) (margin-track-id :left "-inner") :y-axis)]
+      [column :margin column :overhang])
+    (let [row (if (:bottom margins) (margin-track-id :bottom "-inner") :x-axis)]
+      [:margin row :overhang row])))
 
 (defn- plot-margin-tracks
   "Gives the tracks of a plot margin on one side.
 
-  A margin panel has a fixed size and a gap (theme `[:facet :gap]`) next to the main panel; with an axis, a measured track on its far side holds the room the magnitude axis's end tick label sticks out.
+  A margin panel has a fixed size and a gap (theme `[:facet :gap]`) next to the main panel; with an axis, a measured track on its far side holds the room the magnitude axis's end tick label sticks out. A left or bottom margin also has a measured inner track between its gap and the main panel (`:left-margin-inner`, `:bottom-margin-inner`) - as `:x-overhang` / `:y-overhang` for the right and top margins: it holds the main axis's start overhang and the top / bottom (right / left) margins' magnitude axes (see [[margin-axis-places]]), so those labels don't run into the margin's.
 
   Parameters:
 
   - `margins` (map): the plot's margin stats, side -> `{:size :axis}`.
-  - `side` (keyword): `:top` (rows above the panel) or `:right` (columns right of it).
+  - `side` (keyword): `:top` (rows above the panel), `:bottom` (rows below it), `:right` (columns right of it) or `:left` (columns left of it).
   - `theme` (map): the merged theme.
 
-  Returns the tracks in order from the main panel outwards (`:top` - from the top down); empty without that margin."
+  Returns the tracks in grid order (top down, left to right); empty without that margin."
   [margins side theme]
   (if-let [{:keys [size axis]} (get margins side)]
-    (let [gap {:id (keyword (str (name side) "-margin-gap")) :size [:fixed (get-in theme [:facet :gap])]}
-          track {:id (keyword (str (name side) "-margin")) :size [:fixed size]}
-          overhang (when axis {:id (keyword (str (name side) "-margin-overhang")) :size [:measured]})]
-      (remove nil? (if (= side :top) [overhang track gap] [gap track overhang])))
+    (let [gap {:id (margin-track-id side "-gap") :size [:fixed (get-in theme [:facet :gap])]}
+          track {:id (margin-track-id side "") :size [:fixed size]}
+          overhang (when axis {:id (margin-track-id side "-overhang") :size [:measured]})
+          inner {:id (margin-track-id side "-inner") :size [:measured]}]
+      (remove nil? (case side
+                     :top [overhang track gap]
+                     :left [overhang track gap inner]
+                     :right [gap track overhang]
+                     :bottom [inner gap track overhang])))
     []))
 
 (defn- plot-margin-items
   "Gives the grid items of the plot margins.
 
-  Each margin gets a panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`, its magnitude axis `{:kind :axis :scale :y :margin side}` (the top margin's in the y-axis column, the right margin's in the x-axis row) plus an overhang item for its end tick label.
+  Each margin gets a panel `{:kind :panel :margin side}` beside the main panel and, with `:axis`, its magnitude axis `{:kind :axis :scale :y :margin side}` (the top and bottom margins' in the y-axis column or next to the panel past a left margin, the right and left margins' in the x-axis row or next to the panel past a bottom margin, see [[margin-axis-places]]) plus an overhang item for its end tick label.
 
   Parameters:
 
@@ -216,25 +279,23 @@
   Returns a lazy sequence of items; empty without margins."
   [margins]
   (mapcat (fn [[side {:keys [axis]}]]
-                 (let [panel-id (keyword (str (name side) "-margin"))
-                       [column row axis-column axis-row] (if (= side :top)
-                                                           [:panel panel-id :y-axis panel-id]
-                                                           [panel-id :panel panel-id :x-axis])]
-                   (cond-> [{:id panel-id :column column :row row :content {:kind :panel :margin side}}]
-                     axis (conj {:id (keyword (str (name side) "-margin-axis")) :column axis-column :row axis-row
-                                 :content {:kind :axis :scale :y :margin side}}
-                                ;; room for the end tick label: above the top margin, right of the right margin
-                                (let [overhang-id (keyword (str (name side) "-margin-overhang"))]
-                                  {:id (keyword (str (name side) "-margin-axis-end"))
-                                   :column (if (= side :top) :y-axis overhang-id)
-                                   :row (if (= side :top) overhang-id :x-axis)
-                                   :content {:kind :axis-overhang :scale :y :end :end :margin side}})))))
+            (let [panel-id (margin-track-id side "")
+                  overhang-id (margin-track-id side "-overhang")
+                  place (fn [track-ref] (case track-ref :margin panel-id :overhang overhang-id track-ref))
+                  [axis-column axis-row overhang-column overhang-row] (map place (margin-axis-places side margins))
+                  [column row] (if (#{:top :bottom} side) [:panel panel-id] [panel-id :panel])]
+              (cond-> [{:id panel-id :column column :row row :content {:kind :panel :margin side}}]
+                axis (conj {:id (margin-track-id side "-axis") :column axis-column :row axis-row
+                            :content {:kind :axis :scale :y :margin side}}
+                           ;; room for the end tick label, on the margin's far side from the panel
+                           {:id (margin-track-id side "-axis-end") :column overhang-column :row overhang-row
+                            :content {:kind :axis-overhang :scale :y :end :end :margin side}}))))
           margins))
 
 (defn- single-panel-grid
   "Gives the grid of a single-panel plot.
 
-  The grid holds the labels, the axes of the drawn position scales, the legends, the plot margins (a `:top-margin` row above the panel, a `:right-margin` column right of it before the legend, each next to a gap) and the theme margin.
+  The grid holds the labels, the axes of the drawn position scales, the legends, the plot margins (a `:top-margin` row above the panel, a `:bottom-margin` row below it before the x axis, a `:left-margin` column left of it after the y axis, a `:right-margin` column right of it before the legend, each next to a gap) and the theme margin.
 
   Parameters:
 
@@ -245,17 +306,19 @@
   (let [margin-track (margin-track-fn plot)
         measured (fn [id] {:id id :size [:measured]})
         legends (legend/legends plot)]
-    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis) {:id :panel :size [:flexible]}
-                   (measured :x-overhang)]
+    {:columns (-> [(margin-track :margin-left) (measured :y-title) (measured :y-axis)]
+                  (into (plot-margin-tracks margin-stats :left theme))
+                  (into [{:id :panel :size [:flexible]} (measured :x-overhang)])
                   (into (plot-margin-tracks margin-stats :right theme))
                   (into (legend-tracks legends theme))
                   (conj (margin-track :margin-right)))
      :rows (-> [(margin-track :margin-top) (measured :title)]
                (into (plot-margin-tracks margin-stats :top theme))
-               (into [(measured :y-overhang) {:id :panel :size [:flexible]}
-                      (measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
+               (into [(measured :y-overhang) {:id :panel :size [:flexible]}])
+               (into (plot-margin-tracks margin-stats :bottom theme))
+               (into [(measured :x-axis) (measured :x-title) (margin-track :margin-bottom)]))
      :items (-> [{:id :panel :column :panel :row :panel :content (cond-> {:kind :panel} (:alternate-panel plot) (assoc :alternate true))}]
-                (into (mapcat (fn [[side k]] (when (axis-shown? scale-specs k) (axis-items side k)))) (side-scales flip))
+                (into (mapcat (fn [[side k]] (when (axis-shown? scale-specs k) (axis-items side k margin-stats)))) (side-scales flip))
                 (into (label-items (side-labels labels flip) {}))
                 (into (legend-items legends :panel))
                 (into (plot-margin-items margin-stats)))}))
@@ -401,10 +464,10 @@
            inner-y-axes (if (free? (if (= horizontal :x) :y :x)) (m/* (m/long-dec columns) (axis-room theme :y tick-w)) 0.0)
            inner-x-axes (if (free? horizontal) (m/* (m/long-dec rows) (axis-room theme :x tick-h)) 0.0)
            w (m/- (double (:width options)) (m/* 2.0 margin) (size-height (text-size :axis-title y))
-                  (axis-room theme :y tick-w) (double (margin-room :right)) legend-room
+                  (axis-room theme :y tick-w) (double (margin-room :right)) (double (margin-room :left)) legend-room
                   (m/* gap (m/long-dec columns)) (if grid? strip 0.0) inner-y-axes)
            h (m/- (double (:height options)) (m/* 2.0 margin) (size-height (text-size :title title))
-                  (double (margin-room :top)) (axis-room theme :x tick-h)
+                  (double (margin-room :top)) (double (margin-room :bottom)) (axis-room theme :x tick-h)
                   (size-height (text-size :axis-title x)) (m/* gap (m/long-dec rows)) (if grid? strip (m/* strip rows)) inner-x-axes)]
        [(m/max 1.0 (m// w columns)) (m/max 1.0 (m// h rows))]))))
 
@@ -469,9 +532,9 @@
         last-row (last rows)
         next-row (fn [r] (second (drop-while #(not= r %) rows)))
         with-panel (fn [item panel] (cond-> item panel (assoc-in [:content :panel] (:key panel))))
-        [bottom-start x-end] (rest (axis-items :bottom h-key))
+        [bottom-start x-end] (rest (axis-items :bottom h-key nil))
         x-start (cond-> bottom-start free-v (assoc :column [:y-axis 0]))
-        [y-start y-end] (rest (axis-items :left v-key))]
+        [y-start y-end] (rest (axis-items :left v-key nil))]
     (concat
      (when h-shown
        (if free-h
@@ -616,26 +679,77 @@
     rows [(long rows) (long (m/ceil (m// (double n) (double rows))))]
     :else [n 1]))
 
+(defn arrange-cells
+  "Gives the grid cell of every plot of an arrangement.
+
+  Plots fill the cells row by row, left to right; a plot with a row span (`:row-spans {index rows}`) also covers the cells below its own, which later plots skip (as an HTML table's `rowspan`). Without row spans plot `k` is in row `k / columns`, column `k mod columns`.
+
+  Parameters:
+
+  - `arrange` (map): `:plots`, `:columns`, `:rows`, optional `:row-spans` - plot index -> the rows it spans (at least 1).
+
+  Returns `{:rows r :columns c :cells [{:row i :column j :span n} ...]}` - the shape and a cell per plot in plot order. The columns come from [[arrange-shape]] over the number of cells the plots cover; the rows are the given `:rows`, else the rows the placed plots reach (a row span starting in the last row adds rows). With `:rows` given, a plot that doesn't fit gets `:row` at or past `r` (or a span past it)."
+  [{:keys [plots columns rows row-spans]}]
+  (let [n (count plots)
+        span-of (fn ^long [^long k] (long (get row-spans k 1)))
+        covered (reduce m/long-add 0 (map span-of (range n)))
+        [^long r ^long c] (arrange-shape covered columns rows)]
+    (loop [k 0
+           slot 0
+           occupied #{}
+           cells []]
+      (cond
+        (m/>= k n) {:rows (if rows r (reduce (fn [^long acc {:keys [^long row ^long span]}] (m/max acc (m/long-add row span))) r cells))
+                    :columns c :cells cells}
+        (contains? occupied slot) (recur k (m/long-inc slot) occupied cells)
+        :else (let [i (m/long-quot slot c)
+                    j (m/long-rem slot c)
+                    span (span-of k)]
+                (recur (m/long-inc k) (m/long-inc slot)
+                       (into occupied (map (fn [^long t] (m/long-add slot (m/* t c)))) (range 1 span))
+                       (conj cells {:row i :column j :span span})))))))
+
+(defn legend-cell?
+  "Tests whether an arranged plot draws only legends: a `:legend-only` plot, or a one-column `:arrange` of such plots (a stack of legends, e.g. the legend column of [[cljplot2.graphs/clustered-heatmap]] with annotations).
+
+  Parameters:
+
+  - `p` (map): an arranged plot.
+
+  Returns truthy for a legend cell, else `nil` / `false`."
+  [p]
+  (or (:legend-only p)
+      (when-let [{nested :plots nested-columns :columns} (:arrange p)]
+        (and (contains? #{nil 1} nested-columns) (every? legend-cell? nested)))))
+
 (defn- arrange-problem
   "Gives why an `:arrange` spec (valid entries) can't be laid out, or `nil`.
 
   Parameters:
 
-  - `arrange` (map): `:plots`, `:columns`, `:rows`, `:widths`, `:heights`.
+  - `arrange` (map): `:plots`, `:columns`, `:rows`, `:widths`, `:heights`, `:row-spans`.
 
-  Returns a message: too few cells, `:widths` / `:heights` not one per column / row, or a `:measured` width over a column with a plot that isn't `:legend-only`."
-  [{:keys [plots columns rows widths heights]}]
-  (let [cells (vec plots)
-        n (count cells)
-        [^long r ^long c] (arrange-shape n columns rows)]
+  Returns a message: too few cells, a row span past the last row or of a plot that doesn't exist, `:widths` / `:heights` not one per column / row, a `:measured` width over a column with a plot that isn't a legend cell (see [[legend-cell?]]), or a `:measured` height over a row with a plot that isn't `:legend-only`."
+  [{:keys [plots widths heights row-spans] :as arrange}]
+  (let [cells-of (vec plots)
+        n (count cells-of)
+        {:keys [^long rows ^long columns cells]} (arrange-cells arrange)
+        last-cell (peek cells)]
     (cond
-      (m/< (m/* r c) n) (str "layout " r "x" c " is too small for " n " plots")
-      (and widths (m/not== c (count widths))) (str ":widths should have one weight per column (" c ")")
+      (some (fn [[k _]] (m/>= (long k) n)) row-spans) (str ":row-spans names a plot index past the last plot (" (m/long-dec n) ")")
+      (and last-cell (m/>= (long (:row last-cell)) rows)) (str "layout " rows "x" columns " is too small for " n " plots")
+      (some (fn [{:keys [^long row ^long span]}] (m/> (m/long-add row span) rows)) cells)
+      (str "a :row-spans entry reaches past the last row (" rows " rows)")
+      (and widths (m/not== columns (count widths))) (str ":widths should have one weight per column (" columns ")")
       (some (fn [j] (and (= :measured (nth widths j))
-                         (not-every? :legend-only (keep (fn [i] (get cells (m/long-add (long j) (m/* c (long i))))) (range r)))))
+                         (not-every? legend-cell? (keep-indexed (fn [k cell] (when (m/== (long j) (long (:column cell))) (cells-of k))) cells))))
             (range (count widths)))
-      ":widths :measured sizes a column of :legend-only plots only"
-      (and heights (m/not== r (count heights))) (str ":heights should have one weight per row (" r ")"))))
+      ":widths :measured sizes a column of legend cells only (:legend-only plots or one-column arranges of them)"
+      (and heights (m/not== rows (count heights))) (str ":heights should have one weight per row (" rows ")")
+      (some (fn [i] (and (= :measured (nth heights i))
+                         (not-every? :legend-only (keep-indexed (fn [k cell] (when (m/== (long i) (long (:row cell))) (cells-of k))) cells))))
+            (range (count heights)))
+      ":heights :measured sizes a row of :legend-only plots only")))
 
 (def arrange-entries
   "Map entries of a multiplot layout (plot `:arrange`): a shared group (`:arrange`), so other multiplot options can
@@ -648,8 +762,12 @@
     (schema/nilable :widths {:description "relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width"
                              :cljplot2/default-doc "equal"}
                     [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
-    (schema/nilable :heights {:description "relative row weights; [:fixed px] a fixed height" :cljplot2/default-doc "equal"}
-                    [:sequential [:or schema/pos [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :heights {:description "relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height"
+                              :cljplot2/default-doc "equal"}
+                    [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
+    (schema/nilable :row-spans {:description "plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)"
+                                :cljplot2/default-doc "every plot one row"}
+                    [:map-of [:int {:min 0}] schema/pos-int])
     (schema/nilable :align {:description "align the sub-plots' panels in rows and columns" :default true} schema/bool)
     (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size (builds twice)"
                                    :default false}
@@ -658,7 +776,7 @@
 (def arrange-schema
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
   (schema/with-rules
-   (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :align :equal-panels}"}]
+   (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels}"}]
          arrange-entries)
    [arrange-problem]))
 
@@ -714,17 +832,17 @@
 (defn arrange-grid
   "Gives the grid of an arranged plot.
 
-  Cells `[:plot i]` are filled row by row (columns `[:column c]`, rows `[:row r]`) with theme `[:multiplot :gap]` between them, theme `[:plot :margin]` around, and an optional title row above the cells, inside the margins.
+  Cells `[:plot i]` are filled row by row (columns `[:column c]`, rows `[:row r]`; a plot with a row span covers that many rows, see [[arrange-cells]]) with theme `[:multiplot :gap]` between them, theme `[:plot :margin]` around, and an optional title row above the cells, inside the margins.
 
   Parameters:
 
-  - `arrange` (map): the plot's `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights}`, valid by [[arrange-schema]], its `:measured` widths resolved to `[:fixed px]` (see the pipeline's grid stage).
+  - `arrange` (map): the plot's `:arrange` spec `{:plots [p ...] :columns :rows :widths :heights :row-spans}`, valid by [[arrange-schema]], its `:measured` widths and heights resolved to `[:fixed px]` (see the pipeline's grid stage).
   - `labels` (map): the plot labels, only `:title` used.
   - `theme` (map): the merged theme.
 
   Returns the grid map `{:columns :rows :items}`."
-  [{:keys [plots columns rows widths heights]} labels theme]
-  (let [[^long r ^long c] (arrange-shape (count plots) columns rows)
+  [{:keys [plots widths heights] :as arrange} labels theme]
+  (let [{^long r :rows ^long c :columns cells :cells} (arrange-cells arrange)
         gap (get-in theme [:multiplot :gap])
         margin (get-in theme [:plot :margin])
         margin-track (fn [id] {:id id :size [:fixed margin]})]
@@ -734,10 +852,11 @@
      :rows (-> [(margin-track :margin-top) {:id :title :size [:measured]}]
                (into (weighted-tracks :row :row-gap (arrange-weights heights r) gap))
                (conj (margin-track :margin-bottom)))
-     :items (-> (vec (map-indexed (fn [i p]
-                                    {:id [:plot i] :column [:column (m/long-rem (long i) c)] :row [:row (m/long-quot (long i) c)]
+     :items (-> (vec (map (fn [i p {:keys [^long row column ^long span]}]
+                                    {:id [:plot i] :column [:column column]
+                                     :row (if (m/> span 1) {:from [:row row] :to [:row (m/long-dec (m/long-add row span))]} [:row row])
                                      :content {:kind :plot :plot p}})
-                                  plots))
+                                  (range) plots cells))
                 (into (label-items (select-keys labels [:title])
                                    {:title {:column {:from [:column 0] :to [:column (m/long-dec c)]} :row :title}})))}))
 

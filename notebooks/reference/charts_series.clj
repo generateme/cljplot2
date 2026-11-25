@@ -92,7 +92,7 @@
 ;; ### Fit
 
 ;; The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
-;; spans only its own x range:
+;; spans only its own x range, and the space the fit runs in (a log axis's log10 coordinates by default):
 
 (nu/options-table (describe/own-rows (describe/options (chart/smooth))) :fit)
 
@@ -126,6 +126,26 @@
                                    :legend false}]
                                  {:columns 3})
                    {:width 1000 :height 320})
+
+;; Values growing with the logarithm of x (random, seeded), x spread evenly over three decades:
+
+(def log-growth (mapv (fn [^double u ^double e] {:x (m/pow 10.0 u) :y (+ (* 3.0 u) e)})
+                      (m/slice-range 0.0 3.0 60)
+                      (r/->seq (r/distribution :normal {:sd 0.5 :rng (r/rng :mersenne 11)}) 60)))
+
+(nu/data-table log-growth)
+
+;; On a log axis the fit runs in the axis's log10 coordinates (`:stat-space :scale`, the default) - a straight line
+;; there; `:stat-space :data` fits in data units, a line in x that the log axis bends:
+
+(plot/render-image (plot/arrange [{:data log-growth :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :stat-space :scale})]
+                                   :labels {:title ":stat-space :scale (default)"}}
+                                  {:data log-growth :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :stat-space :data})]
+                                   :labels {:title ":stat-space :data"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
 
 ;; ### Band
 

@@ -53,7 +53,8 @@
   - `plots` (sequence of plot maps): the cells, row by row.
   - `options` (map, optional):
     - `:columns`, `:rows` - grid shape (default one column; one given, the other computed);
-    - `:widths`, `:heights` - relative column / row weights (default equal); a `:widths` entry `:measured` sizes a column of `:legend-only` plots to their legends (e.g. a shared legend column), an entry may also be `[:fixed px]`;
+    - `:widths`, `:heights` - relative column / row weights (default equal); a `:widths` entry `:measured` sizes a column of `:legend-only` plots (or one-column arranges of them) to their legends (e.g. a shared legend column; measured at the height each cell gets, so a legend taller than its cell wraps into further columns and the column widens), a `:heights` entry `:measured` sizes a row of `:legend-only` plots to their legends' height (all measured rows scaled down in proportion when they don't fit; e.g. a stack of legends), an entry may also be `[:fixed px]`;
+    - `:row-spans` - `{plot-index rows}` (keyed by plot index, not cell): that plot covers `rows` rows from its own down (e.g. one legend cell beside the whole grid); later plots skip the covered cells, and without `:rows` a span past the last row adds rows, see [[cljplot2.layout.plot-grid/arrange-cells]];
     - `:align` - align the panels of sub-plots in rows and columns (default `true`; `false` - each sub-plot laid out on its own), see [[cljplot2.layout.align]];
     - `:equal-panels` - `true`: after the first layout the columns and rows are resized so every aligned panel has the same width and height (cells with axes get the extra room; fixed / `:measured` columns keep their width) - a matrix of panels, e.g. [[pairs]]; the whole multiplot is built twice;
     - `:title` - overall title above the cells (`:labels {:title t}`);
@@ -66,7 +67,7 @@
   ([plots] (arrange plots {}))
   ([plots {:keys [title theme] :as options}]
    (schema/check-options! arrange-options options)
-   (cond-> {:arrange (assoc (select-keys options [:columns :rows :widths :heights :align :equal-panels]) :plots plots)}
+   (cond-> {:arrange (assoc (select-keys options [:columns :rows :widths :heights :row-spans :align :equal-panels]) :plots plots)}
      theme (assoc :theme theme)
      (some? title) (assoc :labels {:title title}))))
 
@@ -173,41 +174,77 @@
     ":upper needs a square matrix (the same :row-variables and :column-variables in the same order); other matrices draw :lower in every cell of two different variables"))
 
 (def pairs-options
-  "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data)."
-  (-> [:map {:closed true}
-       (schema/nilable :variables {:description "the numeric columns, in matrix order (rows and columns)"
-                                   :cljplot2/default-doc "required unless :row-variables and :column-variables are given"}
-                       [:sequential {:min 2 :max max-pairs-variables} keyword?])
-       (schema/nilable :row-variables {:description "the numeric columns of the matrix rows, top to bottom (on y)"
-                                       :cljplot2/default-doc ":variables"}
-                       [:sequential {:min 1 :max max-pairs-variables} keyword?])
-       (schema/nilable :column-variables {:description "the numeric columns of the matrix columns, left to right (on x)"
-                                          :cljplot2/default-doc ":variables"}
-                       [:sequential {:min 1 :max max-pairs-variables} keyword?])
-       (schema/nilable :mapping {:description "extra mapping of every cell (grouping aesthetics such as :color, :group)"}
-                       data/mapping-schema)
-       (schema/nilable :lower {:description "charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells"
-                                :cljplot2/default-doc "(chart/scatter)"}
-                        slot-schema)
-       (schema/nilable :upper {:description "charts above the diagonal (a square matrix only); :none - empty cells"
-                                :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
-                        slot-schema)
-       (schema/nilable :diagonal {:description "charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells"
-                                   :cljplot2/default-doc "(chart/density)"}
-                        [:maybe [:multi {:dispatch #(cond (#{:names :none} %) :keyword (map? %) :chart :else :charts)
-                                         :cljplot2/type-doc ":names, :none, a chart or a vector of charts"}
-                                 [:keyword [:enum :names :none]]
-                                 [:chart pipeline/chart-schema]
-                                 [:charts [:sequential pipeline/chart-schema]]]])
-       (schema/nilable :variable-names {:description "display names of the variables, {variable text}"
-                                :cljplot2/default-doc "the variable's name"}
-                       [:map-of keyword? string?])
-       (schema/nilable :scales {:description "the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one"}
-                       [:map {:closed true} (schema/optional :color {:description "the colour scale spec"} (aesthetic/scale-spec-schema :color))])
-       (schema/nilable :theme {:description "theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)"}
-                       any?)]
-      (into (builder-entries-of [:title]))
+  "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data); sections `:variables` (what the matrix shows), `:cells` (how its cells draw) and `:layout` (the matrix's title, legend column and theme)."
+  (-> [:map {:closed true}]
+      (into (schema/in-section
+             :variables
+             [(schema/nilable :variables {:description "the numeric columns, in matrix order (rows and columns)"
+                                          :cljplot2/default-doc "required unless :row-variables and :column-variables are given"}
+                              [:sequential {:min 2 :max max-pairs-variables} keyword?])
+              (schema/nilable :row-variables {:description "the numeric columns of the matrix rows, top to bottom (on y)"
+                                              :cljplot2/default-doc ":variables"}
+                              [:sequential {:min 1 :max max-pairs-variables} keyword?])
+              (schema/nilable :column-variables {:description "the numeric columns of the matrix columns, left to right (on x)"
+                                                 :cljplot2/default-doc ":variables"}
+                              [:sequential {:min 1 :max max-pairs-variables} keyword?])
+              (schema/nilable :mapping {:description "extra mapping of every cell (grouping aesthetics such as :color, :group)"}
+                              data/mapping-schema)
+              (schema/nilable :variable-names {:description "display names of the variables, {variable text}"
+                                               :cljplot2/default-doc "the variable's name"}
+                              [:map-of keyword? string?])]))
+      (into (schema/in-section
+             :cells
+             [(schema/nilable :lower {:description "charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells"
+                                      :cljplot2/default-doc "(chart/scatter)"}
+                              slot-schema)
+              (schema/nilable :upper {:description "charts above the diagonal (a square matrix only); :none - empty cells"
+                                      :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
+                              slot-schema)
+              (schema/nilable :diagonal {:description "charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells"
+                                         :cljplot2/default-doc "(chart/density)"}
+                              [:maybe [:multi {:dispatch #(cond (#{:names :none} %) :keyword (map? %) :chart :else :charts)
+                                               :cljplot2/type-doc ":names, :none, a chart or a vector of charts"}
+                                       [:keyword [:enum :names :none]]
+                                       [:chart pipeline/chart-schema]
+                                       [:charts [:sequential pipeline/chart-schema]]]])
+              (schema/nilable :scales {:description "the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one"}
+                              [:map {:closed true} (schema/optional :color {:description "the colour scale spec"} (aesthetic/scale-spec-schema :color))])]))
+      (into (schema/in-section
+             :layout
+             [(schema/nilable :legend-span {:description "height of the legend column: :row - beside the first row, one row high; :matrix - beside the whole matrix (a legend taller than a row, e.g. of a many-variable matrix)"
+                                            :default :row}
+                              [:enum :row :matrix])
+              (schema/nilable :theme {:description "theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)"}
+                              any?)]))
+      (into (schema/in-section :layout (builder-entries-of [:title])))
       (schema/with-rules [pairs-variables-problem [:variables]] [pairs-upper-problem [:upper]])))
+
+(def ^{:private true :const true :tag 'double} outer-share-divisor
+  "Divisor of the outer track's weight in the first layout of a pairs matrix, see [[outer-weights]]: the outer track
+  of `n` tracks weighs `(n - 1) / outer-share-divisor` (at least 1) against 1 for the others, so it has at least
+  about a ninth of the room - enough for the axis of a matrix of many small cells."
+  8.0)
+
+(defn- outer-weights
+  "Gives the relative track weights of the first layout of a pairs matrix along one axis.
+
+  The outer track (the left column, the bottom row) holds the axis: in the first layout, before [[arrange]]'s
+  `:equal-panels` gives every panel one size, it takes a larger share, so a matrix of many small cells has room for
+  its axis (equal tracks would leave the outer cell narrower than its axis).
+
+  Parameters:
+
+  - `n` (long): the track count.
+  - `last-outer` (boolean): the outer track is the last one (rows), else the first (columns).
+
+  Returns a vector of `n` weights: 1 (a long) for every track, the outer one `(n - 1) / `[[outer-share-divisor]] (a double) when that is
+  larger - the outer track has at least about a ninth of the room; up to 9 tracks all 1, the plot map as with equal
+  weights."
+  [^long n last-outer]
+  (let [share (m// (m/long-dec n) outer-share-divisor)
+        outer (if (m/> share 1.0) share 1)
+        inner (vec (repeat (m/long-dec n) 1))]
+    (if last-outer (conj inner outer) (into [outer] inner))))
 
 (defn pairs
   "Builds a scatter-plot matrix of numeric variables as an [[arrange]] plot map: cell (row i, column j) plots column variable j on x against row variable i on y.
@@ -223,6 +260,7 @@
     - `:diagonal` - charts of the diagonal cells - those whose row and column variable are the same (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`); `:none` - empty cells;
     - `:variable-names` - `{variable text}`, display names (default the variable's name);
     - `:scales` - `{:color spec}`, the colour scale of every cell that colours (a mapped or computed colour), so the matrix has one colour bar; its `:domain` wins over a computed one;
+    - `:legend-span` - the legend column's height: `:row` (default) beside the first row, one row high; `:matrix` beside the whole matrix (one cell spanning every row, arrange `:row-spans`), so a legend taller than a row fits - e.g. the keys of a matrix of many variables, whose rows are low; a colour bar stretches to the matrix height;
     - `:theme` - every cell's and the matrix's theme (cells have no plot margin and are `[:facet :gap]` apart, as facet panels; a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins);
     - `:title` - a title above the matrix.
 
@@ -230,8 +268,14 @@
   range widened by 5 %, no nice extension, no chart padding). Tick labels and axis titles (the variable names) only on the outer cells
   - x under the bottom row, y left of the left column - the inner sides keep grid lines (`:axis :grid`). Diagonal
   charts draw in their own magnitude scale; their y axis and grid show the row variable (`:axis-domain`), so the
-  top-left cell labels the first variable as the rest of its row. The cells' legends are hidden; one
-  column of `:legend-only` plots, sized to the legend, shows the mapped aesthetics (keys of the lower charts, a color
+  top-left cell labels the first variable as the rest of its row. Inner cells have no axis room, so up to 20
+  variables with short tick labels (a few characters, e.g. values below 10) fit an image of about 1000 x 800 px (in
+  the first layout, before `:equal-panels`, the outer column and row take at least about a ninth of the room); longer
+  tick labels (e.g. values in the thousands), a smaller image (about 600 x 500 px fits fewer than 12 variables) or more
+  variables leave the outer cells too small for their axes - an error naming the cell. A legend beside the first row
+  (`:legend-span :row`) taller than that row wraps into columns side by side and takes width from the matrix: with a
+  mapped aesthetic and many variables (about 12 or more) use `:legend-span :matrix`. The cells' legends are hidden; one
+  column of `:legend-only` plots, sized to the legend at its cell's height (beside the first row, or the whole matrix - `:legend-span`), shows the mapped aesthetics (keys of the lower charts, a color
   bar for a continuous color - left out of the diagonal cells) or, without a mapping, the colors the lower / upper
   charts compute (e.g. the r color bar of correlation glyphs);
   the matrix has `:equal-panels` and cells shaded as a checkerboard like facet panels (`:alternate-panel` on odd
@@ -256,7 +300,7 @@
   has one colour bar (else an error keyed `:upper`). A matrix as a heatmap (one tile per pair) is `chart/tile` over
   [[cljplot2.data.pairwise/matrix-rows]] (or `fastmath.stats/correlation-matrix` rows) instead."
   {:cljplot2/options pairs-options}
-  [rows {:keys [mapping variable-names theme title row-variables column-variables] matrix-scales :scales variable-keys :variables
+  [rows {:keys [mapping variable-names theme title row-variables column-variables legend-span] matrix-scales :scales variable-keys :variables
          lower-slot :lower upper-slot :upper diagonal-slot :diagonal :as options}]
   (let [_ (schema/check-options! pairs-options options)
         square (square? options)
@@ -327,13 +371,28 @@
                    (and (seq color-scale) (colors? charts (if diag? (assoc diagonal-mapping :x vx) (assoc mapping :x vx :y vy))))
                    (assoc-in [:scales :color] color-scale)
                    true (assoc :theme cell-theme))))
-        legend-cell (fn [^long i] (cond-> {:legend-only true :theme cell-theme}
-                                   (m/zero? i) (assoc :data row-maps :mapping pair-mapping :charts legend-charts)
-                                   (and (m/zero? i) (seq color-scale) (colors? legend-charts pair-mapping)) (assoc :scales {:color color-scale})))
-        n-cells (if legend? (m/long-inc n-columns) n-columns)
-        plots (vec (for [^long i (range n-rows)
-                         ^long j (range n-cells)]
-                     (if (m/== j n-columns) (legend-cell i) (cell i j))))]
-    (arrange plots (cond-> {:columns n-cells :equal-panels true :theme matrix-theme}
-                     legend? (assoc :widths (conj (vec (repeat n-columns 1)) :measured))
-                     title (assoc :title title)))))
+        legend-plot (cond-> {:legend-only true :theme cell-theme :data row-maps :mapping pair-mapping :charts legend-charts}
+                      (and (seq color-scale) (colors? legend-charts pair-mapping)) (assoc :scales {:color color-scale}))
+        x-weights (outer-weights n-columns false)
+        matrix-options (fn [columns widths matrix-theme-of]
+                         (cond-> {:columns columns :equal-panels true :widths widths :heights (outer-weights n-rows true)
+                                  :theme matrix-theme-of}
+                           title (assoc :title title)))]
+    (cond
+      (not legend?)
+      (arrange (vec (for [^long i (range n-rows) ^long j (range n-columns)] (cell i j)))
+               (matrix-options n-columns x-weights matrix-theme))
+      ;; the legend beside the whole matrix: one cell of the extra column spanning every row
+      (= :matrix legend-span)
+      (arrange (vec (concat (for [^long j (range n-columns)] (cell 0 j))
+                            [legend-plot]
+                            (for [^long i (range 1 n-rows) ^long j (range n-columns)] (cell i j))))
+               (assoc (matrix-options (m/long-inc n-columns) (conj x-weights :measured) matrix-theme)
+                      :row-spans {n-columns n-rows}))
+      ;; the legend in the first row's cell of an extra column, empty legend-only cells below it
+      :else
+      (arrange (vec (for [^long i (range n-rows) ^long j (range (m/long-inc n-columns))]
+                      (cond (m/< j n-columns) (cell i j)
+                            (m/zero? i) legend-plot
+                            :else {:legend-only true :theme cell-theme})))
+               (matrix-options (m/long-inc n-columns) (conj x-weights :measured) matrix-theme)))))

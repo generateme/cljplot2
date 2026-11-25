@@ -23,7 +23,11 @@
   Bands axes tick every band; when tick labels would overlap, only every `s`-th label is drawn (`s` the smallest step
   without overlap, starting at the first band) - see [[label-step]]. Other axes (linear, log, symlog, dates ...) draw
   the first label, then each label not overlapping the last drawn one - see [[drawn-label-indices]]; a scale with
-  `:overlapping-labels :keep` draws them all (axes naming data items, e.g. the leaves of a dendrogram).
+  `:overlapping-labels :keep` draws them all (axes naming data items, e.g. the leaves of a dendrogram). Labels lying
+  end to end (their text along the axis: unrotated on a horizontal axis, at -90 or 90 degrees on a vertical one)
+  overlap when their text blocks are closer than theme `[:axis k :tick-label-gap]` pixels - touching labels are
+  thinned too, so \"-2 0 2\" never reads \"-20 2\"; labels stacked across their text are measured by their line
+  height (it holds the font's leading) and may touch.
 
   Tick labels rotate by theme `[:axis k :label-rotation]` (clockwise degrees, -90..90; e.g. -90 or -45 for long
   bands labels): a horizontal axis puts the end of each rotated text nearest the axis at its tick (see
@@ -34,6 +38,8 @@
   `k` may be `nil`, the NA facet level - see [[crossing-labels]]), else its identical axis. Theme
   `[:axis k :tick-label]` (text style keys, e.g. a font of emoji) styles one axis's labels over the `:tick-label`
   role (see [[tick-label]]; polar guides too).
+
+  [[margin-sides]] lists the plot margin sides (the one source of them).
 
   Functions: [[tick-label]], [[label-spans]], [[label-step]], [[crossing-labels]], [[drawn-label-indices]]; schemas,
  ; methods of [[cljplot2.graphics.measure/validate-content]],
@@ -53,12 +59,18 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(def margin-sides
+  "Plot margin sides (plot `:margins`, see `cljplot2.pipeline`) in key order: the one list of them - axis and
+  overhang `:margin` values, the pipeline's margin stats and the legend key order of margin charts (see
+  [[cljplot2.content.legend/legend-charts]]) follow it."
+  [:top :right :bottom :left])
+
 (def ^:private axis-schema
   "Schema of `{:kind :axis}` content: `:scale` `:x` or `:y`; optional `:next-panel-gap` - pixels to the next panel's
   axis (facet columns or rows): labels overlapping that axis's labels aren't drawn; optional `:margin` (`:top`,
-  `:right`), `:panel`, `:next-panel` (see the namespace doc)."
+  `:right`, `:bottom`, `:left`), `:panel`, `:next-panel` (see the namespace doc)."
   [:map [:scale [:enum :x :y]] (schema/optional :next-panel-gap schema/non-neg)
-   (schema/optional :margin [:enum :top :right]) (schema/optional :panel any?) (schema/optional :next-panel any?)])
+   (schema/optional :margin (into [:enum] margin-sides)) (schema/optional :panel any?) (schema/optional :next-panel any?)])
 
 (defn- axis-scale
   "Gives the finalized display scale of an axis.
@@ -78,7 +90,7 @@
 (def ^:private overhang-schema
   "Schema of `{:kind :axis-overhang}` content: `:scale` `:x` or `:y`, `:end` `:start` or `:end`; optional `:margin`
   and `:panel` as the axis's."
-  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin [:enum :top :right])
+  [:map [:scale [:enum :x :y]] [:end [:enum :start :end]] (schema/optional :margin (into [:enum] margin-sides))
    (schema/optional :panel any?)])
 
 (defmethod measure/validate-content :axis [content] (schema/explain! [[axis-schema content [:content]]]))
@@ -233,7 +245,8 @@
 (defn label-step
   "Gives the step between the drawn tick labels of a bands axis.
 
-  Labels overlap when their text blocks overlap by more than 1 px (see [[label-intervals]]).
+  Labels overlap when their text blocks are closer than `gap` (see [[label-intervals]],
+  [[cljplot2.graphics.measure/spans-overlap?]]).
 
   Parameters:
 
@@ -242,20 +255,25 @@
   - `sizes` (sequence of `Vec2`): the labels' natural sizes.
   - `inset` (number): the labels' inset.
   - `offsets`, `spans`: as [[label-intervals]] (default `nil`).
+  - `gap` (number): the least pixels between neighbouring labels, theme `[:axis k :tick-label-gap]` (default 0 -
+    labels may touch).
 
   Returns 1 unless `finalized` is a bands scale with at least 2 labels; then the smallest `s` such that labels
   `0, s, 2s, ...` don't overlap along the axis - at most the label count (only the first label drawn).
 
   See also [[drawn-label-indices]]."
-  ([k finalized sizes inset] (label-step k finalized sizes inset nil nil))
-  ([k finalized sizes inset offsets spans]
-   (let [n (count sizes)]
+  ([k finalized sizes inset] (label-step k finalized sizes inset nil nil 0.0))
+  ([k finalized sizes inset offsets spans] (label-step k finalized sizes inset offsets spans 0.0))
+  ([k finalized sizes inset offsets spans gap]
+   (let [n (count sizes)
+         g (double gap)]
      (if (or (not= :bands (:kind finalized)) (m/< n 2))
        1
        (let [[centres extents] (label-intervals k finalized sizes inset offsets spans)
              fits? (fn [^long step]
                      (every? (fn [^long i] (let [j (m/long-add i step)]
-                                             (not (measure/spans-overlap? (centres i) (extents i) (centres j) (extents j)))))
+                                             (not (measure/spans-overlap? (m/- (double (centres j)) (double (centres i)))
+                                                                          (extents i) (extents j) g))))
                              (range 0 (m/long-sub n step) step)))]
          (or (first (filter fits? (range 1 n))) n))))))
 
@@ -271,14 +289,20 @@
   - `[next-centres next-extents]`, `next-drawn`: the same of the next panel's axis (panel-local); without them the
     next axis is identical (the same labels).
   - `shift` (number): how much further along the next axis starts (panel length plus gap).
+  - `gap` (number): the least pixels between two labels, theme `[:axis k :tick-label-gap]` (default 0 - labels may
+    touch).
 
   Returns the set of the overlapping indices of `drawn`."
-  ([intervals drawn shift] (crossing-labels intervals drawn intervals drawn shift))
-  ([[centres extents] drawn [next-centres next-extents] next-drawn shift]
-   (set (filter (fn [i]
-                  (some (fn [j] (measure/spans-overlap? (centres i) (extents i) (m/+ (double shift) (double (next-centres j))) (next-extents j)))
-                        next-drawn))
-                drawn))))
+  ([intervals drawn shift] (crossing-labels intervals drawn intervals drawn shift 0.0))
+  ([intervals drawn shift gap] (crossing-labels intervals drawn intervals drawn shift gap))
+  ([intervals drawn next-intervals next-drawn shift] (crossing-labels intervals drawn next-intervals next-drawn shift 0.0))
+  ([[centres extents] drawn [next-centres next-extents] next-drawn shift gap]
+   (let [g (double gap)]
+     (set (filter (fn [i]
+                    (some (fn [j] (measure/spans-overlap? (m/- (m/+ (double shift) (double (next-centres j))) (double (centres i)))
+                                                          (extents i) (next-extents j) g))
+                          next-drawn))
+                  drawn)))))
 
 (defn drawn-label-indices
   "Gives the indices of the tick labels an axis draws.
@@ -288,19 +312,42 @@
   - `k` (keyword): the scale key.
   - `finalized` (map): the finalized scale.
   - `sizes`, `inset`, `offsets`, `spans`: as [[label-intervals]].
+  - `gap` (number): the least pixels between neighbouring labels, theme `[:axis k :tick-label-gap]` (default 0 -
+    labels may touch).
 
   Returns a vector of indices: all with `:overlapping-labels :keep` (axes naming data items); a bands scale every
   [[label-step]]-th label from the first; other scales the labels kept by
-  [[cljplot2.graphics.measure/kept-label-indices]] (the first, then each not overlapping the last drawn one). Empty
-  for no labels."
-  [k finalized sizes inset offsets spans]
-  (cond
-    (= :keep (:overlapping-labels finalized)) (vec (range (count sizes)))
-    (= :bands (:kind finalized))
-    (let [step (long (label-step k finalized sizes inset offsets spans))]
-      (filterv #(m/zero? (m/long-mod (long %) step)) (range (count sizes))))
-    :else (let [[centres extents] (label-intervals k finalized sizes inset offsets spans)]
-            (measure/kept-label-indices centres extents))))
+  [[cljplot2.graphics.measure/kept-label-indices]] (the first, then each at least `gap` from the last drawn one).
+  Empty for no labels."
+  ([k finalized sizes inset offsets spans] (drawn-label-indices k finalized sizes inset offsets spans 0.0))
+  ([k finalized sizes inset offsets spans gap]
+   (cond
+     (= :keep (:overlapping-labels finalized)) (vec (range (count sizes)))
+     (= :bands (:kind finalized))
+     (let [step (long (label-step k finalized sizes inset offsets spans gap))]
+       (filterv #(m/zero? (m/long-mod (long %) step)) (range (count sizes))))
+     :else (let [[centres extents] (label-intervals k finalized sizes inset offsets spans)]
+             (measure/kept-label-indices centres extents gap)))))
+
+(defn- tick-label-gap
+  "Gives the least pixels between neighbouring tick labels of an axis.
+
+  The gap separates labels lying end to end, their text running along the axis (a horizontal axis with unrotated
+  labels, a vertical one with labels at -90 or 90 degrees); labels stacked across their text (or rotated by another
+  angle) are measured by their line height, which holds the font's leading, so they need none.
+
+  Parameters:
+
+  - `k` (keyword): the axis's scale.
+  - `finalized` (map): the finalized scale (its direction).
+  - `env` (map): `:theme`, `[:axis k :tick-label-gap]` and `[:axis k :label-rotation]` read.
+
+  Returns a double: the theme gap for labels along the axis, else 0."
+  ^double [k finalized env]
+  (let [rotation (double (label-rotation k env))]
+    (if (if (scale/horizontal? k finalized) (m/zero? rotation) (m/== 90.0 (m/abs rotation)))
+      (double (get-in env [:theme :axis k :tick-label-gap]))
+      0.0)))
 
 (defn- drawn-labels
   "Gives the intervals of an axis's tick labels and the labels it draws.
@@ -318,7 +365,7 @@
         spans (label-spans k finalized env sizes)
         inset (label-inset k env)]
     [(label-intervals k finalized sizes inset offsets spans)
-     (drawn-label-indices k finalized sizes inset offsets spans)]))
+     (drawn-label-indices k finalized sizes inset offsets spans (tick-label-gap k finalized env))]))
 
 (defn- tick-room
   "Gives the pixels an axis's ticks take across it.
@@ -342,7 +389,7 @@
         all-sizes (when finalized (label-sizes k finalized env))
         drawn (when finalized
                 (set (drawn-label-indices k finalized all-sizes (label-inset k env) (label-offsets k finalized env)
-                                          (label-spans k finalized env all-sizes))))
+                                          (label-spans k finalized env all-sizes) (tick-label-gap k finalized env))))
         sizes (keep-indexed (fn [i size] (when (contains? drawn i) size)) all-sizes)
         ^Vec2 largest (measure/max-size sizes)
         widest (.x largest)
@@ -413,7 +460,7 @@
           sizes (label-sizes k finalized measure-env)
           offsets (label-offsets k finalized measure-env)
           spans (label-spans k finalized measure-env sizes)
-          drawn (drawn-label-indices k finalized sizes (label-inset k measure-env) offsets spans)
+          drawn (drawn-label-indices k finalized sizes (label-inset k measure-env) offsets spans (tick-label-gap k finalized env))
           drawn-set (set drawn)
           next-gap (:next-panel-gap content)
           skipped (if next-gap
@@ -422,7 +469,8 @@
                                            (some-> (get (scale/panel-scales-of measure-env {:panel (:next-panel content)}) k)
                                                    scale/display-scale))
                           [next-intervals next-drawn] (if next-finalized (drawn-labels k next-finalized measure-env) [own drawn])]
-                      (crossing-labels own drawn next-intervals next-drawn (m/+ (if horizontal? w h) (double next-gap))))
+                      (crossing-labels own drawn next-intervals next-drawn (m/+ (if horizontal? w h) (double next-gap))
+                                       (tick-label-gap k finalized env)))
                     #{})
           draw-label! (fn [text box] (c2d/with-isolated-canvas [isolated c]
                                        (draw/draw-content (tick-label (:theme measure-env) k text rotation) isolated box measure-env)))]

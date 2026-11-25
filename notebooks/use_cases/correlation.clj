@@ -313,29 +313,24 @@
 
 ;; ### Side colour bar
 
-;; A category of the columns as a one-row tile above the heatmap: both plots share the column order (`:domain`),
-;; `plot/arrange` aligns the cells. Here: up to six of the most populous countries of each continent (the dataset
-;; has two in North America), grouped by continent.
+;; A category of the columns as a strip of colours above the heatmap: `plot/clustered-heatmap` orders the rows and
+;; columns by clustering and draws `:col-annotations` (`[accessor colour-scale-spec]` pairs over the long rows) between
+;; the columns' tree and the tiles, with its own legend (`:row-annotations` likewise along the rows). Here: up to six
+;; of the most populous countries of each continent (the dataset has two in North America), the continent as the
+;; side colour.
 
 (nu/source-note {:source "R Graph Gallery - The heatmap function (side colours)"
                  :url "https://r-graph-gallery.com/215-the-heatmap-function.html"
                  :dataset :countries})
 
 (let [picked (vec (mapcat (fn [[_ rows]] (take 6 (sort-by #(- (double (:pop %))) rows)))
-                          (sort-by key (group-by :continent countries))))
-      order (mapv :country picked)]
+                          (sort-by key (group-by :continent countries))))]
   (plot/render-image
-   (plot/arrange
-    [{:data picked :mapping {:x :country :y (constantly "continent") :color :continent}
-      :scales {:x {:domain order :axis false} :color {:title "continent"}}
-      :charts [(chart/tile {:stroke-color :white})]
-      :labels {:title "Indicators of the largest countries per continent" :x nil :y nil}}
-     {:data (z-scores picked) :mapping {:x :country :y :indicator :color :z}
-      :scales {:x {:domain order} :color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
-      :theme {:axis {:x {:label-rotation 90}}}
-      :charts [(chart/tile {:stroke-color :white})]
-      :labels {:x nil :y nil}}]
-    {:columns 1 :heights [1 6]})
+   (plot/clustered-heatmap (z-scores picked)
+                           {:row :indicator :col :country :value :z :tree-size [0.12 0.2]
+                            :col-annotations [[:continent {:range :set2}]]
+                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
+                            :title "Indicators of the largest countries per continent"})
    {:width 1000 :height 600}))
 
 ;; ### Values in cells: the correlation matrix

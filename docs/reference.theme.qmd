@@ -172,7 +172,7 @@ vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :x :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-label-gap</td><td>a non-negative number</td><td>3</td><td>least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :x :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
 ```
 
 :::
@@ -249,7 +249,7 @@ The y axis has the same keys:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :y :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-label-gap</td><td>a non-negative number</td><td>3</td><td>least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :y :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
 ```
 
 :::
@@ -269,16 +269,38 @@ The y axis has the same keys:
 :::
 
 
+`:tick-label-gap` - the least pixels between neighbouring tick labels: a label closer to the last drawn one isn't
+drawn. Here dense ticks with no gap (left; labels may touch) and with a wide one (right):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [gap [0 12]]
+                                   (assoc iris-plot
+                                          :scales {:x {:ticks 20}}
+                                          :labels {:title (str ":tick-label-gap " gap)}
+                                          :theme {:axis {:x {:tick-label-gap gap}}}))
+                                 {:columns 2})
+                   {:width 700 :height 280})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image6.png)
+:::
+
+
 
 ## Strips
 
 Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
-down to `:min-text-size` points, then is cut with an ellipsis.
+down to the `:strip` text role's `:min-size` points, then is cut with an ellipsis.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr><tr><td>:strip :min-text-size</td><td>a positive number</td><td>7</td><td>smallest font size in points a strip text too long for its strip shrinks to before it is cut with an ellipsis</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr></tbody></table>
 ```
 
 :::
@@ -303,22 +325,22 @@ down to `:min-text-size` points, then is cut with an ellipsis.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image6.png)
+![](reference.theme_files/image7.png)
 :::
 
 
-Long level names in row strips: the first two fit; the third shrinks to `:min-text-size` and is cut - at the
-default 7 points (left) later than at 9 (right).
+Long level names in row strips: the first two fit; the third shrinks to the role's `:min-size` and is cut - at
+the default 7 points (left) later than at 9 (right).
 
 
 ::: {.sourceClojure}
 ```clojure
-(plot/render-image (plot/arrange (for [min-text-size [7 9]]
+(plot/render-image (plot/arrange (for [min-size [7 9]]
                                    (assoc iris-plot
                                           :mapping {:x :sepal-length :y :petal-length
                                                     :facet-row #(str "Iris " (:species %) (when (= "virginica" (:species %)) " (Anderson)"))}
-                                          :labels {:title (str ":min-text-size " min-text-size)}
-                                          :theme {:strip {:min-text-size min-text-size}}))
+                                          :labels {:title (str ":min-size " min-size)}
+                                          :theme {:text {:strip {:min-size min-size}}}))
                                  {:columns 2})
                    {:width 800 :height 400})
 ```
@@ -326,7 +348,7 @@ default 7 points (left) later than at 9 (right).
 
 
 ::: {.clay-image}
-![](reference.theme_files/image7.png)
+![](reference.theme_files/image8.png)
 :::
 
 
@@ -353,7 +375,7 @@ The gap between facet panels.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image8.png)
+![](reference.theme_files/image9.png)
 :::
 
 
@@ -382,7 +404,7 @@ The gap between arranged plots.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image9.png)
+![](reference.theme_files/image10.png)
 :::
 
 
@@ -410,7 +432,7 @@ Legend key sizes, spacing, the legend box and the colour bar.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image10.png)
+![](reference.theme_files/image11.png)
 :::
 
 
@@ -432,7 +454,7 @@ lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width
 
 
 ::: {.clay-image}
-![](reference.theme_files/image11.png)
+![](reference.theme_files/image12.png)
 :::
 
 
@@ -451,7 +473,7 @@ A colour bar with more, longer and thicker ticks.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image12.png)
+![](reference.theme_files/image13.png)
 :::
 
 
@@ -482,7 +504,7 @@ The dash of a 3D box's hidden edges; the box edges and axes take the x axis styl
 
 
 ::: {.clay-image}
-![](reference.theme_files/image13.png)
+![](reference.theme_files/image14.png)
 :::
 
 
@@ -513,7 +535,7 @@ numbers, shapes, sizes, dashes and patterns.
 
 
 ::: {.clay-image}
-![](reference.theme_files/image14.png)
+![](reference.theme_files/image15.png)
 :::
 
 
@@ -531,7 +553,7 @@ Titles, strips and axis texts:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :axis-title</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :black, :inset 4, :align [:center :middle]}</td><td>axis titles</td></tr><tr><td>:text :strip</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>facet strip texts</td></tr><tr><td>:text :tick-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>tick labels</td></tr><tr><td>:text :title</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :inset 4, :align [:center :middle]}</td><td>plot and multiplot titles</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :axis-title</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :min-size 8, :font-style :plain, :color :black, :inset 4, :align [:center :middle]}</td><td>axis titles</td></tr><tr><td>:text :strip</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :min-size 7, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>facet strip texts</td></tr><tr><td>:text :tick-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>tick labels</td></tr><tr><td>:text :title</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :inset 4, :align [:center :middle]}</td><td>plot and multiplot titles</td></tr></tbody></table>
 ```
 
 :::
@@ -551,7 +573,7 @@ Titles, strips and axis texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image15.png)
+![](reference.theme_files/image16.png)
 :::
 
 
@@ -577,7 +599,7 @@ Legend texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image16.png)
+![](reference.theme_files/image17.png)
 :::
 
 
@@ -623,7 +645,7 @@ the default):
 
 
 ::: {.clay-image}
-![](reference.theme_files/image17.png)
+![](reference.theme_files/image18.png)
 :::
 
 
@@ -635,7 +657,7 @@ what's behind them by default). The bars write their values in their middle
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :annotation</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>text charts and strip n labels</td></tr><tr><td>:text :bar-value</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>bar value and count labels</td></tr><tr><td>:text :contour-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 180]}</td><td>contour level labels</td></tr><tr><td>:text :correlation</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>correlation numbers</td></tr><tr><td>:text :pairwise</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>pairwise statistic numbers</td></tr><tr><td>:text :tile-value</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>tile value labels</td></tr><tr><td>:text :venn-count</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>Venn diagram region counts</td></tr><tr><td>:text :venn-set</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>Venn diagram set names</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :annotation</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :min-size 6, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>text charts and strip n labels</td></tr><tr><td>:text :bar-value</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>bar value and count labels</td></tr><tr><td>:text :contour-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 180]}</td><td>contour level labels</td></tr><tr><td>:text :correlation</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>correlation numbers</td></tr><tr><td>:text :pairwise</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>pairwise statistic numbers</td></tr><tr><td>:text :tile-value</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>tile value labels</td></tr><tr><td>:text :venn-count</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>Venn diagram region counts</td></tr><tr><td>:text :venn-set</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>Venn diagram set names</td></tr></tbody></table>
 ```
 
 :::
@@ -659,7 +681,7 @@ what's behind them by default). The bars write their values in their middle
 
 
 ::: {.clay-image}
-![](reference.theme_files/image18.png)
+![](reference.theme_files/image19.png)
 :::
 
 
@@ -669,7 +691,7 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :alluvial-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 190]}</td><td>alluvial stratum labels</td></tr><tr><td>:text :dendrogram-group-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>dendrogram group (inner node) labels</td></tr><tr><td>:text :network-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>network node labels</td></tr><tr><td>:text :pairs-name</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>variable names on the diagonal of a scatter-plot matrix</td></tr><tr><td>:text :radial-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks for many leaves, never above the role's</td></tr><tr><td>:text :sankey-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>sankey node labels</td></tr><tr><td>:text :tree-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>node-link tree node labels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :alluvial-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 190]}</td><td>alluvial stratum labels</td></tr><tr><td>:text :dendrogram-group-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>dendrogram group (inner node) labels</td></tr><tr><td>:text :network-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>network node labels</td></tr><tr><td>:text :pairs-name</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>variable names on the diagonal of a scatter-plot matrix</td></tr><tr><td>:text :radial-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :min-size 5, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks with the leaf count (not to a room), down to the role's :min-size, never above its size</td></tr><tr><td>:text :sankey-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :min-size 6, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>sankey node labels</td></tr><tr><td>:text :tree-label</td><td>a text style (:font :size :font-style :color :inset :align :background)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>node-link tree node labels</td></tr></tbody></table>
 ```
 
 :::
@@ -690,7 +712,7 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 
 
 ::: {.clay-image}
-![](reference.theme_files/image19.png)
+![](reference.theme_files/image20.png)
 :::
 
 
@@ -717,7 +739,7 @@ The keys of a text style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image20.png)
+![](reference.theme_files/image21.png)
 :::
 
 
@@ -806,7 +828,7 @@ The kinds with a theme style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image21.png)
+![](reference.theme_files/image22.png)
 :::
 
 

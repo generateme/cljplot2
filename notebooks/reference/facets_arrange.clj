@@ -104,12 +104,22 @@
                               :columns 3 :widths [1 1 :measured]}}
                    {:width 900 :height 320})
 
+;; `:row-spans` lets a plot cover several rows from its own down (`{plot-index rows}` - keyed by the plot's index,
+;; not its cell), and later plots skip the covered cells; without `:rows` a span reaching past the last row adds
+;; rows. Here one legend beside two rows of plots, its colour bar stretched over both:
+
+(plot/render-image (plot/arrange [{:data mtcars :mapping {:x :hp :y :mpg :color :wt} :charts [(chart/scatter)] :legend false}
+                                  {:data mtcars :mapping {:x :hp :y :mpg :color :wt} :charts [(chart/scatter)] :legend-only true}
+                                  {:data mtcars :mapping {:x :disp :y :mpg :color :wt} :charts [(chart/scatter)] :legend false}]
+                                 {:columns 2 :widths [1 :measured] :row-spans {1 2}})
+                   {:width 600 :height 500})
+
 ;; ## Scatter-plot matrix
 
 ;; `plot/pairs` draws a cell for every pair of `:variables` (2 to 20 numeric columns); the cells below, above and on
-;; the diagonal take any charts.
+;; the diagonal take any charts. Its variables:
 
-(nu/options-table (describe/options #'plot/pairs))
+(nu/options-table (describe/options #'plot/pairs) :variables)
 
 (plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt :qsec]
                                        :upper [(chart/correlation)]})
@@ -126,11 +136,39 @@
                                        :mapping {:color #(str (:cyl %) " cyl")}})
                    {:width 600 :height 700})
 
+;; Its cells:
+
+(nu/options-table (describe/options #'plot/pairs) :cells)
+
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt]
+                                       :lower (chart/scatter {:alpha 0.6})
+                                       :upper (chart/correlation {:glyph :shade})
+                                       :diagonal :names
+                                       :scales {:color {:domain [-1 1]}}})
+                   {:width 500 :height 450})
+
+;; The matrix's title, legend column and theme:
+
+(nu/options-table (describe/options #'plot/pairs) :layout)
+
+;; Only the outer cells have axes (x under the bottom row, y left of the left column), and every panel gets one size
+;; (the room between rows follows each row's end tick labels), so a matrix of many variables fits a page - up to 20,
+;; though at that count tick labels get dense: give such a matrix a large image. Its rows are low, so a legend taller
+;; than a row goes beside the whole matrix with `:legend-span :matrix` (the default `:row` keeps it beside the first
+;; row) - here every numeric column of mtcars, with the r colour bar of the shaded correlations as tall as the matrix.
+
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :cyl :disp :hp :drat :wt :qsec :vs :am :gear :carb]
+                                       :upper (chart/correlation {:glyph :shade})
+                                       :diagonal :names
+                                       :legend-span :matrix
+                                       :title "mtcars"})
+                   {:width 1000 :height 800})
+
 ;; ## Margins
 
-;; `:margins` puts charts above (`:top`) and right of (`:right`) a single panel, sharing its horizontal / vertical
-;; scale; margin charts read the plot's data with `:x` mapped to the shared dimension. A margin is a chart or a
-;; vector of charts ...
+;; `:margins` puts charts above (`:top`), right of (`:right`), below (`:bottom`) and left of (`:left`) a single panel,
+;; sharing its horizontal / vertical scale; margin charts read the plot's data with `:x` mapped to the shared
+;; dimension. A margin is a chart or a vector of charts ...
 
 (nu/options-table (describe/options pipeline/margins-schema))
 
@@ -148,6 +186,18 @@
                     :mapping {:x :wt :y :mpg}
                     :charts [(chart/scatter)]
                     :margins {:top (chart/density) :right {:charts (chart/histogram {:bins 10}) :size 60 :axis true}}}
+                   {:width 600 :height 500})
+
+;; Bottom and left margins sit between the panel and its axes - the panel keeps its axes on the outer side - and
+;; their magnitudes grow away from the panel (bars hang down, densities grow to the left). A margin's magnitude axis
+;; stays next to its own margin panel - with a left margin too, the bottom margin's axis sits between the left margin
+;; and the panel:
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg}
+                    :charts [(chart/scatter)]
+                    :margins {:bottom {:charts (chart/histogram {:bins 10}) :size 60 :axis true}
+                              :left [(chart/density) (chart/rug)]}}
                    {:width 600 :height 500})
 
 ;; ## Custom grid

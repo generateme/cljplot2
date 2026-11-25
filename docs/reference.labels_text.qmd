@@ -56,7 +56,7 @@ The plot title and the axis titles. Axis titles are absent unless given, except 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:title</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td></td><td>plot title above the panels (role :title)</td></tr><tr><td>:x</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>x axis title (role :axis-title)</td></tr><tr><td>:y</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>y axis title (role :axis-title, rotated 270)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:title</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td></td><td>plot title above the panels (role :title)</td></tr><tr><td>:x</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>x axis title (role :axis-title; too long - wrapped, shrunk, then cut to the panels' width)</td></tr><tr><td>:y</td><td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td><td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td><td>y axis title (role :axis-title, rotated 270; too long - wrapped, shrunk, then cut to the panels' height)</td></tr></tbody></table>
 ```
 
 :::
@@ -164,6 +164,46 @@ Text style keys in a label map override its role's style for this label only:
 
 
 
+## Long axis titles
+
+An axis title longer than its panels - the width under them, the height beside them; one title spans all facet
+panels - is fitted to them: wrapped at word boundaries (a line into at most three, the title's row or column
+grows), then drawn smaller down to the `:axis-title` text role's `:min-size` (8 points by default, theme
+`[:text :axis-title :min-size]` - every text role takes one, see the Theme chapter), then cut with an ellipsis.
+Line breaks you give are kept, and a title that fits is drawn as given. Fitting is always on: earlier versions
+clipped such titles. A title rotated across its own track (a y title with `:rotation 0`) isn't fitted.
+
+Wrapped titles beside a small panel; on the right a word too long for the panel shrinks to the least size and is
+cut (`:min-size 10`):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/scatter)]
+                                   :labels {:title "wrapped"
+                                            :x "sepal length of the iris flowers, measured in centimetres"
+                                            :y "sepal width of the flowers in centimetres"}}
+                                  {:data iris
+                                   :mapping {:x :sepal-length :y :sepal-width}
+                                   :charts [(chart/scatter)]
+                                   :labels {:title "shrunk and cut"
+                                            :x "sepal_length_in_centimetres_of_the_flowers_of_three_iris_species"
+                                            :y "sepal width"}
+                                   :theme {:text {:axis-title {:min-size 10}}}}]
+                                 {:columns 2})
+                   {:width 700 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.labels_text_files/image3.png)
+:::
+
+
+
 ## Text in the panel
 
 The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,
@@ -201,7 +241,7 @@ The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` 
 
 
 ::: {.clay-image}
-![](reference.labels_text_files/image3.png)
+![](reference.labels_text_files/image4.png)
 :::
 
 
@@ -225,7 +265,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x5c66151c "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
+#object[java.awt.Font 0x6f64412 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
 
 ```
 :::
@@ -242,7 +282,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0xd6844ec "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
+#object[java.awt.Font 0x38e0a084 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
 
 ```
 :::
@@ -265,7 +305,7 @@ A resolved font (here a bundled bold face) in a label, and a logical family by n
 
 
 ::: {.clay-image}
-![](reference.labels_text_files/image4.png)
+![](reference.labels_text_files/image5.png)
 :::
 
 

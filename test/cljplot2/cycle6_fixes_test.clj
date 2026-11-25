@@ -259,7 +259,7 @@
     (is (= :margins (:key (cljplot2.test-util/error #(built {:data xy :mapping {:y :b} :charts [(chart/density {:mapping {:x :b}})]
                                                             :margins {:top (chart/density)}})))))
     (is (seq (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:top []}}))) "empty vector")
-    (is (seq (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:left (chart/density)}}))) "unknown side")
+    (is (seq (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:middle (chart/density)}}))) "unknown side")
     (is (= #{[:margins :top :charts 0 :options :bins]}
            (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:top (chart/histogram {:bins -1})}}))))))
 

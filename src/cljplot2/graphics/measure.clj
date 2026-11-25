@@ -6,7 +6,12 @@
 
   Functions: measuring [[natural-size]], [[label-size]], [[validate-content]], [[content-kind]], [[scratch-canvas]],
   [[call-with-scratch-canvas]]; label thinning [[spans-overlap?]], [[kept-label-indices]],
-  [[kept-box-indices]]; geometry [[boxes-overlap?]], [[max-size]].
+  [[kept-box-indices]], [[box-crosses-path?]]; geometry [[boxes-overlap?]], [[max-size]].
+
+  Axis tick labels lying end to end (text blocks without their inset) are kept at least theme
+  `[:axis k :tick-label-gap]` pixels apart, so they never touch; labels stacked across their text (vertical axes,
+  colour bars) are measured by their line height, which holds the font's leading; label boxes ([[kept-box-indices]]:
+  polar guides, text `:overlapping-labels :drop`) include their insets.
 
   Options: [[rendering-hints]]."
   (:require [cljplot2.schema :as schema]
@@ -46,33 +51,41 @@
   (c2d/with-canvas [c (scratch-canvas hint)] (f c)))
 
 (defn spans-overlap?
-  "Tests whether two labels along one axis overlap by more than 1 px (natural sizes are rounded up).
+  "Tests whether two labels along one axis, their centres some distance apart, are closer than a gap.
+
+  Natural sizes are rounded up, so 1 px less than `gap` is allowed: with `gap` 0 labels may overlap by up to 1 px.
 
   Parameters:
 
-  - `ci`, `ei` (doubles): the first label's centre and extent.
-  - `cj`, `ej` (doubles): the second label's centre and extent.
+  - `distance` (double): the distance between the labels' centres (any sign).
+  - `ei`, `ej` (doubles): the labels' extents.
+  - `gap` (double): the least pixels between the two labels (e.g. theme `[:axis k :tick-label-gap]`; 0 - up to 1 px
+    overlap).
 
   Returns true or false."
-  [^double ci ^double ei ^double cj ^double ej]
-  (m/< (m/abs (m/- cj ci)) (m/- (m/* 0.5 (m/+ ei ej)) 1.0)))
+  [^double distance ^double ei ^double ej ^double gap]
+  (m/< (m/abs distance) (m/+ (m/* 0.5 (m/+ ei ej)) (m/dec gap))))
 
 (defn kept-label-indices
-  "Gives the indices of labels along one axis to draw without collisions: the first, then each label not overlapping the last kept one (see [[spans-overlap?]]).
+  "Gives the indices of labels along one axis to draw without collisions: the first, then each label at least a gap from the last kept one (see [[spans-overlap?]]).
 
   Parameters:
 
   - `centres`, `extents` (vectors of numbers): the labels' centres and extents, in tick order.
+  - `gap` (number): the least pixels between neighbouring labels (see [[spans-overlap?]]); default 0 - labels may
+    touch.
 
   Returns a vector of indices; empty for no labels."
-  [centres extents]
-  (loop [i (long 0) last-kept nil kept []]
-    (if (m/>= i (count centres))
-      kept
-      (if (and last-kept (spans-overlap? (centres last-kept) (extents last-kept)
-                                         (centres i) (extents i)))
-        (recur (m/long-inc i) last-kept kept)
-        (recur (m/long-inc i) i (conj kept i))))))
+  ([centres extents] (kept-label-indices centres extents 0.0))
+  ([centres extents gap]
+   (let [g (double gap)]
+     (loop [i (long 0) last-kept nil kept []]
+       (if (m/>= i (count centres))
+         kept
+         (if (and last-kept (spans-overlap? (m/- (double (centres i)) (double (centres last-kept)))
+                                            (extents last-kept) (extents i) g))
+           (recur (m/long-inc i) last-kept kept)
+           (recur (m/long-inc i) i (conj kept i))))))))
 
 (defn max-size
   "Gives the largest width and the largest height of a collection of sizes, each taken separately.
@@ -127,6 +140,25 @@
   (reduce (fn [kept i]
             (if (some #(label-boxes-overlap? (boxes i) (boxes %)) kept) kept (conj kept i)))
           [] (range (count boxes))))
+
+(defn box-crosses-path?
+  "Tests whether a polyline crosses a label box by more than 1 px (natural sizes are rounded up).
+
+  Parameters:
+
+  - `box` (map): a pixel box `{:x :y :w :h}`.
+  - `points` (sequence): the polyline's pixel points `[x y]`.
+
+  Returns truthy when a segment of `points` meets the box shrunk by 1 px on every side, else `nil`; never for fewer
+  than two points or a box of at most 2 px across.
+
+  See also [[kept-box-indices]] (boxes against boxes)."
+  [{:keys [^double x ^double y ^double w ^double h]} points]
+  (when (and (m/> w 2.0) (m/> h 2.0))
+    ;; a geometry query (no drawing): segment against rectangle
+    (let [inner (java.awt.geom.Rectangle2D$Double. (m/inc x) (m/inc y) (m/- w 2.0) (m/- h 2.0))]
+      (some (fn [[[^double x1 ^double y1] [^double x2 ^double y2]]] (.intersectsLine inner x1 y1 x2 y2))
+            (partition 2 1 points)))))
 
 (defn content-kind
   "Gives the dispatch value of item content.

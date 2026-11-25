@@ -168,6 +168,42 @@
                                  {:columns 2 :widths [1 1.15]})
                    {:width 1000 :height 450})
 
+;; Annotations (pheatmap's `annotation_row` / `annotation_col`): `:row-annotations` and `:col-annotations` are
+;; vectors of `[accessor colour-scale-spec]` pairs (spec `nil` - the default scale), drawn in order; each draws a strip
+;; along the tile rows (between the tiles and the rows' tree) or columns (under the columns' tree), named beside it,
+;; and adds its legend to the legend column. The rows of one tile row (column) must agree on the value.
+;; `:annotation-size` is the strips' thickness in pixels. With annotations the legend column spans every row
+;; (`:legend-span :matrix`, the default then): the value legend stretches over the room the annotations' legends,
+;; each as tall as it needs, leave below it:
+
+(def annotated-scores (let [car-info (into {} (map (fn [r] [(:model r) r])) mtcars)]
+                        (mapv (fn [{:keys [car variable] :as r}]
+                                (assoc r :cylinders (str (:cyl (car-info car)))
+                                       :transmission (if (zero? (:am (car-info car))) "automatic" "manual")
+                                       :horsepower (:hp (car-info car))
+                                       :kind (if (#{"mpg" "qsec"} variable) "performance" "engine")))
+                              car-scores)))
+
+(nu/data-table annotated-scores)
+
+(plot/render-image (plot/clustered-heatmap annotated-scores
+                                           {:row :car :col :variable :value :z
+                                            :row-annotations [[:cylinders {:range :set2}] [:transmission {:range ["#999999" "#e08214"]}]]
+                                            :col-annotations [[:kind {:range :set1 :title "variable kind"}]]
+                                            :annotation-size 14 :legend-span :matrix
+                                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}})
+                   {:width 800 :height 600})
+
+;; An annotation is coloured as any colour mapping: categorical values get a palette, numbers a gradient (here
+;; horsepower, a continuous colour bar). `:legend-span :row` keeps the legend cell beside the tiles' row only:
+
+(plot/render-image (plot/clustered-heatmap annotated-scores
+                                           {:row :car :col :variable :value :z
+                                            :row-annotations [[:horsepower {:range :viridis/magma}] [:cylinders nil]]
+                                            :legend-span :row
+                                            :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}})
+                   {:width 800 :height 500})
+
 (nu/shared-groups (describe/options #'plot/clustered-heatmap))
 
 ;; ## bundle

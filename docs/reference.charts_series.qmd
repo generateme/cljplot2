@@ -234,12 +234,12 @@ A curve fitted to the rows of each group, by default with a confidence band.
 ### Fit
 
 The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
-spans only its own x range:
+spans only its own x range, and the space the fit runs in (a log axis's log10 coordinates by default):
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:method</td><td>a function (fn [xs ys] f) or one of [:akima :b-spline :barycentric :cir :cubic :cubic-smoothing :divided-difference :glm :gp :kriging :linear :lm :loess :microsphere-projection :monotone :neville :pava :pchip :polynomial :rbf :shepard :sprague :step :step-after :step-before]</td><td>:loess</td><td>fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)</td></tr><tr><td>:method-params</td><td>map of keyword to any value or nil</td><td></td><td>options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>200</td><td>number of grid points the curve is evaluated at</td></tr><tr><td>:full-range</td><td>true or false or nil</td><td>false</td><td>fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:method</td><td>a function (fn [xs ys] f) or one of [:akima :b-spline :barycentric :cir :cubic :cubic-smoothing :divided-difference :glm :gp :kriging :linear :lm :loess :microsphere-projection :monotone :neville :pava :pchip :polynomial :rbf :shepard :sprague :step :step-after :step-before]</td><td>:loess</td><td>fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)</td></tr><tr><td>:method-params</td><td>map of keyword to any value or nil</td><td></td><td>options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>200</td><td>number of grid points the curve is evaluated at</td></tr><tr><td>:full-range</td><td>true or false or nil</td><td>false</td><td>fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:scale</td><td>space of the fit: :scale (the x and y scales' coordinates - log10 on a :log axis, values it can't place left out) or :data (data units)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
 ```
 
 :::
@@ -298,6 +298,47 @@ their own x ranges or, with `:full-range true`, over the range of both (and the 
 :::
 
 
+Values growing with the logarithm of x (random, seeded), x spread evenly over three decades:
+
+
+::: {.sourceClojure}
+```clojure
+(def log-growth (mapv (fn [^double u ^double e] {:x (m/pow 10.0 u) :y (+ (* 3.0 u) e)})
+                      (m/slice-range 0.0 3.0 60)
+                      (r/->seq (r/distribution :normal {:sd 0.5 :rng (r/rng :mersenne 11)}) 60)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>1.0</td><td>-0.9677067812193026</td></tr><tr><td>1.1242100350620865</td><td>-0.33959754375648343</td></tr><tr><td>1.263848202934298</td><td>0.6897060106248107</td></tr><tr><td>1.4208308325339223</td><td>0.6952309324761786</td></tr><tr><td>1.5973122800602544</td><td>0.5728674843580918</td></tr><tr><td>1.7957144943716399</td><td>0.9560000344318531</td></tr><tr><td>2.0187602546790386</td><td>1.2022561273673333</td></tr><tr><td>2.2695105366946686</td><td>1.3830363823753409</td></tr><tr><td>2.5514065200312888</td><td>1.6532649166564506</td></tr><tr><td>2.868316813342011</td><td>1.0435235873302333</td></tr><tr><td>3.2245905452963948</td><td>2.124292203254176</td></tr><tr><td>3.6251170499885332</td><td>2.3528068150638806</td></tr><tr><td>4.075392965871777</td><td>1.9975837036653</td></tr><tr><td>4.581597669054491</td><td>1.9353480308295994</td></tr><tr><td>5.1506780761681235</td><td>2.3457176251133465</td></tr><tr><td>5.790443980602486</td><td>2.8959953348461966</td></tr><tr><td>6.50967523045817</td><td>2.410660229815369</td></tr><tr><td>7.318242219076176</td><td>2.752597361066315</td></tr><tr><td>8.22724134170047</td><td>2.1109349041246492</td></tr><tr><td>9.24914727721733</td><td>3.0122211036085846</td></tr><tr><td>10.3979841848149</td><td>3.413471391783177</td></tr><tr><td>11.689518164985783</td><td>2.891164058699589</td></tr><tr><td>13.141473626117568</td><td>3.057144150244693</td></tr><tr><td>14.773776525985111</td><td>3.327300308961957</td></tr><tr><td>16.608827826277157</td><td>3.503266311770115</td></tr><tr><td>18.671810912919195</td><td>4.768358332694543</td></tr><tr><td>20.991037201085547</td><td>4.171596675308383</td></tr><tr><td>23.598334667821938</td><td>3.7155519974596007</td></tr><tr><td>26.52948464431896</td><td>5.324766852321342</td></tr><tr><td>29.824712862168912</td><td>4.060894946377007</td></tr><tr><td>33.529241492495565</td><td>5.419570168065395</td></tr><tr><td>37.69390975388364</td><td>3.6512159777560718</td></tr><tr><td>42.37587160604063</td><td>4.474888328759087</td></tr><tr><td>47.639380104013405</td><td>5.003485020410157</td></tr><tr><td>53.55666917706899</td><td>4.5101746465399195</td></tr><tr><td>60.20894493336129</td><td>5.452731526728738</td></tr><tr><td>67.68750009458535</td><td>6.491725895702693</td></tr><tr><td>76.09496685459875</td><td>6.045229081651237</td></tr><tr><td>85.54672535565676</td><td>5.43721678644992</td></tr><tr><td>96.17248711152965</td><td>5.265849631488806</td></tr><tr><td>108.11807510766077</td><td>6.680147238793859</td></tr><tr><td>121.54742500762872</td><td>6.075793172297352</td></tr><tr><td>136.64483492953258</td><td>6.8268133487209015</td></tr><tr><td>153.6174946671828</td><td>6.713290036880784</td></tr><tr><td>172.6983290659436</td><td>6.407576884843991</td></tr><tr><td>194.14919457438816</td><td>6.5934148444818925</td></tr><tr><td>218.26447283974872</td><td>8.535866041567777</td></tr><tr><td>245.37511066398167</td><td>7.230708571315785</td></tr><tr><td>275.85316176291843</td><td>7.102723222554722</td></tr><tr><td>310.1168926574779</td><td>7.641514653032799</td></tr><tr><td>348.6365227678084</td><td>6.298543696652105</td></tr><tr><td>391.94067748472213</td><td>6.702356682303348</td></tr><tr><td>440.6236427773573</td><td>7.86959747912834</td></tr><tr><td>495.353520895917</td><td>8.367502451473573</td></tr><tr><td>556.8813990945267</td><td>7.622970960702512</td></tr><tr><td>626.0516572014815</td><td>7.5460735790204865</td></tr><tr><td>703.8135554931555</td><td>7.892335611802074</td></tr><tr><td>791.2342618981319</td><td>8.932918994803277</td></tr><tr><td>889.5134973108236</td><td>8.14983759729005</td></tr><tr><td>1000.0</td><td>9.611446772440747</td></tr></tbody></table></div>
+```
+
+
+On a log axis the fit runs in the axis's log10 coordinates (`:stat-space :scale`, the default) - a straight line
+there; `:stat-space :data` fits in data units, a line in x that the log axis bends:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data log-growth :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :stat-space :scale})]
+                                   :labels {:title ":stat-space :scale (default)"}}
+                                  {:data log-growth :mapping {:x :x :y :y} :scales {:x {:kind :log}}
+                                   :charts [(chart/scatter) (chart/smooth {:method :lm :stat-space :data})]
+                                   :labels {:title ":stat-space :data"}}]
+                                 {:columns 2})
+                   {:width 900 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_series_files/image6.png)
+:::
+
+
 
 ### Band
 
@@ -334,7 +375,7 @@ its fill:
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image6.png)
+![](reference.charts_series_files/image7.png)
 :::
 
 
@@ -357,7 +398,7 @@ wider band, in its own fill - and no band (`:band :none`):
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image7.png)
+![](reference.charts_series_files/image8.png)
 :::
 
 
@@ -391,7 +432,7 @@ are text, so each trading day gets a band (no gaps for weekends).
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image8.png)
+![](reference.charts_series_files/image9.png)
 :::
 
 
@@ -426,7 +467,7 @@ Its options: the up and down colours and patterns, body and wick widths, and the
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image9.png)
+![](reference.charts_series_files/image10.png)
 :::
 
 
@@ -444,7 +485,7 @@ A pattern on the up candles and more room above and below the prices (`:padding`
 
 
 ::: {.clay-image}
-![](reference.charts_series_files/image10.png)
+![](reference.charts_series_files/image11.png)
 :::
 
 

@@ -14,7 +14,8 @@
   (outliers);
   `:outliers` (default true), `:mean` (a mean marker, default false), `:varwidth` (box width proportional to the
   square root of its count, relative to the largest, default false), `:padding {:x [lo hi]}` (default
-  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels).
+  `[0.05 0.05]`), plus the strip options and `:data` / `:mapping` (`:x` values, optional `:y` levels). An n label
+  (`:n-label`) sits past the upper whisker, or past the mark of the largest outlier drawn.
 
   `:stat` - `:tukey` (default, the statistics above) or `:identity` (pre-aggregated, Vega-Lite
   `boxplot_preaggregated`): one row per level and group carries its statistics through the mapping keys `:lower :q1
@@ -165,6 +166,21 @@
       (schema/fail! "Box :n should be a positive integer." {:key :mapping :level level :value n}))
     {:q1 q1 :median median :q3 q3 :lav lower :uav upper :outliers (vec outliers) :mean mean :n (or n 1)}))
 
+(defn- n-label-gap
+  "Gives the pixels an item's n label keeps past its largest drawn value, besides the usual gap: past the mark drawn there.
+
+  Parameters:
+
+  - `item` (map): the item - `:uav` (the upper whisker end), `:outliers`.
+  - `st` (map): the item's style - `:size`, `:stroke-width`.
+  - `options` (map): the chart options - `:outliers` (default true).
+
+  Returns half the outlier size and stroke width when the largest value is a drawn outlier, else 0 (the whisker end)."
+  ^double [{:keys [^double uav outliers]} st options]
+  (if (and (data/option options :outliers true) (some #(m/> (double %) uav) outliers))
+    (m/* 0.5 (m/+ (double (:size st)) (double (:stroke-width st))))
+    0.0))
+
 (defn- compute-in-strip-frame
   "Computes the box chart's stats in the strip frame (levels on `:y`).
 
@@ -195,7 +211,10 @@
      :extents (merge-with merge (group/aesthetic-extents panels (:plot-scales env)) (strip/extents place sized-items x-range))
      :padding (strip/padding place options)
      :padding-explicit (strip/explicit-padding place options)
-     :padding-px (strip-chart/n-label-room options sized-items env)
+     ;; room past the top outlier's mark of the chart's style (a mapped :size draws with its own, see draw-in-strip-frame)
+     :padding-px (strip-chart/n-label-room options
+                                           (update-vals sized-items (fn [its] (map #(assoc % :n-label-gap (n-label-gap % box-style options)) its)))
+                                           env)
      :na (group/na-dims panels)
      :dropped dropped}))
 
@@ -248,7 +267,7 @@
   - `scales` (map): finalized scales (in the strip frame).
   - `env` (map): the draw environment - `:theme`.
 
-  An item whose group is outside its scale's domain, or whose box corners the scales can't place, is skipped; the n labels sit past the upper whisker (or the largest outlier drawn).
+  An item whose group is outside its scale's domain, or whose box corners the scales can't place, is skipped; the n labels sit past the upper whisker (or past the mark of the largest outlier drawn - see `n-label-gap`).
 
   See also [[draw-tufte!]], [[cljplot2.chart.strip/placement]]."
   [_chart {:keys [items style place options]} canvas box scales env]
@@ -299,9 +318,15 @@
               (shape/draw! canvas \O (p mean c0) {:size (mean-marker-size st)
                                                    :color (draw/contrast-color fill) :stroke-color stroke
                                                    :stroke-width sw}))))))
-    (strip-chart/draw-n-labels! canvas pl items
-                          (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce m/max uav outliers) uav))
-                          options scales env)))
+    (strip-chart/draw-n-labels! canvas pl
+                                ;; the gap past the top outlier's mark travels on the item
+                                (map (fn [{:keys [aesthetics] :as item}]
+                                       (if-let [st (group/style style aesthetics scales (:theme env))]
+                                         (assoc item :n-label-gap (n-label-gap item st options))
+                                         item))
+                                     items)
+                                (fn [{:keys [uav outliers]}] (if (and outliers? (seq outliers)) (reduce m/max uav outliers) uav))
+                                options scales env)))
 
 (defmethod strip-chart/in-frame-compute :box [chart chart-split env] (compute-in-strip-frame chart chart-split env))
 

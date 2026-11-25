@@ -104,7 +104,7 @@ them; vertical bars take the levels on x, horizontal ones on y.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position: the levels (categorical) of vertical bars or the values of horizontal ones</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position: the values of vertical bars or the levels (categorical) of horizontal ones</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill colour per group (gives legend keys)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern per group (gives legend keys)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (dodged, stacked or mirrored as other groups)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position: the levels (categorical) of vertical bars or the values of horizontal ones</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position: the values of vertical bars or the levels (categorical) of horizontal ones</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill colour: categorical values group the bars (legend keys), numeric ones colour each bar by its value (a colour bar)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern per group (gives legend keys)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (dodged, stacked or mirrored as other groups)</td></tr></tbody></table>
 ```
 
 :::
@@ -195,7 +195,7 @@ order of negative stacked parts, and the padding:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stat</td><td>one of :count :mean :median :percent :pmf :sum or a function</td><td>:sum</td><td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td></tr><tr><td>:position</td><td>one of :dodge :normalize :overlay :stack</td><td>:dodge when a level holds two or more groups, else :overlay</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>draw the 0 line on top of mirrored bars (with :mirror only)</td></tr><tr><td>:varwidth</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td></tr><tr><td>:negative-order</td><td>one of :forward :reverse</td><td>:forward</td><td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stat</td><td>one of :count :mean :median :percent :pmf :sum or a function</td><td>:sum</td><td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td></tr><tr><td>:color-stat</td><td>one of :mean :median :sum or a function or nil</td><td>the :stat of value stats, :mean for count stats</td><td>a bar's colour value from its rows' values of a linear or binned :color: :sum, :mean, :median or a function of the values</td></tr><tr><td>:position</td><td>one of :dodge :normalize :overlay :stack</td><td>:dodge when a level holds two or more groups, else :overlay</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>draw the 0 line on top of mirrored bars (with :mirror only)</td></tr><tr><td>:varwidth</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td></tr><tr><td>:negative-order</td><td>one of :forward :reverse</td><td>:forward</td><td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
 ```
 
 :::
@@ -337,6 +337,59 @@ drop their 0 line with `:zero-line false`, and `:padding` widens the value axis 
 :::
 
 
+A numeric `:color` doesn't group the bars: each bar is filled by its own colour value - `:color-stat` over its
+rows' colour values (default the bar's `:stat`, `:mean` for counts) - with a colour bar. Mapped to the values with
+`:sum` it colours each bar by its length; stacked segments (groups from `:group` or a categorical aesthetic) take
+their own colours; a count can be coloured by a summary of another column:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data sales
+                                   :mapping {:x :quarter :y :amount :color :amount}
+                                   :charts [(chart/bar {:color-stat :sum})]
+                                   :labels {:title ":color-stat :sum"}}
+                                  {:data sales
+                                   :mapping {:x :quarter :y :amount :group :product :color :amount}
+                                   :charts [(chart/bar {:position :stack :color-stat :mean})]
+                                   :labels {:title "stacked, :mean"}}
+                                  {:data iris
+                                   :mapping {:x :species :color :petal-length}
+                                   :charts [(chart/bar {:stat :count :color-stat :median})]
+                                   :labels {:title ":count, :median"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_bars_ranges_files/image6.png)
+:::
+
+
+An explicit colour `:domain` never drops rows: every bar keeps its length, and a bar whose colour value lies
+outside the domain is drawn in the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
+bar's colour value as `:color-value`:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data sales
+                    :mapping {:x :quarter :y :amount :color :amount}
+                    :charts [(chart/bar {:color-stat :mean :value-label #(format "mean %.1f" (:color-value %))})]
+                    :scales {:color {:domain [15 40]}}
+                    :labels {:title "colour :domain [15 40]"}}
+                   {:width 500 :height 320})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_bars_ranges_files/image7.png)
+:::
+
+
 
 ### Labels
 
@@ -375,7 +428,7 @@ Each bar's length written past its end or in its middle, formatted or as the tex
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image6.png)
+![](reference.charts_bars_ranges_files/image8.png)
 :::
 
 
@@ -411,7 +464,7 @@ texts join side by side or one above the other (`:label-stack`):
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image7.png)
+![](reference.charts_bars_ranges_files/image9.png)
 :::
 
 
@@ -438,7 +491,7 @@ labels rarely fit their wedge and are skipped:
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image8.png)
+![](reference.charts_bars_ranges_files/image10.png)
 :::
 
 
@@ -465,7 +518,7 @@ In a polar plot `:outer` puts the labels past the outer radius, with a leader li
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image9.png)
+![](reference.charts_bars_ranges_files/image11.png)
 :::
 
 
@@ -499,7 +552,7 @@ bootstrap estimate - with a mark at its centre.
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image10.png)
+![](reference.charts_bars_ranges_files/image12.png)
 :::
 
 
@@ -540,7 +593,7 @@ bootstrap's statistic and random generator (seeded here), the centre mark and th
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image11.png)
+![](reference.charts_bars_ranges_files/image13.png)
 :::
 
 
@@ -583,7 +636,7 @@ the mean (`:bootstrap-*`, 500 resamples, seeded):
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image12.png)
+![](reference.charts_bars_ranges_files/image14.png)
 :::
 
 
@@ -612,7 +665,7 @@ sized up with `:size`:
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image13.png)
+![](reference.charts_bars_ranges_files/image15.png)
 :::
 
 
@@ -663,7 +716,7 @@ ranges, measures and markers (here percents of a plan, so the levels share one a
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image14.png)
+![](reference.charts_bars_ranges_files/image16.png)
 :::
 
 
@@ -702,7 +755,7 @@ markers' colour, width and length, and the padding (left: 20% past the largest v
 
 
 ::: {.clay-image}
-![](reference.charts_bars_ranges_files/image15.png)
+![](reference.charts_bars_ranges_files/image17.png)
 :::
 
 

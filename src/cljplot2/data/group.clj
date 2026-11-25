@@ -186,18 +186,21 @@
   - `k` (keyword): the aesthetic, e.g. `:color`, `:size`.
   - `groups` (map): `{panel rows}`.
   - `mapping` (map): the chart's merged mapping.
-  - `env` (map): `:plot-scales` - the plot's `:scales`; `:na-level` - are NA rows kept (default true).
+  - `env` (map): `:plot-scales` - the plot's `:scales`; `:na-level` - are NA rows kept (default true); `:filter-domain` - are rows outside the scale's explicit domain (or with an invalid value) dropped (default true; `false` for a chart aggregating the values of several rows into one mark, which draws an aggregate outside the domain in the NA attribute).
 
-  Returns `{:groups :mapping :value-of :dropped}`: `groups` without the rows outside the scale's explicit domain (and NA rows without `:na-level`), `mapping` without `k` (to split by the other dimensions), the row accessor of the value, the count of rows dropped. `nil` when `k` is unmapped or groups (an ordinal scale).
+  Returns `{:groups :mapping :value-of :dropped}`: `groups` without the rows outside the scale's explicit domain (with `:filter-domain`; NA rows without `:na-level`), `mapping` without `k` (to split by the other dimensions), the row accessor of the value, the count of rows dropped. `nil` when `k` is unmapped or groups (an ordinal scale).
+
+  Throws as [[cljplot2.scale.aesthetic/kept-value?]] (a value of the wrong type for the scale kind), also without `:filter-domain`.
 
   See also [[continuous-stats]]."
-  [k groups mapping {:keys [plot-scales na-level] :or {na-level true}}]
+  [k groups mapping {:keys [plot-scales na-level filter-domain] :or {na-level true filter-domain true}}]
   (when-let [acc (get mapping k)]
     (let [value-of (data/row-accessor k acc)
           spec (get plot-scales k {})
           present (keep value-of (mapcat val groups))]
       (when (#{:linear :binned} (aesthetic/inferred-kind k spec (aesthetic/continuous-values? k present)))
-        (let [kept? (fn [row] (let [v (value-of row)] (if (nil? v) na-level (aesthetic/kept-value? k spec v))))]
+        (let [kept? (fn [row] (let [v (value-of row)]
+                                (if (nil? v) na-level (or (aesthetic/kept-value? k spec v) (not filter-domain)))))]
           {:groups (update-vals groups #(filterv kept? %))
            :mapping (dissoc mapping k)
            :value-of value-of
