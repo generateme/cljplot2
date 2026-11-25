@@ -18,14 +18,21 @@ A plotting library for Clojure: plots are plain maps of data, mappings and chart
 
 ## Install
 
-There's no release yet. Use a git coordinate in `deps.edn`:
+There's no release yet; a snapshot is on [Clojars](https://clojars.org/org.clojars.generateme/cljplot2):
+
+```clojure
+org.clojars.generateme/cljplot2 {:mvn/version "0.1.0-SNAPSHOT"}        ; deps.edn
+[org.clojars.generateme/cljplot2 "0.1.0-SNAPSHOT"]                     ; project.clj
+```
+
+or a fixed commit through a git coordinate in `deps.edn`:
 
 ```clojure
 io.github.generateme/cljplot2 {:git/sha "ac8e8e0c1e41c3c0461a43cb6f83337f0c17a917"}
 ```
 
-cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on Clojars; clojure2d
-`1.5.0-alpha3-SNAPSHOT` and wadogo `1.1.0-alpha2-SNAPSHOT` aren't yet - install them locally from their repositories.
+cljplot2 depends on SNAPSHOT versions of fastmath (`3.0.0-alpha10-SNAPSHOT`), clojure2d (`1.5.0-alpha3-SNAPSHOT`) and
+wadogo (`1.1.0-alpha2-SNAPSHOT`), all on Clojars.
 
 ## Example
 
