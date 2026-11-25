@@ -39,16 +39,16 @@
 
 (def ^:private style-entries
   "Map entries of the candlestick style (theme `[:chart :candlestick]`, also options)."
-  [(schema/optional :up-color {:description "colour of a candle closing at or above its open"} schema/color)
-   (schema/optional :down-color {:description "colour of a candle closing below its open"} schema/color)
-   (schema/optional :width {:description "body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)"}
+  [(schema/optional :up-color {:description "The colour of a candle that closes at or above its open." :cljplot2/example :seagreen} schema/color)
+   (schema/optional :down-color {:description "The colour of a candle that closes below its open." :cljplot2/example :firebrick} schema/color)
+   (schema/optional :width {:description "The body width, as a fraction of the smallest step between x values (of a band's width on a categorical axis)." :cljplot2/example 0.5}
                     schema/fraction)
-   (schema/optional :line-width {:description "wick (and OHLC bar) line width in pixels"} schema/non-neg)
-   (schema/optional :stroke-color {:description "body outline colour: a colour or :none"} schema/color)
-   (schema/optional :stroke-width {:description "body outline width in pixels"} schema/non-neg)
-   (schema/optional :up-pattern {:description "pattern drawn over the bodies of up candles"} schema/pattern)
-   (schema/optional :down-pattern {:description "pattern drawn over the bodies of down candles"} schema/pattern)
-   (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened body colour)"} draw/stroke-color)])
+   (schema/optional :line-width {:description "The width in pixels of the wicks, or of the bars with `:style :ohlc`." :cljplot2/example 2} schema/non-neg)
+   (schema/optional :stroke-color {:description "The colour of each body's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+   (schema/optional :stroke-width {:description "The width of the body outline in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :up-pattern {:description "The fill pattern drawn over the bodies of up candles." :cljplot2/example :hatch} schema/pattern)
+   (schema/optional :down-pattern {:description "The fill pattern drawn over the bodies of down candles." :cljplot2/example :dots} schema/pattern)
+   (schema/optional :pattern-color {:description "The colour of the pattern's ink." :cljplot2/value-meanings {:darker "The body colour, darkened." :none "No pattern drawn."} :cljplot2/example :black :cljplot2/example-context {:up-pattern :hatch}} draw/stroke-color)])
 
 (def ^:private value-keys
   "Mapping keys of a candle's prices."
@@ -61,18 +61,18 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :style {:description ":candle (wick and body) or :ohlc (a low-high bar with open and close ticks)"
+                (conj (schema/optional :style {:description "How each candle is drawn." :cljplot2/value-meanings {:candle "A wick from low to high and a body from open to close." :ohlc "A bar from low to high with ticks at the open and the close."}
                                                :default :candle}
                                        [:enum :candle :ohlc])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)"}
+                      (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on every side; x also gets half the smallest x step past the outer candles."}
                                        data/position-padding)))
    :mapping [:map
-             [:x {:description "x position (data units)"} schema/accessor]
-             [:open {:description "opening price"} schema/accessor]
-             [:high {:description "highest price"} schema/accessor]
-             [:low {:description "lowest price"} schema/accessor]
-             [:close {:description "closing price"} schema/accessor]]})
+             [:x {:description "The x of each candle, e.g. its date."} schema/accessor]
+             [:open {:description "The opening price."} schema/accessor]
+             [:high {:description "The highest price."} schema/accessor]
+             [:low {:description "The lowest price."} schema/accessor]
+             [:close {:description "The closing price."} schema/accessor]]})
 
 (defn- smallest-gap
   "Gives the smallest positive gap between neighbouring sorted numbers.

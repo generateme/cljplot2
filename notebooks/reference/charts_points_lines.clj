@@ -1,6 +1,6 @@
 ;; # Points, lines and areas
 
-;; Charts that draw the data where it lies: points (`scatter`), lines through them (`line`), line segments between
+;; These charts draw the data where it lies: points (`scatter`), lines through them (`line`), line segments between
 ;; two points (`segment`), filled shapes (`polygon`), bands between two bounds (`ribbon`) and price candles
 ;; (`candlestick`). Start here for raw data in two dimensions.
 
@@ -31,12 +31,12 @@
 
 (nu/data-table ohlc)
 
-;; ## scatter
+;; ## Scatter plots
 
-;; A point per row at its x and y; colour, shape and size may come from the data, and `:order` sets which points
-;; are drawn on top.
+;; `chart/scatter` draws a point per row at its x and y. Use it to show how two variables relate. Colour, shape, size
+;; and drawing order can come from the data.
 
-(nu/options-table (describe/mapping (chart/scatter)))
+(nu/mapping-list (describe/mapping (chart/scatter)))
 
 (plot/render-image {:data mtcars
                     :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
@@ -45,10 +45,9 @@
                     :labels {:x "weight [1000 lbs]" :y "miles per gallon"}}
                    {:width 600 :height 380})
 
-;; Its options: the point style used when nothing is mapped, the draw order of a mapped `:order`, and jitter -
-;; random offsets separating points on a grid of values (seeded here, so the image is the same on every build):
+;; Its options style the points when nothing is mapped, set the draw order and spread points that overlap:
 
-(nu/options-table (describe/own-rows (describe/options (chart/scatter))))
+(nu/option-cards 'chart/scatter (describe/own-rows (describe/options (chart/scatter))))
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :cyl :y :gear}
@@ -63,8 +62,7 @@
                                  {:columns 2})
                    {:width 900 :height 330})
 
-;; A mapped `:order` draws points by its values, later ones on top: the most powerful cars over the others
-;; (ascending) or under them (descending); `:padding` is the room around the data, here none on x:
+;; The most powerful cars drawn over the others (ascending) or under them (descending); no padding on x:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :wt :y :mpg :color :hp :order :hp}
@@ -79,8 +77,7 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 360})
 
-;; `:alpha` sets the opacity of every point colour, mapped or not - overlapping bubbles stay visible; the white
-;; outline keeps its own colour:
+;; Half-transparent bubbles keep the ones beneath visible; the white outline stays opaque:
 
 (plot/render-image {:data mtcars
                     :mapping {:x :wt :y :mpg :color (levels/categorical :cyl) :size :hp}
@@ -91,12 +88,13 @@
 
 (nu/shared-groups (describe/options (chart/scatter)))
 
-;; ## line
+;; ## Line charts
 
-;; A polyline per group through the rows ordered by x; it may fill the area below, stack with other groups, or
-;; carry a colour or width along its length. (The dataset's dates are text: the mapping parses them.)
+;; `chart/line` joins each group's points into a line, ordered by x. Use it for values that change along x, such as
+;; a time series; it can also fill the area below, stack groups, or vary colour and width along its length. (The
+;; dataset's dates are text: the mapping parses them.)
 
-(nu/options-table (describe/mapping (chart/line)))
+(nu/mapping-list (describe/mapping (chart/line)))
 
 (plot/render-image {:data stocks
                     :mapping {:x #(java.time.LocalDate/parse (:date %)) :y :price :color :symbol}
@@ -106,10 +104,10 @@
 
 ;; ### Style
 
-;; The area under a line (`:fill`), its gradient, the stroke's opacity and the trail - a filled band whose width
-;; follows a mapped `:size`:
+;; These options decide how the line and the area below it look, including a trail whose width follows a mapped
+;; `:size`:
 
-(nu/options-table (describe/own-rows (describe/options (chart/line))) :style)
+(nu/option-cards 'chart/line (describe/own-rows (describe/options (chart/line))) :style)
 
 (def wave (for [t (range 40)] {:t t :v (+ 1.5 (m/sin (* 0.25 t))) :w (+ 1 (mod t 10))}))
 
@@ -128,7 +126,7 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
-;; The gradient along x instead, and `:stroke-alpha-factor` fading the strokes of overlapping lines:
+;; A gradient along x, and faded strokes where lines overlap:
 
 (plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v}
                                    :charts [(chart/line {:fill-gradient :mpl/viridis :fill-gradient-axis :x})]
@@ -154,10 +152,10 @@
 
 ;; ### Path
 
-;; How points are joined: sorted by x or in data order, what a missing value does (a break or a bridge), how
-;; groups combine (the Layering and position chapter shows `:stack` and the streamgraphs), and the padding:
+;; These options decide how the points become a path: their order, what happens at a missing y and how groups
+;; combine (the Layering and position chapter shows `:stack` and the streamgraphs):
 
-(nu/options-table (describe/own-rows (describe/options (chart/line))) :path)
+(nu/option-cards 'chart/line (describe/own-rows (describe/options (chart/line))) :path)
 
 (def spiral (for [t (range 0 12 0.25)] {:x (* t (m/cos t)) :y (* t (m/sin t)) :v (when-not (< 5 t 6) t)}))
 
@@ -178,7 +176,7 @@
                                  {:columns 2})
                    {:width 900 :height 600})
 
-;; Groups combined by `:position` (`:overlay`, the default, draws each line on its own):
+;; The four stacked positions, side by side:
 
 (def streams (for [series ["a" "b" "c"] t (range 25)]
                {:series series :t t :v (+ 1.5 (m/sin (+ (* 0.3 t) (* 2 (count series)) (int (first series)))))}))
@@ -198,9 +196,9 @@
 
 ;; ### Ends
 
-;; Arrowheads at the ends of each run and gaps shortening it - e.g. to stop short of a marker:
+;; These options add arrowheads, or stop each line short of its points, e.g. before a marker:
 
-(nu/options-table (describe/own-rows (describe/options (chart/line))) :ends)
+(nu/option-cards 'chart/line (describe/own-rows (describe/options (chart/line))) :ends)
 
 (def path-points [{:x 0 :y 0} {:x 1 :y 2} {:x 2 :y 1} {:x 3 :y 3}])
 
@@ -219,12 +217,12 @@
 
 (nu/shared-groups (describe/options (chart/line)))
 
-;; ## segment
+;; ## Line segments
 
-;; A straight piece per row from (x, y) to (xend, yend); the ends may be mapped or given as literals, with
-;; arrowheads and gaps as on lines.
+;; `chart/segment` draws a straight line per row from (x, y) to (xend, yend). Use it for arrows, links between two
+;; points or lollipop stems; the ends can be mapped or fixed for all rows.
 
-(nu/options-table (describe/mapping (chart/segment)))
+(nu/mapping-list (describe/mapping (chart/segment)))
 
 (def moves [{:from "a" :x 1 :y 1 :x2 3 :y2 2} {:from "b" :x 2 :y 4 :x2 4 :y2 3} {:from "c" :x 3 :y 0.5 :x2 1.5 :y2 3}])
 
@@ -235,9 +233,10 @@
                     :charts [(chart/segment {:line-width 2})]}
                    {:width 500 :height 320})
 
-;; Its options: literal ends (here every segment starts at x = 0, a lollipop stem), arrows and gaps:
+;; Its options give fixed ends, arrowheads and gaps (on the left, `:xend 0` ends every segment at x = 0, as
+;; lollipop stems):
 
-(nu/options-table (describe/own-rows (describe/options (chart/segment))))
+(nu/option-cards 'chart/segment (describe/own-rows (describe/options (chart/segment))))
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg :y :model}
@@ -266,11 +265,12 @@
 
 (nu/shared-groups (describe/options (chart/segment)))
 
-;; ## polygon
+;; ## Polygons
 
-;; A filled shape per group through its rows in data order.
+;; `chart/polygon` fills one shape per group, its rows the vertices in data order. Use it for regions, outlines or
+;; any custom shape.
 
-(nu/options-table (describe/mapping (chart/polygon)))
+(nu/mapping-list (describe/mapping (chart/polygon)))
 
 (def shapes (concat (for [a (range 0 360 60)]
                       {:shape "hexagon" :x (m/cos (m/radians a)) :y (m/sin (m/radians a))})
@@ -283,16 +283,16 @@
                     :charts [(chart/polygon)]}
                    {:width 500 :height 260})
 
-;; Its options: the fill, its opacity and the outline (`:color` - the group's colour, opaque):
+;; Its options decide how the shapes are filled and outlined:
 
-(nu/options-table (describe/own-rows (describe/options (chart/polygon))))
+(nu/option-cards 'chart/polygon (describe/own-rows (describe/options (chart/polygon))))
 
 (plot/render-image {:data shapes
                     :mapping {:x :x :y :y :color :shape}
                     :charts [(chart/polygon {:alpha 0.35 :stroke-color :color :stroke-width 2})]}
                    {:width 500 :height 260})
 
-;; Without a mapped colour every polygon takes `:color`; `:padding` 0 lets the shapes touch the panel's edges:
+;; With `:padding` 0 the shapes touch the panel's edges:
 
 (plot/render-image {:data shapes
                     :mapping {:x :x :y :y :group :shape}
@@ -301,11 +301,12 @@
 
 (nu/shared-groups (describe/options (chart/polygon)))
 
-;; ## ribbon
+;; ## Bands
 
-;; A band per group between a lower and an upper bound at each x - an interval, a range of values, an envelope.
+;; `chart/ribbon` fills a band per group between a lower and an upper bound at each x. Use it for an interval, a
+;; range of values or an envelope around a line.
 
-(nu/options-table (describe/mapping (chart/ribbon)))
+(nu/mapping-list (describe/mapping (chart/ribbon)))
 
 (def bands (for [g ["low" "high"] t (range 0 25)]
              (let [c (+ (if (= g "low") 1.0 4.0) (m/sin (* 0.3 t)))
@@ -319,9 +320,9 @@
                     :charts [(chart/ribbon) (chart/line {:mapping {:y :mid}})]}
                    {:width 600 :height 340})
 
-;; Its options: the band's colour and fill, its edges, and a gradient instead of a flat fill:
+;; Its options decide how the band's fill and edges look, or put a gradient in place of the fill:
 
-(nu/options-table (describe/own-rows (describe/options (chart/ribbon))))
+(nu/option-cards 'chart/ribbon (describe/own-rows (describe/options (chart/ribbon))))
 
 (def band (filter #(= "high" (:group %)) bands))
 
@@ -340,8 +341,7 @@
                    {:width 1000 :height 300})
 
 
-;; A gradient along x instead (over the x scale's range), and the padding of the data span - none on x, a third of
-;; the span on y:
+;; A gradient along x; no padding on x, a third of the span on y:
 
 (plot/render-image (plot/arrange [{:data band :mapping {:x :t :ymin :lo :ymax :hi}
                                    :charts [(chart/ribbon {:fill-gradient [:yellow :purple] :fill-gradient-axis :x})]
@@ -354,12 +354,13 @@
 
 (nu/shared-groups (describe/options (chart/ribbon)))
 
-;; ## candlestick
+;; ## Candlestick charts
 
-;; A candle per row: a wick from low to high and a body from open to close, coloured by direction. The dates here
-;; are text, so each trading day gets a band (no gaps for weekends).
+;; `chart/candlestick` draws a candle per row: a wick from low to high and a body from open to close, coloured by
+;; whether the price rose or fell. Use it for prices over time. The dates here are text, so each trading day gets its
+;; own slot, with no weekend gaps.
 
-(nu/options-table (describe/mapping (chart/candlestick)))
+(nu/mapping-list (describe/mapping (chart/candlestick)))
 
 (plot/render-image {:data ohlc
                     :mapping {:x :date :open :open :high :high :low :low :close :close}
@@ -367,9 +368,9 @@
                     :labels {:y "VIX"}}
                    {:width 700 :height 360})
 
-;; Its options: the up and down colours and patterns, body and wick widths, and the OHLC bar style:
+;; Its options decide how the candles look, from their colours and patterns to the OHLC bar style:
 
-(nu/options-table (describe/own-rows (describe/options (chart/candlestick))))
+(nu/option-cards 'chart/candlestick (describe/own-rows (describe/options (chart/candlestick))))
 
 (plot/render-image (plot/arrange [{:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                                    :charts [(chart/candlestick {:up-color [33 102 172] :down-color [240 140 30]
@@ -385,7 +386,7 @@
                    {:width 1000 :height 320})
 
 
-;; A pattern on the up candles and more room above and below the prices (`:padding`):
+;; Here a pattern marks the up candles, and `:padding` adds room above and below the prices:
 
 (plot/render-image {:data ohlc :mapping {:x :date :open :open :high :high :low :low :close :close}
                     :charts [(chart/candlestick {:up-pattern :dots :pattern-color :black :padding {:y [0.3 0.3]}})]

@@ -52,24 +52,24 @@
                 (into common/point-style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side"}
+                (conj (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on every side."}
                                        data/position-padding)
-                      (schema/nilable :descending {:description "draw the values of a mapped :order in descending order (later points on top)"
+                      (schema/nilable :descending {:description "Whether the points follow a mapped `:order` from its highest value down." :cljplot2/value-meanings {false "Higher `:order` values are drawn later, on top." true "Lower `:order` values are drawn later, on top."} :cljplot2/example-context {:mapping {:order :y}}
                                                     :default false}
                                        schema/bool)
-                      (schema/optional :jitter {:description "[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions"}
+                      (schema/optional :jitter {:description "Random offsets that spread overlapping points: `[dx dy]` moves each point by up to ±dx and ±dy in the axis scale's units (log units on a `:log` axis)." :cljplot2/default-doc "No jitter." :cljplot2/example [0.1 0.1]}
                                        [:tuple schema/non-neg schema/non-neg])
-                      (schema/nilable :rng {:description "random number generator for jitter (seeded for reproducible plots)"
-                                            :cljplot2/default-doc "an unseeded generator (builds differ)"}
+                      (schema/nilable :rng {:description "The random generator of the jitter." :cljplot2/example-context {:jitter [0.1 0.1]} :cljplot2/example '(r/rng :mersenne 7)
+                                            :cljplot2/default-doc "An unseeded generator, so each build jitters differently."}
                                       rng/schema)))
    :mapping [:map
-             [:x {:description "x position (data units)"} schema/accessor]
-             [:y {:description "y position (data units)"} schema/accessor]
-             (schema/nilable :color {:description "point colour per row"} schema/accessor)
-             (schema/nilable :shape {:description "point shape per row"} schema/accessor)
-             (schema/nilable :size {:description "point size per row"} schema/accessor)
-             (schema/nilable :order {:description "draw order: points drawn by its values (ascending, :descending reverses it), else in data order"}
+             [:x {:description "The x of each point."} schema/accessor]
+             [:y {:description "The y of each point."} schema/accessor]
+             (schema/nilable :color {:description "Colours each point by the mapped value."} schema/accessor)
+             (schema/nilable :shape {:description "Gives each point a shape by the mapped value."} schema/accessor)
+             (schema/nilable :size {:description "Sizes each point by the mapped value."} schema/accessor)
+             (schema/nilable :order {:description "Sets the drawing order, lowest value first (`:descending` reverses it); unmapped, points keep data order."}
                              schema/accessor)]})
 
 (defn- order-rows

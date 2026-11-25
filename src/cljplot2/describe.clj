@@ -8,8 +8,8 @@
   - `:path` - longer than `[k]` for the entries of nested closed maps (each nested map also has its own row).
   - `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a nested map's with [[rows-under]].
   - `:default` / `:default-doc` / `:description` / `:fragment` / `:section` - `nil` when absent.
-  - `:values` - `[{:value v :meaning m} ...]`, the literal values the entry accepts (enum members, `:=` constants, `true` / `false`, a named type's `:cljplot2/value-set`), `nil` only when documented; `:forms` - `[{:form k :type text :meaning m} ...]`, its other accepted forms (`k` a named type's keyword or a malli type, `text` the short type name); `:other-values` - the meaning of the values without their own; meanings from the entry's `:cljplot2/value-meanings` / `:cljplot2/form-meanings`, else the schema's `:cljplot2/value-meanings` (see [[cljplot2.schema]]). Empty for a flattened map's row.
-  - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can.
+  - `:values` - `[{:value v :meaning m} ...]`, the literal values the entry accepts (enum members, `:=` constants, `true` / `false`, a named type's `:cljplot2/value-set`), `nil` only when documented; `:forms` - `[{:form k :type text :meaning m} ...]`, its other accepted forms (`k` a named type's keyword or a malli type, `text` the short type text - a named type's name, composites spelled from their children's names); `:other-values` - the meaning of the values without their own; meanings from the entry's `:cljplot2/value-meanings` / `:cljplot2/form-meanings`, else the schema's `:cljplot2/value-meanings` (see [[cljplot2.schema]]). Empty for a flattened map's row.
+  - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can; `:example-context` - options the example needs (`:cljplot2/example-context`), only when given; [[example-options]] - the example's whole options map.
   - `:theme-default` - true on a chart's style row whose `:default` comes from the theme.
   - `:required` - false in a merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides).
   - `:default` is the value used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines).
@@ -21,7 +21,7 @@
   - [[options]] - rows of a chart value's options (style defaults from theme `[:chart kind]`), of a builder or API function var (its `:cljplot2/options` schema) or of a map schema; [[schema-rows]], [[mapping]] - rows of the mapping keys a chart reads.
   - [[theme-rows]] - the theme's rows with their defaults and text roles; [[style-rows]] - the rows of a named theme style (a builder's) with its defaults.
   - [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts), [[fragment-keys]], [[own-rows]].
-  - Slicing: [[top-level-rows]], [[rows-under]], [[container-row?]]; [[type-text]] - readable type text of a schema; [[example]] - an option's example value; [[concepts]] - section titles.
+  - Slicing: [[top-level-rows]], [[rows-under]], [[container-row?]]; [[type-text]] - readable type text of a schema; [[documented-types]] - the types the book explains; [[example]] - an option's example value, [[example-options]] - its whole options map; [[concepts]] - section titles.
   - Listings: [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every namespace holding them), [[chart-constructors]], [[plot-level-schemas]], [[attribute-values]]."
   (:require [clojure.string :as str]
             [fastmath.core :as m]
@@ -32,6 +32,7 @@
             [cljplot2.data.annotation :as annotation]
             [cljplot2.graphics.cells :as cell-draw]
             [cljplot2.data.facet :as facet]
+            [cljplot2.data.rng :as rng]
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.rows :as rows]
@@ -65,7 +66,8 @@
 
 (def concepts
   "Section titles of the reference part: chart kind, builder or function -> the concept its section is named after (the heading `## title`; the first sentence names the function). Kinds without an entry keep the kind's name (pages not yet rewritten)."
-  {:smooth "Smoothing"})
+  {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
+   :candlestick "Candlestick charts" :smooth "Smoothing"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -216,6 +218,89 @@
   "Schema types of `true` / `false`: malli's `:boolean`, the predicate `boolean?` and [[cljplot2.schema/bool]]."
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
+(def documented-types
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position). Option cards link a form of these types to its explanation."
+  (merge schema/named-types
+         (into {} (map (fn [s] [(malli/type s) s])) [rng/schema polyline/fill-gradient-schema annotation/position])))
+
+(def ^:private bound-words
+  "Comparator schema type -> the words of its bound in a short type text."
+  {:> "above" :>= "at least" :< "below" :<= "at most"})
+
+(defn- plural
+  "Gives the plural of a one-word or short noun phrase: its last word's English plural (`dash` -> `dashes`, `deficiency` -> `deficiencies`, `number` -> `numbers`).
+
+  Parameters:
+
+  - `text` (string): a short type text, e.g. a type name.
+
+  A named type whose name doesn't take this rule gives its own `:cljplot2/type-plural` (see [[form-text]])."
+  [text]
+  (cond
+    (re-find #"(s|sh|ch|x)$" text) (str text "es")
+    (re-find #"[^aeiou]y$" text) (str (subs text 0 (dec (count text))) "ies")
+    :else (str text "s")))
+
+(declare form-text)
+
+(defn- simple-text?
+  "Tests whether a short type text is a plain noun phrase - lowercase words, no code, punctuation, alternatives or composite (`pair of ...`) - which takes a plural after `vector of`."
+  [text]
+  (and (re-matches #"[a-z][a-z\- ]*" text) (not (re-find #" (or|of) " text))))
+
+(defn- item-text
+  "Gives the text of the items of a collection form: the plural of a named type's name (its `:cljplot2/type-plural` when given) or of a plain noun phrase, else the item's text in parentheses.
+
+  Parameters:
+
+  - `s`: the item schema."
+  [s]
+  (let [compiled (malli/schema s)
+        own-plural (:cljplot2/type-plural (malli/type-properties compiled))
+        text (form-text compiled)]
+    (cond
+      own-plural own-plural
+      (simple-text? text) (plural text)
+      :else (str "(" text ")"))))
+
+(defn- bounded-text
+  "Gives the short text of an `:and` schema of a base type and comparator bounds: the base's text followed by the bounds (`integer at least 2`, `number above 0 and below 90`); `nil` for any other `:and` (a predicate child would be dropped).
+
+  Parameters:
+
+  - `children`: the `:and` schema's children."
+  [children]
+  (let [compiled (map malli/schema children)
+        bounds (filter #(contains? bound-words (malli/type %)) compiled)
+        others (remove #(contains? bound-words (malli/type %)) compiled)]
+    (when (and (seq bounds) (m/one? (count others)))
+      (str (form-text (first others)) " "
+           (str/join " and " (map #(str (bound-words (malli/type %)) " " (first (malli/children %))) bounds))))))
+
+(defn- form-text
+  "Gives the short type text of a form on an option card: a named type's `:cljplot2/type-name`, composites spelled with their children's short texts (`vector of open fractions`, `pair of non-negative numbers`, `set of (`:x` or `:y`)`, `map of `:x` or `:y` to padding`, `integer at least 2`; an `:and` keeps every part, a predicate by its error message), enum values as code; else [[type-text]] (an option card test then asks for a type name).
+
+  Parameters:
+
+  - `s`: a malli schema (the option table's [[type-text]] stays the validation-based text)."
+  [s]
+  (let [compiled (malli/schema s)
+        t (malli/type compiled)
+        children (malli/children compiled)]
+    (cond
+      (:cljplot2/type-name (malli/type-properties compiled)) (:cljplot2/type-name (malli/type-properties compiled))
+      (= :maybe t) (form-text (first children))
+      (contains? boolean-types t) "boolean"
+      (#{:vector :sequential :set} t) (str (if (= :sequential t) "sequence" (name t)) " of " (item-text (first children)))
+      (= :tuple t) (if (and (m/== 2 (count children)) (apply = (map form-text children)))
+                     (str "pair of " (item-text (first children)))
+                     (str "[" (str/join ", " (map form-text children)) "]"))
+      (= :map-of t) (str "map of " (form-text (first children)) " to " (form-text (second children)))
+      (= :enum t) (str/join " or " (map #(str "`" (pr-str %) "`") children))
+      (= :and t) (or (bounded-text children) (str/join ", " (map form-text children)))
+      (= :fn t) (type-text compiled)
+      :else (type-text compiled))))
+
 (defn- form-of
   "Gives the form of a schema that isn't a literal value: its type key and its short type text.
 
@@ -223,11 +308,10 @@
 
   - `s`: a malli schema.
 
-  Returns `{:form k :type text}` - `k` the schema's type (a named type's keyword, a malli type), `text` a named type's `:cljplot2/type-name`, else its [[type-text]]."
+  Returns `{:form k :type text}` - `k` the schema's type (a named type's keyword, a malli type), `text` its [[form-text]]."
   [s]
   (let [compiled (malli/schema s)]
-    {:form (malli/type compiled)
-     :type (or (:cljplot2/type-name (malli/type-properties compiled)) (type-text compiled))}))
+    {:form (malli/type compiled) :type (form-text compiled)}))
 
 (defn- alternatives
   "Gives the values and forms an entry schema accepts, `nil` left out.
@@ -238,7 +322,7 @@
 
   - `schema`: an entry's malli schema.
 
-  Returns `{:values [[v meanings] ...] :forms [{:form :type} ...]}` - `meanings` the value meanings of the schema the value comes from (`:cljplot2/value-meanings` of an enum's or a named type's properties), or `nil`. Throws `ex-info` for an `:cljplot2/other-types` keyword that isn't in [[cljplot2.schema/documented-types]]."
+  Returns `{:values [[v meanings] ...] :forms [{:form :type :meaning} ...]}` - a form's meaning from its named type's `:cljplot2/form-meanings` (`nil` without); `meanings` the value meanings of the schema the value comes from (`:cljplot2/value-meanings` of an enum's or a named type's properties), or `nil`. Throws `ex-info` for an `:cljplot2/other-types` keyword that isn't in [[documented-types]]."
   [schema]
   (let [s (malli/schema schema)
         t (malli/type s)
@@ -253,8 +337,9 @@
       (or (:cljplot2/value-set tp) (:cljplot2/other-types tp))
       {:values (mapv (fn [v] [v (:cljplot2/value-meanings tp)]) (sort-by str (:cljplot2/value-set tp)))
        :forms (mapv (fn [k]
-                      (form-of (or (get schema/documented-types k)
-                                   (throw (ex-info (str "Not a documented type: " k) {:key :cljplot2/other-types :value k})))))
+                      (assoc (form-of (or (get documented-types k)
+                                          (throw (ex-info (str "Not a documented type: " k) {:key :cljplot2/other-types :value k}))))
+                             :meaning (get (:cljplot2/form-meanings tp) k)))
                     (:cljplot2/other-types tp))}
       :else {:values [] :forms [(form-of s)]})))
 
@@ -275,7 +360,7 @@
                    by-value (group-by :value entries)]
                (mapv (fn [v] (let [same (by-value v)] (or (first (filter :meaning same)) (first same))))
                      (distinct (map :value entries))))
-     :forms (mapv #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %))) forms)
+     :forms (mapv #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %) (:meaning %))) forms)
      :other-values (:cljplot2/other-values props)}))
 
 (defn example
@@ -291,6 +376,26 @@
     [(:example row)]
     (some (fn [{:keys [value]}] (when (and (some? value) (not= value default)) [value]))
           (concat (filter :meaning values) (remove :meaning values)))))
+
+(defn example-options
+  "Gives the options map of an option row's example: the option at its path, with what it needs to be valid and to act.
+
+  Parameters:
+
+  - `rows` (sequence): the option rows the row belongs to (its containers among them).
+  - `row` (map): an option row.
+
+  Returns the example contexts (`:cljplot2/example-context`, e.g. `{:band :bootstrap}`) of the containers above the row and of the row itself, merged, with the map defaults of those containers (e.g. the theme's `:bridge`) and the [[example]] at the row's path; `nil` without an example."
+  [rows {:keys [path example-context] :as row}]
+  (when-let [[v] (example row)]
+    (let [by-path (into {} (map (juxt :path identity)) rows)
+          containers (map #(by-path (subvec path 0 %)) (range 1 (count path)))
+          context (reduce theme/deep-merge {} (concat (keep :example-context containers) [example-context]))
+          base (reduce (fn [m {container-path :path d :default}]
+                         (if (map? d) (update-in m container-path #(merge d %)) m))
+                       (or context {})
+                       (remove nil? containers))]
+      (assoc-in base path v))))
 
 ;; rows
 
@@ -372,7 +477,8 @@
                               :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
                               :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
                              (if flat? {:values [] :forms [] :other-values nil} (option-forms props s)))
-                 (contains? props :cljplot2/example) (assoc :example (:cljplot2/example props)))
+                 (contains? props :cljplot2/example) (assoc :example (:cljplot2/example props))
+                 (:cljplot2/example-context props) (assoc :example-context (:cljplot2/example-context props)))
       {::container (and (container? s) (not (:cljplot2/entries-fragment props)))})))
 
 (defn- map-rows

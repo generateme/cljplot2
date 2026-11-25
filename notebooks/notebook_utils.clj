@@ -15,8 +15,7 @@
             [wadogo.scale :as ws]
             [malli.core :as malli]
             [cljplot2.data.shingle :as shingle]
-            [cljplot2.describe :as describe]
-            [cljplot2.schema :as schema])
+            [cljplot2.describe :as describe])
   (:import [fastmath.vector Vec2 Vec3 Vec4]))
 
 (def ^:private data-folder "data/")
@@ -315,9 +314,9 @@
 (defn- type-link
   "Hiccup of the type text of a form: a link to its section of the Types page for a documented type."
   [{:keys [form type]}]
-  (if (contains? schema/documented-types form)
+  (if (contains? describe/documented-types form)
     [:a {:href (str types-page "#" (heading-anchor type))} type]
-    [:span type]))
+    (into [:span] (rich-text type))))
 
 (defn- bullet
   "A list item: `head` (hiccup) and the rich text of `meaning` after a dash, when there is one."
@@ -338,17 +337,18 @@
             (map #(bullet (type-link %) (:meaning %)) forms))))
 
 (defn- example-call
-  "The example of option `row` as code `(call {path value})`, nested paths as nested maps; `nil` without an example."
-  [call {:keys [path] :as row}]
-  (when-let [[v] (describe/example row)]
-    (str "(" call " " (printed (assoc-in {} path v)) ")")))
+  "The example of option `row` of `rows` as code `(call {...})`: its options map (`cljplot2.describe/example-options`,
+  nested paths as nested maps, with the options it needs); `nil` without an example."
+  [call rows row]
+  (when-let [options (describe/example-options rows row)]
+    (str "(" call " " (printed options) ")")))
 
 (defn- option-card
   "Hiccup of the card of option `row`, three parts: the header (the option and its default), its example as a call of
-  `call`, then its description and what it accepts."
-  [call {:keys [path] :as row}]
+  `call` (from the option `rows` it belongs to), then its description and what it accepts."
+  [call rows {:keys [path] :as row}]
   (let [items (card-values row)
-        example (example-call call row)]
+        example (example-call call rows row)]
     [:div {:class "option-card"}
      [:dt [:code (str/join " " (map pr-str path))] (card-default row)]
      (cond-> [:dd]
@@ -363,13 +363,13 @@
   one line (styles in `clay.edn`). With `section`
   only the rows of that slice (see [[options-table]]).
   Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."
-  ([call rows]
-   (when (empty? rows)
-     (throw (ex-info "Option cards need rows." {:key :rows :value rows})))
-   (kindly/hide-code
-    (kind/hiccup (into [:dl {:class "options"}] (map #(option-card call %)) rows))))
+  ([call rows] (option-cards call rows nil))
   ([call rows section]
-   (option-cards call (section-rows rows section))))
+   (let [shown (if section (section-rows rows section) rows)]
+     (when (empty? shown)
+       (throw (ex-info "Option cards need rows." {:key :rows :value rows})))
+     (kindly/hide-code
+      (kind/hiccup (into [:dl {:class "options"}] (map #(option-card call rows %)) shown))))))
 
 (defn mapping-list
   "The mapping keys of a chart in a titled box, its code hidden: each key, `required` when the chart needs it, and its
@@ -389,12 +389,12 @@
                        rows)])))
 
 (defn type-entries
-  "The Types page's sections, its code hidden: a `##` heading per documented type (`cljplot2.schema/documented-types`,
+  "The Types page's sections, its code hidden: a `##` heading per documented type (`cljplot2.describe/documented-types`,
   sorted by name) with its meaning - the targets of the option cards' type links."
   []
   (kindly/hide-code
    (kind/md (str/join "\n\n" (for [{:cljplot2/keys [type-name type-meaning]}
-                                    (sort-by :cljplot2/type-name (map malli/type-properties (vals schema/documented-types)))]
+                                    (sort-by :cljplot2/type-name (map malli/type-properties (vals describe/documented-types)))]
                                 (str "## " type-name "\n\n" type-meaning))))))
 
 (defn scale-kind-doc

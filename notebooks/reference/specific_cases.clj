@@ -218,7 +218,7 @@
 
 (pack/enclose [{:x 0 :y 0 :r 1} {:x 3 :y 0 :r 1}])
 
-;; The packed circles drawn as [polygons](reference.charts_points_lines.html#polygon) outlined in their own colour
+;; The packed circles drawn as [polygons](reference.charts_points_lines.html#polygons) outlined in their own colour
 ;; (`:stroke-color :color`) - the root's circle in grey, the children in colour:
 
 (def circle-outlines (for [[i {:keys [x y r]}] (map-indexed vector (cons packed (:children packed)))

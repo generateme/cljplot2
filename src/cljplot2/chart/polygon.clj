@@ -32,11 +32,11 @@
 
 (def ^:private style-entries
   "Map entries of the polygon style (all optional; defaults from the theme)."
-  [(schema/optional :color {:description "fill colour (a mapped :color wins)"} schema/color)
-   (schema/optional :alpha {:description "fill opacity"} schema/fraction)
-   (schema/optional :stroke-color {:description "outline colour: a colour, :none or :color (the group colour, opaque)"}
+  [(schema/optional :color {:description "The fill colour; a mapped `:color` wins." :cljplot2/example :steelblue} schema/color)
+   (schema/optional :alpha {:description "How opaque the fill is; it multiplies the fill colour's alpha." :cljplot2/example 0.5} schema/fraction)
+   (schema/optional :stroke-color {:description "The colour of the outline." :cljplot2/value-meanings {:color "The group's colour, not faded by `:alpha`." :none "No outline."} :cljplot2/example :black}
                     [:or [:= :color] schema/color])
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
+   (schema/optional :stroke-width {:description "The width of the outline in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)])
 
 (def schemas
   "Schemas of the polygon chart: `:style` (theme `[:chart :polygon]`), `:options`, `:mapping` (merged)."
@@ -45,15 +45,15 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side"}
+                (conj (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on every side."}
                                        data/position-padding)))
    :mapping [:map
-             [:x {:description "x position of a vertex (data units)"} schema/accessor]
-             [:y {:description "y position of a vertex (data units)"} schema/accessor]
-             (schema/nilable :color {:description "fill colour: per group (ordinal), or by the group's first row (linear or binned)"}
+             [:x {:description "The x of each vertex."} schema/accessor]
+             [:y {:description "The y of each vertex."} schema/accessor]
+             (schema/nilable :color {:description "Colours each polygon: one colour per group (ordinal), or by its first row's value (linear or binned)."}
                              schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own polygon"} schema/accessor)]})
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own polygon."} schema/accessor)]})
 
 (def ^{:private true :const true :tag 'long} min-points
   "Fewest points a drawn polygon has."

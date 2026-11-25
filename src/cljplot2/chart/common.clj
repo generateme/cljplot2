@@ -26,13 +26,13 @@
 (def point-style-entries
   "Map entries of a point style (all optional; defaults from the theme; `:alpha` has none - `nil` keeps the colours'
   own alpha, applied by the charts and by [[cljplot2.chart.legend/stroked-point-legend]])."
-  [(schema/optional :size {:description "point size in pixels (a mapped :size wins)"} schema/non-neg)
-   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
-   (schema/optional :stroke-color {:description "outline colour: a colour or :none"} schema/color)
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)
-   (schema/nilable :alpha {:description "opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)"
-                           :cljplot2/default-doc "the colours' own alpha"}
+  [(schema/optional :size {:description "The point size in pixels; a mapped `:size` wins." :cljplot2/example 10} schema/non-neg)
+   (schema/optional :color {:description "The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins." :cljplot2/example :steelblue} schema/color)
+   (schema/optional :stroke-color {:description "The colour of each point's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+   (schema/optional :stroke-width {:description "The width of the outline in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :shape {:description "The shape of every point; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)
+   (schema/nilable :alpha {:description "The opacity of every point and its legend key; the outline keeps its own." :cljplot2/example 0.5
+                           :cljplot2/default-doc "The colours' own alpha."}
                    schema/fraction)])
 
 (defn stat-space-option

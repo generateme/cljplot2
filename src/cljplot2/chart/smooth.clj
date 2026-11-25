@@ -60,8 +60,7 @@
   (into (conj polyline/style-entries
               (schema/optional :fill {:cljplot2/section :band :description "How the band is filled."
                                       :cljplot2/value-meanings {:color "The curve's colour, faded by `:alpha`."
-                                                        :none "No band, as with `:band :none`."}
-                                      :cljplot2/form-meanings {::schema/solid-color "A colour of its own."}}
+                                                        :none "No band, as with `:band :none`."}}
                                [:or [:= :color] schema/color])
               (schema/optional :alpha {:cljplot2/section :band :description "How opaque the band is with `:fill :color`: a factor on the curve colour's alpha."
                                        :cljplot2/example 0.5}
@@ -153,13 +152,16 @@
                                         [:or schema/open-fraction [:vector {:min 1} schema/open-fraction]])
                        (schema/nilable :bootstrap {:cljplot2/section :band :description "Options of the bootstrap band; they apply with `:band :bootstrap`."}
                                        [:map {:closed true}
-                                        (schema/optional :samples {:description "How many resampled fits make the band." :default 200 :cljplot2/example 500} schema/pos-int)
+                                        (schema/optional :samples {:description "How many resampled fits make the band." :default 200 :cljplot2/example 500
+                                                                   :cljplot2/example-context {:band :bootstrap}} schema/pos-int)
                                         (schema/optional :rng {:description "The random generator that draws the samples. A seeded one gives the same band on every build."
                                                                :cljplot2/default-doc "An unseeded generator, so each build draws a different band."
-                                                               :cljplot2/example '(r/rng :mersenne 7)}
+                                                               :cljplot2/example '(r/rng :mersenne 7)
+                                                               :cljplot2/example-context {:band :bootstrap}}
                                                          rng/schema)
                                         (schema/optional :ci {:description "How the interval at each point of the band is computed from the samples."
                                                             :default :percentile
+                                                            :cljplot2/example-context {:band :bootstrap}
                                                             :cljplot2/value-meanings {:percentile "The samples' percentiles."
                                                                               :basic "The percentiles reflected around the fitted value."
                                                                               :bc "Percentiles corrected for the samples' bias."
@@ -167,7 +169,8 @@
                                                          (into [:enum] (sort smooth/bootstrap-intervals)))
                                         (schema/optional :estimation {:description "How the samples' percentiles are estimated: `:legacy` or one of R's quantile types `:r1` to `:r9`. `:ci :normal` doesn't use it."
                                                                       :default :legacy
-                                                                      :cljplot2/example :r7}
+                                                                      :cljplot2/example :r7
+                                                                      :cljplot2/example-context {:band :bootstrap}}
                                                          keyword?)])
                        (schema/nilable :n {:cljplot2/section :fit :description "How many points along x the curve is evaluated at." :default 200 :cljplot2/example 50} [:and :int [:>= 2]])
                        (schema/nilable :full-range {:cljplot2/section :fit :description "Whether each group's curve spans a common x range instead of the group's own."
@@ -178,7 +181,7 @@
                        (first (schema/in-section :fit [(common/stat-space-option :scale "The space the curve is fitted in."
                                                                                            {:cljplot2/value-meanings {:scale "The axes' coordinates: on a `:log` axis the fit uses log10 values and leaves out zeros and negatives."
                                                                                                               :data "Data units, whatever the axes."}})]))
-                       (schema/optional :padding {:cljplot2/section :fit :description "Room added around the data along each position axis, as fractions of the data span."
+                       (schema/optional :padding {:cljplot2/section :fit :description "Room around the data on x and y, as fractions of the data span."
                                                   :cljplot2/default-doc "`0.05` on every side."
                                                   :cljplot2/example {:x [0 0]}}
                                         data/position-padding)))

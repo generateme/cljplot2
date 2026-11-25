@@ -211,8 +211,8 @@ the theme: banned names, and one type family per name across all owners). One na
 - `:width` - a band fraction across the level axis (strips, rect, candlestick bodies); never pixels in a chart.
 - `:alpha` - an absolute opacity; a factor multiplying the colours' own alpha is `:alpha-factor` (bin2d, contour,
   field, tile, `[:bridge ...]`); a confidence is `:level` (smooth, acf: 0.95). One exception: area fills of line,
-  density, smooth, ribbon and parallel radar (`:fill :color`, stacked areas without a fill) take the mark's colour
-  faded by `:alpha` - its own alpha times `:alpha` (`polyline/area-color`, `draw/faded`).
+  density, smooth, ribbon and parallel radar (`:fill :color`, stacked areas without a fill) and polygon fills take the
+  mark's colour faded by `:alpha` - its own alpha times `:alpha` (`polyline/area-color`, `draw/faded`).
 - `:fill` - a colour (`:color` = the mark's colour at `:alpha` - faded by it in the area fills above, `:none`);
   flags and accessors get other names (contour `:filled`, alluvial `:strand-color`).
 - `:padding` - span fractions `{dim [lo hi]}` only; pixels between marks are `:gap` (pack, treemap, theme), inside a
@@ -291,7 +291,8 @@ the theme: banned names, and one type family per name across all owners). One na
   values of a long list on one line), each card group after a sentence or two on what the options are for, and
   `nu/mapping-list` (a titled Mapping box) instead of the mapping table; the section heading names the concept
   (`describe/concepts`, e.g. `## Smoothing`), its first sentence names the function and says what it's for; type
-  names link to the Types chapter (`nu/type-entries`, from `schema/documented-types`). Links into a reference section
+  names link to the Types chapter (`nu/type-entries`, from `describe/documented-types` - `schema/named-types` and higher layers' documented named
+  types). Links into a reference section
   are checked against its headings (`option-cards-test/reference-links-test`).
   Conventions: a heading, 1-3 lines, code ending in `plot/render-image`; every random value from a seeded rng
   (`(r/rng :mersenne n)`); no notebook plotting helpers. `book-data-test` checks the rest:
@@ -324,7 +325,9 @@ the theme: banned names, and one type family per name across all owners). One na
 - Never mutate a caller's arrays.
 - Option schemas are closed; new options are off by default (existing images unchanged).
 - Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one sentence, lowercase, no
-  period; a migrated chart's - one or two full sentences, at most 300 characters, saying what the option controls),
+  period - option tables; or one or two full sentences, at most 300 characters, saying what the option controls -
+  option cards; a text a migrated chart shares with charts still on tables may read in the card style; migrated
+  charts take the card style),
   `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
   `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
@@ -338,10 +341,17 @@ the theme: banned names, and one type family per name across all owners). One na
   `default-theme`, text roles their descriptions and sections from `theme/text-roles`.
   For option cards an entry also gives `:cljplot2/value-meanings` (value meanings), `:cljplot2/form-meanings` (meanings of
   other forms, keyed by named type or malli type), `:cljplot2/other-values` (one meaning for a long list's rest) and
-  `:cljplot2/example`; a named type gives `:cljplot2/type-name`, `:cljplot2/type-meaning` and, for a predicate over
-  values, `:cljplot2/value-set` / `:cljplot2/other-types`. `option-cards-test` checks a migrated chart: sentences, a
+  `:cljplot2/example` (with `:cljplot2/example-context` - options the example needs to be valid or to act, a
+  container's applying to its entries; a nested example sits inside its container's theme default,
+  `describe/example-options`; give an explicit example when the default lives only in a default text, or the
+  derived example shows it); a named type gives
+  `:cljplot2/type-name`, `:cljplot2/type-meaning` and, for a predicate over values, `:cljplot2/value-set` /
+  `:cljplot2/other-types` (value and form meanings shared by its entries); card forms read as short type text
+  (`vector of open fractions`, never validation-message text). `option-cards-test` checks a migrated chart: sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
-  option taking several, a default for every optional option, a valid example for every option; `migrated` equals
+  option taking several, a default for every optional option, a valid example for every option that changes the
+  picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -
+  is listed with its reason); `migrated` equals
   the keys of `describe/concepts` and each migrated section uses cards, never an options table.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
   `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`

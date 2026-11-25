@@ -495,17 +495,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#scatter" id="toc-scatter" class="nav-link active" data-scroll-target="#scatter"><span class="header-section-number">14.1</span> scatter</a></li>
-  <li><a href="#line" id="toc-line" class="nav-link" data-scroll-target="#line"><span class="header-section-number">14.2</span> line</a>
+  <li><a href="#scatter-plots" id="toc-scatter-plots" class="nav-link active" data-scroll-target="#scatter-plots"><span class="header-section-number">14.1</span> Scatter plots</a></li>
+  <li><a href="#line-charts" id="toc-line-charts" class="nav-link" data-scroll-target="#line-charts"><span class="header-section-number">14.2</span> Line charts</a>
   <ul>
   <li><a href="#style" id="toc-style" class="nav-link" data-scroll-target="#style"><span class="header-section-number">14.2.1</span> Style</a></li>
   <li><a href="#path" id="toc-path" class="nav-link" data-scroll-target="#path"><span class="header-section-number">14.2.2</span> Path</a></li>
   <li><a href="#ends" id="toc-ends" class="nav-link" data-scroll-target="#ends"><span class="header-section-number">14.2.3</span> Ends</a></li>
   </ul></li>
-  <li><a href="#segment" id="toc-segment" class="nav-link" data-scroll-target="#segment"><span class="header-section-number">14.3</span> segment</a></li>
-  <li><a href="#polygon" id="toc-polygon" class="nav-link" data-scroll-target="#polygon"><span class="header-section-number">14.4</span> polygon</a></li>
-  <li><a href="#ribbon" id="toc-ribbon" class="nav-link" data-scroll-target="#ribbon"><span class="header-section-number">14.5</span> ribbon</a></li>
-  <li><a href="#candlestick" id="toc-candlestick" class="nav-link" data-scroll-target="#candlestick"><span class="header-section-number">14.6</span> candlestick</a></li>
+  <li><a href="#line-segments" id="toc-line-segments" class="nav-link" data-scroll-target="#line-segments"><span class="header-section-number">14.3</span> Line segments</a></li>
+  <li><a href="#polygons" id="toc-polygons" class="nav-link" data-scroll-target="#polygons"><span class="header-section-number">14.4</span> Polygons</a></li>
+  <li><a href="#bands" id="toc-bands" class="nav-link" data-scroll-target="#bands"><span class="header-section-number">14.5</span> Bands</a></li>
+  <li><a href="#candlestick-charts" id="toc-candlestick-charts" class="nav-link" data-scroll-target="#candlestick-charts"><span class="header-section-number">14.6</span> Candlestick charts</a></li>
   </ul>
 </nav>
     </div>
@@ -543,7 +543,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Charts that draw the data where it lies: points (<code>scatter</code>), lines through them (<code>line</code>), line segments between two points (<code>segment</code>), filled shapes (<code>polygon</code>), bands between two bounds (<code>ribbon</code>) and price candles (<code>candlestick</code>). Start here for raw data in two dimensions.</p>
+<p>These charts draw the data where it lies: points (<code>scatter</code>), lines through them (<code>line</code>), line segments between two points (<code>segment</code>), filled shapes (<code>polygon</code>), bands between two bounds (<code>ribbon</code>) and price candles (<code>candlestick</code>). Start here for raw data in two dimensions.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-points-lines</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -1973,61 +1973,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="scatter" class="level2" data-number="14.1">
-<h2 data-number="14.1" class="anchored" data-anchor-id="scatter"><span class="header-section-number">14.1</span> scatter</h2>
-<p>A point per row at its x and y; colour, shape and size may come from the data, and <code>:order</code> sets which points are drawn on top.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>y position (data units)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>point colour per row</td>
-</tr>
-<tr class="even">
-<td>:shape</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>point shape per row</td>
-</tr>
-<tr class="odd">
-<td>:size</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>point size per row</td>
-</tr>
-<tr class="even">
-<td>:order</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>draw order: points drawn by its values (ascending, :descending reverses it), else in data order</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="scatter-plots" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="scatter-plots"><span class="header-section-number">14.1</span> Scatter plots</h2>
+<p><code>chart/scatter</code> draws a point per row at its x and y. Use it to show how two variables relate. Colour, shape, size and drawing order can come from the data.</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point.</li><li><code>:y</code> <span class="required">required</span> – The y of each point.</li><li><code>:color</code> – Colours each point by the mapped value.</li><li><code>:shape</code> – Gives each point a shape by the mapped value.</li><li><code>:size</code> – Sizes each point by the mapped value.</li><li><code>:order</code> – Sets the drawing order, lowest value first (<code>:descending</code> reverses it); unmapped, points keep data order.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> (levels/categorical <span class="at">:cyl</span>) <span class="at">:size</span> <span class="at">:hp</span>}</span>
@@ -2039,83 +1988,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image0.png" class="img-fluid"></p>
 </div>
-<p>Its options: the point style used when nothing is mapped, the draw order of a mapped <code>:order</code>, and jitter - random offsets separating points on a grid of values (seeded here, so the image is the same on every build):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:size</td>
-<td>a non-negative number</td>
-<td>6</td>
-<td>point size in pixels (a mapped :size wins)</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178 180]</td>
-<td>point colour (a mapped :color wins)</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:none</td>
-<td>outline colour: a colour or :none</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>outline width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:shape</td>
-<td>a shape character or shape map</td>
-<td>\O</td>
-<td>point shape (a mapped :shape wins)</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1] or nil</td>
-<td>the colours' own alpha</td>
-<td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-<tr class="even">
-<td>:descending</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>draw the values of a mapped :order in descending order (later points on top)</td>
-</tr>
-<tr class="odd">
-<td>:jitter</td>
-<td>[a non-negative number, a non-negative number]</td>
-<td></td>
-<td>[dx dy] - uniform random offsets within ±dx / ±dy data units added to the positions</td>
-</tr>
-<tr class="even">
-<td>:rng</td>
-<td>a fastmath random generator or nil</td>
-<td>an unseeded generator (builds differ)</td>
-<td>random number generator for jitter (seeded for reproducible plots)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Its options style the points when nothing is mapped, set the draw order and spread points that overlap:</p>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/scatter {:size 10})</code></div><div class="option-text">The point size in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 180]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/scatter {:color :steelblue})</code></div><div class="option-text">The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/scatter {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/scatter {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the outline in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/scatter {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: The colours' own alpha.</span></dt><dd><div class="option-example"><code>(chart/scatter {:alpha 0.5})</code></div><div class="option-text">The opacity of every point and its legend key; the outline keeps its own.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/scatter {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div><div class="option-card"><dt><code>:descending</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/scatter {:mapping {:order :y}, :descending true})</code></div><div class="option-text">Whether the points follow a mapped <code>:order</code> from its highest value down.<ul><li><code>false</code> – Higher <code>:order</code> values are drawn later, on top.</li><li><code>true</code> – Lower <code>:order</code> values are drawn later, on top.</li></ul></div></dd></div><div class="option-card"><dt><code>:jitter</code><span class="option-default">Default: No jitter.</span></dt><dd><div class="option-example"><code>(chart/scatter {:jitter [0.1 0.1]})</code></div><div class="option-text">Random offsets that spread overlapping points: <code>[dx dy]</code> moves each point by up to ±dx and ±dy in the axis scale's units (log units on a <code>:log</code> axis).<ul><li><span>pair of non-negative numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:rng</code><span class="option-default">Default: An unseeded generator, so each build jitters differently.</span></dt><dd><div class="option-example"><code>(chart/scatter {:jitter [0.1 0.1], :rng (r/rng :mersenne 7)})</code></div><div class="option-text">The random generator of the jitter.<ul><li><a href="reference.types.html#random-generator">random generator</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:cyl</span> <span class="at">:y</span> <span class="at">:gear</span>}</span>
@@ -2133,7 +2007,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image1.png" class="img-fluid"></p>
 </div>
-<p>A mapped <code>:order</code> draws points by its values, later ones on top: the most powerful cars over the others (ascending) or under them (descending); <code>:padding</code> is the room around the data, here none on x:</p>
+<p>The most powerful cars drawn over the others (ascending) or under them (descending); no padding on x:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:hp</span> <span class="at">:order</span> <span class="at">:hp</span>}</span>
@@ -2151,7 +2025,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image2.png" class="img-fluid"></p>
 </div>
-<p><code>:alpha</code> sets the opacity of every point colour, mapped or not - overlapping bubbles stay visible; the white outline keeps its own colour:</p>
+<p>Half-transparent bubbles keep the ones beneath visible; the white outline stays opaque:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> (levels/categorical <span class="at">:cyl</span>) <span class="at">:size</span> <span class="at">:hp</span>}</span>
@@ -2165,67 +2039,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
-<section id="line" class="level2" data-number="14.2">
-<h2 data-number="14.2" class="anchored" data-anchor-id="line"><span class="header-section-number">14.2</span> line</h2>
-<p>A polyline per group through the rows ordered by x; it may fill the area below, stack with other groups, or carry a colour or width along its length. (The dataset’s dates are text: the mapping parses them.)</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>y position (data units)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>line colour: per group (ordinal) or along the line (linear or binned)</td>
-</tr>
-<tr class="even">
-<td>:size</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>line width: per group, or per point with :trail</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>dash style per group</td>
-</tr>
-<tr class="even">
-<td>:pattern</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>area fill pattern per group</td>
-</tr>
-<tr class="odd">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each its own line</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="line-charts" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="line-charts"><span class="header-section-number">14.2</span> Line charts</h2>
+<p><code>chart/line</code> joins each group’s points into a line, ordered by x. Use it for values that change along x, such as a time series; it can also fill the area below, stack groups, or vary colour and width along its length. (The dataset’s dates are text: the mapping parses them.)</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point.</li><li><code>:y</code> <span class="required">required</span> – The y of each point.</li><li><code>:color</code> – Colours the line: per group (ordinal), or along the line (linear or binned).</li><li><code>:size</code> – Sets the line width: per group, or per point with <code>:trail</code>.</li><li><code>:dash</code> – Splits the rows into groups, each line with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each area with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own line.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> stocks</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> #(java.<span class="kw">time</span>.LocalDate/parse (<span class="at">:date</span> <span class="va">%</span>)) <span class="at">:y</span> <span class="at">:price</span> <span class="at">:color</span> <span class="at">:symbol</span>}</span>
@@ -2238,59 +2055,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="style" class="level3" data-number="14.2.1">
 <h3 data-number="14.2.1" class="anchored" data-anchor-id="style"><span class="header-section-number">14.2.1</span> Style</h3>
-<p>The area under a line (<code>:fill</code>), its gradient, the stroke’s opacity and the trail - a filled band whose width follows a mapped <code>:size</code>:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:fill</td>
-<td>:color or a clojure2d color or :none</td>
-<td>:none</td>
-<td>area between the line and y = 0: :color (the line colour, its own alpha times :alpha), a colour or :none</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>0.6</td>
-<td>factor of the line colour's alpha filling :fill :color and stacked areas</td>
-</tr>
-<tr class="odd">
-<td>:fill-gradient</td>
-<td>a clojure2d gradient: a preset keyword, a colour list or a function</td>
-<td></td>
-<td>clojure2d gradient (preset, colours or function of t) colouring the areas; wins over :fill</td>
-</tr>
-<tr class="even">
-<td>:fill-gradient-axis</td>
-<td>one of :x :y</td>
-<td>:x</td>
-<td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td>
-</tr>
-<tr class="odd">
-<td>:stroke-alpha-factor</td>
-<td>a number in [0 1]</td>
-<td></td>
-<td>multiplies the stroke colour's opacity of unstacked lines (the legend key stays opaque)</td>
-</tr>
-<tr class="even">
-<td>:trail</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>draw a filled trail whose width follows a linear mapped :size at every point</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options decide how the line and the area below it look, including a trail whose width follows a mapped <code>:size</code>:</p>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/line {:fill :color})</code></div><div class="option-text">Fills the area between the line and y = 0.<ul><li><code>:none</code> – No area.</li><li><code>:color</code> – The line colour, faded by <code>:alpha</code>.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/line {:fill :color, :alpha 0.3})</code></div><div class="option-text">How opaque the area is with <code>:fill :color</code> and in stacked areas; it multiplies the line colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient</code><span class="option-default">Default: No gradient; <code>:fill</code> colours the areas.</span></dt><dd><div class="option-example"><code>(chart/line {:fill-gradient :mpl/viridis})</code></div><div class="option-text">A gradient that colours the areas instead of <code>:fill</code>.<ul><li><a href="reference.types.html#gradient">gradient</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient-axis</code><span class="option-default">Default: <code>:x</code>.</span></dt><dd><div class="option-example"><code>(chart/line {:fill-gradient :mpl/viridis, :fill-gradient-axis :y})</code></div><div class="option-text">The axis the gradient runs along, across its scale's range; it needs <code>:fill-gradient</code>.<ul><li><code>:x</code> – Colours change with x.</li><li><code>:y</code> – Colours change with y.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-alpha-factor</code><span class="option-default">Default: No fading.</span></dt><dd><div class="option-example"><code>(chart/line {:stroke-alpha-factor 0.5})</code></div><div class="option-text">Multiplies the stroke opacity of unstacked lines; legend keys stay opaque.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:trail</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/line {:mapping {:size :y}, :trail true})</code></div><div class="option-text">Whether the line becomes a filled trail whose width follows a numeric mapped <code>:size</code>.<ul><li><code>false</code> – A plain stroked line.</li><li><code>true</code> – The width changes at every point.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> wave </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">40</span>)] {<span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> <span class="fl">1.5</span> (m/sin (<span class="kw">*</span> <span class="fl">0.25</span> t))) <span class="at">:w</span> (<span class="kw">+</span> <span class="dv">1</span> (<span class="kw">mod</span> t <span class="dv">10</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -2526,7 +2292,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image5.png" class="img-fluid"></p>
 </div>
-<p>The gradient along x instead, and <code>:stroke-alpha-factor</code> fading the strokes of overlapping lines:</p>
+<p>A gradient along x, and faded strokes where lines overlap:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> wave <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span>}</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill-gradient</span> <span class="at">:mpl/viridis</span> <span class="at">:fill-gradient-axis</span> <span class="at">:x</span>})]</span>
@@ -2558,71 +2324,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="path" class="level3" data-number="14.2.2">
 <h3 data-number="14.2.2" class="anchored" data-anchor-id="path"><span class="header-section-number">14.2.2</span> Path</h3>
-<p>How points are joined: sorted by x or in data order, what a missing value does (a break or a bridge), how groups combine (the Layering and position chapter shows <code>:stack</code> and the streamgraphs), and the padding:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:bridge</td>
-<td>map</td>
-<td>{:alpha-factor 0.3}</td>
-<td>style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash</td>
-</tr>
-<tr class="even">
-<td>:bridge :alpha-factor (required)</td>
-<td>a number in [0 1]</td>
-<td>0.3 in the theme's :bridge (a given :bridge replaces it whole)</td>
-<td>bridge opacity, a fraction of the line's alpha</td>
-</tr>
-<tr class="odd">
-<td>:bridge :line-width</td>
-<td>a non-negative number</td>
-<td>the line's width</td>
-<td>bridge line width in pixels</td>
-</tr>
-<tr class="even">
-<td>:bridge :dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>the line's dash</td>
-<td>dash style of the bridge</td>
-</tr>
-<tr class="odd">
-<td>:order</td>
-<td>one of :x :data or nil</td>
-<td>:x</td>
-<td>point order: :x (numeric or temporal x, ties in data order) or :data</td>
-</tr>
-<tr class="even">
-<td>:gaps</td>
-<td>one of :break :bridge</td>
-<td>:break (stacked lines take no :gaps)</td>
-<td>an invalid y breaks the line: :break (empty space) or :bridge (a straight segment in the :bridge style)</td>
-</tr>
-<tr class="odd">
-<td>:position</td>
-<td>one of :normalize :overlay :silhouette :stack :wiggle</td>
-<td>:overlay</td>
-<td>how groups combine: :overlay, stacked :stack / :normalize, or streamgraph :silhouette / :wiggle</td>
-</tr>
-<tr class="even">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side; y [0 0.05] when stacked without negative values</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options decide how the points become a path: their order, what happens at a missing y and how groups combine (the Layering and position chapter shows <code>:stack</code> and the streamgraphs):</p>
+<dl class="options"><div class="option-card"><dt><code>:bridge</code><span class="option-default">Default: <code>{:alpha-factor 0.3}</code> (theme)</span></dt><dd><div class="option-text">The style of the segments that bridge gaps with <code>:gaps :bridge</code>.</div></dd></div><div class="option-card"><dt><code>:bridge :alpha-factor</code><span class="option-default">Default: <code>0.3</code> (theme); passing <code>:bridge</code> replaces the theme's map entirely.</span></dt><dd><div class="option-example"><code>(chart/line {:gaps :bridge, :bridge {:alpha-factor 0.5}})</code></div><div class="option-text">The bridge's opacity, as a fraction of the line's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :line-width</code><span class="option-default">Default: The line's width.</span></dt><dd><div class="option-example"><code>(chart/line {:gaps :bridge, :bridge {:alpha-factor 0.3, :line-width 3}})</code></div><div class="option-text">The bridge's line width in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :dash</code><span class="option-default">Default: The line's dash.</span></dt><dd><div class="option-example"><code>(chart/line {:gaps :bridge, :bridge {:alpha-factor 0.3, :dash :dotted}})</code></div><div class="option-text">The bridge's dash style.<ul><li><a href="reference.types.html#dash">dash</a></li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:x</code></span></dt><dd><div class="option-example"><code>(chart/line {:order :data})</code></div><div class="option-text">The order the points are joined in.<ul><li><code>:x</code> – By x (numbers or dates), ties in data order.</li><li><code>:data</code> – In data order.</li></ul></div></dd></div><div class="option-card"><dt><code>:gaps</code><span class="option-default">Default: <code>:break</code>; stacked lines reject <code>:gaps</code> (they interpolate across missing values).</span></dt><dd><div class="option-example"><code>(chart/line {:gaps :bridge})</code></div><div class="option-text">How the line handles an invalid y.<ul><li><code>:break</code> – Leaves empty space.</li><li><code>:bridge</code> – Joins its neighbours with a straight segment in the <code>:bridge</code> style.</li></ul></div></dd></div><div class="option-card"><dt><code>:position</code><span class="option-default">Default: <code>:overlay</code></span></dt><dd><div class="option-example"><code>(chart/line {:position :stack})</code></div><div class="option-text">How groups combine.<ul><li><code>:overlay</code> – Each line on its own.</li><li><code>:normalize</code> – Stacked as shares: at each x the groups sum to 1.</li><li><code>:silhouette</code> – A streamgraph centred on y = 0.</li><li><code>:stack</code> – Stacked on top of each other.</li><li><code>:wiggle</code> – A streamgraph whose layers slope as little as possible.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side; y <code>[0 0.05]</code> with <code>:stack</code> or <code>:normalize</code> and no negative values.</span></dt><dd><div class="option-example"><code>(chart/line {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> spiral </span>(<span class="kw">for</span> [t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">12</span> <span class="fl">0.25</span>)] {<span class="at">:x</span> (<span class="kw">*</span> t (m/cos t)) <span class="at">:y</span> (<span class="kw">*</span> t (m/sin t)) <span class="at">:v</span> (<span class="kw">when-not</span> (<span class="kw">&lt;</span> <span class="dv">5</span> t <span class="dv">6</span>) t)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -2900,7 +2603,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image8.png" class="img-fluid"></p>
 </div>
-<p>Groups combined by <code>:position</code> (<code>:overlay</code>, the default, draws each line on its own):</p>
+<p>The four stacked positions, side by side:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> streams </span>(<span class="kw">for</span> [series [<span class="st">"a"</span> <span class="st">"b"</span> <span class="st">"c"</span>] t (<span class="kw">range</span> <span class="dv">25</span>)]</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:series</span> series <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> <span class="fl">1.5</span> (m/sin (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.3</span> t) (<span class="kw">*</span> <span class="dv">2</span> (<span class="kw">count</span> series)) (<span class="kw">int</span> (<span class="kw">first</span> series)))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3313,71 +3016,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="ends" class="level3" data-number="14.2.3">
 <h3 data-number="14.2.3" class="anchored" data-anchor-id="ends"><span class="header-section-number">14.2.3</span> Ends</h3>
-<p>Arrowheads at the ends of each run and gaps shortening it - e.g.&nbsp;to stop short of a marker:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:arrow</td>
-<td>map</td>
-<td></td>
-<td>arrowheads at the ends of every run of a plain stroked line</td>
-</tr>
-<tr class="even">
-<td>:arrow :end</td>
-<td>true or false</td>
-<td>true</td>
-<td>a head at the run's end</td>
-</tr>
-<tr class="odd">
-<td>:arrow :start</td>
-<td>true or false</td>
-<td>false</td>
-<td>a head at the run's start</td>
-</tr>
-<tr class="even">
-<td>:arrow :size</td>
-<td>a positive number</td>
-<td>8.0</td>
-<td>head length in pixels</td>
-</tr>
-<tr class="odd">
-<td>:arrow :angle</td>
-<td>number, &gt; 0, &lt; 90</td>
-<td>20.0</td>
-<td>angle in degrees between each side of the head and the line</td>
-</tr>
-<tr class="even">
-<td>:arrow :shape</td>
-<td>one of :closed :open</td>
-<td>:closed</td>
-<td>:closed (a filled triangle) or :open (two strokes)</td>
-</tr>
-<tr class="odd">
-<td>:start-gap</td>
-<td>a non-negative number</td>
-<td></td>
-<td>shortens every run at its start, in pixels</td>
-</tr>
-<tr class="even">
-<td>:end-gap</td>
-<td>a non-negative number</td>
-<td></td>
-<td>shortens every run at its end, in pixels</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options add arrowheads, or stop each line short of its points, e.g.&nbsp;before a marker:</p>
+<dl class="options"><div class="option-card"><dt><code>:arrow</code></dt><dd><div class="option-text">Arrowheads at the ends of each unbroken piece of a plain stroked line (no fill, gradient, colour along the line or stacking).</div></dd></div><div class="option-card"><dt><code>:arrow :end</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/line {:arrow {:start true, :end false}})</code></div><div class="option-text">Whether the end gets an arrowhead.<ul><li><code>true</code> – The end gets a head.</li><li><code>false</code> – No head at the end.</li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :start</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/line {:arrow {:start true}})</code></div><div class="option-text">Whether the start gets an arrowhead.<ul><li><code>false</code> – No head at the start.</li><li><code>true</code> – The start gets a head.</li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :size</code><span class="option-default">Default: <code>8.0</code></span></dt><dd><div class="option-example"><code>(chart/line {:arrow {:size 12}})</code></div><div class="option-text">The head's length in pixels.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :angle</code><span class="option-default">Default: <code>20.0</code></span></dt><dd><div class="option-example"><code>(chart/line {:arrow {:angle 30}})</code></div><div class="option-text">The angle in degrees between each side of the head and the line.<ul><li><span>number above 0 and below 90</span></li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :shape</code><span class="option-default">Default: <code>:closed</code></span></dt><dd><div class="option-example"><code>(chart/line {:arrow {:shape :open}})</code></div><div class="option-text">The head's shape.<ul><li><code>:closed</code> – A filled triangle.</li><li><code>:open</code> – Two strokes.</li></ul></div></dd></div><div class="option-card"><dt><code>:start-gap</code><span class="option-default">Default: No gap.</span></dt><dd><div class="option-example"><code>(chart/line {:start-gap 4})</code></div><div class="option-text">Shortens each unbroken piece of the line at its start, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:end-gap</code><span class="option-default">Default: No gap.</span></dt><dd><div class="option-example"><code>(chart/line {:end-gap 4})</code></div><div class="option-text">Shortens each unbroken piece of the line at its end, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> path-points </span>[{<span class="at">:x</span> <span class="dv">0</span> <span class="at">:y</span> <span class="dv">0</span>} {<span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">2</span>} {<span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">1</span>} {<span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -3429,79 +3069,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#curves">Curves</a> (<code>:interpolator</code> <code>:interpolator-params</code> <code>:curve</code> <code>:sample-step</code>).</p>
 </section>
 </section>
-<section id="segment" class="level2" data-number="14.3">
-<h2 data-number="14.3" class="anchored" data-anchor-id="segment"><span class="header-section-number">14.3</span> segment</h2>
-<p>A straight piece per row from (x, y) to (xend, yend); the ends may be mapped or given as literals, with arrowheads and gaps as on lines.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>start x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>start y position (data units)</td>
-</tr>
-<tr class="odd">
-<td>:xend</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>end x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:yend</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>end y position (data units)</td>
-</tr>
-<tr class="odd">
-<td>:end-gap</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>end gap per row in pixels (e.g. the radius of the node an edge points at)</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>segment colour: per group (ordinal) or per row (linear or binned)</td>
-</tr>
-<tr class="odd">
-<td>:size</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>line width: per row (linear) or per group (ordinal)</td>
-</tr>
-<tr class="even">
-<td>:dash</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>dash style per group</td>
-</tr>
-<tr class="odd">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic (one stroke setup per group)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="line-segments" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="line-segments"><span class="header-section-number">14.3</span> Line segments</h2>
+<p><code>chart/segment</code> draws a straight line per row from (x, y) to (xend, yend). Use it for arrows, links between two points or lollipop stems; the ends can be mapped or fixed for all rows.</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The start x of each segment.</li><li><code>:y</code> <span class="required">required</span> – The start y of each segment.</li><li><code>:xend</code> – The end x of each segment.</li><li><code>:yend</code> – The end y of each segment.</li><li><code>:end-gap</code> – The end gap of each row in pixels, e.g. the radius of the node an edge points at.</li><li><code>:color</code> – Colours each segment: per group (ordinal) or per row (linear or binned).</li><li><code>:size</code> – Sets the line width: per group (ordinal) or per row (linear).</li><li><code>:dash</code> – Splits the rows into groups, each segment with its own dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, each drawn as its own set of segments.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> moves </span>[{<span class="at">:from</span> <span class="st">"a"</span> <span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">1</span> <span class="at">:x2</span> <span class="dv">3</span> <span class="at">:y2</span> <span class="dv">2</span>} {<span class="at">:from</span> <span class="st">"b"</span> <span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">4</span> <span class="at">:x2</span> <span class="dv">4</span> <span class="at">:y2</span> <span class="dv">3</span>} {<span class="at">:from</span> <span class="st">"c"</span> <span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="fl">0.5</span> <span class="at">:x2</span> <span class="fl">1.5</span> <span class="at">:y2</span> <span class="dv">3</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -3552,89 +3123,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image11.png" class="img-fluid"></p>
 </div>
-<p>Its options: literal ends (here every segment starts at x = 0, a lollipop stem), arrows and gaps:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:xend</td>
-<td>a finite number, a java.time value or a level (string / keyword) or nil</td>
-<td>the mapped :xend, else the start x</td>
-<td>literal end x of every segment: a number, a java.time value or a level (wins over a mapped :xend)</td>
-</tr>
-<tr class="even">
-<td>:yend</td>
-<td>a finite number, a java.time value or a level (string / keyword) or nil</td>
-<td>the mapped :yend, else the start y</td>
-<td>literal end y of every segment: a number, a java.time value or a level (wins over a mapped :yend)</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side; 0 on a side where a literal :xend / :yend is the end of the axis extent</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-<tr class="even">
-<td>:arrow</td>
-<td>map</td>
-<td></td>
-<td>arrowheads at the ends of every segment</td>
-</tr>
-<tr class="odd">
-<td>:arrow :end</td>
-<td>true or false</td>
-<td>true</td>
-<td>a head at the run's end</td>
-</tr>
-<tr class="even">
-<td>:arrow :start</td>
-<td>true or false</td>
-<td>false</td>
-<td>a head at the run's start</td>
-</tr>
-<tr class="odd">
-<td>:arrow :size</td>
-<td>a positive number</td>
-<td>8.0</td>
-<td>head length in pixels</td>
-</tr>
-<tr class="even">
-<td>:arrow :angle</td>
-<td>number, &gt; 0, &lt; 90</td>
-<td>20.0</td>
-<td>angle in degrees between each side of the head and the line</td>
-</tr>
-<tr class="odd">
-<td>:arrow :shape</td>
-<td>one of :closed :open</td>
-<td>:closed</td>
-<td>:closed (a filled triangle) or :open (two strokes)</td>
-</tr>
-<tr class="even">
-<td>:start-gap</td>
-<td>a non-negative number</td>
-<td></td>
-<td>shortens every segment at its start, in pixels</td>
-</tr>
-<tr class="odd">
-<td>:end-gap</td>
-<td>a non-negative number</td>
-<td></td>
-<td>shortens every segment at its end, in pixels (a mapped :end-gap wins)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Its options give fixed ends, arrowheads and gaps (on the left, <code>:xend 0</code> ends every segment at x = 0, as lollipop stems):</p>
+<dl class="options"><div class="option-card"><dt><code>:xend</code><span class="option-default">Default: The mapped <code>:xend</code>, else the start x.</span></dt><dd><div class="option-example"><code>(chart/segment {:xend 3})</code></div><div class="option-text">The end x of every segment, fixed for all rows; it wins over a mapped <code>:xend</code>.<ul><li><a href="reference.types.html#position">position</a></li></ul></div></dd></div><div class="option-card"><dt><code>:yend</code><span class="option-default">Default: The mapped <code>:yend</code>, else the start y.</span></dt><dd><div class="option-example"><code>(chart/segment {:yend 3})</code></div><div class="option-text">The end y of every segment, fixed for all rows; it wins over a mapped <code>:yend</code>.<ul><li><a href="reference.types.html#position">position</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side; none on a side a fixed <code>:xend</code> or <code>:yend</code> reaches.</span></dt><dd><div class="option-example"><code>(chart/segment {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div><div class="option-card"><dt><code>:arrow</code></dt><dd><div class="option-text">Arrowheads at the ends of every segment.</div></dd></div><div class="option-card"><dt><code>:arrow :end</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/segment {:arrow {:start true, :end false}})</code></div><div class="option-text">Whether the end gets an arrowhead.<ul><li><code>true</code> – The end gets a head.</li><li><code>false</code> – No head at the end.</li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :start</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/segment {:arrow {:start true}})</code></div><div class="option-text">Whether the start gets an arrowhead.<ul><li><code>false</code> – No head at the start.</li><li><code>true</code> – The start gets a head.</li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :size</code><span class="option-default">Default: <code>8.0</code></span></dt><dd><div class="option-example"><code>(chart/segment {:arrow {:size 12}})</code></div><div class="option-text">The head's length in pixels.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :angle</code><span class="option-default">Default: <code>20.0</code></span></dt><dd><div class="option-example"><code>(chart/segment {:arrow {:angle 30}})</code></div><div class="option-text">The angle in degrees between each side of the head and the line.<ul><li><span>number above 0 and below 90</span></li></ul></div></dd></div><div class="option-card"><dt><code>:arrow :shape</code><span class="option-default">Default: <code>:closed</code></span></dt><dd><div class="option-example"><code>(chart/segment {:arrow {:shape :open}})</code></div><div class="option-text">The head's shape.<ul><li><code>:closed</code> – A filled triangle.</li><li><code>:open</code> – Two strokes.</li></ul></div></dd></div><div class="option-card"><dt><code>:start-gap</code><span class="option-default">Default: No gap.</span></dt><dd><div class="option-example"><code>(chart/segment {:start-gap 4})</code></div><div class="option-text">Shortens every segment at its start, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:end-gap</code><span class="option-default">Default: No gap.</span></dt><dd><div class="option-example"><code>(chart/segment {:end-gap 4})</code></div><div class="option-text">Shortens every segment at its end, in pixels; a mapped <code>:end-gap</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:mpg</span> <span class="at">:y</span> <span class="at">:model</span>}</span>
@@ -3670,49 +3160,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Shared options: <a href="reference.shared_options.html#line-style">Line style</a> (<code>:color</code> <code>:line-width</code> <code>:dash</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
-<section id="polygon" class="level2" data-number="14.4">
-<h2 data-number="14.4" class="anchored" data-anchor-id="polygon"><span class="header-section-number">14.4</span> polygon</h2>
-<p>A filled shape per group through its rows in data order.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>x position of a vertex (data units)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>y position of a vertex (data units)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>fill colour: per group (ordinal), or by the group's first row (linear or binned)</td>
-</tr>
-<tr class="even">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each its own polygon</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="polygons" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="polygons"><span class="header-section-number">14.4</span> Polygons</h2>
+<p><code>chart/polygon</code> fills one shape per group, its rows the vertices in data order. Use it for regions, outlines or any custom shape.</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each vertex.</li><li><code>:y</code> <span class="required">required</span> – The y of each vertex.</li><li><code>:color</code> – Colours each polygon: one colour per group (ordinal), or by its first row's value (linear or binned).</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own polygon.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> shapes </span>(<span class="kw">concat</span> (<span class="kw">for</span> [a (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">360</span> <span class="dv">60</span>)]</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                      {<span class="at">:shape</span> <span class="st">"hexagon"</span> <span class="at">:x</span> (m/cos (m/radians a)) <span class="at">:y</span> (m/sin (m/radians a))})</span>
@@ -3787,53 +3238,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image14.png" class="img-fluid"></p>
 </div>
-<p>Its options: the fill, its opacity and the outline (<code>:color</code> - the group’s colour, opaque):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>fill colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>1.0</td>
-<td>fill opacity</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>:color or a clojure2d color or :none</td>
-<td>:none</td>
-<td>outline colour: a colour, :none or :color (the group colour, opaque)</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>outline width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Its options decide how the shapes are filled and outlined:</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/polygon {:color :steelblue})</code></div><div class="option-text">The fill colour; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>1.0</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/polygon {:alpha 0.5})</code></div><div class="option-text">How opaque the fill is; it multiplies the fill colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/polygon {:stroke-color :black})</code></div><div class="option-text">The colour of the outline.<ul><li><code>:none</code> – No outline.</li><li><code>:color</code> – The group's colour, not faded by <code>:alpha</code>.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/polygon {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the outline in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/polygon {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:shape</span>}</span>
@@ -3843,7 +3249,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image15.png" class="img-fluid"></p>
 </div>
-<p>Without a mapped colour every polygon takes <code>:color</code>; <code>:padding</code> 0 lets the shapes touch the panel’s edges:</p>
+<p>With <code>:padding</code> 0 the shapes touch the panel’s edges:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> shapes</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:shape</span>}</span>
@@ -3855,67 +3261,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Shared options: <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>).</p>
 </section>
-<section id="ribbon" class="level2" data-number="14.5">
-<h2 data-number="14.5" class="anchored" data-anchor-id="ribbon"><span class="header-section-number">14.5</span> ribbon</h2>
-<p>A band per group between a lower and an upper bound at each x - an interval, a range of values, an envelope.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:ymin (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>lower bound of the band (data units)</td>
-</tr>
-<tr class="odd">
-<td>:ymax (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>upper bound of the band (data units)</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>band colour per group</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>edge dash style per group</td>
-</tr>
-<tr class="even">
-<td>:pattern</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>fill pattern per group</td>
-</tr>
-<tr class="odd">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each its own band</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="bands" class="level2" data-number="14.5">
+<h2 data-number="14.5" class="anchored" data-anchor-id="bands"><span class="header-section-number">14.5</span> Bands</h2>
+<p><code>chart/ribbon</code> fills a band per group between a lower and an upper bound at each x. Use it for an interval, a range of values or an envelope around a line.</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of the band's points.</li><li><code>:ymin</code> <span class="required">required</span> – The lower bound of the band.</li><li><code>:ymax</code> <span class="required">required</span> – The upper bound of the band.</li><li><code>:color</code> – Splits the rows into groups, each band with its own colour.</li><li><code>:dash</code> – Splits the rows into groups, each band's edges with their own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each band with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own band.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> bands </span>(<span class="kw">for</span> [g [<span class="st">"low"</span> <span class="st">"high"</span>] t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">25</span>)]</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>             (<span class="kw">let</span> [c (<span class="kw">+</span> (<span class="kw">if</span> (<span class="kw">=</span> g <span class="st">"low"</span>) <span class="fl">1.0</span> <span class="fl">4.0</span>) (m/sin (<span class="kw">*</span> <span class="fl">0.3</span> t)))</span>
@@ -4298,77 +3647,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image17.png" class="img-fluid"></p>
 </div>
-<p>Its options: the band’s colour and fill, its edges, and a gradient instead of a flat fill:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>band colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:fill</td>
-<td>:color or a clojure2d color or :none</td>
-<td>:color</td>
-<td>band fill: :color (the band colour, its own alpha times :alpha), a colour or :none</td>
-</tr>
-<tr class="odd">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>0.3</td>
-<td>factor of the band colour's alpha filling :fill :color</td>
-</tr>
-<tr class="even">
-<td>:stroke-color</td>
-<td>:color or a clojure2d color or :none</td>
-<td>:none</td>
-<td>colour of both bounds' edges: a colour, :none or :color (the band colour)</td>
-</tr>
-<tr class="odd">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>edge width in pixels</td>
-</tr>
-<tr class="even">
-<td>:dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>:none</td>
-<td>dash style of the edges (a mapped :dash wins)</td>
-</tr>
-<tr class="odd">
-<td>:fill-gradient</td>
-<td>a clojure2d gradient: a preset keyword, a colour list or a function</td>
-<td></td>
-<td>clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill</td>
-</tr>
-<tr class="even">
-<td>:fill-gradient-axis</td>
-<td>one of :x :y</td>
-<td>:x</td>
-<td>axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Its options decide how the band’s fill and edges look, or put a gradient in place of the fill:</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:color :steelblue})</code></div><div class="option-text">The band colour; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:color</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:fill :none})</code></div><div class="option-text">How the band is filled.<ul><li><code>:color</code> – The band colour, faded by <code>:alpha</code>.</li><li><code>:none</code> – No fill; only the edges, when <code>:stroke-color</code> draws them.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.3</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:alpha 0.5})</code></div><div class="option-text">How opaque the fill is with <code>:fill :color</code>; it multiplies the band colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:stroke-color :black})</code></div><div class="option-text">The colour of both edges.<ul><li><code>:none</code> – No edges.</li><li><code>:color</code> – The band colour.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the edges in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:dash</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/ribbon {:stroke-color :black, :dash :dashed})</code></div><div class="option-text">The dash style of the edges; a mapped <code>:dash</code> wins.<ul><li><a href="reference.types.html#dash">dash</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient</code><span class="option-default">Default: No gradient; <code>:fill</code> colours the bands.</span></dt><dd><div class="option-example"><code>(chart/ribbon {:fill-gradient :mpl/viridis})</code></div><div class="option-text">A gradient that colours the bands instead of <code>:fill</code>.<ul><li><a href="reference.types.html#gradient">gradient</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient-axis</code><span class="option-default">Default: <code>:x</code>.</span></dt><dd><div class="option-example"><code>(chart/ribbon {:fill-gradient :mpl/viridis, :fill-gradient-axis :y})</code></div><div class="option-text">The axis the gradient runs along, across its scale's range; it needs <code>:fill-gradient</code>.<ul><li><code>:x</code> – Colours change with x.</li><li><code>:y</code> – Colours change with y.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/ribbon {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> band </span>(<span class="kw">filter</span> #(<span class="kw">=</span> <span class="st">"high"</span> (<span class="at">:group</span> <span class="va">%</span>)) bands))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -4580,7 +3860,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image18.png" class="img-fluid"></p>
 </div>
-<p>A gradient along x instead (over the x scale’s range), and the padding of the data span - none on x, a third of the span on y:</p>
+<p>A gradient along x; no padding on x, a third of the span on y:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> band <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:fill-gradient</span> [<span class="at">:yellow</span> <span class="at">:purple</span>] <span class="at">:fill-gradient-axis</span> <span class="at">:x</span>})]</span>
@@ -4596,55 +3876,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Shared options: <a href="reference.shared_options.html#fill-patterns">Fill patterns</a> (<code>:pattern</code> <code>:pattern-color</code>); <a href="reference.shared_options.html#common-options">Common options</a> (<code>:data</code> <code>:mapping</code> <code>:legend</code>); <a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> (<code>:theme-style</code>); <a href="reference.shared_options.html#curves">Curves</a> (<code>:interpolator</code> <code>:interpolator-params</code> <code>:sample-step</code>).</p>
 </section>
-<section id="candlestick" class="level2" data-number="14.6">
-<h2 data-number="14.6" class="anchored" data-anchor-id="candlestick"><span class="header-section-number">14.6</span> candlestick</h2>
-<p>A candle per row: a wick from low to high and a body from open to close, coloured by direction. The dates here are text, so each trading day gets a band (no gaps for weekends).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>x position (data units)</td>
-</tr>
-<tr class="even">
-<td>:open (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>opening price</td>
-</tr>
-<tr class="odd">
-<td>:high (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>highest price</td>
-</tr>
-<tr class="even">
-<td>:low (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>lowest price</td>
-</tr>
-<tr class="odd">
-<td>:close (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>closing price</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="candlestick-charts" class="level2" data-number="14.6">
+<h2 data-number="14.6" class="anchored" data-anchor-id="candlestick-charts"><span class="header-section-number">14.6</span> Candlestick charts</h2>
+<p><code>chart/candlestick</code> draws a candle per row: a wick from low to high and a body from open to close, coloured by whether the price rose or fell. Use it for prices over time. The dates here are text, so each trading day gets its own slot, with no weekend gaps.</p>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each candle, e.g. its date.</li><li><code>:open</code> <span class="required">required</span> – The opening price.</li><li><code>:high</code> <span class="required">required</span> – The highest price.</li><li><code>:low</code> <span class="required">required</span> – The lowest price.</li><li><code>:close</code> <span class="required">required</span> – The closing price.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> ohlc</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
@@ -4655,89 +3890,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image20.png" class="img-fluid"></p>
 </div>
-<p>Its options: the up and down colours and patterns, body and wick widths, and the OHLC bar style:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:up-color</td>
-<td>a clojure2d color or :none</td>
-<td>[26 152 80]</td>
-<td>colour of a candle closing at or above its open</td>
-</tr>
-<tr class="even">
-<td>:down-color</td>
-<td>a clojure2d color or :none</td>
-<td>[215 48 39]</td>
-<td>colour of a candle closing below its open</td>
-</tr>
-<tr class="odd">
-<td>:width</td>
-<td>a number in [0 1]</td>
-<td>0.7</td>
-<td>body width, a fraction of the smallest pixel gap between distinct x (of a band's width on a bands scale)</td>
-</tr>
-<tr class="even">
-<td>:line-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>wick (and OHLC bar) line width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:none</td>
-<td>body outline colour: a colour or :none</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>body outline width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:up-pattern</td>
-<td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
-<td>:solid</td>
-<td>pattern drawn over the bodies of up candles</td>
-</tr>
-<tr class="even">
-<td>:down-pattern</td>
-<td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
-<td>:solid</td>
-<td>pattern drawn over the bodies of down candles</td>
-</tr>
-<tr class="odd">
-<td>:pattern-color</td>
-<td>:darker or a clojure2d color or :none</td>
-<td>:darker</td>
-<td>pattern ink: a colour, :none or :darker (the darkened body colour)</td>
-</tr>
-<tr class="even">
-<td>:style</td>
-<td>one of :candle :ohlc</td>
-<td>:candle</td>
-<td>:candle (wick and body) or :ohlc (a low-high bar with open and close ticks)</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>0.05 on every side (the x extent also reaches half the smallest x gap beyond the data)</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Its options decide how the candles look, from their colours and patterns to the OHLC bar style:</p>
+<dl class="options"><div class="option-card"><dt><code>:up-color</code><span class="option-default">Default: <code>[26 152 80]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:up-color :seagreen})</code></div><div class="option-text">The colour of a candle that closes at or above its open.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:down-color</code><span class="option-default">Default: <code>[215 48 39]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:down-color :firebrick})</code></div><div class="option-text">The colour of a candle that closes below its open.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:width</code><span class="option-default">Default: <code>0.7</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:width 0.5})</code></div><div class="option-text">The body width, as a fraction of the smallest step between x values (of a band's width on a categorical axis).<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:line-width 2})</code></div><div class="option-text">The width in pixels of the wicks, or of the bars with <code>:style :ohlc</code>.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:stroke-color :black})</code></div><div class="option-text">The colour of each body's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the body outline in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:up-pattern</code><span class="option-default">Default: <code>:solid</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:up-pattern :hatch})</code></div><div class="option-text">The fill pattern drawn over the bodies of up candles.<ul><li><a href="reference.types.html#fill-pattern">fill pattern</a></li></ul></div></dd></div><div class="option-card"><dt><code>:down-pattern</code><span class="option-default">Default: <code>:solid</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:down-pattern :dots})</code></div><div class="option-text">The fill pattern drawn over the bodies of down candles.<ul><li><a href="reference.types.html#fill-pattern">fill pattern</a></li></ul></div></dd></div><div class="option-card"><dt><code>:pattern-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/candlestick {:up-pattern :hatch, :pattern-color :black})</code></div><div class="option-text">The colour of the pattern's ink.<ul><li><code>:darker</code> – The body colour, darkened.</li><li><code>:none</code> – No pattern drawn.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:style</code><span class="option-default">Default: <code>:candle</code></span></dt><dd><div class="option-example"><code>(chart/candlestick {:style :ohlc})</code></div><div class="option-text">How each candle is drawn.<ul><li><code>:candle</code> – A wick from low to high and a body from open to close.</li><li><code>:ohlc</code> – A bar from low to high with ticks at the open and the close.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side; x also gets half the smallest x step past the outer candles.</span></dt><dd><div class="option-example"><code>(chart/candlestick {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> ohlc <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/candlestick {<span class="at">:up-color</span> [<span class="dv">33</span> <span class="dv">102</span> <span class="dv">172</span>] <span class="at">:down-color</span> [<span class="dv">240</span> <span class="dv">140</span> <span class="dv">30</span>]</span>
@@ -4755,7 +3909,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_points_lines_files/image21.png" class="img-fluid"></p>
 </div>
-<p>A pattern on the up candles and more room above and below the prices (<code>:padding</code>):</p>
+<p>Here a pattern marks the up candles, and <code>:padding</code> adds room above and below the prices:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> ohlc <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:date</span> <span class="at">:open</span> <span class="at">:open</span> <span class="at">:high</span> <span class="at">:high</span> <span class="at">:low</span> <span class="at">:low</span> <span class="at">:close</span> <span class="at">:close</span>}</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/candlestick {<span class="at">:up-pattern</span> <span class="at">:dots</span> <span class="at">:pattern-color</span> <span class="at">:black</span> <span class="at">:padding</span> {<span class="at">:y</span> [<span class="fl">0.3</span> <span class="fl">0.3</span>]}})]</span>

@@ -70,7 +70,7 @@ Either `true` or `false`.
 
 ## colour
 
-A solid colour, or `:none` for nothing drawn.
+A solid colour, or `:none`.
 
 ## colour vision deficiency
 
@@ -108,6 +108,10 @@ A number from 0 to 1, both ends included, e.g. `0.3`.
 
 A Clojure function; its option says what it takes and returns, e.g. `(fn [x] (* 2 x))`.
 
+## gradient
+
+A clojure2d gradient: a preset name such as `:mpl/viridis`, a list of colours such as `[:white :steelblue]`, or a function of `t` from 0 to 1 that returns a colour.
+
 ## interpolator
 
 A fastmath 1D interpolation method such as `:cubic` or `:monotone`, or a function of the points' `xs` and `ys` (and any parameters) that returns the curve as a function from x to y.
@@ -144,6 +148,10 @@ Two non-negative fractions of the data span `[lo hi]`: the room added at the low
 
 A built-in shape character such as `\o`, or a map `{:path svg-path}`, `{:text string}`, `{:svg source}` or `{:image image}`.
 
+## position
+
+A place on an axis in data units: a number, a `java.time` value, or a level (a string or keyword) on a categorical axis, e.g. `2.5` or `"setosa"`.
+
 ## positive finite number
 
 A finite number greater than zero, e.g. `1.5`.
@@ -156,13 +164,17 @@ A whole number from 1 up, e.g. `200`.
 
 A number greater than zero, e.g. `0.5`.
 
+## random generator
+
+A fastmath random generator, e.g. `(r/rng :mersenne 7)`; a seeded one draws the same values on every build.
+
 ## solid colour
 
 Any clojure2d colour: a name such as `:steelblue`, a hex string such as `#0072b2`, an integer such as `0x0072b2`, a vector of channels such as `[0 114 178]`, or `(c/color 0 114 178 128)` with an alpha.
 
 ## text colour
 
-A solid colour, or `:contrast` for black or white, whichever reads better on the fill behind the text.
+A solid colour, or `:contrast`.
 
 
 ```{=html}

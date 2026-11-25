@@ -216,7 +216,7 @@ The theme styles a network draws with - the nodes in `[:chart :network-node]` (a
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>12</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>12</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point and its legend key; the outline keeps its own.</td></tr></tbody></table>
 ```
 
 :::
@@ -365,7 +365,7 @@ The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), ar
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>8</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>8</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point and its legend key; the outline keeps its own.</td></tr></tbody></table>
 ```
 
 :::
@@ -505,7 +505,7 @@ The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style;
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>fill colour (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :color (the group colour, opaque)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>The fill colour; a mapped `:color` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>How opaque the fill is; it multiplies the fill colour's alpha.</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>The colour of the outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels.</td></tr></tbody></table>
 ```
 
 :::
@@ -587,7 +587,7 @@ The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>fill colour (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour, :none or :color (the group colour, opaque)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>The fill colour; a mapped `:color` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>How opaque the fill is; it multiplies the fill colour's alpha.</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:white</td><td>The colour of the outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels.</td></tr></tbody></table>
 ```
 
 :::

@@ -23,12 +23,19 @@
 (def schema
   "Schema of the `:arrow` option."
   [:map {:closed true}
-   (schema/optional :end {:description "a head at the run's end" :default true} schema/bool)
-   (schema/optional :start {:description "a head at the run's start" :default false} schema/bool)
-   (schema/optional :size {:description "head length in pixels" :default 8.0} schema/pos)
-   (schema/optional :angle {:description "angle in degrees between each side of the head and the line" :default 20.0}
+   (schema/optional :end {:description "Whether the end gets an arrowhead." :default true
+                          :cljplot2/value-meanings {true "The end gets a head." false "No head at the end."}
+                          :cljplot2/example-context {:arrow {:start true}}}
+                    schema/bool)
+   (schema/optional :start {:description "Whether the start gets an arrowhead." :default false
+                            :cljplot2/value-meanings {true "The start gets a head." false "No head at the start."}}
+                    schema/bool)
+   (schema/optional :size {:description "The head's length in pixels." :default 8.0 :cljplot2/example 12} schema/pos)
+   (schema/optional :angle {:description "The angle in degrees between each side of the head and the line." :default 20.0
+                            :cljplot2/example 30}
                     [:and number? [:> 0] [:< 90]])
-   (schema/optional :shape {:description ":closed (a filled triangle) or :open (two strokes)" :default :closed}
+   (schema/optional :shape {:description "The head's shape." :default :closed
+                            :cljplot2/value-meanings {:closed "A filled triangle." :open "Two strokes."}}
                     [:enum :closed :open])])
 
 (def ^:private defaults

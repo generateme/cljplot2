@@ -772,7 +772,7 @@ smallest circle around circles:
 :::
 
 
-The packed circles drawn as [polygons](reference.charts_points_lines.html#polygon) outlined in their own colour
+The packed circles drawn as [polygons](reference.charts_points_lines.html#polygons) outlined in their own colour
 (`:stroke-color :color`) - the root's circle in grey, the children in colour:
 
 

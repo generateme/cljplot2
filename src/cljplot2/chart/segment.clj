@@ -44,30 +44,30 @@
                 (into polyline/style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/nilable :xend {:description "literal end x of every segment: a number, a java.time value or a level (wins over a mapped :xend)"
-                                             :cljplot2/default-doc "the mapped :xend, else the start x"}
+                (conj (schema/nilable :xend {:description "The end x of every segment, fixed for all rows; it wins over a mapped `:xend`." :cljplot2/example 3
+                                             :cljplot2/default-doc "The mapped `:xend`, else the start x."}
                                       annotation/position)
-                      (schema/nilable :yend {:description "literal end y of every segment: a number, a java.time value or a level (wins over a mapped :yend)"
-                                             :cljplot2/default-doc "the mapped :yend, else the start y"}
+                      (schema/nilable :yend {:description "The end y of every segment, fixed for all rows; it wins over a mapped `:yend`." :cljplot2/example 3
+                                             :cljplot2/default-doc "The mapped `:yend`, else the start y."}
                                       annotation/position)
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "0.05 on every side; 0 on a side where a literal :xend / :yend is the end of the axis extent"}
+                      (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on every side; none on a side a fixed `:xend` or `:yend` reaches."}
                                        data/position-padding)
-                      (schema/optional :arrow {:description "arrowheads at the ends of every segment"} arrow/schema)
-                      (schema/optional :start-gap {:description "shortens every segment at its start, in pixels"} schema/non-neg)
-                      (schema/optional :end-gap {:description "shortens every segment at its end, in pixels (a mapped :end-gap wins)"}
+                      (schema/optional :arrow {:description "Arrowheads at the ends of every segment."} arrow/schema)
+                      (schema/optional :start-gap {:description "Shortens every segment at its start, in pixels." :cljplot2/default-doc "No gap." :cljplot2/example 4} schema/non-neg)
+                      (schema/optional :end-gap {:description "Shortens every segment at its end, in pixels; a mapped `:end-gap` wins." :cljplot2/default-doc "No gap." :cljplot2/example 4}
                                        schema/non-neg)))
    :mapping [:map
-             [:x {:description "start x position (data units)"} schema/accessor]
-             [:y {:description "start y position (data units)"} schema/accessor]
-             (schema/nilable :xend {:description "end x position (data units)"} schema/accessor)
-             (schema/nilable :yend {:description "end y position (data units)"} schema/accessor)
-             (schema/nilable :end-gap {:description "end gap per row in pixels (e.g. the radius of the node an edge points at)"}
+             [:x {:description "The start x of each segment."} schema/accessor]
+             [:y {:description "The start y of each segment."} schema/accessor]
+             (schema/nilable :xend {:description "The end x of each segment."} schema/accessor)
+             (schema/nilable :yend {:description "The end y of each segment."} schema/accessor)
+             (schema/nilable :end-gap {:description "The end gap of each row in pixels, e.g. the radius of the node an edge points at."}
                              schema/accessor)
-             (schema/nilable :color {:description "segment colour: per group (ordinal) or per row (linear or binned)"} schema/accessor)
-             (schema/nilable :size {:description "line width: per row (linear) or per group (ordinal)"} schema/accessor)
-             (schema/nilable :dash {:description "dash style per group"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic (one stroke setup per group)"} schema/accessor)]})
+             (schema/nilable :color {:description "Colours each segment: per group (ordinal) or per row (linear or binned)."} schema/accessor)
+             (schema/nilable :size {:description "Sets the line width: per group (ordinal) or per row (linear)."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows into groups, each segment with its own dash style."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each drawn as its own set of segments."} schema/accessor)]})
 
 (defn- end-accessor
   "Gives the row accessor of a segment's end coordinate.

@@ -7,12 +7,15 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
+            [clojure.walk :as walk]
+            [fastmath.core :as m]
             [fastmath.random :as r]
             [malli.core :as malli]
             [cljplot2.chart :as chart]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [migrated]]
+            [cljplot2.core :as plot]
+            [cljplot2.test-util :refer [migrated same-pixels?]]
             [notebook-utils]))
 
 (def ^:private max-listed-values
@@ -61,7 +64,7 @@
     (is (= [true false] (map :value (:values (row :b))))))
   (testing "an :or: a constant, a named type and a vector - each form once, the form meaning by its key"
     (is (= [:auto] (map :value (:values (row :o)))))
-    (is (= [[::schema/fraction "fraction" nil] [:vector "vector of a number in [0 1]" "Several."]]
+    (is (= [[::schema/fraction "fraction" nil] [:vector "vector of fractions" "Several."]]
            (map (juxt :form :type :meaning) (:forms (row :o))))))
   (testing "boundary: nil is a value only when documented, then first"
     (is (= [nil :x] (map :value (:values (row :n)))))
@@ -88,7 +91,15 @@
     (is (= [true] (describe/example (row :b))))
     (is (= [:a] (describe/example (row :e)))))
   (testing "boundary: no literal value and no example - none"
-    (is (nil? (describe/example (row :f))))))
+    (is (nil? (describe/example (row :f)))))
+  (let [rows (describe/options (chart/line))
+        at #(first (filter (fn [r] (= % (:path r))) rows))]
+    (testing "example options: a nested option inside its container's theme default, a context the option needs"
+      (is (= {:gaps :bridge :bridge {:alpha-factor 0.3 :line-width 3}} (describe/example-options rows (at [:bridge :line-width]))) "the container's context applies too")
+      (is (= {:fill-gradient :mpl/viridis :fill-gradient-axis :y} (describe/example-options rows (at [:fill-gradient-axis]))))
+      (is (= {:position :stack} (describe/example-options rows (at [:position])))))
+    (testing "boundary: a row without an example has no example options"
+      (is (nil? (describe/example-options [] (row :f)))))))
 
 (deftest theme-default-test
   (let [rows (:options (kind-rows :smooth))]
@@ -146,6 +157,26 @@
                        (and (< 1 (+ (count values) (count forms))) (some (complement :meaning) forms)))]
          path)))
 
+(defn- validation-text?
+  "Tests whether a form's type text reads like a validation message rather than a short type text: an article
+  anywhere (`a finite number`), `should be`, `or nil`, or a plural glued to code or a parenthesis."
+  [type-text]
+  (re-find #"\b(a|an) |should be| or nil|`s\b|\)s\b" type-text))
+
+(deftest short-type-text-test
+  (testing "plurals: regular, -es, -ies, a named type's own"
+    (is (= ["numbers" "dashes" "deficiencies" "keys" "boxes"] (map #'describe/plural ["number" "dash" "deficiency" "key" "box"])))
+    (is (= "vector of dates or times" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:vector schema/temporal]]]))))))))
+  (testing "boundary: a composite or code item goes in parentheses, not pluralised"
+    (is (= "vector of (pair of fractions)" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:vector [:tuple schema/fraction schema/fraction]]]])))))))
+    (is (= "set of (`:x` or `:y`)" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:set [:enum :x :y]]]]))))))))
+  (testing "bounds read as words; an :and keeps its predicate (by its message), never drops it"
+    (is (= "integer at least 2" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:and :int [:>= 2]]]])))))))
+    (is (= "integer, odd" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:and :int [:fn {:error/message "should be odd"} odd?]]]]))))))))
+  (testing "boundary: the validation-text guard"
+    (is (every? validation-text? ["a finite number" "pair of (integer)s" "vector of `:x`s" "keyword or nil"]))
+    (is (not-any? validation-text? ["vector of open fractions" "map of `:x` or `:y` to padding" "number above 0 and below 90"]))))
+
 (defn- default-gaps
   "Paths of optional `rows` without a default value, a default text or a theme default."
   [rows]
@@ -184,19 +215,72 @@
       (is (= [] (meaning-gaps leaves))))
     (testing (str kind ": every optional option has a default")
       (is (= [] (default-gaps leaves))))
+    (testing (str kind ": every form names a documented type or reads as a short type text (no validation-message text)")
+      (is (= [] (vec (for [{:keys [path forms]} leaves
+                           {:keys [form type]} forms
+                           :when (or (and (qualified-keyword? form) (not (contains? describe/documented-types form)))
+                                     (validation-text? type))]
+                       [path type])))))
     (testing (str kind ": every option has an example")
       (is (= [] (vec (keep #(when-not (describe/example %) (:path %)) leaves)))))
     (testing (str kind ": every example is a valid option on its own (a code form evaluated first)")
       (let [options-schema (get-in ((get (describe/chart-constructors) kind)) [:schema :options])]
         (doseq [row leaves
-                :let [[v] (describe/example row)
-                      value (if (seq? v) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval v)) v)]]
-          (is (malli/validate options-schema (assoc-in {} (:path row) value)) (str (:path row))))))))
+                :let [example (walk/postwalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %)
+                                             (describe/example-options options row))]]
+          (is (malli/validate options-schema example) (str (:path row) " " example)))))))
+
+(def ^:private example-fixtures
+  "Kind -> a small plot (`:data`, `:mapping`) on which every option example of the kind changes the picture: unsorted
+  x, two groups, a missing y, up and down candles."
+  (let [xs [3 1 4 2 6 5 8 7]
+        rows (for [g ["a" "b"] [i x] (map-indexed vector xs)]
+               {:x x :y (when-not (and (= g "a") (= i 3)) (+ (* 0.5 x) (if (= g "a") 1.0 2.5) (* 0.3 (m/sin (* 3.0 x)))))
+                :g g})]
+    {:scatter {:data (remove #(nil? (:y %)) rows) :mapping {:x :x :y :y}}
+     :line {:data rows :mapping {:x :x :y :y :color :g}}
+     :segment {:data [{:x 0 :y 0 :xend 2 :yend 1} {:x 1 :y 2 :xend 3 :yend 0}] :mapping {:x :x :y :y :xend :xend :yend :yend}}
+     :polygon {:data [{:x 0 :y 0 :g "a"} {:x 2 :y 0 :g "a"} {:x 1 :y 2 :g "a"} {:x 2 :y 1 :g "b"} {:x 4 :y 1 :g "b"} {:x 3 :y 3 :g "b"}]
+               :mapping {:x :x :y :y :group :g}}
+     :ribbon {:data (map (fn [x] {:x x :lo (- (m/sin x) 1.0) :hi (+ (m/sin x) 1.0)}) (range 0 6.5 0.5)) :mapping {:x :x :ymin :lo :ymax :hi}}
+     :candlestick {:data [{:x 1 :o 2 :h 5 :l 1 :c 4} {:x 2 :o 4 :h 4.5 :l 2 :c 3} {:x 3 :o 3 :h 6 :l 2.5 :c 5.5}]
+                   :mapping {:x :x :open :o :high :h :low :l :close :c}}
+     :smooth {:data (remove #(nil? (:y %)) (map #(update % :x (fn [x] (if (= "a" (:g %)) x (+ x 0.5)))) rows))
+              :mapping {:x :x :y :y :color :g}}}))
+
+(defn- without-option
+  "`options` without the option at `path`: removed, or - nested in a container with a map default (the theme's) - back
+  at the container default's value, so a required key stays."
+  [options rows path]
+  (let [container (first (filter #(= (pop path) (:path %)) rows))
+        default (when (map? (:default container)) (get (:default container) (peek path)))]
+    (cond
+      (some? default) (assoc-in options path default)
+      (m/one? (count path)) (dissoc options (first path))
+      :else (update-in options (pop path) dissoc (peek path)))))
+
+(def ^:private inert-in-fixtures
+  "`[kind path]` -> why the option's example acts only beyond a chart's own options (no pixels change in the fixture)."
+  {[:smooth [:stat-space]] "acts only on a :log axis, a plot scale"
+   [:scatter [:descending]] "acts only where points of different colours overlap"})
+
+(deftest examples-act-test
+  (doseq [kind migrated
+          :let [constructor (get (describe/chart-constructors) kind)
+                rows (describe/options (constructor))
+                {:keys [data mapping]} (example-fixtures kind)
+                draw (fn [options] {:data data :mapping mapping :charts [(constructor options)]})]
+          row (leaf-rows (describe/own-rows rows))
+          :when (not (contains? inert-in-fixtures [kind (:path row)]))
+          :let [example (walk/postwalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %)
+                                       (describe/example-options rows row))]]
+    (testing (str kind " " (:path row) ": the example changes the picture - " (pr-str example))
+      (is (not (same-pixels? (draw (without-option example rows (:path row))) (draw example) {:width 320 :height 240}))))))
 
 ;; types and links
 
 (deftest documented-types-test
-  (let [props (map malli/type-properties (vals schema/documented-types))]
+  (let [props (map malli/type-properties (vals describe/documented-types))]
     (testing "every documented type has a name and a meaning with an example (code)"
       (is (every? #(and (string? (:cljplot2/type-name %)) (str/includes? (str (:cljplot2/type-meaning %)) "`")) props)))
     (testing "names are distinct (one Types page section each)"
@@ -208,7 +292,7 @@
                       :let [t (malli/type x)]
                       :when (and (qualified-keyword? t) (= "cljplot2.schema" (namespace t)))]
                   t))
-           (set (keys schema/documented-types))))))
+           (set (keys schema/named-types))))))
 
 (defn- heading-anchors
   "The anchors of the headings of a book page (`reference.<file>`, `use_cases.<file>`, `galleries.<file>` - the
@@ -221,7 +305,7 @@
     (when (.exists f)
       (into (set (map #(anchor (second %)) (re-seq #"(?m)^;; #+ (.+)$" (slurp f))))
             (when (= "reference.types" page)
-              (map #(anchor (:cljplot2/type-name (malli/type-properties %))) (vals schema/documented-types)))))))
+              (map #(anchor (:cljplot2/type-name (malli/type-properties %))) (vals describe/documented-types)))))))
 
 (defn- broken-links
   "`[page anchor]` of the links in `text` into the book's reference, use case and gallery pages that don't resolve: a page that doesn't

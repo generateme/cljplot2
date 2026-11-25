@@ -36,18 +36,18 @@
 (def ^:private band-style-entries
   "Map entries of a band's fill style: `:color`, `:fill` (`:color`, a colour or `:none`), `:alpha`, `:pattern`,
   `:pattern-color` (see [[cljplot2.graphics.draw/pattern-style-entries]])."
-  (into [(schema/optional :color {:description "band colour (a mapped :color wins)"} schema/color)
-         (schema/optional :fill {:description "band fill: :color (the band colour, its own alpha times :alpha), a colour or :none"}
+  (into [(schema/optional :color {:description "The band colour; a mapped `:color` wins." :cljplot2/example :steelblue} schema/color)
+         (schema/optional :fill {:description "How the band is filled." :cljplot2/value-meanings {:color "The band colour, faded by `:alpha`." :none "No fill; only the edges, when `:stroke-color` draws them."}}
                           [:or [:= :color] schema/color])
-         (schema/optional :alpha {:description "factor of the band colour's alpha filling :fill :color"} schema/fraction)]
+         (schema/optional :alpha {:description "How opaque the fill is with `:fill :color`; it multiplies the band colour's alpha." :cljplot2/example 0.5} schema/fraction)]
         draw/pattern-style-entries))
 
 (def ^:private style-entries
   (conj band-style-entries
-        (schema/optional :stroke-color {:description "colour of both bounds' edges: a colour, :none or :color (the band colour)"}
+        (schema/optional :stroke-color {:description "The colour of both edges." :cljplot2/value-meanings {:color "The band colour." :none "No edges."} :cljplot2/example :black}
                          [:or [:= :color] schema/color])
-        (schema/optional :stroke-width {:description "edge width in pixels"} schema/non-neg)
-        (schema/nilable :dash {:description "dash style of the edges (a mapped :dash wins)"} schema/dash)))
+        (schema/optional :stroke-width {:description "The width of the edges in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+        (schema/nilable :dash {:description "The dash style of the edges; a mapped `:dash` wins." :cljplot2/example :dashed :cljplot2/example-context {:stroke-color :black}} schema/dash)))
 
 (def schemas
   "Schemas of the ribbon chart: `:style` (theme `[:chart :ribbon]`), `:options`, `:mapping` (merged)."
@@ -58,23 +58,23 @@
                  (into data/common-options)
                  (into theme/theme-style-entries)
                  (into (remove #(= :curve (first %))) curve/options)
-                 (conj (schema/optional :fill-gradient {:description "clojure2d gradient (preset, colours or function of t) filling the bands; wins over :fill"}
+                 (conj (schema/optional :fill-gradient {:description "A gradient that colours the bands instead of `:fill`." :cljplot2/default-doc "No gradient; `:fill` colours the bands." :cljplot2/example :mpl/viridis}
                                         polyline/fill-gradient-schema)
-                       (schema/optional :fill-gradient-axis {:description "axis the :fill-gradient runs along, over that scale's range (needs :fill-gradient)"
-                                                             :cljplot2/default-doc ":x"}
+                       (schema/optional :fill-gradient-axis {:description "The axis the gradient runs along, across its scale's range; it needs `:fill-gradient`." :cljplot2/value-meanings {:x "Colours change with x." :y "Colours change with y."}
+                                                             :cljplot2/default-doc "`:x`." :cljplot2/example :y :cljplot2/example-context {:fill-gradient :mpl/viridis}}
                                         [:enum :x :y])
-                       (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                  :cljplot2/default-doc "0.05 on every side"}
+                       (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                                  :cljplot2/default-doc "`0.05` on every side."}
                                         data/position-padding)))
              common/fill-gradient-rule)
    :mapping [:map
-             [:x {:description "x position (data units)"} schema/accessor]
-             [:ymin {:description "lower bound of the band (data units)"} schema/accessor]
-             [:ymax {:description "upper bound of the band (data units)"} schema/accessor]
-             (schema/nilable :color {:description "band colour per group"} schema/accessor)
-             (schema/nilable :dash {:description "edge dash style per group"} schema/accessor)
-             (schema/nilable :pattern {:description "fill pattern per group"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own band"} schema/accessor)]})
+             [:x {:description "The x of the band's points."} schema/accessor]
+             [:ymin {:description "The lower bound of the band."} schema/accessor]
+             [:ymax {:description "The upper bound of the band."} schema/accessor]
+             (schema/nilable :color {:description "Splits the rows into groups, each band with its own colour."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows into groups, each band's edges with their own dash style."} schema/accessor)
+             (schema/nilable :pattern {:description "Splits the rows into groups, each band with its own fill pattern."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own band."} schema/accessor)]})
 
 (defn- band
   "Gives the band of one group.

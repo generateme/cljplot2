@@ -45,7 +45,9 @@
 
 (def position
   "A position: a finite number, a `java.time` value or a level (string / keyword)."
-  (schema/named-type ::position position? "should be a finite number, a java.time value or a level (string / keyword)"))
+  (schema/named-type ::position position? "should be a finite number, a java.time value or a level (string / keyword)"
+                     {:cljplot2/type-name "position"
+                      :cljplot2/type-meaning "A place on an axis in data units: a number, a `java.time` value, or a level (a string or keyword) on a categorical axis, e.g. `2.5` or `\"setosa\"`."}))
 
 (defn positions-schema
   "Gives the schema of a literal position option: one item or a non-empty vector of them.

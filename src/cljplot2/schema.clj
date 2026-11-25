@@ -11,17 +11,17 @@
   - `:default` - a constant default of a behaviour option; style options take theme defaults instead.
   - `:cljplot2/default-doc` - the text of a computed default.
   - `:cljplot2/value-meanings` - meanings of literal values, `{value meaning}` (`nil` too, when it isn't the default; also on an `:enum` schema's properties, shared by its entries); `:cljplot2/form-meanings` - meanings of the other accepted forms, `{form meaning}` (a form is a named type's keyword, e.g. `::function`, or a malli type, e.g. `:vector`); `:cljplot2/other-values` - one meaning for the values without their own (a long list).
-  - `:cljplot2/example` - the option's example value, printed as code (a form such as `'(r/rng :mersenne 7)` for a value that doesn't print).
+  - `:cljplot2/example` - the option's example value, printed as code (a form such as `'(r/rng :mersenne 7)` for a value that doesn't print); `:cljplot2/example-context` - other options the example needs to be valid or to act (e.g. `{:band :bootstrap}`).
   - `:cljplot2/fragment` - the shared group of options the entry belongs to, set by [[in-fragment]].
   - `:cljplot2/entries-fragment` - the shared group documenting the entries of the entry's map (one table for many entries, e.g. text roles).
   - `:cljplot2/section` - the slice of a long option table the entry belongs to (a keyword; in one map every user entry has one or none has; nested entries inherit it), see [[in-section]].
   - `:cljplot2/internal` - not a user option (no table row).
 
-  Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides). Named types also take `:cljplot2/type-name` (a short name) and `:cljplot2/type-meaning` (what it is, with an example) - the documented ones are [[documented-types]]; `:cljplot2/value-set` (the literal values a predicate type accepts) and `:cljplot2/other-types` (the named types of its other values), so its forms can be listed; `:cljplot2/value-meanings` (value meanings shared by every entry of the type).
+  Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides). Named types also take `:cljplot2/type-name` (a short name; `:cljplot2/type-plural` when its plural isn't regular) and `:cljplot2/type-meaning` (what it is, with an example) - the schema layer's are [[named-types]], part of the book's registry `cljplot2.describe/documented-types`; `:cljplot2/value-set` (the literal values a predicate type accepts) and `:cljplot2/other-types` (the named types of its other values), so its forms can be listed; `:cljplot2/value-meanings` and `:cljplot2/form-meanings` (value and form meanings shared by every entry of the type).
 
   Functions and vars:
 
-  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; [[documented-types]] - the types the book explains; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
+  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; [[named-types]] - the schema layer's documented named types; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
   - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]], [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
   - Checking: [[errors]], [[explain!]], [[check-options!]], [[throw-errors!]], [[fail!]] (built by [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly)."
   (:refer-clojure :exclude [accessor])
@@ -338,7 +338,7 @@
 (def color
   "Schema of a colour or `:none`, see [[color?]]."
   (named-type ::color color? "should be a clojure2d color or :none"
-              {:cljplot2/type-name "colour" :cljplot2/type-meaning "A solid colour, or `:none` for nothing drawn." :cljplot2/value-set #{:none} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:none "Draws nothing."}}))
+              {:cljplot2/type-name "colour" :cljplot2/type-meaning "A solid colour, or `:none`." :cljplot2/value-set #{:none} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:none "Draws nothing."} :cljplot2/form-meanings {::solid-color "Any other colour, e.g. `:black`."}}))
 
 (def cvd-deficiency
   "Schema of a clojure2d colour vision deficiency (`clojure2d.color/cvd-filter` arguments): a keyword or `[keyword severity]`."
@@ -354,11 +354,11 @@
 (def temporal
   "Schema of a `java.time` value (a date, a date-time, an instant, a time)."
   (named-type ::temporal #(instance? java.time.temporal.Temporal %) "should be a java.time value"
-              {:cljplot2/type-name "date or time" :cljplot2/type-meaning "A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time.LocalDate/of 2024 1 31)`." :cljplot2/type-doc "a java.time value"}))
+              {:cljplot2/type-name "date or time" :cljplot2/type-plural "dates or times" :cljplot2/type-meaning "A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time.LocalDate/of 2024 1 31)`." :cljplot2/type-doc "a java.time value"}))
 (def text-color
   "Schema of a text colour: a clojure2d colour or `:contrast` - black or white, whichever reads on what's behind the text (see [[cljplot2.graphics.draw/text-color]])."
   (named-type ::text-color #(or (= :contrast %) (solid-color? %)) "should be a clojure2d color or :contrast"
-              {:cljplot2/type-name "text colour" :cljplot2/type-meaning "A solid colour, or `:contrast` for black or white, whichever reads better on the fill behind the text." :cljplot2/type-doc "a clojure2d color or :contrast" :cljplot2/value-set #{:contrast} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on the fill behind the text."}}))
+              {:cljplot2/type-name "text colour" :cljplot2/type-meaning "A solid colour, or `:contrast`." :cljplot2/type-doc "a clojure2d color or :contrast" :cljplot2/value-set #{:contrast} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on the fill behind the text."} :cljplot2/form-meanings {::solid-color "Any other colour, e.g. `:black`."}}))
 
 (defn- formats?
   "Tests whether a format string formats a sample value.
@@ -405,8 +405,8 @@
   "Schema of a font style: one of the keys of [[cljplot2.graphics.font/font-styles]]."
   (into [:enum] (sort (keys font/font-styles))))
 
-(def documented-types
-  "The named types the book's Types page explains: type keyword -> schema, each with its `:cljplot2/type-name` and `:cljplot2/type-meaning` (option cards link a form of these types to its explanation)."
+(def named-types
+  "The schema layer's documented named types: type keyword -> schema, each with its `:cljplot2/type-name` and `:cljplot2/type-meaning` - the part of the book's registry (`cljplot2.describe/documented-types`) defined here."
   (into {} (map (fn [s] [(malli/type s) s]))
         [non-neg pos pos-int finite fraction open-fraction finite-pos finite-non-neg finite-interval bool malli-schema
          function accessor padding dash pattern interpolator align color cvd-deficiency solid-color temporal text-color

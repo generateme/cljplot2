@@ -14,7 +14,9 @@
 
 (def schema
   "Schema of `:rng`: a fastmath random generator (see `fastmath.random/rng`)."
-  (schema/named-type ::rng #(satisfies? fastmath.protocols/RNGProto %) "should be a fastmath random generator"))
+  (schema/named-type ::rng #(satisfies? fastmath.protocols/RNGProto %) "should be a fastmath random generator"
+                     {:cljplot2/type-name "random generator"
+                      :cljplot2/type-meaning "A fastmath random generator, e.g. `(r/rng :mersenne 7)`; a seeded one draws the same values on every build."}))
 
 (defn- copy
   "Copies a serializable random generator in its current state.

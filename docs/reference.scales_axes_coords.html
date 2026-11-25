@@ -2607,7 +2607,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.scales_axes_coords_files/image15.png" class="img-fluid"></p>
 </div>
-<p><code>:aspect :iso</code> - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the points joined in data order, <a href="reference.charts_points_lines.html#line">line</a> <code>:order :data</code>):</p>
+<p><code>:aspect :iso</code> - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the points joined in data order, <a href="reference.charts_points_lines.html#line-charts">line</a> <code>:order :data</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> ellipse </span>(<span class="kw">for</span> [t (m/slice-range <span class="dv">0</span> m/TWO_PI <span class="dv">64</span>)] {<span class="at">:x</span> (m/cos t) <span class="at">:y</span> (m/* <span class="fl">0.5</span> (m/sin t))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

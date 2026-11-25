@@ -138,11 +138,11 @@
 (def bridge-schema
   "Theme `:bridge` of a line style: `:alpha-factor` (fraction of the line alpha), optional `:line-width`, `:dash`."
   [:map {:closed true}
-   [:alpha-factor {:description "bridge opacity, a fraction of the line's alpha"
-            :cljplot2/default-doc "0.3 in the theme's :bridge (a given :bridge replaces it whole)"}
+   [:alpha-factor {:description "The bridge's opacity, as a fraction of the line's alpha." :cljplot2/example 0.5
+            :cljplot2/default-doc "`0.3` (theme); passing `:bridge` replaces the theme's map entirely."}
     schema/fraction]
-   (schema/optional :line-width {:description "bridge line width in pixels" :cljplot2/default-doc "the line's width"} schema/non-neg)
-   (schema/nilable :dash {:description "dash style of the bridge" :cljplot2/default-doc "the line's dash"} schema/dash)])
+   (schema/optional :line-width {:description "The bridge's line width in pixels." :cljplot2/example 3 :cljplot2/default-doc "The line's width."} schema/non-neg)
+   (schema/nilable :dash {:description "The bridge's dash style." :cljplot2/example :dotted :cljplot2/default-doc "The line's dash."} schema/dash)])
 
 (defn segment-lengths
   "Gives the lengths of a polyline's segments.
@@ -473,7 +473,9 @@
 (def fill-gradient-schema
   "Schema of `:fill-gradient`: a clojure2d gradient - a preset keyword, a colour list or a function of `t`."
   (schema/named-type ::fill-gradient #(or (keyword? %) (sequential? %) (fn? %))
-                     "should be a clojure2d gradient: a preset keyword, a colour list or a function"))
+                     "should be a clojure2d gradient: a preset keyword, a colour list or a function"
+                     {:cljplot2/type-name "gradient"
+                      :cljplot2/type-meaning "A clojure2d gradient: a preset name such as `:mpl/viridis`, a list of colours such as `[:white :steelblue]`, or a function of `t` from 0 to 1 that returns a colour."}))
 
 (defn gradient-fn
   "Gives the clojure2d gradient of a `:fill-gradient` option.

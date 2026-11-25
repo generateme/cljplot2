@@ -173,14 +173,40 @@
             (assoc row :kind kind))
           (for [f (keys describe/fragments) row (describe/fragment-rows f)] (assoc row :kind f))))
 
-(defn- rule-breaks
-  "`[kind path text]` of the texts under `k` of `rows` breaking the writing rule: one sentence of at most 200
-  characters, starting lowercase, without a final period."
-  [rows k]
-  (vec (for [{:keys [kind path] :as row} rows
+(defn- old-style?
+  "Tests whether text `t` follows the writing rule of option tables: one sentence of at most 200 characters, starting
+  lowercase, without a final period."
+  [t]
+  (not (or (re-find #"^[A-Z]" t) (str/ends-with? t ".") (> (count t) 200))))
+
+(defn- card-style?
+  "Tests whether text `t` follows the writing rule of option cards: one or two full sentences (capitalised or opening
+  with code, ending with a period), at most 300 characters."
+  [t]
+  (and (re-find #"^[A-Z`]" t) (str/ends-with? t ".") (<= (count t) 300)
+       (<= (count (re-seq #"\.(\s|$)" (str/replace t "e.g." "eg"))) 2)))
+
+(defn- migrated-texts
+  "The texts under `k` of the migrated charts' option and mapping rows (see `test-util/migrated`)."
+  [k]
+  (set (for [[kind ctor] chart-constructors
+             :when (contains? migrated kind)
+             :let [c (ctor)]
+             row (concat (describe/options c) (describe/mapping c))
              :let [t (get row k)]
-             :when (and (string? t) (or (re-find #"^[A-Z]" t) (str/ends-with? t ".") (> (count t) 200)))]
-         [kind path t])))
+             :when (string? t)]
+         t)))
+
+(defn- rule-breaks
+  "`[kind path text]` of the texts under `k` of `rows` breaking the writing rule (see [[old-style?]]); a text a
+  migrated chart shares (an entry several charts take - `shared`) may read in the card style instead
+  ([[card-style?]]); `option-cards-test` holds the migrated charts to the card style."
+  ([rows k] (rule-breaks rows k (migrated-texts k)))
+  ([rows k shared]
+   (vec (for [{:keys [kind path] :as row} rows
+              :let [t (get row k)]
+              :when (and (string? t) (not (old-style? t)) (not (and (contains? shared t) (card-style? t))))]
+          [kind path t]))))
 
 (deftest writing-rules-test
   (let [rows (remove #(contains? migrated (:kind %)) (all-rows))]
@@ -189,12 +215,20 @@
     (testing "default texts"
       (is (= [] (rule-breaks rows :default-doc))))
     (testing "boundary: the rule itself"
-      (is (= 3 (count (rule-breaks [{:kind :k :path [:a] :description "Starts upper"}
+      (is (= 4 (count (rule-breaks [{:kind :k :path [:a] :description "Starts upper"}
                                     {:kind :k :path [:b] :description "ends with a period."}
                                     {:kind :k :path [:c] :description (apply str (repeat 201 "x"))}
                                     {:kind :k :path [:d] :description (apply str (repeat 200 "x"))}
-                                    {:kind :k :path [:e] :description nil}]
-                                   :description)))))
+                                    {:kind :k :path [:e] :description nil}
+                                    {:kind :k :path [:f] :description "A full sentence."}
+                                    {:kind :k :path [:g] :description "One. Two. Three."}]
+                                   :description #{"A full sentence." "One. Two. Three."})))))
+    (testing "boundary: a card-style text not shared with a migrated chart breaks the table rule"
+      (is (= 1 (count (rule-breaks [{:kind :k :path [:a] :description "A full sentence."}] :description #{})))))
+    (testing "a migrated chart's mapped :group reads the card way"
+      (is (every? #(str/starts-with? (:description %) "Splits the rows into groups that look the same")
+                  (filter #(= [:group] (:path %))
+                          (mapcat (comp describe/mapping #(%)) (vals (select-keys chart-constructors migrated)))))))
     (testing "a mapped :group reads the same in every chart"
       (is (every? #(str/starts-with? (:description %) "groups without a visual aesthetic")
                   (filter #(= [:group] (:path %))

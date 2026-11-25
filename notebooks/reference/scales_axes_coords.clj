@@ -304,7 +304,7 @@
                    {:width 900 :height 420})
 
 ;; `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
-;; points joined in data order, [line](reference.charts_points_lines.html#line) `:order :data`):
+;; points joined in data order, [line](reference.charts_points_lines.html#line-charts) `:order :data`):
 
 (def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
 

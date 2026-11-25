@@ -316,7 +316,7 @@
 ;; ## Lollipop and dot plots
 
 ;; A thin stem and a point carry the value with less ink than a bar:
-;; [`chart/segment`](reference.charts_points_lines.html#segment) from the baseline under a `chart/scatter`.
+;; [`chart/segment`](reference.charts_points_lines.html#line-segments) from the baseline under a `chart/scatter`.
 
 ;; ### Lollipop
 
