@@ -42,7 +42,7 @@
   its cells get (a legend taller than its cell wraps into further columns); a `:measured` row holds `:legend-only`
   plots only, as tall as their legends (scaled down in proportion when the measured rows don't fit).
 
-  Plot `:labels` - `{:title t :x t :y t}`, `t` a string or a map of label options (`:text`, style overrides,
+  Plot `:labels` - `{:title t :x t :y t}`, `t` a text (a string, a formula or runs value, see [[cljplot2.data.text]]) or a map of label options (`:text`, style overrides,
   `:align`, `:rotation`) merged into the label content; a missing or `nil` label adds no item.
   `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
   The label `:kind` can't be overridden. An axis title longer than its panels (the width under them, the height
@@ -66,7 +66,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall.
 
-  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]."
+  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]; plot label content [[label-contents]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
@@ -99,7 +99,22 @@
   (into [:map {:closed true}]
         (map (fn [[k {:keys [description default-doc]}]]
                (schema/nilable k (cond-> {:description description} default-doc (assoc :cljplot2/default-doc default-doc))
-                               [:multi {:dispatch map?} [true label/label-options] [false any?]])))
+                               [:multi {:dispatch label/label-options?} [true label/label-options] [false any?]])))
+        plot-labels))
+
+(defn label-contents
+  "Gives the label content of each plot label.
+
+  Parameters:
+
+  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` label has no content.
+
+  Returns a sequence of `[k content]` in the order title, x, y: content kind `:label` with the label key's role and
+  defaults under the label's own map (a text alone becomes its `:text`)."
+  [labels]
+  (keep (fn [[k {:keys [defaults]}]]
+          (when-some [label (get labels k)]
+            [k (assoc (merge defaults (if (label/label-options? label) label {:text label})) :kind :label)]))
         plot-labels))
 
 (defn- label-items
@@ -112,11 +127,11 @@
 
   Returns a sequence of items `{:id :column :row :content}`, content kind `:label`."
   [labels spans]
-  (keep (fn [[k {:keys [id defaults column row]}]]
-          (when-some [label (get labels k)]
-            {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row)
-             :content (assoc (merge defaults (if (map? label) label {:text label})) :kind :label)}))
-        plot-labels))
+  (let [contents (into {} (label-contents labels))]
+    (keep (fn [[k {:keys [id column row]}]]
+            (when-some [content (contents k)]
+              {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row) :content content}))
+          plot-labels)))
 
 (defn- axis-shown?
   "Tests whether a position scale's axis is drawn.
@@ -637,7 +652,7 @@
      (let [env {:canvas canvas :theme theme}
            natural (fn [content] (measure/natural-size content env))
            text-size (fn [role l] (when (some? l)
-                                    (natural (merge {:kind :label :role role} (if (map? l) (dissoc l :rotation) {:text (str l)})))))
+                                    (natural (merge {:kind :label :role role} (if (label/label-options? l) (dissoc l :rotation) {:text l})))))
            {:keys [x y title]} (side-labels labels flip)
            margin (double (get-in theme [:plot :margin]))
            tick-w (size-width (natural (axis/tick-label theme :y estimate-tick-label)))

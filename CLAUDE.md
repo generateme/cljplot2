@@ -108,6 +108,19 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   each variable's own values. Values have no fixed range: `pairs` computes a value-coloured statistic once and gives
   the cells colouring by it its range as `[:scales :color :domain]` (`cljplot2.chart.pairwise/matrix-settings`; a
   matrix has one colour bar - two shaded statistics are an error); signed statistics use a diverging range centred on 0.
+- Formulas: every label text (titles, axis titles, tick labels, legends, strips, text charts, chart labels, pairs
+  names) may hold LaTeX formulas - a `plot/math` value (`{:cljplot2/math tex}`), a `plot/runs` value
+  (`{:cljplot2/runs [pieces]}` - text and formulas on one baseline; vectors are never texts), or `$...$` in strings
+  (Pandoc's rule: no space inside the dollars, a closing dollar not followed by a digit; `$$...$$`; `\$` literal;
+  text role / label / text chart `:dollar-math false` - all literal). `data.text` parses (pure), `graphics.latex`
+  typesets with JLaTeXMath (cached by source, size and weight - bold roles typeset bold; Cyrillic rejected; any
+  failure `{:key :text}`; a cached box is drawn under a lock), `content.label` measures and draws lines of runs (one
+  metrics shape; baseline at the largest ascent; text without formulas byte-identical). Fitting wraps at spaces and
+  cuts in plain pieces only (formulas are whole words); a rebuilt text carries `:dollar-math false`. Formulas of plot
+  `:labels` and literal text-chart `:text` are checked at build (`pipeline/formula-errors`, by path); along a path
+  they are an error (build or compute). Code passing a text on keeps formula and runs values with
+  `text/label-text`, never `str`; text schemas use `text/label-text-schema`; a label value is an options map only by
+  `label/label-options?`. Log ticks: scale `:formatter :power-math` (`e^{k}` for base e).
 - Text drawn over a fill takes its colour from its text role through `draw/text-color` (role `:color` `:contrast` -
   black or white by the fill; never a hard-coded contrast colour), so a theme colour always wins.
 
@@ -158,15 +171,15 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
 **Source layout**: `chart/` (chart kinds; `chart.common` - schema pieces several charts share, `chart.legend` - shared key glyphs, `chart.strip` - the strip
 chart contract, placement and end labels, `chart.statistic-cell` - correlation / pairwise cells), `data/` (rows, groups, facets,
 levels, the strip frame, and row/layout functions such as `data.graph`, `data.tree`, `data.series`,
-`data.vector-field`, `data.pairwise`), `scale/` (position and aesthetic scales, coords), `graphics/` (fonts, shapes,
-polylines, curves, patterns, cells, measuring, text along a path), `content/` (panel, axis, legend, strip, label,
+`data.vector-field`, `data.pairwise`, `data.text` - label text runs and `$...$` parsing), `scale/` (position and aesthetic scales, coords), `graphics/` (fonts, shapes,
+polylines, curves, patterns, cells, measuring, text along a path, LaTeX formulas), `content/` (panel, axis, legend, strip, label,
 subplot, the 3D frame, invalid-value bands),
 `layout/` (grid, plot grid, alignment, pack, treemap, venn), `cache.clj` (bounded caches), `error.clj`, `schema.clj`,
 `theme.clj`, `pipeline.clj`, `render.clj`, `describe.clj` (option rows for the book). Builders (`graphs.clj`,
 `series_plots.clj`, `multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged
 (`theme/deep-merge`) into the builder's. `cljplot2.core` is the public API (`build`, `render`, `render-image`,
-`cvd-image`, `save`, `find-palette`, `find-gradient`, `palette`, `gradient` - the last five calls to clojure2d - and the
-builders).
+`cvd-image`, `save`, `find-palette`, `find-gradient`, `palette`, `gradient` - the last five calls to clojure2d - the
+builders, and the text values `math`, `runs`).
 
 **Layers** (`layering-test` reads every `ns` form): a namespace requires only its own layer or lower ones, bottom up -
 leaves (`error`, `cache`, `data.accessor`, `graphics.font`, `graphics.shape`: they require no other layer; `schema`
@@ -212,6 +225,8 @@ the theme: banned names, and one type family per name across all owners). One na
   unplaceable on the scale; NA (`:na-panel`, `:na-level`, `[:palette :na]`) means nil only.
 - `:overlapping-labels` - `:keep` / `:drop` (scales, text); `:repel` only for the text chart (labels move to free
   places - tick labels never move); `:repel-distance` - pixels, the farthest a repelled label moves.
+- `:dollar-math` - a text role's, label's or text chart's switch of `$...$` formulas (default on; `false` keeps
+  dollars literal; an inline `nil` style key keeps the role's value).
 - `:as` - the output key of a data function; booleans never end in `?` (also data fields a function returns and keys of internal data -
   `:closed`, `:leaf`, `:flip`; only local names and predicate functions end in `?`); one flag one key; label toggles are named
   after what they label (`:labels`, `:group-labels`, `:n-label`, `:value-label`).
@@ -350,7 +365,9 @@ the theme: banned names, and one type family per name across all owners). One na
   read only through `cache/lookup-or-compute` (least recently used evicted, computed once per key); not Java
   collections, not an unbounded global `memoize` (a `memoize` local to one draw call, e.g. `draw/pattern-fill-cache`,
   is fine). A hit is a `swap!` (~0.5 µs): fine per plot or per drawn mark, not in a tight loop that draws nothing.
-- General drawing comes from clojure2d, never direct Java2D: `c2d/add-clip` intersects the clip (`c2d/clip`
+- General drawing comes from clojure2d, never direct Java2D (one exception: `graphics.latex` draws JLaTeXMath boxes
+  on the canvas's `Graphics2D` - clojure2d has no function for them; JLaTeXMath's GPL-only Greek / Cyrillic font jars
+  are excluded in `deps.edn`, `registerExternalFont` never called): `c2d/add-clip` intersects the clip (`c2d/clip`
   replaces it), `c2d/with-isolated-canvas` draws with every state change discarded afterwards (`push-matrix` restores
   only the transform), `c2d/set-rendering-hint` sets one hint, `sh/transform-shape`, `c2d/shape->points`
   (flattening), `c2d/path-def->shape`, `sh/svg-path`, `sh/text-outline`, `sh/rounded-rect`. A general drawing

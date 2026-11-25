@@ -13,7 +13,7 @@
   - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours, old cljplot `:category20`), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
   - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it), `:bar-width` (`nil` - `:key-size`), `:bar-ticks` (tick count unless the scale's `:ticks` gives one), `:bar-tick-length` and `:bar-tick-width` (pixels; width 0 - no tick lines), `:min-key-line-width` (least pixel width of line marks in keys, see [[key-line-style]]); text roles `:legend-title` and `:legend-label`.
   - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:gap`, `:stroke-color`, `:stroke-width`), `:partition` (`:stroke-color`, `:stroke-width`), `:pack` (`:gap`, `:stroke-color`, `:stroke-width`), `:waffle` (`:gap`, `:cell-shape`, outlines), `:cloud` (the point style; `:line-width` - spikes and lines; `:projection-alpha-factor`, `:band-alpha-factor` - alpha factors of projected points and density bands), `:venn` (`:alpha`, outlines, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha-factor`; tile `:size-key-fill` - a size legend key without a colour), `:field` (`:alpha-factor`), `:contour` (`:color`, `:line-width`, `:dash`, `:alpha-factor`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), `:pairwise` (`:color`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha-factor` multiplies the line alpha, optional `:line-width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
-  - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:inset` (pixels between the text and its box edge on every side), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:inset`; for layout labels - titles, axis titles, strips, legend labels - the whole item box), `:min-size` (optional: the least size in points a text too long for its room shrinks to - axis titles, strips, text charts with `:x-span`, builder labels; a role without it doesn't shrink; see [[cljplot2.content.label/fitted-label]]).
+  - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:inset` (pixels between the text and its box edge on every side), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:inset`; for layout labels - titles, axis titles, strips, legend labels - the whole item box), `:min-size` (optional: the least size in points a text too long for its room shrinks to - axis titles, strips, text charts with `:x-span`, builder labels; a role without it doesn't shrink; see [[cljplot2.content.label/fitted-label]]), `:dollar-math` (optional: `false` keeps every `$` of its texts literal; default on - `$...$` pairs are LaTeX formulas, see [[cljplot2.data.text]]).
 
   Functions and vars: [[default-theme]], [[plot-theme]], [[deep-merge]], [[none?]]; chart styles [[chart-style]], [[resolved-style]], [[key-style]], [[key-line-style]], [[named-styles]], [[theme-style-entries]]; text [[text-style]], [[style-keys]], [[text-roles]], [[text-style-schema]], [[text-style-overrides]]; validation [[theme-schema]], [[errors]]."
   (:require [clojure2d.color :as c]
@@ -26,7 +26,7 @@
 
 (def style-keys
   "Keys of a text style; content (a label, a text chart) may override them inline."
-  [:font :size :font-style :color :inset :align :background])
+  [:font :size :font-style :color :inset :align :background :dollar-math])
 
 (def ^:private centered
   "Alignment of a centred text, `[:center :middle]`."
@@ -292,22 +292,25 @@
    :inset "space between the text and its box edge on every side, in pixels"
    :align "alignment [horizontal vertical] of the text at its anchor"
    :background "box colour behind the text (:none - no box)"
-   :min-size "smallest font size in points a text too long for its room shrinks to (a role without it doesn't shrink)"})
+   :min-size "smallest font size in points a text too long for its room shrinks to (a role without it doesn't shrink)"
+   :dollar-math "true draws text between two dollar signs as a LaTeX formula (a dollar after a backslash stays literal), false keeps every dollar literal; default true"})
 
 (def text-style-schema
-  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align`, `:background` and `:min-size` (a role's least fitted size, not a key content overrides) optional."
-  (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :inset :align :background)"}]
+  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align`, `:background`, `:min-size` (a role's least fitted size, not a key content overrides) and `:dollar-math` optional."
+  (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)"}]
       (into (map (fn [[k s]] [k {:description (text-style-descriptions k)} s])) text-style-entries)
       (conj (schema/optional :align {:description (text-style-descriptions :align)} schema/align)
             (schema/optional :background {:description (text-style-descriptions :background)} schema/color)
-            (schema/nilable :min-size {:description (text-style-descriptions :min-size)} schema/pos))))
+            (schema/nilable :min-size {:description (text-style-descriptions :min-size)} schema/pos)
+            (schema/nilable :dollar-math {:description (text-style-descriptions :dollar-math)} schema/bool))))
 
 (def text-style-overrides
   "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."
   (schema/in-fragment
    :text-style
-   (mapv (fn [[k s]] (schema/optional k {:description (text-style-descriptions k)} s))
-         (conj text-style-entries [:align schema/align] [:background schema/color]))))
+   (conj (mapv (fn [[k s]] (schema/optional k {:description (text-style-descriptions k)} s))
+               (conj text-style-entries [:align schema/align] [:background schema/color]))
+         (schema/nilable :dollar-math {:description (text-style-descriptions :dollar-math)} schema/bool))))
 
 (def text-roles
   "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, bundle, chord, pairs). A theme may add roles of its own, used by labels' and text charts' `:role`."
@@ -452,7 +455,7 @@
         errs))))
 
 (defn text-style
-  "Returns the text style of a label: its role's style with its inline style keys merged over.
+  "Returns the text style of a label: its role's style with its inline style keys merged over (an inline `nil` keeps the role's value).
 
   Parameters:
 
@@ -465,4 +468,4 @@
         style (get-in theme [:text role])]
     (when-not (map? style)
       (schema/fail! "Unknown text role." {:key :role :value role}))
-    (merge style (select-keys content style-keys))))
+    (into style (filter (comp some? val)) (select-keys content style-keys))))

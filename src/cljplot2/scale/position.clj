@@ -23,8 +23,8 @@
   with `:ticks-params` `{:min-n n}` (clamped to the tick count) and, for `:datetime` `:pretty`, calendar ticks
   `{:unit u :step s}` (a tick every s units: `:seconds` .. `:years`, see wadogo; more than wadogo's
   `max-calendar-ticks` over the domain - `ex-info {:key :ticks-params}`). `:formatter` - a function of a tick
-  value, on `:datetime` a `java.time` pattern string (e.g. `MMM yyyy`), or on `:log` the preset `:power` (`2⁵`,
-  [[power-label]]). `:minor-ticks n` - unlabelled ticks between the major ones (continuous numeric kinds, see
+  value, on `:datetime` a `java.time` pattern string (e.g. `MMM yyyy`), or on `:log` the presets `:power` (`2⁵`,
+  [[power-label]]) and `:power-math` (LaTeX `2^{5}`, [[power-math-label]]). `:minor-ticks n` - unlabelled ticks between the major ones (continuous numeric kinds, see
   [[minor-tick-values]]; finalized under `:minor-ticks`). `:axis-domain [lo hi]` (continuous numeric kinds) - display
   only: axes and grid lines show the ticks of that linear domain over the panel instead (see [[display-scale]]), e.g.
   a variable's values beside a density drawn in its own magnitude scale. Bands scales: `:order-by f` - levels ordered by `(f rows)`
@@ -34,7 +34,7 @@
   domain. `:reverse true` - the axis runs the other way: the final domain (data or explicit, after
   nice and padding) reversed - bands in reverse level order (not `:interpolated`: reverse its `:stops`).
 
-  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]], [[stat-transform-for]], [[value-direction]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
+  Functions: specs [[scale-spec-schema]], [[scale-spec]], [[data-scale-spec]]; finalizing [[finalize]], [[tick-hint]], [[ticks-inside]], [[minor-tick-values]], [[tick-labels]], [[power-label]], [[power-math-label]], [[display-scale]], [[keep-labels?]], [[axis-drawn?]], [[grid-drawn?]]; mapping [[->wadogo]], [[forward-fn]], [[forward]], [[inverse-fn]], [[band-geometry]], [[stat-transform]], [[stat-transform-for]], [[value-direction]]; panels and directions [[panel-scales-of]], [[horizontal-key]], [[direction]], [[horizontal?]], [[flipped?]], [[coord-geometry]], [[range-projection]], [[projection]].
 
   Constants: [[position-kinds]], [[continuous-kinds]], [[max-tick-count]]."
   (:require [fastmath.core :as m]
@@ -43,6 +43,7 @@
             [wadogo.ticks.pretty-datetime :as pretty-datetime]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as rows]
+            [cljplot2.data.text :as text]
             [cljplot2.scale.coord :as coord]
             [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2]
@@ -184,10 +185,10 @@
           (schema/optional :expand {:cljplot2/section :kind-domain :description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
                                     :cljplot2/default-doc "the charts' padding"}
                            schema/padding)
-          (schema/optional :formatter {:cljplot2/section :ticks :description "tick label text: a function of the value, a java.time pattern (:datetime) or :power (:log)"
+          (schema/optional :formatter {:cljplot2/section :ticks :description "tick label text: a function of the value, a java.time pattern (:datetime), or :power / :power-math (:log; a power in superscript digits / typeset)"
                                        :cljplot2/default-doc "the charts' suggested format, else plain numbers, levels or dates"}
                            [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
-                            [:pattern :string] [:preset [:enum :power]] [:function schema/function]])
+                            [:pattern :string] [:preset [:enum :power :power-math]] [:function schema/function]])
           (schema/nilable :order-by {:cljplot2/section :order :description "bands ordered by a function of each level's rows (not with :domain)"} schema/function)
           (schema/nilable :descending {:cljplot2/section :order :description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
           (schema/nilable :reverse {:cljplot2/section :order :description "the axis runs the other way (the final domain reversed)" :default false} schema/bool)
@@ -249,7 +250,7 @@
   - `kind` (keyword): the resolved kind.
   - `spec` (map): the scale spec.
 
-  Returns `[key message]`, or `nil` when the options hold. Checked: `:stops`, `:interpolator(-params)` and `:expand` (an interpolated scale takes no padding) off `:interpolated`; `:stops` not one fraction per domain value or not strictly monotonic in `[0 1]`; tick methods on bands; calendar ticks off `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:formatter :power` off `:log`; `:order-by` off `:bands`; `:minor-ticks` and `:axis-domain` on `:bands` or `:datetime`; `:reverse` on `:interpolated`."
+  Returns `[key message]`, or `nil` when the options hold. Checked: `:stops`, `:interpolator(-params)` and `:expand` (an interpolated scale takes no padding) off `:interpolated`; `:stops` not one fraction per domain value or not strictly monotonic in `[0 1]`; tick methods on bands; calendar ticks off `:datetime` `:pretty`; a string `:formatter` off `:datetime`; `:formatter :power` or `:power-math` off `:log`; `:order-by` off `:bands`; `:minor-ticks` and `:axis-domain` on `:bands` or `:datetime`; `:reverse` on `:interpolated`."
   [kind {:keys [stops domain ticks-method formatter] tick-params :ticks-params :as spec}]
   (let [interpolated? (= :interpolated kind)]
     (cond
@@ -267,7 +268,7 @@
       [:ticks-params "calendar ticks (:unit / :step) need a :datetime scale with :ticks-method :pretty"]
       (and (:step tick-params) (nil? (:unit tick-params))) [:ticks-params "calendar ticks :step needs a :unit"]
       (and (string? formatter) (not= :datetime kind)) [:formatter "a pattern string :formatter needs a :datetime scale"]
-      (and (= :power formatter) (not= :log kind)) [:formatter ":formatter :power needs a :log scale"]
+      (and (#{:power :power-math} formatter) (not= :log kind)) [:formatter (str ":formatter " formatter " needs a :log scale")]
       (and (some? (:order-by spec)) (not= :bands kind)) [:order-by ":order-by needs a categorical (:bands) scale"]
       (and (some? (:minor-ticks spec)) (#{:bands :datetime} kind)) [:minor-ticks ":minor-ticks need a numeric continuous scale (not :bands or :datetime)"]
       (and (some? (:axis-domain spec)) (#{:bands :datetime} kind)) [:axis-domain ":axis-domain needs a numeric continuous scale (not :bands or :datetime)"]
@@ -289,6 +290,19 @@
   (let [d (double v)]
     (if (and (m/== d (m/floor d)) (m/< (m/abs d) max-integral-label)) (str (long d)) (str d))))
 
+(defn- whole-power
+  "Gives the exponent of a value that is a whole power of a base.
+
+  Parameters:
+
+  - `b` (double): the base.
+  - `x` (double): the value.
+
+  Returns the exponent (a long) when `x` is a whole power of `b` within 1e-9 relative, else `nil`."
+  [^double b ^double x]
+  (let [k (when (m/pos? x) (m/round (m// (m/ln x) (m/ln b))))]
+    (when (and k (m/< (m/abs (m/- (m/pow b (double k)) x)) (m/* 1.0e-9 x))) k)))
+
 (defn power-label
   "Gives the label of a tick on a log scale as a power of the base.
 
@@ -297,14 +311,29 @@
   - `base` (number): the logarithm base.
   - `v` (number): the tick value.
 
-  Returns `base` followed by the exponent in Unicode superscript digits (`2⁵`, `10⁻³`) when `v` is a whole power of `base` (within 1e-9 relative), else `v` as a number (see [[number-text]])."
+  Returns `base` followed by the exponent in Unicode superscript digits (`2⁵`, `10⁻³`) when `v` is a whole power of `base` (within 1e-9 relative), else `v` as a number (see [[number-text]]).
+
+  See also [[power-math-label]] (typeset)."
   [base v]
-  (let [b (double base)
-        x (double v)
-        k (when (m/pos? x) (m/round (m// (m/ln x) (m/ln b))))]
-    (if (and k (m/< (m/abs (m/- (m/pow b (double k)) x)) (m/* 1.0e-9 x)))
-      (str (number-text b) (apply str (map superscript-digits (str k))))
-      (number-text v))))
+  (if-let [k (whole-power base v)]
+    (str (number-text base) (apply str (map superscript-digits (str k))))
+    (number-text v)))
+
+(defn power-math-label
+  "Gives the label of a tick on a log scale as a typeset power of the base.
+
+  Parameters:
+
+  - `base` (number): the logarithm base.
+  - `v` (number): the tick value.
+
+  Returns a formula value (see [[cljplot2.data.text/math]]) of `base^{k}` (`10^{-3}`; base e as `e^{k}`) when `v` is a whole power of `base` (within 1e-9 relative), else `v` as a number text (see [[number-text]]).
+
+  See also [[power-label]] (Unicode superscripts)."
+  [base v]
+  (if-let [k (whole-power base v)]
+    (text/math (str (if (m/== (double base) m/E) "e" (number-text base)) "^{" k "}"))
+    (number-text v)))
 
 (defn- check-calendar-span!
   "Checks that calendar ticks over a datetime domain stay within wadogo's `max-calendar-ticks`.
@@ -348,7 +377,7 @@
   - `k` (keyword): the scale key (`:x` / `:y`).
   - `spec` (map): wadogo attributes plus `:nice` and the cljplot2 options, valid by [[scale-spec-schema]]; a `:domain` is required.
 
-  Returns `spec` with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; `false` turns it off; `nil` - the default); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] of the scale's `:base` (default 10).
+  Returns `spec` with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; `false` turns it off; `nil` - the default); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] (`:power-math` the [[power-math-label]]) of the scale's `:base` (default 10).
 
   Throws `ex-info {:key :domain}` without a domain or for a domain not suiting the kind (e.g. `:log` with 0), `ex-info {:key :ticks}` for a tick list not matching the kind and domain, `{:key :ticks-params}` for too many calendar ticks, and `ex-info` keyed by the option for options the kind doesn't take ([[kind-option-problem]]).
 
@@ -368,7 +397,8 @@
     (cond-> (assoc spec :kind kind :nice (rows/option spec :nice (not= :interpolated kind)))
       (and (= :datetime kind) (nil? (:ticks-method spec))) (assoc :ticks-method :pretty)
       (string? (:formatter spec)) (update :formatter #(pattern-formatter k %))
-      (= :power (:formatter spec)) (assoc :formatter (partial power-label (rows/option spec :base 10.0))))))
+      (= :power (:formatter spec)) (assoc :formatter (partial power-label (rows/option spec :base 10.0)))
+      (= :power-math (:formatter spec)) (assoc :formatter (partial power-math-label (rows/option spec :base 10.0))))))
 
 (def ^{:private true :const true :tag 'double} collapse-widening
   "Share of its magnitude a collapsed numeric domain widens by on each side."

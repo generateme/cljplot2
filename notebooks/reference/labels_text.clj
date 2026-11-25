@@ -4,7 +4,8 @@
 ;; drawn by charts (the `text` chart, value labels, strip and legend texts) takes its style from a theme text role.
 
 (ns reference.labels-text
-  (:require [cljplot2.chart :as chart]
+  (:require [fastmath.core :as m]
+            [cljplot2.chart :as chart]
             [cljplot2.content.label :as label]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
@@ -108,6 +109,54 @@
                                           :anchor [:left :middle] :font-style :italic})]
                     :legend false}
                    {:width 600 :height 350})
+
+;; ## Formulas
+
+;; Any text can hold LaTeX formulas, typeset at the text's size and colour (bold in a bold role): `plot/math` is one
+;; formula, `plot/runs` puts text and formulas on one baseline, and in strings `$...$` is a formula. The scale
+;; formatter `:power-math` writes log ticks as typeset powers.
+
+;; Formulas in the title, the axis titles, the tick labels, the legend and a text chart:
+
+(def decay
+  (vec (for [rate [0.5 1.0] t (range 0.0 10.5 0.5)]
+         {:t t :n (* 1000.0 (m/exp (- (* rate t)))) :rate (str "$\\lambda = " rate "$")})))
+
+(nu/data-table decay)
+
+(plot/render-image {:data decay
+                    :mapping {:x :t :y :n :color :rate}
+                    :charts [(chart/line)
+                             (chart/text {:x 5.5 :y 200.0 :anchor [:left :middle]
+                                          :text (plot/runs "half-life " (plot/math "t_{1/2} = \\frac{\\ln 2}{\\lambda}"))})]
+                    :scales {:y {:kind :log :formatter :power-math}}
+                    :labels {:title (plot/runs "Exponential decay " (plot/math "N(t) = N_0 e^{-\\lambda t}"))
+                             :x (plot/math "t")
+                             :y (plot/math "N(t)")}}
+                   {:width 600 :height 380})
+
+;; A dollar pair has no space inside and its closing dollar isn't followed by a digit, so `cost $5 to $10` stays
+;; text; `\$` is always a literal dollar. `:dollar-math false` (a text role, a label map or a text chart) keeps every
+;; dollar literal, as on the right - strips, value labels, a rotated two-line title and turned tick labels:
+
+(def masses
+  [{:part "$m_1$" :group "$\\alpha$ set" :kg 1.25} {:part "$m_2$" :group "$\\alpha$ set" :kg 2.5}
+   {:part "$m_1$" :group "$\\beta$ set" :kg 0.75} {:part "$m_2$" :group "$\\beta$ set" :kg 1.75}])
+
+(nu/data-table masses)
+
+(let [masses-plot (fn [title theme]
+                    {:data masses
+                     :mapping {:x :part :y :kg :facet-col :group}
+                     :charts [(chart/bar {:value-label true :value-format "$%.1f$"})]
+                     :labels {:title title :y (plot/runs "mass\n" (plot/math "m_i\\,[\\mathrm{kg}]"))}
+                     :theme (merge {:axis {:x {:label-rotation 45}}} theme)})]
+  (plot/render-image (plot/arrange [(masses-plot "typeset" nil)
+                                    (masses-plot {:text "literal $m_i$" :dollar-math false}
+                                                 {:text {:strip {:dollar-math false} :tick-label {:dollar-math false}
+                                                         :bar-value {:dollar-math false}}})]
+                                   {:columns 2})
+                     {:width 760 :height 360}))
 
 ;; ## font/resolve-font
 

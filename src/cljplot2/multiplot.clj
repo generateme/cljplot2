@@ -9,6 +9,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.chart.pairwise :as pairwise]
             [cljplot2.data.accessor :as accessor]
+            [cljplot2.data.text :as text]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.data.rows :as data]
             [cljplot2.layout.plot-grid :as plot-grid]
@@ -191,7 +192,7 @@
                               data/mapping-schema)
               (schema/nilable :variable-names {:description "display names of the variables, {variable text}"
                                                :cljplot2/default-doc "the variable's name"}
-                              [:map-of keyword? string?])]))
+                              [:map-of keyword? text/label-text-schema])]))
       (into (schema/in-section
              :cells
              [(schema/nilable :lower {:description "charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells"

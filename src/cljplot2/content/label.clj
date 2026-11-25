@@ -8,8 +8,13 @@
     relative to the unrotated text (default: the role's theme `:align`, else `[:center :middle]`); `h` also aligns lines
   * style keys overriding the role's theme style, see [[cljplot2.theme/style-keys]]
 
-  `:text` is converted with `str` and split into lines at line breaks (LF or CRLF); `nil` or the empty string is empty
-  (zero size).
+  `:text` is any value: a formula value ([[cljplot2.data.text/math]]) or a runs value ([[cljplot2.data.text/runs]])
+  is kept, any other value is converted with `str`; it is split into lines at line breaks (LF or CRLF); `nil` or the
+  empty string is empty (zero size). Formulas - formula values and, with the style's `:dollar-math` on (the
+  default), dollar pairs in the text (see [[cljplot2.data.text]]) - are typeset at the style's size in its colour,
+  bold for a bold font style (see [[cljplot2.graphics.latex]]); a line with formulas has its baseline at the largest
+  ascent of its runs and its height from the largest ascent plus the largest descent (the font's line height at
+  least). A formula that doesn't parse is an error keyed `:text`.
   Natural size is the text block rounded up plus the `:inset` on every side; rotation `90`/`270` swaps width and height.
   Internally (axis tick labels, theme `[:axis k :label-rotation]`) any angle is drawn: the natural size is then the
   rounded-up bounding box of the rotated text frame, the text rotated about the box centre.
@@ -20,7 +25,7 @@
   `grid/prepare`).
 
   Functions: [[quarter-turn]], [[text-frame]], [[name-text]], [[value-text]], [[box-at]], [[frame-corners]], [[draw-at!]],
-  [[draw-at-frame!]]; style [[drawn-style]]; leader lines [[draw-leader!]]; text along a path [[draw-along-path!]]; schema
+  [[draw-at-frame!]], [[label-options?]], [[formulas?]]; style [[drawn-style]]; leader lines [[draw-leader!]]; text along a path [[draw-along-path!]]; schema
   [[label-options]]; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`.
 
@@ -37,13 +42,16 @@
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [malli.util :as mu]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
+            [cljplot2.graphics.latex :as latex]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.text-path :as text-path]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
-  (:import [fastmath.vector Vec2]))
+  (:import [fastmath.vector Vec2]
+           [java.awt Font]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -53,23 +61,23 @@
   `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
   (-> [:map {:closed true :cljplot2/type-doc "a label options map (:text, :role, :rotation, text style keys)"}
        (schema/optional :kind {:cljplot2/section :label :description "content kind (labels only)"} [:= :label])
-       (schema/optional :text {:cljplot2/section :label :description "the text (converted with str; \\n breaks lines)"} any?)
+       (schema/optional :text {:cljplot2/section :label :description "the text: any value converted with str, a plot/math formula or plot/runs pieces (\\n breaks lines)"} any?)
        (schema/optional :role {:cljplot2/section :label :description "theme text role styling the label (:title, :axis-title, ... or a role of your theme)"}
                         keyword?)
        (schema/optional :rotation {:cljplot2/section :label :description "clockwise degrees (270 reads bottom to top)" :default 0} [:enum 0 90 270])]
       (into (map (fn [[k props s]] [k (assoc props :cljplot2/section :text-style) s])) theme/text-style-overrides)))
 
-(defn- text-lines
-  "Gives the lines of a label text.
+(defn label-options?
+  "Tests whether a label value is a map of [[label-options]] rather than a text.
 
   Parameters:
 
-  - `text`: any value, converted with `str` (`nil` - empty).
+  - `x`: a label value - a text (any value, formula and runs values of [[cljplot2.data.text]] included) or a map of
+    [[label-options]].
 
-  Returns a vector of strings split at LF or CRLF; empty text has no lines, empty inner or trailing lines are kept."
-  [text]
-  (let [s (str text)]
-    (if (= "" s) [] (str/split s #"\r?\n" -1))))
+  Returns truthy for a map that isn't a formula or runs value, else `nil` or false."
+  [x]
+  (and (map? x) (not (text/formula-text? x))))
 
 (def ^:private default-align
   "Placement `[h v]` of a label's text in its box when neither the label nor its role gives `:align`."
@@ -95,15 +103,19 @@
   - `theme` (map): the merged theme.
   - `content` (map): the label content.
 
-  Returns `{:lines :rotation :h-align :v-align :inset :color :background :font}` - the role's style with the
-  label's inline overrides, the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the colour resolved
-  against the plot backdrop."
+  Returns `{:lines :formulas :bold :rotation :h-align :v-align :inset :color :background :font}` - the role's style
+  with the label's inline overrides, the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the colour
+  resolved against the plot backdrop; `:lines` - vectors of runs (see [[cljplot2.data.text/text-lines]]),
+  `:formulas` - truthy when a run is a formula, `:bold` - true for a bold font style."
   [theme content]
   (let [rotation (get content :rotation 0)
         style (theme/text-style theme content)
         align (or (:align style) default-align)
-        inset (:inset style)]
-    {:lines (text-lines (:text content))
+        inset (:inset style)
+        lines (text/text-lines (:text content) (not (false? (:dollar-math style))))]
+    {:lines lines
+     :formulas (text/formulas? lines)
+     :bold (contains? #{:bold :bold-italic} (:font-style style))
      :rotation rotation
      :h-align (align 0)
      :v-align (align 1)
@@ -150,26 +162,80 @@
     (c2d/line c x0 y0 x1 y1))
   nil)
 
+(defn- typeset-run
+  "Gives a formula run typeset in a label's font.
+
+  Parameters:
+
+  - `run` (map): a formula value (see [[cljplot2.data.text/math]]).
+  - `size` (double): the label's font size.
+  - `bold` (boolean): true for a bold font style.
+
+  Returns the typeset formula (see [[cljplot2.graphics.latex/typeset]])."
+  [run size bold]
+  (latex/typeset (:cljplot2/math run) size bold))
+
+(defn- plain-metrics
+  "Measures the lines of a label without formulas (see [[text-metrics]]).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context, its font set to the label's.
+  - `lines` (vector): the lines, vectors of string runs.
+
+  Returns the metrics of [[text-metrics]]: every line the font's height, its runs measured as one string."
+  [canvas lines]
+  (let [boxes (mapv #(c2d/text-bounding-box canvas (apply str %)) lines)
+        [_ ^double top _ ^double line-height] (or (first boxes) [0.0 0.0 0.0 0.0])
+        widths (mapv #(double (nth % 2)) boxes)]
+    {:lines (mapv (fn [^long idx ^double w] {:width w :top (m/* idx line-height) :ascent (m/- top) :run-widths [w]})
+                  (range) widths)
+     :block-width (reduce m/max 0.0 widths)
+     :block-height (m/* line-height (count lines))}))
+
+(defn- formula-metrics
+  "Measures the lines of a label with formulas (see [[text-metrics]]).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context, its font set to the label's.
+  - `spec` (map): `:lines` (vectors of runs), `:font`, `:bold`.
+
+  Returns the metrics of [[text-metrics]]: a line's ascent and descent are the largest of the font's and its
+  formulas'."
+  [canvas {lines :lines ^Font font :font bold :bold}]
+  (let [size (double (.getSize2D font))
+        [_ ^double font-top _ ^double font-height] (c2d/text-bounding-box canvas " ")
+        font-ascent (m/- font-top)
+        font-descent (m/- font-height font-ascent)
+        measured (mapv (fn [runs]
+                         (let [typeset (mapv #(when (text/formula? %) (typeset-run % size bold)) runs)
+                               run-widths (mapv (fn [run t] (if t (:width t) (double (nth (c2d/text-bounding-box canvas run) 2))))
+                                                runs typeset)
+                               ascent (double (reduce m/max font-ascent (keep :height typeset)))
+                               descent (double (reduce m/max font-descent (keep :depth typeset)))]
+                           {:width (reduce m/+ 0.0 run-widths) :ascent ascent :height (m/+ ascent descent) :run-widths run-widths}))
+                       lines)
+        tops (reductions m/+ 0.0 (map :height measured))]
+    {:lines (mapv (fn [line top] (-> line (assoc :top top) (dissoc :height))) measured tops)
+     :block-width (reduce m/max 0.0 (map :width measured))
+     :block-height (reduce m/+ 0.0 (map :height measured))}))
+
 (defn- text-metrics
   "Sets the label font on a canvas and measures the label's lines.
 
   Parameters:
 
   - `canvas`: the canvas in graphics context (its font changes).
-  - `spec` (map): the label's drawing parameters (see [[label-spec]]) - `:lines`, `:font`.
+  - `spec` (map): the label's drawing parameters (see [[label-spec]]) - `:lines`, `:formulas`, `:font`, `:bold`.
 
-  Returns `{:widths :line-height :ascent :block-width :block-height}`: line widths (a vector, indexed), the line
-  height, the ascent (baseline offset from the line top) and the unrotated text block size; no lines - zeros."
-  [canvas {text :lines font :font}]
-  (c2d/set-font canvas font)
-  (let [boxes (mapv #(c2d/text-bounding-box canvas %) text)
-        [_ ^double top _ ^double line-height] (or (first boxes) [0.0 0.0 0.0 0.0])
-        widths (mapv #(double (nth % 2)) boxes)]
-    {:widths widths
-     :line-height line-height
-     :ascent (m/- top)
-     :block-width (double (reduce m/max 0.0 widths))
-     :block-height (m/* line-height (count text))}))
+  Returns `{:lines :block-width :block-height}`: per line `{:width :top :ascent :run-widths}` (the line's top and
+  baseline below the text block's top, each run's width) and the unrotated text block size; no lines - zeros."
+  [canvas spec]
+  (c2d/set-font canvas (:font spec))
+  (if (:formulas spec)
+    (formula-metrics canvas spec)
+    (plain-metrics canvas (:lines spec))))
 
 (defn quarter-turn
   "Gives a rotation normalized to a quarter turn.
@@ -272,6 +338,113 @@
                 (str/join " " (subvec lines (m/long-dec max-wrapped-lines))))
           lines)))))
 
+(defn- run-words
+  "Gives the words of a line of runs: pieces between white space, a formula part of the word it touches.
+
+  Parameters:
+
+  - `runs` (vector): a line's runs - strings and formula values.
+
+  Returns a vector of words, each a non-empty vector of runs."
+  [runs]
+  (let [close (fn [acc word] (cond-> acc (seq word) (conj word)))
+        [words word] (reduce (fn [[acc word] run]
+                               (if (text/formula? run)
+                                 [acc (conj word run)]
+                                 (let [[head & tail] (str/split run #"\s+" -1)
+                                       continued (cond-> word (seq head) (conj head))]
+                                   (reduce (fn [[a w] part] [(close a w) (if (seq part) [part] [])])
+                                           [acc continued] tail))))
+                             [[] []] runs)]
+    (close words word)))
+
+(defn- words-line
+  "Joins words into one line of runs, single spaces between them.
+
+  Parameters:
+
+  - `words` (sequence): words, vectors of runs.
+
+  Returns a vector of runs."
+  [words]
+  (vec (apply concat (interpose [" "] words))))
+
+(defn- wrapped-runs
+  "Gives a line of runs wrapped at white space into lines that fit a length (see [[wrapped-line]]).
+
+  Parameters:
+
+  - `fits?` (function): tests whether a line of runs fits.
+  - `runs` (vector): the line.
+
+  Returns a vector of at most [[max-wrapped-lines]] lines of runs, the last one holding the words left; an empty line
+  stays one empty line."
+  [fits? runs]
+  (let [words (run-words runs)]
+    (if (empty? words)
+      [[]]
+      (let [lines (reduce (fn [acc word]
+                            (let [current (peek acc)
+                                  joined (when current (words-line [current word]))]
+                              (if (and current (fits? joined)) (conj (pop acc) joined) (conj acc word))))
+                          [] words)]
+        (if (m/> (count lines) max-wrapped-lines)
+          (conj (subvec lines 0 (m/long-dec max-wrapped-lines))
+                (words-line (subvec lines (m/long-dec max-wrapped-lines))))
+          lines)))))
+
+(defn- cut-runs
+  "Gives the longest start of a line of runs that, ended with an ellipsis, fits a length; formulas are never cut.
+
+  Parameters:
+
+  - `fits?` (function): tests whether a line of runs fits.
+  - `runs` (vector): the line.
+
+  Returns `runs` when it fits, else its longest start - whole runs, then a start of a string run (whitespace trimmed)
+  - with the ellipsis; the ellipsis alone when no start fits."
+  [fits? runs]
+  (if (fits? runs)
+    runs
+    (or (some (fn [^long i]
+                (let [before (subvec runs 0 i)
+                      run (nth runs i)]
+                  (if (text/formula? run)
+                    (let [line (conj before ellipsis)] (when (fits? line) line))
+                    (let [cut (cut-line #(fits? (conj before %)) (str run))]
+                      (when (and (not= ellipsis cut) (fits? (conj before cut))) (conj before cut))))))
+              (range (m/long-dec (count runs)) -1 -1))
+        [ellipsis])))
+
+(defn- runs-content
+  "Gives label content holding lines of runs as its text.
+
+  Parameters:
+
+  - `content` (map): the label content.
+  - `lines` (sequence): lines, vectors of runs (strings and formula values).
+
+  Returns `content` with a runs value `:text` (see [[cljplot2.data.text/runs]]) and `:dollar-math false` - its
+  strings are already parsed."
+  [content lines]
+  (assoc content :text (apply text/runs (interpose "\n" (map #(apply text/runs %) lines))) :dollar-math false))
+
+(defn- shrunk
+  "Gives label content drawn smaller to fit a length, down to its text role's `:min-size`.
+
+  Parameters:
+
+  - `content` (map): the label content.
+  - `natural` (double): its length along the text.
+  - `length` (double): pixels along the text.
+  - `env` (map): `:theme`.
+
+  Returns `content` with `:size` - its size scaled down to fit, rounded down, at least the least size."
+  [content ^double natural ^double length env]
+  (let [{:keys [^double size min-size]} (theme/text-style (:theme env) content)
+        least (m/min size (double (or min-size size)))]
+    (assoc content :size (m/max least (m/floor (m// (m/* size length) natural))))))
+
 (defn fitted-label
   "Gives a label fitted to a length along its text: wrapped, then shrunk, then cut.
 
@@ -279,8 +452,9 @@
   lines, given line breaks kept), then drawn smaller - its size scaled down to fit, rounded down, down to its text
   role's `:min-size` (a role without one, or a size below it, isn't shrunk) - and when that is still too long each
   line too long is cut, ending with an ellipsis (unless `:cut` is false: the text kept whole, longer than the length
-  at the least size). Used by facet strips (no wrapping), axis titles (see [[cljplot2.layout.plot-grid]]) and text
-  charts with `:x-span` (no cutting, see [[cljplot2.chart.text]]).
+  at the least size). Formulas are words of their own: never split or cut (a text with formulas is cut in its plain
+  pieces). Used by facet strips (no wrapping), axis titles (see [[cljplot2.layout.plot-grid]]) and text charts with
+  `:x-span` (no cutting, see [[cljplot2.chart.text]]).
 
   Parameters:
 
@@ -289,27 +463,33 @@
     the text whole (default true).
   - `env` (map): `:canvas` (a canvas in graphics context; its font changes), `:theme`.
 
-  Returns `content` when it fits, else with a wrapped or cut `:text` (a string) and possibly a `:size`; a length too
-  short for any text leaves the ellipsis."
+  Returns `content` when it fits, else with a wrapped or cut `:text` (a string, with formulas a runs value; its
+  dollars already read, so with `:dollar-math false`) and possibly a `:size`; a length too short for any text leaves the ellipsis."
   [content {:keys [^double length wrap cut] :or {cut true}} env]
   (let [natural (along-text content env)]
     (if (m/<= natural length)
       content
-      (let [fits-for (fn [c] (fn [text] (m/<= (along-text (assoc c :text text) env) length)))
+      (let [{:keys [lines formulas]} (label-spec (:theme env) content)
+            fits-in (fn [c] (fn [t] (m/<= (along-text (assoc c :text t) env) length)))
+            runs-fit (fn [c] (fn [line] (m/<= (along-text (runs-content c [line]) env) length)))
             wrapped (when wrap
-                      (assoc content :text (str/join "\n" (mapcat (partial wrapped-line (fits-for content))
-                                                                  (text-lines (:text content))))))]
-        (if (and wrapped ((fits-for wrapped) (:text wrapped)))
+                      (if formulas
+                        (runs-content content (mapcat (partial wrapped-runs (runs-fit content)) lines))
+                        (assoc content
+                               :text (str/join "\n" (mapcat (partial wrapped-line (fits-in content)) (text/plain-lines lines)))
+                               :dollar-math false)))]
+        (if (and wrapped (m/<= (along-text wrapped env) length))
           wrapped
           (let [base (or wrapped content)
-                base-natural (if wrapped (along-text wrapped env) natural)
-                {:keys [^double size min-size]} (theme/text-style (:theme env) base)
-                least (m/min size (double (or min-size size)))
-                sized (assoc base :size (m/max least (m/floor (m// (m/* size length) base-natural))))
-                fits? (fits-for sized)]
-            (if (or (not cut) (fits? (:text sized)))
-              sized
-              (assoc sized :text (str/join "\n" (map #(cut-line fits? %) (str/split-lines (str (:text sized)))))))))))))
+                sized (shrunk base (if wrapped (along-text wrapped env) natural) length env)]
+            (cond
+              (or (not cut) (m/<= (along-text sized env) length)) sized
+              formulas (let [fits? (runs-fit sized)]
+                         (runs-content sized (map #(cut-runs fits? %) (:lines (label-spec (:theme env) sized)))))
+              :else (let [fits? (fits-in sized)]
+                      (assoc sized
+                             :text (str/join "\n" (map #(cut-line fits? %) (text/plain-lines (:lines (label-spec (:theme env) sized)))))
+                             :dollar-math false)))))))))
 
 (defn- box-fitted
   "Gives a label with `:fit` fitted to a box (see [[fitted-label]]).
@@ -365,12 +545,35 @@
     (:center :middle) (m/* 0.5 (m/- available size))
     (:right :bottom) (m/- available size)))
 
+(defn- draw-lines!
+  "Draws a label's lines: each run after the previous one on its line's baseline.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context, its font and colour set to the label's, the origin at the text frame.
+  - `spec` (map): `:lines` (vectors of runs), `:h-align`, `:color`, `:font`, `:bold` (see [[label-spec]]).
+  - `metrics` (map): the lines' metrics of [[text-metrics]].
+  - `[block-x block-y]` (doubles): the text block's top-left corner.
+
+  Returns `nil`."
+  [canvas {:keys [lines h-align color ^Font font bold]} {line-metrics :lines ^double block-width :block-width} [^double block-x ^double block-y]]
+  (let [size (double (.getSize2D font))]
+    (doseq [[runs {:keys [^double width ^double top ^double ascent run-widths]}] (map vector lines line-metrics)]
+      (let [baseline (m/+ block-y top ascent)]
+        (reduce (fn [^double x [run ^double run-width]]
+                  (if (text/formula? run)
+                    (latex/draw-typeset! canvas (typeset-run run size bold) x baseline color)
+                    (c2d/text canvas run x baseline))
+                  (m/+ x run-width))
+                (m/+ block-x (align-offset h-align block-width width))
+                (map vector runs run-widths))))
+    nil))
+
 (defmethod draw/draw-content :label
   [content canvas {:keys [^long x ^long y ^long w ^long h] :as box} {:keys [theme] :as env}]
   (let [spec (label-spec theme (box-fitted content box (assoc env :canvas canvas)))]
     (when (seq (:lines spec))
-      (let [{:keys [widths ^double line-height ^double ascent ^double block-width ^double block-height]}
-            (text-metrics canvas spec)
+      (let [{:keys [^double block-width ^double block-height] :as metrics} (text-metrics canvas spec)
             rotation (double (:rotation spec))
             inset (double (:inset spec))
             inset2 (m/* 2.0 inset)
@@ -391,10 +594,7 @@
           (c2d/set-color canvas background)
           (c2d/rect canvas 0.0 0.0 frame-w frame-h))
         (c2d/set-color canvas (:color spec))
-        (doseq [[^long idx text ^double line-width] (map vector (range) (:lines spec) widths)]
-          (c2d/text canvas text
-                    (m/+ block-x (align-offset (:h-align spec) block-width line-width))
-                    (m/+ block-y (m/* idx line-height) ascent)))))))
+        (draw-lines! canvas spec metrics [block-x block-y])))))
 
 (defn name-text
   "Gives the text of a name: a level, an accessor, a set name.
@@ -542,9 +742,29 @@
   - `placement` (map): `:position`, `:anchor`, `:offset` (see [[cljplot2.graphics.text-path/draw!]]).
   - `env` (map): `:theme`.
 
-  Returns a truthy value when the text is drawn, `nil` when it isn't (see [[cljplot2.graphics.text-path/draw!]])."
+  Returns a truthy value when the text is drawn, `nil` when it isn't (see [[cljplot2.graphics.text-path/draw!]]).
+
+  Throws `ex-info {:key :text}` for a text with formulas (a formula isn't laid along a path; `:dollar-math false`
+  keeps dollars literal)."
   [canvas content points placement env]
-  (text-path/draw! canvas (str (:text content)) points (drawn-style (:theme env) content) placement))
+  (let [{:keys [lines formulas]} (label-spec (:theme env) content)]
+    (when formulas
+      (schema/fail! "A text along a path can't hold LaTeX formulas (`:dollar-math false` keeps dollars literal)."
+                    {:key :text :value (:text content)}))
+    (text-path/draw! canvas (str/join "\n" (text/plain-lines lines)) points (drawn-style (:theme env) content) placement)))
+
+(defn formulas?
+  "Tests whether a label's text holds formulas.
+
+  Parameters:
+
+  - `theme` (map): the merged theme.
+  - `content` (map): the label content (`:text`, `:role`, inline `:dollar-math`).
+
+  Returns truthy when its text holds a formula (a formula value, or a dollar pair with dollar math on - see
+  [[cljplot2.data.text]]), else `nil`."
+  [theme content]
+  (:formulas (label-spec theme content)))
 
 (def ^{:private true :const true :tag 'double} min-fitted-size
   "Smallest font size fitted text lines shrink to in a narrow box."

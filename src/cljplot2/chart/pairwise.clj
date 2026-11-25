@@ -22,6 +22,7 @@
             [cljplot2.data.group :as group]
             [cljplot2.data.pairwise :as pairwise]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -112,11 +113,11 @@
   - `format-fn` (function): the text of a number.
   - `v` (double): the value.
 
-  Returns `(format-fn v)` as a string; `NA` for `##NaN`, a `nil` text or a `format-fn` that throws."
+  Returns `(format-fn v)` as a text (a formula or runs value kept, see [[cljplot2.data.text/label-text]]); `NA` for `##NaN`, a `nil` text or a `format-fn` that throws."
   [format-fn ^double v]
   (if (m/nan? v)
     "NA"
-    (or (try (some-> (format-fn v) str) (catch Throwable _ nil)) "NA")))
+    (or (try (some-> (format-fn v) text/label-text) (catch Throwable _ nil)) "NA")))
 
 (defn- text-template
   "Gives the widest line of cells: the longest `<label>: value` text.
@@ -130,7 +131,7 @@
   Returns the longest text (by characters), `nil` without values."
   [label format-fn values]
   (when (seq values)
-    (apply max-key count (map #(str label ": " (formatted-value format-fn (double %))) values))))
+    (apply max-key #(count (text/source-text %)) (map #(cell/labelled label (formatted-value format-fn (double %))) values))))
 
 (defn- slot-cells
   "Gives the `[x y]` variable pairs of a pairs slot's cells: the column variable on x, the row variable on y.
@@ -287,7 +288,7 @@
       (and (m/nan? v) (= :shade glyph))
       (draw-lines! [{:text "NA" :color role-color}])
       (#{:number :shade-number} glyph)
-      (let [first-line {:text (str label-text ": " (text-of v)) :color (if fill role-color (or text-color role-color))}
+      (let [first-line {:text (cell/labelled label-text (text-of v)) :color (if fill role-color (or text-color role-color))}
             lines (cell/value-lines first-line groups text-of role-color scales env)]
         (draw-lines! (if fill (mapv #(assoc % :color role-color) lines) lines))))
     nil))

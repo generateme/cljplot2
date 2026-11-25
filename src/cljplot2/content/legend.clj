@@ -38,6 +38,7 @@
             [cljplot2.content.axis :as axis]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as position]
             [cljplot2.graphics.draw :as draw]
@@ -179,7 +180,7 @@
         ;; read by the keys and the labels
         values (into [] (comp (map as-data) (distinct)) times)
         labels (if formatter
-                 (map #(str (formatter %)) values)
+                 (map #(text/label-text (formatter %)) values)
                  (position/tick-labels ws {:kind :datetime} (mapv data/->local-date-time values)))]
     (mapv vector (map data/x-key values) labels)))
 
@@ -233,7 +234,7 @@
                 (m/== lo hi) (mapv vector [lo] (axis-labels [lo]))
                 :else (let [mid (:midpoint spec)]
                         (with-midpoint-tick (mapv vector nice (axis-labels nice)) mid
-                          (when (some? mid) (if formatter (str (formatter mid)) (first (levels/break-labels [mid]))))
+                          (when (some? mid) (if formatter (text/label-text (formatter mid)) (first (levels/break-labels [mid]))))
                           lo hi)))]
     {:kind :colorbar
      :title (members-title [{:spec spec :accessors accessors}])
@@ -349,15 +350,15 @@
 (def ^:private legend-schema
   "Schema of `{:kind :legend}` content: `:title`, `:entries` `[{:label :attributes}]`, `:charts` `[{:chart index :dims [dim]}]`."
   [:map
-   (schema/nilable :title string?)
-   [:entries [:vector [:map [:label string?] [:attributes :map]]]]
+   (schema/nilable :title text/label-text-schema)
+   [:entries [:vector [:map [:label text/label-text-schema] [:attributes :map]]]]
    [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
 (def ^:private colorbar-schema
   "Schema of `{:kind :colorbar}` content: `:title`, a linear or binned `:scale`, `:ticks` and one label per tick in `:labels`."
   (schema/with-rules
    [:map
-    (schema/nilable :title string?)
+    (schema/nilable :title text/label-text-schema)
     [:scale [:map [:kind [:enum :linear :binned]]]]
     [:ticks vector?]
     [:labels vector?]]

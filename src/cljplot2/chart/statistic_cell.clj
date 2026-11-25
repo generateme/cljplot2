@@ -1,10 +1,11 @@
 (ns cljplot2.chart.statistic-cell
   "Statistic cells: the parts the [[cljplot2.chart.correlation]] and [[cljplot2.chart.pairwise]] charts share - one statistic of the panel's `:x` / `:y` drawn as a cell filling the panel, a line per group under it.
 
-  Functions: [[diverging-range]] - the colour range of a signed statistic; [[grouping]] - the panel groups of a mapping; [[colored-by-value?]] - whether the cell takes the value's colour; [[value-fill]] - a cell's fill; [[value-lines]] - the text lines of a cell; [[dropped]] - the non-finite counts; [[legend]] - the key glyph."
+  Functions: [[diverging-range]] - the colour range of a signed statistic; [[grouping]] - the panel groups of a mapping; [[colored-by-value?]] - whether the cell takes the value's colour; [[value-fill]] - a cell's fill; [[value-lines]] - the text lines of a cell, [[labelled]] - a value text after its label; [[dropped]] - the non-finite counts; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]))
@@ -76,6 +77,18 @@
       ((aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na])) v))
     fixed))
 
+(defn labelled
+  "Gives the text of a value after its label: `label: value`.
+
+  Parameters:
+
+  - `label` (string): the label.
+  - `value-text`: the value's text - a string, or a formula or runs value (see [[cljplot2.data.text/label-text]]).
+
+  Returns a string, or a runs value when `value-text` is a formula or runs value (see [[cljplot2.data.text/runs]])."
+  [label value-text]
+  (if (text/formula-text? value-text) (text/runs label ": " value-text) (str label ": " value-text)))
+
 (defn value-lines
   "Gives the text lines of a cell: a first line, and a line per group in the group's colour.
 
@@ -93,7 +106,7 @@
   (into [first-line]
         (keep (fn [{:keys [aesthetics value]}]
                 (when-let [st (group/style {:color base-color} aesthetics scales (:theme env))]
-                  {:text (str (or (some-> (first (vals aesthetics)) str) "NA") ": " (text-of value)) :color (:color st)})))
+                  {:text (labelled (or (some-> (first (vals aesthetics)) str) "NA") (text-of value)) :color (:color st)})))
         groups))
 
 (defn dropped

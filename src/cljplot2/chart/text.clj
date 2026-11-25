@@ -2,7 +2,7 @@
   "Text: labels at positions - an annotation chart (see [[cljplot2.data.annotation]]: literal options or data through
   the chart's own `:mapping`, `:extent`).
 
-  Literal: `:x`, `:y` (a position or a vector), `:text` (a value or a vector; converted with `str`), vectors of 1 or n
+  Literal: `:x`, `:y` (a position or a vector), `:text` (a value or a vector; a value converted with `str` unless a formula or runs value, see [[cljplot2.data.text]]), vectors of 1 or n
   items paired. `:x` / `:y` also take `[:panel f]` - fraction `f` (0..1) of the panel from its low-value end, not in
   the extents (a vector starting with `:panel` is always such a position); on an axis without a scale (no chart maps
   it, e.g. the cross axis of a dot plot) the fraction is of the panel's width / height (polar: its angular / radial
@@ -88,6 +88,7 @@
             [cljplot2.data.annotation :as annotation]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
@@ -137,7 +138,7 @@
 
 (def ^:private style-keys
   "Text style keys the chart takes as options, over its text role."
-  [:font :size :font-style :color :inset :background])
+  [:font :size :font-style :color :inset :background :dollar-math])
 
 (defn- text-role
   "Gives the theme text role of the chart's labels.
@@ -164,7 +165,7 @@
                                        text-positions)
                        (schema/nilable :y {:cljplot2/section :labels :description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
                                        text-positions)
-                       (schema/nilable :text {:cljplot2/section :labels :description "literal label text: a value or a vector of 1 or n (converted with str)"} any?)
+                       (schema/nilable :text {:cljplot2/section :labels :description "literal label text: a value or a vector of 1 or n (converted with str; plot/math and plot/runs values kept)"} any?)
                        (schema/optional :anchor {:cljplot2/section :placement :description "point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)"
                                                  :cljplot2/default-doc "[:center :middle]; with :select just past the point; polar :radial - away from the centre"}
                                         [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
@@ -317,7 +318,7 @@
      hint
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation (numeric-rotation options)} (select-keys options style-keys))
-             along (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
+             along (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text t) {:canvas c :theme theme})]
                                         (if flip (.y size) (.x size))))
                               texts))
              [dx dy] (:offset options)
@@ -340,7 +341,7 @@
      hint
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
-             diagonal (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})]
+             diagonal (v/mx (map (fn [t] (let [^Vec2 size (measure/natural-size (assoc spec :text t) {:canvas c :theme theme})]
                                            (m/hypot (.x size) (.y size))))
                                  texts))
              [dx dy] (data/option options :offset [0 0])
@@ -363,7 +364,7 @@
      hint
      (fn [c]
        (let [spec (merge {:kind :label :role (text-role options) :rotation 0} (select-keys options style-keys))
-             sizes (map (fn [t] (measure/natural-size (assoc spec :text (str t)) {:canvas c :theme theme})) texts)
+             sizes (map (fn [t] (measure/natural-size (assoc spec :text t) {:canvas c :theme theme})) texts)
              w (v/mx (map (fn [^Vec2 size] (.x size)) sizes))
              h (v/mx (map (fn [^Vec2 size] (.y size)) sizes))
              [ha va] (data/option options :anchor [:center :middle])
@@ -406,7 +407,7 @@
 
   Returns literal - `{:groups [{:labels [{:x :y :text}]}] :options o}` in every panel, extents of the positions; data - per panel the labels of each group (with `:aesthetics`), with `:select` one per group and text (`:select-within :group` - per group), the `:anchor` / `:offset` defaults in `o` and `:padding-px` room; `:reserve-room` room (see [[with-reserved-room]]).
 
-  Throws `ex-info {:key :select}` for `:select` with literal labels, `{:key k}` for a missing literal `:x`, `:y` or `:text`, `{:key :mapping}` without a mapped `:x :y :label`."
+  Throws `ex-info {:key :select}` for `:select` with literal labels, `{:key k}` for a missing literal `:x`, `:y` or `:text`, `{:key :mapping}` without a mapped `:x :y :label`, `{:key :text}` for a mapped label with formulas along a path."
   [{:keys [options]} {:keys [mapping] :as chart-split} env]
   (if (annotation/literal? options [:x :y :text])
     (let [_ (when (:select options)
@@ -445,6 +446,11 @@
                                                ls (mapcat :labels groups)]
                                            [{:groups groups :options placed-options} {:x (map :x ls) :y (map :y ls)}]))
                                        {:x #(not (annotation/position? (x-of %))) :y #(not (annotation/position? (y-of %)))})]
+      (when (:along-path options)
+        (doseq [t (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
+                :when (label/formulas? (:theme env) {:kind :label :role (text-role options) :dollar-math (:dollar-math options) :text t})]
+          (schema/fail! "A text along a path can't hold LaTeX formulas (:dollar-math false keeps dollars literal)."
+                        {:key :text :value t})))
       (-> (cond-> stats
             select (assoc :padding-px (label-room (distinct (map :text (mapcat :labels (mapcat :groups (vals (:data stats))))))
                                                   placed-options env)))
@@ -469,10 +475,11 @@
 
   - `labels` (sequence of maps): labels with `:text`.
 
-  Returns a lazy sequence of `[text labels]`, the texts converted with `str`, each text's labels in data order."
+  Returns a lazy sequence of `[text labels]`, the texts as labels take them (formula and runs values kept, others
+  converted with `str`, see [[cljplot2.data.text/label-text]]), each text's labels in data order."
   [labels]
-  (let [by-text (group-by #(str (:text %)) labels)]
-    (map (fn [t] [t (by-text t)]) (distinct (map #(str (:text %)) labels)))))
+  (let [by-text (group-by #(text/label-text (:text %)) labels)]
+    (map (fn [t] [t (by-text t)]) (distinct (map #(text/label-text (:text %)) labels)))))
 
 (defn- anchor-point-fn
   "Gives the function placing labels at their positions' pixels in one panel.
@@ -567,7 +574,7 @@
                :let [[^double px ^double py placed-rotation anchor] (anchor-point l)
                      rotation (if (schema/finite? angle) angle placed-rotation)]
                :when (and (m/valid-double? px) (m/valid-double? py))
-               :let [content (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st)
+               :let [content (merge {:kind :label :role (text-role options) :text text :rotation rotation} st)
                      room (when (= 0 (label/quarter-turn rotation)) (room-px x x-span))]]
            {:content (if room
                        (label/fitted-label content {:length (m/max 0.0 (double room)) :cut false} (assoc env :canvas measuring))

@@ -90,6 +90,7 @@
             [cljplot2.data.measure :as measure]
             [cljplot2.data.position :as position]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.chart.strip :as strip-chart]
             [cljplot2.data.strip :as strip]
             [cljplot2.graphics.draw :as draw]
@@ -403,11 +404,11 @@
   - `level-total` (map): level -> its total (see [[label-info]]).
   - `bar` (map): the bar.
 
-  Returns the text; `nil` for none, a zero-length bar or an empty result."
+  Returns the text (a formula or runs value kept, see [[cljplot2.data.text/label-text]]); `nil` for none, a zero-length bar or an empty result."
   [labels value-text level-total {:keys [^double y0 ^double y1] :as bar}]
   (when (and labels (m/not== y0 y1))
     (let [t (if (fn? labels) (labels (label-info bar level-total)) (value-text bar))]
-      (when (and (some? t) (not= "" t)) (str t)))))
+      (when (and (some? t) (not= "" t)) (text/label-text t)))))
 
 (defn- end-label
   "Gives the end label of a bar (see [[cljplot2.chart.strip/draw-end-labels!]]).
@@ -432,7 +433,7 @@
                         :end (end-of bar)
                         :base (base-of bar)
                         [(m/* 0.5 (m/+ y0 y1)) 0.0])]
-        (cond-> {:level level :slot slot :at at :side side :text (str/join separator texts) :span [y0 y1] :role :bar-value}
+        (cond-> {:level level :slot slot :at at :side side :text (if (some text/formula-text? texts) (apply text/runs (interpose separator texts)) (str/join separator texts)) :span [y0 y1] :role :bar-value}
           (#{:center :base} label-position) (assoc :inside true)
           (= :outer label-position) (assoc :outer true :leader (data/option options :label-leader false)))))))
 

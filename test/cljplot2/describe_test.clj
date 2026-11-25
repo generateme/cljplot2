@@ -175,7 +175,7 @@
         (is (re-find #"^a text style" (:type (by-path [:text :title]))))))
     (testing "the style keys aren't repeated per role: one shared table, the :text-style group"
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
-      (is (= [:font :size :font-style :color :inset :align :background] (map :key (describe/fragment-rows :text-style)))))
+      (is (= [:font :size :font-style :color :inset :align :background :dollar-math] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
       (is (not-any? :required (filter #(= :text (first (:path %))) rows))))
     (testing "a section's rows: the rows under it, in order; together every row"

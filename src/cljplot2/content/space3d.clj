@@ -185,7 +185,7 @@
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           widest (double (reduce m/max 0.0 (map (fn [^Vec2 s] (m/max (.x s) (.y s))) (tick-label-sizes frame [w h] env))))
           title (double (reduce m/max 0.0 (keep (fn [k] (when-some [t (get titles k)]
-                                                           (.y (measure/label-size :axis-title (str t) env))))
+                                                           (.y (measure/label-size :axis-title t env))))
                                                  space/axes)))]
       (m/+ (double tick-length) (m/* 2.0 (double label-gap)) widest title frame-padding))))
 
@@ -338,9 +338,9 @@
             (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
       ;; the title runs along its edge, turned to read left to right (or bottom to top)
-      (let [content {:kind :label :role :axis-title :text (str title) :rotation (edge-angle along)}
+      (let [content {:kind :label :role :axis-title :text title :rotation (edge-angle along)}
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
-                           (v/mult o (title-distance tick-length label-gap @widest (measure/label-size :axis-title (str title) env))))]
+                           (v/mult o (title-distance tick-length label-gap @widest (measure/label-size :axis-title title env))))]
         (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))
     @labelled))
 

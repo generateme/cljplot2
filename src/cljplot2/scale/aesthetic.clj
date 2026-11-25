@@ -67,6 +67,7 @@
             [fastmath.core :as m]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]))
@@ -440,8 +441,8 @@
                           [:multi {:dispatch sequential?} [true [:sequential [:or schema/finite schema/temporal]]] [false schema/pos-int]])
           (schema/optional :integer-ticks {:cljplot2/section :legend :description "linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector or :midpoint tick is drawn as given)" :default false}
                            schema/bool)
-          (schema/nilable :title {:cljplot2/section :legend :description "legend title (nil - none)" :cljplot2/default-doc "the mapped column's name"}
-                          string?)
+          (schema/nilable :title {:cljplot2/section :legend :description "legend title, a string or a plot/math or plot/runs value (nil - none)" :cljplot2/default-doc "the mapped column's name"}
+                          text/label-text-schema)
           (schema/nilable :legend {:cljplot2/section :legend :description "show the scale's legend" :default true} schema/bool)]
          [#(domain-problem k %) [:domain]]
          (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
@@ -1084,10 +1085,12 @@
 
   - `spec` (map): the scale - `:breaks`, `:formatter`.
 
-  Returns `[{:label :value}]`, in increasing order: the label `a – b` of the bin's breaks (through `:formatter`, else [[cljplot2.data.levels/break-labels]]), the value its centre (drawn with the bin's size)."
+  Returns `[{:label :value}]`, in increasing order: the label `a – b` of the bin's breaks (through `:formatter` - formula or runs values give a runs label, see [[cljplot2.data.text/runs]] - else [[cljplot2.data.levels/break-labels]]), the value its centre (drawn with the bin's size)."
   [{:keys [breaks formatter]}]
-  (let [labels (if formatter (mapv #(str (formatter %)) breaks) (levels/break-labels breaks))]
-    (mapv (fn [[^double a ^double b] [la lb]] {:label (str la " – " lb) :value (m/* 0.5 (m/+ a b))})
+  (let [labels (if formatter (mapv #(text/label-text (formatter %)) breaks) (levels/break-labels breaks))]
+    (mapv (fn [[^double a ^double b] [la lb]]
+            {:label (if (or (text/formula-text? la) (text/formula-text? lb)) (text/runs la " – " lb) (str la " – " lb))
+             :value (m/* 0.5 (m/+ a b))})
           (partition 2 1 breaks) (partition 2 1 labels))))
 
 (defn legend-entries
@@ -1098,13 +1101,13 @@
   - `k` (keyword): the dimension.
   - `spec` (map): the scale ([[scale-spec]]).
 
-  Returns `[{:label :value}]` (`:value nil` - the NA entry, last when the scale has `:na-level`): ordinal - one per level (`(str level)`, or through `:formatter`); linear size - ticks of the domain ([[linear-legend-ticks]]); binned size - one per bin ([[binned-legend-entries]]). `nil` when the scale has no legend: `:legend false`, an identity scale, or linear / binned colour (a colour bar instead)."
+  Returns `[{:label :value}]` (`:value nil` - the NA entry, last when the scale has `:na-level`): ordinal - one per level (`(str level)`, or through `:formatter` - a formula value kept, see [[cljplot2.data.text/label-text]]); linear size - ticks of the domain ([[linear-legend-ticks]]); binned size - one per bin ([[binned-legend-entries]]). `nil` when the scale has no legend: `:legend false`, an identity scale, or linear / binned colour (a colour bar instead)."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
     (let [fmt (or (:formatter spec) str)
           entries (case (:kind spec)
-                    :ordinal (mapv (fn [level] {:label (str (fmt level)) :value level}) (:domain spec))
+                    :ordinal (mapv (fn [level] {:label (text/label-text (fmt level)) :value level}) (:domain spec))
                     :binned (binned-legend-entries spec)
                     (linear-legend-ticks spec))]
       (cond-> entries (:na-level spec) (conj {:label "NA" :value nil})))))

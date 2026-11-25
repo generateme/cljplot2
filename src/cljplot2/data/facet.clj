@@ -3,7 +3,7 @@
 
   Mapping keys: `:facet` (wrap: one dimension laid out row by row) or `:facet-col` / `:facet-row` (grid: one column per `:facet-col` value, one row per `:facet-row` value; either alone gives one row or one column).
 
-  Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data, sorted, or ordered by a statistic of each level's rows (`:scales {k {:order-by f :descending b}}`, see [[ordered-levels]]). `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (NA for the NA level) unless the facet scale has a `:formatter`.
+  Levels (facet values in panel order) come from an explicit `:scales {k {:domain [...]}}` or from the data, sorted, or ordered by a statistic of each level's rows (`:scales {k {:order-by f :descending b}}`, see [[ordered-levels]]). `nil` values go to an NA level placed last (`:facets {:na-panel false}` drops them instead). Values outside an explicit domain, NaN and infinite numbers are dropped (and counted). Strip text is `(str value)` (NA for the NA level) unless the facet scale has a `:formatter` (its formula or runs values kept, see [[cljplot2.data.text/label-text]]).
 
   Group keys: the level for wrap, `[col-level row-level]` for grid. Charts whose mapping has no facet key, and charts whose own `:data` has no value for any of their facet keys (e.g. annotation rows), get the group key [[all-panels]] and are drawn in every panel.
 
@@ -20,6 +20,7 @@
   (:require [fastmath.core :as m]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.schema :as schema]))
 
 (set! *warn-on-reflection* true)
@@ -212,7 +213,7 @@
   [spec level]
   (cond
     (nil? level) "NA"
-    (:formatter spec) (str ((:formatter spec) level))
+    (:formatter spec) (text/label-text ((:formatter spec) level))
     :else (str level)))
 
 (defn group-rows

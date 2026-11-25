@@ -36,6 +36,7 @@
             [cljplot2.data.field :as field]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -254,9 +255,9 @@
   - `labels`: the `:labels` option - `true` or a function of `{:level v}`.
   - `level` (number): the level.
 
-  Returns the function's result as text (`nil` - no label), for `true` the level as a number of at most 2 decimals (see [[cljplot2.content.label/value-text]])."
+  Returns the function's result as text (`nil` - no label; a formula or runs value kept), for `true` the level as a number of at most 2 decimals (see [[cljplot2.content.label/value-text]])."
   [labels level]
-  (if (fn? labels) (some-> (labels {:level level}) str) (label/value-text level)))
+  (if (fn? labels) (some-> (labels {:level level}) text/label-text) (label/value-text level)))
 
 (defn- inside?
   "Tests whether a pixel box lies within the panel.

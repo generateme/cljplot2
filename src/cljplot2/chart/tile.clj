@@ -40,6 +40,7 @@
             [cljplot2.data.cells :as cells]
             [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
+            [cljplot2.data.text :as text]
             [cljplot2.graphics.cells :as cell-draw]
             [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -250,10 +251,10 @@
   - `value`: the cell's colour value.
   - `x`, `y`: the cell's position values.
 
-  Returns the function's result as text (`nil` - no label); for `true` a number to at most 2 decimals (whole numbers without them), a keyword's name, other values as text (see [[cljplot2.content.label/value-text]])."
+  Returns the function's result as text (`nil` - no label; a formula or runs value kept); for `true` a number to at most 2 decimals (whole numbers without them), a keyword's name, other values as text (see [[cljplot2.content.label/value-text]])."
   [value-label value x y]
   (if (fn? value-label)
-    (some-> (value-label {:value value :x x :y y}) str)
+    (some-> (value-label {:value value :x x :y y}) text/label-text)
     (label/value-text value)))
 
 (defn draw

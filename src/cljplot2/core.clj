@@ -5,9 +5,12 @@
 
   Builders return ordinary plot maps: [[arrange]], [[pairs]] (multiplots); [[network]], [[chord]], [[arc]], [[sankey]], [[alluvial]] (graphs and flows); [[dendrogram]], [[tree]], [[clustered-heatmap]], [[bundle]], [[sequences]] (trees and hierarchies); [[acf]], [[horizon]] (series). Each validates its options first (`:cljplot2/options` var metadata).
 
-  Colours: [[find-palette]], [[find-gradient]], [[palette]], [[gradient]] call clojure2d; [[cvd-image]] simulates a colour vision deficiency."
+  Colours: [[find-palette]], [[find-gradient]], [[palette]], [[gradient]] call clojure2d; [[cvd-image]] simulates a colour vision deficiency.
+
+  Text: [[math]] - a LaTeX formula in any label text, [[runs]] - pieces of text and formulas on one baseline (`$...$` pairs in strings are formulas too, see [[cljplot2.data.text]])."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
+            [cljplot2.data.text :as text]
             [cljplot2.graphs :as graphs]
             [cljplot2.pipeline :as pipeline]
             [cljplot2.multiplot :as multiplot]
@@ -17,6 +20,28 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(defn math
+  "Gives a LaTeX formula value for any label text: titles, axis titles, tick labels, legends, strips, text charts.
+
+  Parameters:
+
+  - `tex` (any value): the formula in LaTeX math mode (converted with `str`), e.g. `x_i^2`.
+
+  Returns a formula value, plain data: the whole text, or a piece of a runs value (see [[runs]]). A formula that doesn't parse throws `ex-info` when the plot is built (plot labels, literal text) or rendered (texts from data or formatters), keyed `:text` or by its option. See [[cljplot2.data.text/math]]."
+  [tex]
+  (text/math tex))
+
+(defn runs
+  "Gives a runs value for any label text: pieces drawn one after another on one baseline.
+
+  Parameters:
+
+  - `pieces` (values): strings (their dollar pairs are formulas with dollar math on), formula values of [[math]], other values (converted with `str`).
+
+  Returns a runs value, plain data - e.g. a word followed by a formula. See [[cljplot2.data.text/runs]]."
+  [& pieces]
+  (apply text/runs pieces))
 
 (defn build
   "Runs a plot map through the pipeline stages and returns it with every stage's key added.
