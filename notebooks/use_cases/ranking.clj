@@ -160,7 +160,7 @@
 
 ;; ### Error bars
 
-;; [`chart/extent`](reference.charts_bars_ranges.html#extent) with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
+;; [`chart/extent`](reference.charts_per_level.html#extent) with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
 
 (nu/source-note {:source "R Graph Gallery - Barplot with error bars"
                  :url "https://r-graph-gallery.com/4-barplot-with-error-bar.html"
@@ -258,7 +258,7 @@
 
 ;; ### Mirrored bars
 
-;; The [bar](reference.charts_bars_ranges.html#bar) `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
+;; The [bar](reference.charts_bars.html#bar) `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
 ;; as magnitudes. Answers for and against eight proposals, stacked by how sure people were: the mirror on `:group`
 ;; (for / against), four colours - two blues, two reds - on `:color`.
 
@@ -316,7 +316,7 @@
 ;; ## Lollipop and dot plots
 
 ;; A thin stem and a point carry the value with less ink than a bar:
-;; [`chart/segment`](reference.charts_points_paths.html#segment) from the baseline under a `chart/scatter`.
+;; [`chart/segment`](reference.charts_points_lines.html#segment) from the baseline under a `chart/scatter`.
 
 ;; ### Lollipop
 

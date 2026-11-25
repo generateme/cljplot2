@@ -117,7 +117,8 @@
 ;; ## Scatter-plot matrix
 
 ;; `plot/pairs` draws a cell for every pair of `:variables` (2 to 20 numeric columns); the cells below, above and on
-;; the diagonal take any charts. Its variables:
+;; the diagonal take any charts. By default a scatter plot fills the cells below the diagonal, the correlation as a
+;; number those above, and a density the diagonal. Its variables:
 
 (nu/options-table (describe/options #'plot/pairs) :variables)
 
@@ -146,6 +147,15 @@
                                        :diagonal :names
                                        :scales {:color {:domain [-1 1]}}})
                    {:width 500 :height 450})
+
+;; `:lower`, `:upper` and `:diagonal` each take a chart, a vector of charts layered in each cell, or `:none` for empty
+;; cells:
+
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt]
+                                       :lower [(chart/scatter {:size 4}) (chart/smooth {:method :lm})]
+                                       :upper :none
+                                       :title "a scatter and a linear fit below, nothing above"})
+                   {:width 600 :height 560})
 
 ;; The matrix's title, legend column and theme:
 

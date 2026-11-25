@@ -361,7 +361,7 @@ Source: [R Graph Gallery - Marginal distribution with ggplot2](https://r-graph-g
 
 ### Linear fit with a confidence band
 
-[`chart/smooth {:method :lm}`](reference.charts_series.html#smoothing) adds the least-squares line and its 95 % confidence band.
+[`chart/smooth {:method :lm}`](reference.charts_fitted_curves.html#smoothing) adds the least-squares line and its 95 % confidence band.
 
 Source: [R Graph Gallery - Scatterplot with a regression line](https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html). Data: House prices: living area and sale price, data-to-viz example dataset `2_TwoNum` (Yan Holtz; Kaggle House Prices competition); licence: MIT (data_to_viz repository).
 
@@ -552,7 +552,7 @@ A grid of cells coloured by a value: rows and columns are categories (or binned 
 ### Basic heatmap, square and hexagon cells
 
 European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across
-columns of different units; the [tile](reference.charts_grids_fields.html#tile) `:cell :pointy-hex` draws the same grid as a honeycomb.
+columns of different units; the [tile](reference.charts_bins_fields.html#tile) `:cell :pointy-hex` draws the same grid as a honeycomb.
 
 
 ::: {.sourceClojure}
@@ -903,7 +903,7 @@ Two variables over time: the points in time order joined by a path, dates writte
 ### Connected scatter with dates
 
 Yearly means of US unemployment duration and savings rate, 1990-2014, joined in time order (`:order :data`) by a
-smooth path (`:curve :bezier`) ending in an arrowhead (`:arrow`, see [line](reference.charts_points_paths.html#ends));
+smooth path (`:curve :bezier`) ending in an arrowhead (`:arrow`, see [line](reference.charts_points_lines.html#ends));
 labels on boxes keep the years readable where the path crosses itself.
 
 Source: R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter ([1](https://r-graph-gallery.com/connected_scatterplot_ggplot2.html), [2](https://www.data-to-viz.com/graph/connectedscatter.html)). Data: US economic time series, 1967-2015, R ggplot2 package `economics` (Federal Reserve Bank of St. Louis, FRED); licence: MIT (ggplot2).
@@ -940,7 +940,7 @@ Where the points concentrate: counts in cells, a smooth density estimate, its co
 
 ### 2D histogram and hexbin
 
-[`chart/bin2d`](reference.charts_grids_fields.html#bin2d) counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
+[`chart/bin2d`](reference.charts_bins_fields.html#bin2d) counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
 
 Source: R Graph Gallery - 2D density chart; data-to-viz - 2D density ([1](https://r-graph-gallery.com/2d-density-chart.html), [2](https://www.data-to-viz.com/graph/density2d.html)). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 
@@ -967,8 +967,8 @@ Source: R Graph Gallery - 2D density chart; data-to-viz - 2D density ([1](https:
 
 ### 2D kernel density and contours
 
-[`chart/field`](reference.charts_grids_fields.html#field) estimates the density (Gaussian kernel, a bandwidth per
-axis) and draws it as a raster; [`chart/contour`](reference.charts_grids_fields.html#contour) draws its level lines, or with `:filled true` the bands between them.
+[`chart/field`](reference.charts_bins_fields.html#field) estimates the density (Gaussian kernel, a bandwidth per
+axis) and draws it as a raster; [`chart/contour`](reference.charts_bins_fields.html#contour) draws its level lines, or with `:filled true` the bands between them.
 
 Source: [R Graph Gallery - 2D density plot with ggplot2](https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html). Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 

@@ -1,4 +1,4 @@
-;; # Builders: series
+;; # Series
 
 ;; Builders of time series plots: the autocorrelation correlogram of a series of values, and horizon charts of one or
 ;; more series. Each takes its data and an options map and returns an ordinary plot map; the series functions it

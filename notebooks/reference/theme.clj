@@ -265,7 +265,7 @@
 ;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics,
 ;; contours (bar values, Venn counts, tile values and the correlation and pairwise numbers in the contrast colour of
 ;; what's behind them by default). The bars write their values in their middle
-;; ([bar](reference.charts_bars_ranges.html#bar) `:value-label`, `:label-position`):
+;; ([bar](reference.charts_bars.html#bar) `:value-label`, `:label-position`):
 
 (nu/options-table (describe/theme-rows :text) :chart-text)
 

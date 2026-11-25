@@ -476,7 +476,7 @@ Source: [R Graph Gallery - Line chart annotation](https://r-graph-gallery.com/li
 ### Time heatmap
 
 Year × month as two categorical axes, the value as a linear colour: seasonality and growth at once - a
-[tile](reference.charts_grids_fields.html#tile) per month (categories in data order: January to December, the
+[tile](reference.charts_bins_fields.html#tile) per month (categories in data order: January to December, the
 years upward).
 
 Source: [R Graph Gallery - The hourly heatmap](https://r-graph-gallery.com/283-the-hourly-heatmap.html). Data: Monthly airline passengers, 1949-1960, R datasets package `AirPassengers` (Box & Jenkins 1976); licence: Part of R (GPL-2 | GPL-3).

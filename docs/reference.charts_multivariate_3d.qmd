@@ -42,12 +42,11 @@ code-block-background: true
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
 
-# Charts: multivariate and 3D
+# Multivariate and 3D
 
-Many variables at once: a line per row across one axis per variable (`parallel`, a radar in polar
-coordinates), points in a 3D box (`cloud`), surfaces over a grid (`surface`), and a matrix of plots of every pair of
-variables (scatter-plot matrix, at the end). Each chart lists the mapping keys
-it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).
+For more variables than two axes hold: a line per row across one axis per variable (`parallel`, a radar in polar
+coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). For a matrix of plots of every
+pair of variables see [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
 
 
 ::: {.sourceClojure}
@@ -742,50 +741,6 @@ The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surf
 
 
 Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [3D frame](reference.shared_options.html#d-frame) (`:view` `:aspect` `:box` `:axes` `:axis-titles` `:domain` `:reverse`); [3D shading](reference.shared_options.html#d-shading) (`:ambient` `:light`).
-
-
-## Scatter-plot matrix
-
-Not a chart but a matrix of plots of the charts above and on the other pages:
-[`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix) gives every pair of `:variables` a cell. By
-default a scatter plot below the diagonal (`:lower`), the correlation as text above it (`:upper`) and a density on
-it (`:diagonal`):
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                     :mapping {:color :species}})
-                   {:width 700 :height 620})
-```
-:::
-
-
-::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image17.png)
-:::
-
-
-A slot takes one chart, a vector of charts (layered in each cell) or `:none` (empty cells; `nil` - the default); `:diagonal :names` writes
-the variable's name in the diagonal cell instead:
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length]
-                                     :lower [(chart/scatter {:size 4}) (chart/smooth {:method :lm})]
-                                     :upper :none
-                                     :diagonal :names
-                                     :title "scatter and a linear fit below, empty above"})
-                   {:width 600 :height 560})
-```
-:::
-
-
-::: {.clay-image}
-![](reference.charts_multivariate_3d_files/image18.png)
-:::
-
 
 
 ```{=html}

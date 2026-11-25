@@ -54,7 +54,7 @@
 
 ;; ### Grouped, stacked, percent
 
-;; R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars_ranges.html#bar) `:position`
+;; R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars.html#bar) `:position`
 ;; `:dodge` compares the groups, `:stack` the totals, `:normalize` the shares; facets give a panel per specie; negative
 ;; values stack downward from 0.
 
@@ -135,7 +135,7 @@
 
 ;; ### Basic, groups and subgroups
 
-;; One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_part_of_whole.html#treemap)
+;; One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_shares_sets.html#treemap)
 ;; `:gap` frames the groups, `:stroke-color` outlines the cells, a theme palette recolours the regions.
 
 (nu/source-note {:source "R Graph Gallery - Treemap; data-to-viz - Treemap"
@@ -261,7 +261,7 @@
 ;; ### One level
 
 ;; Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-;; by their subregion; wider gaps ([pack](reference.charts_part_of_whole.html#pack) `:gap`, pixels; `:leaf-labels false`
+;; by their subregion; wider gaps ([pack](reference.charts_shares_sets.html#pack) `:gap`, pixels; `:leaf-labels false`
 ;; hides the names).
 
 (nu/source-note {:source "R Graph Gallery - Circular packing; data-to-viz - Circular packing"
@@ -304,7 +304,7 @@
 
 ;; ## Sunburst
 
-;; The hierarchy as rings: a [partition](reference.charts_part_of_whole.html#partition) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
+;; The hierarchy as rings: a [partition](reference.charts_shares_sets.html#partition) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
 ;; subregions, then countries outward.
 
 (nu/source-note {:source "data-to-viz - Sunburst"
@@ -327,7 +327,7 @@
 
 ;; ### Basic, shapes, colours, groups
 
-;; The regions' shares; circle cells ([waffle](reference.charts_part_of_whole.html#waffle) `:cell-shape`, `:gap` - a
+;; The regions' shares; circle cells ([waffle](reference.charts_shares_sets.html#waffle) `:cell-shape`, `:gap` - a
 ;; fraction of a cell); a palette; subregions within each region (a facet per region, each region's
 ;; subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).
 
@@ -369,7 +369,7 @@
 
 ;; ### Two and three sets
 
-;; Two artists (the [venn](reference.charts_part_of_whole.html#venn) `:sets`): circle areas and the overlap
+;; Two artists (the [venn](reference.charts_shares_sets.html#venn) `:sets`): circle areas and the overlap
 ;; proportional to the word counts. Three: the classic layout, counts and shares from a label function
 ;; (`:region-labels`).
 

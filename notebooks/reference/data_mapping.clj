@@ -81,7 +81,7 @@
 
 ;; The other end of a mark spanning two values: a band from `:ymin` to `:ymax` (ribbons, error bars), a segment
 ;; to `:xend` / `:yend`. Below, every fifth point drops a segment to a literal end, the
-;; [segment](reference.charts_points_paths.html#segment) option `:yend 0`.
+;; [segment](reference.charts_points_lines.html#segment) option `:yend 0`.
 
 (nu/options-table (describe/options rows/mapping-schema) :interval)
 

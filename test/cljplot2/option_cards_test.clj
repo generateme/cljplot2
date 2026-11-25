@@ -211,22 +211,38 @@
            (set (keys schema/documented-types))))))
 
 (defn- heading-anchors
-  "The anchors of the headings of a reference notebook (`reference.<file>.html`) - on the Types page also its generated
-  type sections - `nil` for no such notebook."
+  "The anchors of the headings of a book page (`reference.<file>`, `use_cases.<file>`, `galleries.<file>` - the
+  notebook `notebooks/<dir>/<file>.clj`) - on the Types page also its generated type sections - `nil` for no such
+  notebook."
   [page]
-  (let [f (io/file "notebooks/reference" (str (str/replace page #"^reference\." "") ".clj"))
+  (let [[_ dir file] (re-matches #"(reference|use_cases|galleries)\.(.+)" page)
+        f (io/file "notebooks" dir (str file ".clj"))
         anchor #'notebook-utils/heading-anchor]
     (when (.exists f)
       (into (set (map #(anchor (second %)) (re-seq #"(?m)^;; #+ (.+)$" (slurp f))))
             (when (= "reference.types" page)
               (map #(anchor (:cljplot2/type-name (malli/type-properties %))) (vals schema/documented-types)))))))
 
+(defn- broken-links
+  "`[page anchor]` of the links in `text` into the book's reference, use case and gallery pages that don't resolve: a page that doesn't
+  exist (with or without an anchor), or an anchor its headings don't give; relative links and the book's absolute
+  URLs (the README's)."
+  [text]
+  (vec (for [[_ page _ anchor] (re-seq #"\((?:https://generateme\.github\.io/cljplot2/)?((?:reference|use_cases|galleries)\.[a-z_0-9]+)\.html(#([^)\s]+))?\)" text)
+             :let [anchors (heading-anchors page)]
+             :when (or (nil? anchors) (and anchor (not (contains? anchors anchor))))]
+         [page anchor])))
+
 (deftest reference-links-test
-  (testing "every link of the book's prose into a reference page's section resolves to one of its headings"
-    (let [links (for [f (file-seq (io/file "notebooks"))
-                      :when (str/ends-with? (.getName ^java.io.File f) ".clj")
-                      [_ page anchor] (re-seq #"\((reference\.[a-z_]+)\.html#([^)\s]+)\)" (slurp f))
-                      :let [anchors (heading-anchors page)]
-                      :when (and anchors (not (contains? anchors anchor)))]
-                  [(.getName ^java.io.File f) page anchor])]
-      (is (= [] (vec links))))))
+  (testing "every link of the book's prose (notebooks, README) into a reference, use case or gallery page resolves to the page and its heading"
+    (is (= [] (vec (for [^java.io.File f (cons (io/file "README.md") (file-seq (io/file "notebooks")))
+                         :when (re-find #"\.(clj|md)$" (.getName f))
+                         link (broken-links (slurp f))]
+                     [(.getName f) link])))))
+  (testing "boundary: a missing page fails with or without an anchor, a missing anchor fails, a page alone passes"
+    (is (= [["reference.no_such_page" "x"] ["reference.no_such_page" nil] ["reference.types" "no-such-type"]]
+           (broken-links (str "(reference.no_such_page.html#x) (https://generateme.github.io/cljplot2/reference.no_such_page.html) "
+                              "(reference.types.html#no-such-type) (reference.types.html) (reference.types.html#fraction)")))))
+  (testing "boundary: use case and gallery pages - a renamed gallery fails, existing pages pass"
+    (is (= [["galleries.cljplot_extras" nil]]
+           (broken-links "(galleries.cljplot_extras.html) (galleries.cljplot.html) (use_cases.flow.html)")))))

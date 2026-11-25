@@ -219,7 +219,7 @@
 
 ;; `:level-axis` names the axis of the levels - needed when both axes or neither are categorical; here the rounded
 ;; petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each (points spread
-;; across the band by the [stripplot](reference.charts_strip_distributions.html#stripplot)'s seeded `:jitter`):
+;; across the band by the [stripplot](reference.charts_per_level.html#stripplot)'s seeded `:jitter`):
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y (levels/categorical #(m/round (:petal-width %)))}

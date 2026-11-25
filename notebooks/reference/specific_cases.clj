@@ -55,7 +55,7 @@
 (probability/quartile-line normal-side {:values sample})
 
 ;; The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#rule) by
-;; `:slope` and `:intercept`) - match the [qq](reference.charts_distribution_stats.html#qq) chart; the skewed sample
+;; `:slope` and `:intercept`) - match the [qq](reference.charts_one_variable.html#qq) chart; the skewed sample
 ;; bends away from the line at both ends:
 
 (plot/render-image (let [[slope intercept] (probability/quartile-line normal-side {:values sample})]
@@ -122,7 +122,7 @@
 
 (sort (:kde kernel/kernel-list))
 
-;; Four of them with the same `:bandwidth` ([density](reference.charts_distribution_stats.html#density)) - the
+;; Four of them with the same `:bandwidth` ([density](reference.charts_one_variable.html#density)) - the
 ;; curves differ in smoothness: the gaussian is the smoothest here, the uniform kernel's box shape makes its curve
 ;; ragged:
 
@@ -218,7 +218,7 @@
 
 (pack/enclose [{:x 0 :y 0 :r 1} {:x 3 :y 0 :r 1}])
 
-;; The packed circles drawn as [polygons](reference.charts_points_paths.html#polygon) outlined in their own colour
+;; The packed circles drawn as [polygons](reference.charts_points_lines.html#polygon) outlined in their own colour
 ;; (`:stroke-color :color`) - the root's circle in grey, the children in colour:
 
 (def circle-outlines (for [[i {:keys [x y r]}] (map-indexed vector (cons packed (:children packed)))
@@ -305,7 +305,7 @@
 
 ;; Short compositions of the pieces documented in this part.
 
-;; A reference curve over a histogram: the [histogram](reference.charts_distribution_stats.html#histogram) on the
+;; A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histogram) on the
 ;; density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
 ;; [function](reference.charts_annotations.html#function) chart:
 
@@ -321,7 +321,7 @@
 ;; A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rect) over an x
 ;; interval), a threshold ([rule](reference.charts_annotations.html#rule)) and a note
 ;; ([text](reference.charts_annotations.html#text)) layered over a scatter with a loess
-;; [smooth](reference.charts_series.html#smoothing):
+;; [smooth](reference.charts_fitted_curves.html#smoothing):
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -353,5 +353,4 @@
 ;; [correlation](use_cases.correlation.html), [ranking](use_cases.ranking.html),
 ;; [part of a whole](use_cases.part_of_a_whole.html), [evolution](use_cases.evolution.html),
 ;; [flow](use_cases.flow.html) and [colours](use_cases.colors.html). The galleries reproduce other libraries' examples:
-;; [cljplot extras](galleries.cljplot_extras.html), [lattice](galleries.lattice.html) and
-;; [Vega-Lite](galleries.vega.html).
+;; [lattice](galleries.lattice.html), [Vega-Lite](galleries.vega.html) and [cljplot](galleries.cljplot.html).

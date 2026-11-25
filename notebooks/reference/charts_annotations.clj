@@ -1,9 +1,7 @@
-;; # Charts: annotations
+;; # Annotations
 
-;; Marks placed by literal positions rather than by data: reference lines (`rule`), intervals (`rect`), labels
-;; (`text`), a picture (`image`) and curves of functions (`function`). Rule, rect and text also take data and a
-;; mapping - one mark per row. Each chart lists the mapping keys it reads, its own options and the shared option
-;; groups it takes (documented once in the Shared options chapter).
+;; Marks you add over the data to point things out: reference lines (`rule`), intervals (`rect`), labels (`text`),
+;; a picture (`image`) and function curves (`function`). `rule`, `rect` and `text` can also draw one mark per row.
 
 (ns reference.charts-annotations
   (:require [fastmath.core :as m]

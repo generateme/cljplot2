@@ -1,9 +1,8 @@
-;; # Charts: multivariate and 3D
+;; # Multivariate and 3D
 
-;; Many variables at once: a line per row across one axis per variable (`parallel`, a radar in polar
-;; coordinates), points in a 3D box (`cloud`), surfaces over a grid (`surface`), and a matrix of plots of every pair of
-;; variables (scatter-plot matrix, at the end). Each chart lists the mapping keys
-;; it reads, its own options and the shared option groups it takes (documented once in the Shared options chapter).
+;; For more variables than two axes hold: a line per row across one axis per variable (`parallel`, a radar in polar
+;; coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). For a matrix of plots of every
+;; pair of variables see [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
 
 (ns reference.charts-multivariate-3d
   (:require [fastmath.core :as m]
@@ -355,24 +354,3 @@
                    {:width 900 :height 380})
 
 (nu/shared-groups (describe/options (chart/surface)))
-
-;; ## Scatter-plot matrix
-
-;; Not a chart but a matrix of plots of the charts above and on the other pages:
-;; [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix) gives every pair of `:variables` a cell. By
-;; default a scatter plot below the diagonal (`:lower`), the correlation as text above it (`:upper`) and a density on
-;; it (`:diagonal`):
-
-(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                     :mapping {:color :species}})
-                   {:width 700 :height 620})
-
-;; A slot takes one chart, a vector of charts (layered in each cell) or `:none` (empty cells; `nil` - the default); `:diagonal :names` writes
-;; the variable's name in the diagonal cell instead:
-
-(plot/render-image (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length]
-                                     :lower [(chart/scatter {:size 4}) (chart/smooth {:method :lm})]
-                                     :upper :none
-                                     :diagonal :names
-                                     :title "scatter and a linear fit below, empty above"})
-                   {:width 600 :height 560})

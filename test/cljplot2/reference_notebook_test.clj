@@ -33,14 +33,15 @@
 
 (def ^:private chart-chapters
   "The chart chapters (R4), in reading order: page -> the chart kinds it documents (spec 6.3)."
-  (array-map "charts_points_paths" [:scatter :line :segment :polygon]
-             "charts_series" [:ribbon :smooth :candlestick]
+  (array-map "charts_points_lines" [:scatter :line :segment :polygon :ribbon :candlestick]
              "charts_annotations" [:rule :rect :text :image :function]
-             "charts_bars_ranges" [:bar :extent :bullet]
-             "charts_strip_distributions" [:box :violin :stripplot :beeswarm :dotplot :rug]
-             "charts_distribution_stats" [:histogram :density :ecdf :qq :pp]
-             "charts_grids_fields" [:tile :bin2d :field :contour :correlation :pairwise]
-             "charts_part_of_whole" [:treemap :partition :pack :waffle :venn]
+             "charts_bars" [:bar :bullet]
+             "charts_per_level" [:box :violin :extent :stripplot :beeswarm :dotplot :rug]
+             "charts_one_variable" [:histogram :density :ecdf :qq :pp]
+             "charts_fitted_curves" [:smooth]
+             "charts_bins_fields" [:tile :bin2d :field :contour]
+             "charts_pairwise" [:correlation :pairwise]
+             "charts_shares_sets" [:treemap :partition :pack :waffle :venn]
              "charts_multivariate_3d" [:parallel :cloud :surface]))
 
 (def ^:private builder-chapters
@@ -84,7 +85,7 @@
 
 (def ^:private reference-parts
   "The Reference parts of the book in order (Quarto books have one level of parts: consecutive parts, not nested)."
-  ["Reference: concepts" "Reference: charts" "Reference: builders" "Reference: data functions"])
+  ["Concepts" "Charts" "Builders" "Data functions"])
 
 (defn- reference-paths
   "Paths (relative to `notebooks/`) of the Reference parts' chapters, in order."
@@ -174,16 +175,19 @@
   (testing "the Reference parts - concepts, charts, builders, data functions with specific cases - before Use cases"
     (let [parts (book-parts)
           paths #(map (fn [page] (str "reference/" page ".clj")) %)]
-      (is (= (paths concept-chapters) (parts "Reference: concepts")))
-      (is (= (paths (keys chart-chapters)) (parts "Reference: charts")))
-      (is (= (paths (keys builder-chapters)) (parts "Reference: builders")))
+      (is (= (paths concept-chapters) (parts "Concepts")))
+      (is (= (paths (keys chart-chapters)) (parts "Charts")))
+      (is (= (paths (keys builder-chapters)) (parts "Builders")))
       (is (= (paths (concat (remove #{"labels_text"} (keys data-chapters)) ["specific_cases"]))
-             (parts "Reference: data functions")))
+             (parts "Data functions")))
       (is (= (conj reference-parts "Use cases") (take 5 (:order parts))))))
   (testing "every chapter exists and starts with a heading"
     (doseq [p (reference-paths)]
       (is (.exists (io/file "notebooks" p)) p)
-      (is (re-find #"^;; # \S" (slurp (io/file "notebooks" p))) p))))
+      (is (re-find #"^;; # \S" (slurp (io/file "notebooks" p))) p)))
+  (testing "chapter titles carry no part name: no Reference chapter, no Charts: / Builders: / Data functions: prefix"
+    (doseq [p (reference-paths)]
+      (is (not (re-find #"^;; # (Reference$|Reference\n|Charts: |Builders: |Data functions: )" (slurp (io/file "notebooks" p)))) p))))
 
 (def ^:private schemas-shown-elsewhere
   "Plot-level schemas without a `describe/options` table of their own: the theme (tables per key, `theme-rows`) and the

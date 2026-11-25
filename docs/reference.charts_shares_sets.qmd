@@ -1,0 +1,600 @@
+---
+format:
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 4
+    theme: cosmo
+    include-in-header:
+      text: |-
+        <style>
+        .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
+        .data-table .table-responsive { overflow: visible; }
+        .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
+        .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
+        .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        .options { margin: 0.5rem 0 1rem 0; }
+        .options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+        .options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+        .options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+        .options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .options dd { margin: 0; padding: 0.5rem 0.75rem; }
+        .options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+        .options .option-example code { background: none; padding: 0; }
+        .options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+        .options code, .mapping code { overflow-wrap: anywhere; }
+        .mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+        .mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .mapping ul { margin: 0; padding-left: 1.25rem; }
+        .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        </style>
+code-block-background: true
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
+
+# Shares and sets
+
+Charts of the parts of a whole: nested rectangles (`treemap`), bands or rings (`partition`), nested circles
+(`pack`) and a grid of cells (`waffle`); `venn` shows how sets overlap.
+
+
+::: {.sourceClojure}
+```clojure
+(ns reference.charts-shares-sets
+  (:require [cljplot2.chart :as chart]
+            [cljplot2.core :as plot]
+            [cljplot2.describe :as describe]
+            [notebook-utils :as nu]))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "science" :team "chemistry" :cost 18} {:dept "arts" :team "music" :cost 15}
+             {:dept "arts" :team "theatre" :cost 10} {:dept "arts" :team "painting" :cost 7}
+             {:dept "sport" :team "football" :cost 20} {:dept "sport" :team "tennis" :cost 8}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>science</td><td>chemistry</td><td>18</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr><tr><td>arts</td><td>painting</td><td>7</td></tr><tr><td>sport</td><td>football</td><td>20</td></tr><tr><td>sport</td><td>tennis</td><td>8</td></tr></tbody></table></div>
+```
+
+
+
+## treemap
+
+Each leaf a rectangle of area proportional to its value, nested inside the rectangle of its group; the levels
+come from `:hierarchy`, outer level first.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/treemap)]}
+                   {:width 600 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image0.png)
+:::
+
+
+Its options: the gap inside a group, the cell borders and the layout - near-square cells or slices turning
+direction at each depth:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value for :squarify, :data for :slice-dice</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:gap 8 :stroke-color :black :stroke-width 2})]
+                                   :labels {:title ":gap 8, black borders"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:layout :slice-dice})]
+                                   :labels {:title ":layout :slice-dice"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image1.png)
+:::
+
+
+`:order` sets the siblings' order, as in the partition: by descending value (the default of `:squarify`) or in
+data order (the default of `:slice-dice`) - slices ordered by size make a mosaic read largest first:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:layout :slice-dice :order :value})]
+                                   :labels {:title ":slice-dice, :order :value"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/treemap {:order :data})]
+                                   :labels {:title ":squarify, :order :data"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image2.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+
+
+## partition
+
+The hierarchy as adjacent bands, one per level, each node as wide as its value - an icicle plot; in polar
+coordinates the bands become rings (a sunburst).
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition)]
+                                   :labels {:title "cartesian: icicle"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition)]
+                                   :coord {:kind :polar}
+                                   :labels {:title "polar: sunburst"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image3.png)
+:::
+
+
+Its options: borders, the order of siblings, how nodes are coloured (by their top-level node, lighter by depth,
+or each by its name) and whether the root is drawn. `:order :data` keeps the rows' order - here the budget
+reversed, so sport comes first and the teams go from the cheapest up (by value, the default above, science leads):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr><tr><td>:color-by</td><td>one of :top :name</td><td>:top</td><td>node colours: :top - each top-level node's palette colour, lighter by depth; :name - every node by its name through the color scale</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root too, every level one up</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:order :data :root true})]
+                                   :coord {:kind :polar}
+                                   :labels {:title ":order :data, :root true"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/partition {:color-by :name :stroke-width 2})]
+                                   :coord {:kind :polar}
+                                   :labels {:title ":color-by :name"}
+                                   :legend false}]
+                                 {:columns 2})
+                   {:width 1000 :height 460})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image4.png)
+:::
+
+
+The borders in an icicle: thick dark lines instead of the default thin white ones (the icicle above):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/partition {:stroke-color [40 40 40] :stroke-width 3})]
+                    :labels {:title ":stroke-color, :stroke-width 3"}}
+                   {:width 600 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image5.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+
+
+## pack
+
+Each leaf a circle of area proportional to its value, packed inside the circle of its group.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data budget
+                    :mapping {:hierarchy [:dept :team] :value :cost}
+                    :charts [(chart/pack)]}
+                   {:width 500 :height 450})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image6.png)
+:::
+
+
+Its options: the gap between circles, borders, the packing order, the root circle and the depths left out of the
+drawing (the layout unchanged - here the group circles, depth 1):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap between siblings and between a child and its parent's edge, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>circle outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>packing order of siblings: :value (descending, largest near the centre) or :data</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root circle too</td></tr><tr><td>:hidden-levels</td><td>set of integer (at least 0) or nil</td><td>#{}</td><td>depths (root 0, top level 1) not drawn, the layout unchanged</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:gap 10 :root true :stroke-color :black})]
+                                   :labels {:title ":gap 10, :root true"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:hidden-levels #{1}})]
+                                   :labels {:title ":hidden-levels #{1}"}}]
+                                 {:columns 2})
+                   {:width 1000 :height 480})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image7.png)
+:::
+
+
+The packing order, here of the budget rows reversed (smallest first): siblings by value (largest first) or in
+data order; and wider borders:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :value})]
+                                   :labels {:title ":order :value (default)"}}
+                                  {:data (reverse budget)
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:order :data})]
+                                   :labels {:title ":order :data"}}
+                                  {:data budget
+                                   :mapping {:hierarchy [:dept :team] :value :cost}
+                                   :charts [(chart/pack {:stroke-color [40 40 40] :stroke-width 3})]
+                                   :labels {:title ":stroke-width 3"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image8.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Hierarchy labels](reference.shared_options.html#hierarchy-labels) (`:group-labels` `:leaf-labels`).
+
+
+## waffle
+
+A grid of cells (10 × 10 by default), each category taking a share of the cells proportional to its value.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the category: one colour and a share of the cells per category</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>every row counts 1</td><td>weight per row, a non-negative finite number (other rows are dropped)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern, splitting categories too</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def energy-mix [{:source "coal" :share 35} {:source "gas" :share 23} {:source "nuclear" :share 10}
+                 {:source "hydro" :share 15} {:source "wind and solar" :share 17}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>source</th><th>share</th></tr></thead><tbody><tr><td>coal</td><td>35</td></tr><tr><td>gas</td><td>23</td></tr><tr><td>nuclear</td><td>10</td></tr><tr><td>hydro</td><td>15</td></tr><tr><td>wind and solar</td><td>17</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data energy-mix
+                    :mapping {:color :source :value :share}
+                    :charts [(chart/waffle)]}
+                   {:width 500 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image9.png)
+:::
+
+
+Its options: the cell shape, gap and border; the grid size and fill order; or `:unit` - the value of one cell,
+so the cell count follows the values (here one cell per 2 units, 5 columns wide):
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a finite number, >= 0, < 1</td><td>0.1</td><td>space between cells, a fraction of a cell</td></tr><tr><td>:cell-shape</td><td>one of :square :circle</td><td>:square</td><td>cell shape: :square or :circle</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:rows</td><td>integer (1..10000)</td><td>10</td><td>grid rows (ignored with :unit)</td></tr><tr><td>:columns</td><td>integer (1..10000)</td><td>10</td><td>grid columns</td></tr><tr><td>:unit</td><td>a positive finite number</td><td>none - the categories share the :rows x :columns grid</td><td>the value of one cell: a category gets value / unit cells, the grid :columns wide</td></tr><tr><td>:fill-order</td><td>one of :rows :columns</td><td>:rows</td><td>fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data energy-mix
+                                   :mapping {:color :source :value :share}
+                                   :charts [(chart/waffle {:cell-shape :circle :gap 0.2 :rows 5 :columns 20})]
+                                   :labels {:title ":circle, 5 × 20"}
+                                   :legend false}
+                                  {:data energy-mix
+                                   :mapping {:color :source :value :share}
+                                   :charts [(chart/waffle {:fill-order :columns :stroke-color :white :stroke-width 2
+                                                           :gap 0})]
+                                   :labels {:title ":fill-order :columns"}
+                                   :legend false}
+                                  {:data energy-mix
+                                   :mapping {:color :source :value :share}
+                                   :charts [(chart/waffle {:unit 2 :columns 5})]
+                                   :labels {:title ":unit 2"}}]
+                                 {:columns 3 :widths [1.3 1 1.1]})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image10.png)
+:::
+
+
+Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+
+
+## venn
+
+Two or three sets as overlapping circles, each region labelled with the number of items it holds; a row names
+an item and a set it belongs to.
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:set (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the set a row's item belongs to</td></tr><tr><td>:item (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the item (repeated rows count once)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def memberships (concat (for [i (range 12)] {:club "chess" :member (str "p" i)})
+                         (for [i (range 8 14)] {:club "running" :member (str "p" i)})
+                         (for [i (range 0 24 3)] {:club "choir" :member (str "p" i)})))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>club</th><th>member</th></tr></thead><tbody><tr><td>chess</td><td>p0</td></tr><tr><td>chess</td><td>p1</td></tr><tr><td>chess</td><td>p2</td></tr><tr><td>chess</td><td>p3</td></tr><tr><td>chess</td><td>p4</td></tr><tr><td>chess</td><td>p5</td></tr><tr><td>chess</td><td>p6</td></tr><tr><td>chess</td><td>p7</td></tr><tr><td>chess</td><td>p8</td></tr><tr><td>chess</td><td>p9</td></tr><tr><td>chess</td><td>p10</td></tr><tr><td>chess</td><td>p11</td></tr><tr><td>running</td><td>p8</td></tr><tr><td>running</td><td>p9</td></tr><tr><td>running</td><td>p10</td></tr><tr><td>running</td><td>p11</td></tr><tr><td>running</td><td>p12</td></tr><tr><td>running</td><td>p13</td></tr><tr><td>choir</td><td>p0</td></tr><tr><td>choir</td><td>p3</td></tr><tr><td>choir</td><td>p6</td></tr><tr><td>choir</td><td>p9</td></tr><tr><td>choir</td><td>p12</td></tr><tr><td>choir</td><td>p15</td></tr><tr><td>choir</td><td>p18</td></tr><tr><td>choir</td><td>p21</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data memberships
+                    :mapping {:set :club :item :member}
+                    :charts [(chart/venn)]}
+                   {:width 500 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image11.png)
+:::
+
+
+Its options: the fill and outline, which sets are shown, proportional areas (two sets), and the set and region
+labels - a function of `{:sets :size :share}` writes a region's text:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>circle outline colour: a colour, :none or :darker (the darkened set colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:sets</td><td>vector of any value (at least 1)</td><td>every set, in first-appearance order</td><td>the sets shown (2 or 3), in order</td></tr><tr><td>:proportional</td><td>true or false or nil</td><td>true</td><td>2 sets: circle and overlap areas proportional to the counts (false - equal circles)</td></tr><tr><td>:set-labels</td><td>true or false or nil</td><td>true</td><td>write the set names outside their circles</td></tr><tr><td>:region-labels</td><td>true or false or a function or nil</td><td>true</td><td>region labels: true - the item count, false - none, or a function of {:sets :size :share} returning the text</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:sets ["chess" "running"]})]
+                                   :labels {:title "two sets, proportional"}}
+                                  {:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:sets ["chess" "running"] :proportional false :alpha 0.6
+                                                         :stroke-color :none})]
+                                   :labels {:title ":proportional false"}}
+                                  {:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:region-labels #(format "%.0f%%" (* 100.0 (double (:share %))))})]
+                                   :labels {:title ":region-labels - shares"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image12.png)
+:::
+
+
+Without set names, and with thick outlines in the darkened set colours:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:set-labels false})]
+                                   :labels {:title ":set-labels false"}}
+                                  {:data memberships
+                                   :mapping {:set :club :item :member}
+                                   :charts [(chart/venn {:stroke-width 4})]
+                                   :labels {:title ":stroke-width 4"}}]
+                                 {:columns 2})
+                   {:width 900 :height 380})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image13.png)
+:::
+
+
+The gap between a circle and its set name is a theme key of `[:chart :venn]`, not an option:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-gap</td><td>a non-negative number</td><td>4</td><td>pixels between a circle and its set name (theme only, not an option)</td></tr></tbody></table>
+```
+
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data memberships
+                    :mapping {:set :club :item :member}
+                    :charts [(chart/venn)]
+                    :theme {:chart {:venn {:label-gap 16}}}}
+                   {:width 500 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_shares_sets_files/image14.png)
+:::
+
+
+Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: notebooks/reference/charts_shares_sets.clj</small></small></pre></div>
+```

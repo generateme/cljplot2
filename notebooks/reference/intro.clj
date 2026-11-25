@@ -1,9 +1,9 @@
-;; # Reference
+;; # Overview
 
 ;; The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme,
 ;; every chart, builder and user-facing data function. The tables are generated from the library's validating
-;; schemas, so they name exactly what `plot/build` accepts. Use cases and galleries show the options at work; this
-;; part says what exists.
+;; schemas, so they name exactly what `plot/build` accepts. Use cases and galleries show the options at work; these
+;; four parts say what exists.
 
 (ns reference.intro
   (:require [cljplot2.chart :as chart]
@@ -12,12 +12,18 @@
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
 
-;; ## How the part is organised
+;; ## How the reference is organised
 
 ;; * **Concepts** (this chapter and the next twelve) - rendering, data and mapping, types, aesthetics and legends, scales
 ;;   and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors
 ;;   and what the library doesn't do.
-;; * **Charts** (from [Points and paths](reference.charts_points_paths.html)) - the options of each chart kind.
+;; * **Charts** - the options of each chart kind, grouped by what they show:
+;;   [points, lines and areas](reference.charts_points_lines.html), [annotations](reference.charts_annotations.html),
+;;   [bars](reference.charts_bars.html), [distribution per level](reference.charts_per_level.html),
+;;   [distribution of one variable](reference.charts_one_variable.html),
+;;   [fitted curves](reference.charts_fitted_curves.html), [2D bins and fields](reference.charts_bins_fields.html),
+;;   [pairwise statistics](reference.charts_pairwise.html), [shares and sets](reference.charts_shares_sets.html),
+;;   [multivariate and 3D](reference.charts_multivariate_3d.html).
 ;; * **Builders** (from [Graphs](reference.builders_graphs.html)) - the functions turning rows into whole plots:
 ;;   networks, trees, series.
 ;; * **Data functions** (from [Levels](reference.data_levels.html)) - the user-facing functions preparing rows, and

@@ -1,9 +1,9 @@
-;; # Data functions: sets and series
+;; # Sets and series
 
 ;; Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an
 ;; UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise
-;; statistic. The builders `plot/acf` and `plot/horizon` (Builders: series) draw autocorrelations and horizons
-;; directly, `chart/pairwise` one statistic per panel.
+;; statistic. The [series builders](reference.builders_series.html) `plot/acf` and `plot/horizon` draw
+;; autocorrelations and horizons directly; `chart/pairwise` draws one statistic per panel.
 
 (ns reference.data-sets-series
   (:require [fastmath.core :as m]
@@ -195,7 +195,7 @@
 
 (nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
 
-;; A standalone matrix is a [tile](reference.charts_grids_fields.html#tile) per row (`:value-label` writes the
+;; A standalone matrix is a [tile](reference.charts_bins_fields.html#tile) per row (`:value-label` writes the
 ;; values), two side by side through [`plot/arrange`](reference.facets_arrange.html#arrange). Tiles order the
 ;; categories as they first appear and y grows upward, so the scales give both axes the variable order - the first
 ;; variable on top, as in `plot/pairs`: Cohen's d of every ordered pair, the diagonal included (left; a signed

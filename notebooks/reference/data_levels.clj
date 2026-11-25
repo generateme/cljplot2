@@ -1,4 +1,4 @@
-;; # Data functions: levels
+;; # Levels
 
 ;; Functions turning values into levels before plotting: numbers binned into intervals, numbers or dates read as
 ;; levels, levels ordered by a statistic, rows ranked within each x, and overlapping intervals (shingles) for
@@ -38,7 +38,7 @@
 
 (nu/data-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
 
-;; Bins are levels: counted by a [bar](reference.charts_bars_ranges.html#bar) chart (`:stat :count`), in interval
+;; Bins are levels: counted by a [bar](reference.charts_bars.html#bar) chart (`:stat :count`), in interval
 ;; order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin
 ;; (right):
 

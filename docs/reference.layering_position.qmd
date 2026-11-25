@@ -199,7 +199,7 @@ groups downward:
 
 
 Streamgraphs: the stack shifted around a centre line - `:silhouette` symmetric, `:wiggle` with the least
-movement (lines filled in their colour, [line](reference.charts_points_paths.html#line) `:fill :color`):
+movement (lines filled in their colour, [line](reference.charts_points_lines.html#line) `:fill :color`):
 
 
 ::: {.sourceClojure}

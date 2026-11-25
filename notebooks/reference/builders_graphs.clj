@@ -1,4 +1,4 @@
-;; # Builders: graphs
+;; # Graphs
 
 ;; Builders turn edge rows (or wide rows) into an ordinary plot map: they lay the graph out with the data functions
 ;; of the Graphs and trees chapter and add the charts. Each builder lists its own options; the options it forwards

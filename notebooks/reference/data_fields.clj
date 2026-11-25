@@ -1,4 +1,4 @@
-;; # Data functions: fields
+;; # Fields
 
 ;; Functions turning functions of the plane into something to draw: a colour per pixel of a complex function, the
 ;; level lines of a gridded field, and the rows of a vector field - arrows, traces (streamlines) and points mapped

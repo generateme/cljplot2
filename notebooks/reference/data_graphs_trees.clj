@@ -1,4 +1,4 @@
-;; # Data functions: graphs and trees
+;; # Graphs and trees
 
 ;; Functions turning edges, adjacency matrices, parent links, level columns or clusterings into graphs and trees,
 ;; and laying them out as rows - node positions, edge paths, ring sectors, bands - that ordinary charts draw (the

@@ -811,7 +811,7 @@ In polar coordinates `:flip true` swaps the roles - the vertical scale on angles
 
 
 `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
-points joined in data order, [line](reference.charts_points_paths.html#line) `:order :data`):
+points joined in data order, [line](reference.charts_points_lines.html#line) `:order :data`):
 
 
 ::: {.sourceClojure}

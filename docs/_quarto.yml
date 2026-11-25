@@ -32,16 +32,16 @@ project: {type: book}
 book:
   chapters:
   - index.qmd
-  - part: 'Reference: concepts'
+  - part: Concepts
     chapters: [reference.intro.qmd, reference.render.qmd, reference.data_mapping.qmd, reference.types.qmd, reference.aesthetics_legends.qmd, reference.scales_axes_coords.qmd, reference.layering_position.qmd, reference.labels_text.qmd, reference.facets_arrange.qmd, reference.theme.qmd, reference.shared_options.qmd, reference.errors.qmd, reference.limits.qmd]
-  - part: 'Reference: charts'
-    chapters: [reference.charts_points_paths.qmd, reference.charts_series.qmd, reference.charts_annotations.qmd, reference.charts_bars_ranges.qmd, reference.charts_strip_distributions.qmd, reference.charts_distribution_stats.qmd, reference.charts_grids_fields.qmd, reference.charts_part_of_whole.qmd, reference.charts_multivariate_3d.qmd]
-  - part: 'Reference: builders'
+  - part: Charts
+    chapters: [reference.charts_points_lines.qmd, reference.charts_annotations.qmd, reference.charts_bars.qmd, reference.charts_per_level.qmd, reference.charts_one_variable.qmd, reference.charts_fitted_curves.qmd, reference.charts_bins_fields.qmd, reference.charts_pairwise.qmd, reference.charts_shares_sets.qmd, reference.charts_multivariate_3d.qmd]
+  - part: Builders
     chapters: [reference.builders_graphs.qmd, reference.builders_trees.qmd, reference.builders_series.qmd]
-  - part: 'Reference: data functions'
+  - part: Data functions
     chapters: [reference.data_levels.qmd, reference.data_graphs_trees.qmd, reference.data_sets_series.qmd, reference.data_fields.qmd, reference.specific_cases.qmd]
   - part: Use cases
     chapters: [use_cases.distribution.qmd, use_cases.correlation.qmd, use_cases.ranking.qmd, use_cases.part_of_a_whole.qmd, use_cases.evolution.qmd, use_cases.flow.qmd, use_cases.colors.qmd]
   - part: Galleries
-    chapters: [galleries.cljplot_extras.qmd, galleries.lattice.qmd, galleries.vega.qmd]
+    chapters: [galleries.lattice.qmd, galleries.vega.qmd, galleries.cljplot.qmd]
   title: cljplot2

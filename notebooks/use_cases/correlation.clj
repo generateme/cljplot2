@@ -148,7 +148,7 @@
 
 ;; ### Linear fit with a confidence band
 
-;; [`chart/smooth {:method :lm}`](reference.charts_series.html#smoothing) adds the least-squares line and its 95 % confidence band.
+;; [`chart/smooth {:method :lm}`](reference.charts_fitted_curves.html#smoothing) adds the least-squares line and its 95 % confidence band.
 
 (nu/source-note {:source "R Graph Gallery - Scatterplot with a regression line"
                  :url "https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html"
@@ -266,7 +266,7 @@
 ;; ### Basic heatmap, square and hexagon cells
 
 ;; European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across
-;; columns of different units; the [tile](reference.charts_grids_fields.html#tile) `:cell :pointy-hex` draws the same grid as a honeycomb.
+;; columns of different units; the [tile](reference.charts_bins_fields.html#tile) `:cell :pointy-hex` draws the same grid as a honeycomb.
 
 (def europe (filterv #(= "Europe" (:continent %)) countries))
 
@@ -494,7 +494,7 @@
 ;; ### Connected scatter with dates
 
 ;; Yearly means of US unemployment duration and savings rate, 1990-2014, joined in time order (`:order :data`) by a
-;; smooth path (`:curve :bezier`) ending in an arrowhead (`:arrow`, see [line](reference.charts_points_paths.html#ends));
+;; smooth path (`:curve :bezier`) ending in an arrowhead (`:arrow`, see [line](reference.charts_points_lines.html#ends));
 ;; labels on boxes keep the years readable where the path crosses itself.
 
 (nu/source-note {:source "R Graph Gallery - Connected scatterplot with ggplot2; data-to-viz - Connected scatter"
@@ -521,7 +521,7 @@
 
 ;; ### 2D histogram and hexbin
 
-;; [`chart/bin2d`](reference.charts_grids_fields.html#bin2d) counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
+;; [`chart/bin2d`](reference.charts_bins_fields.html#bin2d) counts points in cells: squares, or hexagons (the default) - regular on screen for the panel's shape.
 
 (nu/source-note {:source "R Graph Gallery - 2D density chart; data-to-viz - 2D density"
                  :url ["https://r-graph-gallery.com/2d-density-chart.html" "https://www.data-to-viz.com/graph/density2d.html"]
@@ -538,8 +538,8 @@
 
 ;; ### 2D kernel density and contours
 
-;; [`chart/field`](reference.charts_grids_fields.html#field) estimates the density (Gaussian kernel, a bandwidth per
-;; axis) and draws it as a raster; [`chart/contour`](reference.charts_grids_fields.html#contour) draws its level lines, or with `:filled true` the bands between them.
+;; [`chart/field`](reference.charts_bins_fields.html#field) estimates the density (Gaussian kernel, a bandwidth per
+;; axis) and draws it as a raster; [`chart/contour`](reference.charts_bins_fields.html#contour) draws its level lines, or with `:filled true` the bands between them.
 
 (nu/source-note {:source "R Graph Gallery - 2D density plot with ggplot2"
                  :url "https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html"

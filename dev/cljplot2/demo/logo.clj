@@ -57,7 +57,7 @@
   "Dark to mid colours only (blue, purple, red, orange): every letter stands out on the light panel."
   [[30 50 140] [120 50 160] [200 40 90] [230 110 20]])
 
-;; The cljplot extras gallery (`notebooks/galleries/cljplot_extras.clj`, section Logo) repeats this recipe - keep the
+;; The cljplot gallery (`notebooks/galleries/cljplot.clj`, section Logo) repeats this recipe - keep the
 ;; two in sync (the gallery's image is pixel-identical to `img/logo.png`).
 (def logo
   {:data (logo-points "cljplot2" 2500 2)

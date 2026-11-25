@@ -61,9 +61,9 @@ wadogo (`1.1.0-alpha2-SNAPSHOT`), all on Clojars.
 
 The book: <https://generateme.github.io/cljplot2/>.
 
-[Reference](https://generateme.github.io/cljplot2/reference.intro.html): concepts (data and mapping, aesthetics and
-legends, scales and coordinates, facets, theme, errors), every chart, builder and data function with its option
-tables and examples.
+The reference, from its [Overview](https://generateme.github.io/cljplot2/reference.intro.html), has four parts:
+Concepts (data and mapping, types, aesthetics and legends, scales and coordinates, facets, theme, errors), Charts
+(ten chapters by what they show), Builders and Data functions - every option with its examples.
 
 Use cases after the
 [R Graph Gallery](https://r-graph-gallery.com/) and [data-to-viz](https://www.data-to-viz.com/):
@@ -78,11 +78,11 @@ Use cases after the
 
 Galleries:
 
-- [cljplot extras](https://generateme.github.io/cljplot2/galleries.cljplot_extras.html) - the examples of the
-  original [cljplot](https://github.com/generateme/cljplot) (Q-Q / P-P, ACF, vector fields, complex functions, ...)
 - [Lattice](https://generateme.github.io/cljplot2/galleries.lattice.html) - the figures of Deepayan Sarkar's
   *Lattice: Multivariate Data Visualization with R*
 - [Vega](https://generateme.github.io/cljplot2/galleries.vega.html) - the examples of the Vega-Lite and Vega galleries
+- [cljplot](https://generateme.github.io/cljplot2/galleries.cljplot.html) - examples of the
+  [original library](https://github.com/generateme/cljplot) (Q-Q / P-P, ACF, vector fields, complex functions, ...)
 
 Every public function has a docstring; namespaces: `cljplot2.core` (build, render, builders), `cljplot2.chart`
 (charts), `cljplot2.data.*` (row and layout functions).

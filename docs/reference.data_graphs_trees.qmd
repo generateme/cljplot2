@@ -42,7 +42,7 @@ code-block-background: true
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
 
-# Data functions: graphs and trees
+# Graphs and trees
 
 Functions turning edges, adjacency matrices, parent links, level columns or clusterings into graphs and trees,
 and laying them out as rows - node positions, edge paths, ring sectors, bands - that ordinary charts draw (the

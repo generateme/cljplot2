@@ -262,7 +262,8 @@ the theme: banned names, and one type family per name across all owners). One na
 
 ## Notebooks, demos, data
 
-- `notebooks/reference/*.clj` (four Reference parts - concepts, charts, builders, data functions - before Use cases;
+- `notebooks/reference/*.clj` (four reference parts - Concepts, Charts, Builders, Data functions - before Use cases;
+  chapter titles name their topic without the part's name; the galleries are lattice, Vega and cljplot;
   Quarto books have one level of parts), `notebooks/use_cases/*.clj` and
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
   only from `nu/options-table` (option cards on migrated pages - see below) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
@@ -271,8 +272,10 @@ the theme: banned names, and one type family per name across all owners). One na
   has a table of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
   `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
   some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
-  class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`). Chart pages (`charts_*.clj`, kinds per
-  page in `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
+  class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`). Chart pages (`charts_*.clj`, ten chapters grouped by what
+  they show: points, lines and areas; annotations; bars; distribution per level; distribution of one variable; fitted
+  curves; 2D bins and fields; pairwise statistics; shares and sets; multivariate and 3D - kinds per page in
+  `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
   below), its mapping table, its own
   options (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by `:cljplot2/section` when
   over 12 rows), each followed by an example, then `nu/shared-groups` (links to the group's `###` heading there);

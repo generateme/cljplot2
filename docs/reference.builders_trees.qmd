@@ -42,7 +42,7 @@ code-block-background: true
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script><script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
 
-# Builders: trees
+# Trees
 
 Builders drawing a tree or using one: a dendrogram of a clustering or a hierarchy, a node-link tree, a heatmap
 ordered by clustering, edges bundled along a tree, and sequences as rings (a flow sunburst). Each takes its data

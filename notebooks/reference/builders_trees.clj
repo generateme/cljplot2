@@ -1,4 +1,4 @@
-;; # Builders: trees
+;; # Trees
 
 ;; Builders drawing a tree or using one: a dendrogram of a clustering or a hierarchy, a node-link tree, a heatmap
 ;; ordered by clustering, edges bundled along a tree, and sequences as rings (a flow sunburst). Each takes its data

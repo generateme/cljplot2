@@ -77,7 +77,7 @@
                    {:width 900 :height 320})
 
 ;; Streamgraphs: the stack shifted around a centre line - `:silhouette` symmetric, `:wiggle` with the least
-;; movement (lines filled in their colour, [line](reference.charts_points_paths.html#line) `:fill :color`):
+;; movement (lines filled in their colour, [line](reference.charts_points_lines.html#line) `:fill :color`):
 
 (def streams (for [series ["a" "b" "c" "d"] t (range 30)]
                {:series series :t t :v (+ 2 (m/sin (+ (* 0.3 t) (count series) (* 1.7 (int (first series))))))}))

@@ -322,7 +322,8 @@ rows. Here one legend beside two rows of plots, its colour bar stretched over bo
 ## Scatter-plot matrix
 
 `plot/pairs` draws a cell for every pair of `:variables` (2 to 20 numeric columns); the cells below, above and on
-the diagonal take any charts. Its variables:
+the diagonal take any charts. By default a scatter plot fills the cells below the diagonal, the correlation as a
+number those above, and a density the diagonal. Its variables:
 
 ::: {.clay-table}
 
@@ -399,6 +400,26 @@ Its cells:
 :::
 
 
+`:lower`, `:upper` and `:diagonal` each take a chart, a vector of charts layered in each cell, or `:none` for empty
+cells:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/pairs mtcars {:variables [:mpg :hp :wt]
+                                       :lower [(chart/scatter {:size 4}) (chart/smooth {:method :lm})]
+                                       :upper :none
+                                       :title "a scatter and a linear fit below, nothing above"})
+                   {:width 600 :height 560})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.facets_arrange_files/image10.png)
+:::
+
+
 The matrix's title, legend column and theme:
 
 ::: {.clay-table}
@@ -430,7 +451,7 @@ row) - here every numeric column of mtcars, with the r colour bar of the shaded 
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image10.png)
+![](reference.facets_arrange_files/image11.png)
 :::
 
 
@@ -463,7 +484,7 @@ dimension. A margin is a chart or a vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image11.png)
+![](reference.facets_arrange_files/image12.png)
 :::
 
 
@@ -491,7 +512,7 @@ dimension. A margin is a chart or a vector of charts ...
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image12.png)
+![](reference.facets_arrange_files/image13.png)
 :::
 
 
@@ -514,7 +535,7 @@ and the panel - and its tick labels keep a gap from the panel axis's labels:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image13.png)
+![](reference.facets_arrange_files/image14.png)
 :::
 
 
@@ -536,7 +557,7 @@ other dimension are - here at the first panel of each row:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image14.png)
+![](reference.facets_arrange_files/image15.png)
 :::
 
 
@@ -558,7 +579,7 @@ range (5 bins per panel here), so its bars span that panel's axis:
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image15.png)
+![](reference.facets_arrange_files/image16.png)
 :::
 
 
@@ -594,7 +615,7 @@ items placed on them - labels (`{:kind :label :text t :role r}`, the role requir
 
 
 ::: {.clay-image}
-![](reference.facets_arrange_files/image16.png)
+![](reference.facets_arrange_files/image17.png)
 :::
 
 

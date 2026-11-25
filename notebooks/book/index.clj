@@ -15,18 +15,19 @@
 ;; ## How this book is organised
 
 ;; * **Reference** - every option of the library in tables generated from its schemas, in four parts:
-;;   * *concepts* - rendering, data and mapping, aesthetics and legends, scales and coordinates, layering, labels,
-;;     facets and multiplots, the theme, shared option groups, errors and limits;
-;;   * *charts* - every chart kind: its mapping, its options and examples;
-;;   * *builders* - graphs, trees and series built into plots;
-;;   * *data functions* - levels, graphs and trees, sets and series, fields, and specific cases.
+;;   * *Concepts* - rendering, data and mapping, types, aesthetics and legends, scales and coordinates, layering,
+;;     labels, facets and multiplots, the theme, shared option groups, errors and limits;
+;;   * *Charts* - every chart kind with its mapping, options and examples, in ten chapters by what they show;
+;;   * *Builders* - graphs, trees and series built into plots;
+;;   * *Data functions* - levels, graphs and trees, sets and series, fields, and specific cases.
 ;; * **Use cases** - one chapter per family of the [R Graph Gallery](https://r-graph-gallery.com/) merged with
 ;;   [From Data to Viz](https://www.data-to-viz.com/): distribution, correlation, ranking, part of a whole,
 ;;   evolution, flow, and colours, in the gallery's order, each family with its variations.
-;; * **Galleries** - figures replicated from other sources: cljplot extras, the
-;;   [lattice book](http://lmdvr.r-forge.r-project.org/figures/figures.html),
+;; * **Galleries** - figures replicated from other sources: the
+;;   [lattice book](http://lmdvr.r-forge.r-project.org/figures/figures.html), the
 ;;   [Vega-Lite](https://vega.github.io/vega-lite/examples/) and [Vega](https://vega.github.io/vega/examples/)
-;;   galleries. Figures are reproduced by content (same data, same idea), not pixel by pixel.
+;;   galleries, and the examples of the original [cljplot](https://github.com/generateme/cljplot). Figures are
+;;   reproduced by content (same data, same idea), not pixel by pixel.
 
 ;; Every example taken from an outside source links to it, and every dataset is credited with its source and
 ;; licence; examples written for this book credit only their data. All code is Clojure written for cljplot2; no
