@@ -9,7 +9,11 @@
         org.scilab.forge/jlatexmath {:mvn/version "1.0.7"
                                      :exclusions [org.scilab.forge/jlatexmath-font-greek
                                                   org.scilab.forge/jlatexmath-font-cyrillic]}}
- :aliases {;; REPL / editor: dev and test sources, demo data and every dev-only dependency
+ :aliases {;; jar, local install and signed Clojars deploy: `clojure -T:build jar | install | deploy | clean`, see build.clj
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.11"}
+                          slipset/deps-deploy {:mvn/version "0.2.2"}}
+                   :ns-default build}
+           ;; REPL / editor: dev and test sources, demo data and every dev-only dependency
            :dev {:extra-paths ["dev" "dev/resources" "test"]
                  :extra-deps {org.clojure/data.json {:mvn/version "2.5.1"}
                               org.clojure/data.csv {:mvn/version "1.1.0"}

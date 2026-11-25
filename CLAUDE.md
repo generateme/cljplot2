@@ -26,7 +26,11 @@ clojure -M:demo                       # every demo image -> results/<demo>/ (the
 clojure -M:demo extras                # one demo
 clojure -M:demo extras/pp-t-500x450.png   # one image
 clojure -M:clay                       # build the book into docs/ (wiped first); `clojure -M:clay serve [port]`
+clojure -T:build jar | install | deploy | clean   # target/ jar; ~/.m2 install; signed Clojars deploy (build.clj)
 ```
+
+Deploy credentials stay outside the repo: `CLOJARS_USERNAME` / `CLOJARS_PASSWORD`, else the `clojars` server of
+`~/.m2/settings.xml`; signing uses gpg's default key. The version is `build/version`.
 
 REPL / scripts: `:dev` (dev + test sources, demo data), add `:notebooks` for notebook work
 (`clojure -M:dev:notebooks -i script.clj`).
