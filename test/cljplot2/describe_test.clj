@@ -22,8 +22,10 @@
       (is (= :common (:fragment (row rows :data))))
       (is (= :strip (:fragment (row rows :place))))
       (is (nil? (:fragment (row rows :measure-fraction)))))
-    (testing "every row has the documented keys"
-      (is (every? #(= #{:key :path :type :required :default :default-doc :description :fragment :section} (set (keys %))) rows)))))
+    (testing "every row has the documented keys (`:example` only when the entry gives one, `:theme-default` only on theme defaults)"
+      (is (every? #(= #{:key :path :type :required :default :default-doc :description :fragment :section :values :forms :other-values}
+                      (set (keys (dissoc % :example :theme-default))))
+                  rows)))))
 
 (deftest schema-rows-test
   (let [s [:map {:closed true}

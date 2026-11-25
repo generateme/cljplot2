@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>5&nbsp; Scales, axes and coordinates – cljplot2</title>
+<title>6&nbsp; Scales, axes and coordinates – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -113,6 +113,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
 .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
 .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+.options { margin: 0.5rem 0 1rem 0; }
+.options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+.options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+.options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+.options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.options dd { margin: 0; padding: 0.5rem 0.75rem; }
+.options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+.options .option-example code { background: none; padding: 0; }
+.options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+.options code, .mapping code { overflow-wrap: anywhere; }
+.mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+.mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+.mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.mapping ul { margin: 0; padding-left: 1.25rem; }
+.mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
 </style>
 
 
@@ -127,7 +142,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -187,56 +202,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./reference.types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Types</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
   </div>
 </li>
       </ul>
@@ -253,55 +274,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
   </div>
 </li>
       </ul>
@@ -318,19 +339,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
   </div>
 </li>
       </ul>
@@ -347,31 +368,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
   </div>
 </li>
       </ul>
@@ -388,43 +409,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -441,19 +462,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
   </div>
 </li>
       </ul>
@@ -468,32 +489,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#kind-and-domain" id="toc-kind-and-domain" class="nav-link active" data-scroll-target="#kind-and-domain"><span class="header-section-number">5.1</span> Kind and domain</a></li>
-  <li><a href="#ticks-and-labels" id="toc-ticks-and-labels" class="nav-link" data-scroll-target="#ticks-and-labels"><span class="header-section-number">5.2</span> Ticks and labels</a></li>
-  <li><a href="#order-and-direction" id="toc-order-and-direction" class="nav-link" data-scroll-target="#order-and-direction"><span class="header-section-number">5.3</span> Order and direction</a></li>
-  <li><a href="#axis" id="toc-axis" class="nav-link" data-scroll-target="#axis"><span class="header-section-number">5.4</span> Axis</a></li>
-  <li><a href="#wadogo-attributes" id="toc-wadogo-attributes" class="nav-link" data-scroll-target="#wadogo-attributes"><span class="header-section-number">5.5</span> wadogo attributes</a></li>
-  <li><a href="#scale-kinds" id="toc-scale-kinds" class="nav-link" data-scroll-target="#scale-kinds"><span class="header-section-number">5.6</span> Scale kinds</a>
+  <li><a href="#kind-and-domain" id="toc-kind-and-domain" class="nav-link active" data-scroll-target="#kind-and-domain"><span class="header-section-number">6.1</span> Kind and domain</a></li>
+  <li><a href="#ticks-and-labels" id="toc-ticks-and-labels" class="nav-link" data-scroll-target="#ticks-and-labels"><span class="header-section-number">6.2</span> Ticks and labels</a></li>
+  <li><a href="#order-and-direction" id="toc-order-and-direction" class="nav-link" data-scroll-target="#order-and-direction"><span class="header-section-number">6.3</span> Order and direction</a></li>
+  <li><a href="#axis" id="toc-axis" class="nav-link" data-scroll-target="#axis"><span class="header-section-number">6.4</span> Axis</a></li>
+  <li><a href="#wadogo-attributes" id="toc-wadogo-attributes" class="nav-link" data-scroll-target="#wadogo-attributes"><span class="header-section-number">6.5</span> wadogo attributes</a></li>
+  <li><a href="#scale-kinds" id="toc-scale-kinds" class="nav-link" data-scroll-target="#scale-kinds"><span class="header-section-number">6.6</span> Scale kinds</a>
   <ul>
-  <li><a href="#linear" id="toc-linear" class="nav-link" data-scroll-target="#linear"><span class="header-section-number">5.6.1</span> Linear</a></li>
-  <li><a href="#log" id="toc-log" class="nav-link" data-scroll-target="#log"><span class="header-section-number">5.6.2</span> Log</a></li>
-  <li><a href="#pow" id="toc-pow" class="nav-link" data-scroll-target="#pow"><span class="header-section-number">5.6.3</span> Pow</a></li>
-  <li><a href="#symlog" id="toc-symlog" class="nav-link" data-scroll-target="#symlog"><span class="header-section-number">5.6.4</span> Symlog</a></li>
-  <li><a href="#bands" id="toc-bands" class="nav-link" data-scroll-target="#bands"><span class="header-section-number">5.6.5</span> Bands</a></li>
-  <li><a href="#datetime" id="toc-datetime" class="nav-link" data-scroll-target="#datetime"><span class="header-section-number">5.6.6</span> Datetime</a></li>
-  <li><a href="#interpolated" id="toc-interpolated" class="nav-link" data-scroll-target="#interpolated"><span class="header-section-number">5.6.7</span> Interpolated</a></li>
-  <li><a href="#radial" id="toc-radial" class="nav-link" data-scroll-target="#radial"><span class="header-section-number">5.6.8</span> Radial</a></li>
+  <li><a href="#linear" id="toc-linear" class="nav-link" data-scroll-target="#linear"><span class="header-section-number">6.6.1</span> Linear</a></li>
+  <li><a href="#log" id="toc-log" class="nav-link" data-scroll-target="#log"><span class="header-section-number">6.6.2</span> Log</a></li>
+  <li><a href="#pow" id="toc-pow" class="nav-link" data-scroll-target="#pow"><span class="header-section-number">6.6.3</span> Pow</a></li>
+  <li><a href="#symlog" id="toc-symlog" class="nav-link" data-scroll-target="#symlog"><span class="header-section-number">6.6.4</span> Symlog</a></li>
+  <li><a href="#bands" id="toc-bands" class="nav-link" data-scroll-target="#bands"><span class="header-section-number">6.6.5</span> Bands</a></li>
+  <li><a href="#datetime" id="toc-datetime" class="nav-link" data-scroll-target="#datetime"><span class="header-section-number">6.6.6</span> Datetime</a></li>
+  <li><a href="#interpolated" id="toc-interpolated" class="nav-link" data-scroll-target="#interpolated"><span class="header-section-number">6.6.7</span> Interpolated</a></li>
+  <li><a href="#radial" id="toc-radial" class="nav-link" data-scroll-target="#radial"><span class="header-section-number">6.6.8</span> Radial</a></li>
   </ul></li>
-  <li><a href="#coordinates" id="toc-coordinates" class="nav-link" data-scroll-target="#coordinates"><span class="header-section-number">5.7</span> Coordinates</a></li>
+  <li><a href="#coordinates" id="toc-coordinates" class="nav-link" data-scroll-target="#coordinates"><span class="header-section-number">6.7</span> Coordinates</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.scales_axes_coords.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></h1>
+<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></h1>
 </div>
 
 
@@ -1300,8 +1321,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="kind-and-domain" class="level2" data-number="5.1">
-<h2 data-number="5.1" class="anchored" data-anchor-id="kind-and-domain"><span class="header-section-number">5.1</span> Kind and domain</h2>
+<section id="kind-and-domain" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="kind-and-domain"><span class="header-section-number">6.1</span> Kind and domain</h2>
 <p>The scale kind (see Scale kinds below) and the data range it covers: the charts’ data extent unless <code>:domain</code> is given - <code>[lo hi]</code> for continuous kinds, the levels in order for <code>:bands</code> - padded (<code>:expand</code>) and extended to nice tick values (<code>:nice</code>). <code>:type :categorical</code> makes numbers levels (left: cylinder counts as three bands); right: fixed domains, x without padding.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1864,8 +1885,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>{<span class="st">"bar"</span> {<span class="at">:x</span> <span class="at">:bands</span>, <span class="at">:y</span> <span class="at">:linear</span>}, <span class="st">"histogram"</span> {<span class="at">:x</span> <span class="at">:linear</span>, <span class="at">:y</span> <span class="at">:linear</span>}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="ticks-and-labels" class="level2" data-number="5.2">
-<h2 data-number="5.2" class="anchored" data-anchor-id="ticks-and-labels"><span class="header-section-number">5.2</span> Ticks and labels</h2>
+<section id="ticks-and-labels" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="ticks-and-labels"><span class="header-section-number">6.2</span> Ticks and labels</h2>
 <p>Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date pattern, <code>:power</code> for powers of ten), minor ticks and the tick algorithm. Minor ticks get grid lines only when the theme draws them (<code>[:panel :grid :minor]</code>, <code>:none</code> by default) - turned on here:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1944,8 +1965,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="order-and-direction" class="level2" data-number="5.3">
-<h2 data-number="5.3" class="anchored" data-anchor-id="order-and-direction"><span class="header-section-number">5.3</span> Order and direction</h2>
+<section id="order-and-direction" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="order-and-direction"><span class="header-section-number">6.3</span> Order and direction</h2>
 <p>The order of bands - by a function of each level’s rows, optionally descending - and the axis direction.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -1999,8 +2020,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image3.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="axis" class="level2" data-number="5.4">
-<h2 data-number="5.4" class="anchored" data-anchor-id="axis"><span class="header-section-number">5.4</span> Axis</h2>
+<section id="axis" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="axis"><span class="header-section-number">6.4</span> Axis</h2>
 <p>What the axis draws (<code>:grid</code> - grid lines only, <code>:no-grid</code> - the axis only, <code>false</code> - nothing), a display-only domain for its ticks, and whether tick labels overlapping a drawn one are dropped (<code>:drop</code>, the default for computed ticks) or all drawn (<code>:keep</code>, the default for an explicit <code>:ticks</code> vector; builders naming data items on an axis, such as dendrogram leaves, set it).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2054,8 +2075,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="wadogo-attributes" class="level2" data-number="5.5">
-<h2 data-number="5.5" class="anchored" data-anchor-id="wadogo-attributes"><span class="header-section-number">5.5</span> wadogo attributes</h2>
+<section id="wadogo-attributes" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="wadogo-attributes"><span class="header-section-number">6.5</span> wadogo attributes</h2>
 <p>Options passed to the <a href="https://github.com/scicloj/wadogo">wadogo</a> scale of the kind; each kind below lists the ones it reads.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2144,11 +2165,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image5.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="scale-kinds" class="level2" data-number="5.6">
-<h2 data-number="5.6" class="anchored" data-anchor-id="scale-kinds"><span class="header-section-number">5.6</span> Scale kinds</h2>
+<section id="scale-kinds" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="scale-kinds"><span class="header-section-number">6.6</span> Scale kinds</h2>
 <p>Each kind below is described by wadogo (<code>wadogo.scale/kind-info</code>). cljplot2 sets a kind’s <code>:domain</code> (the data extent or the spec’s <code>:domain</code>), its <code>:range</code> (the panel’s pixels), ticks and tick format itself - through the options above; the remaining attributes of a kind are the “wadogo:” options.</p>
-<section id="linear" class="level3" data-number="5.6.1">
-<h3 data-number="5.6.1" class="anchored" data-anchor-id="linear"><span class="header-section-number">5.6.1</span> Linear</h3>
+<section id="linear" class="level3" data-number="6.6.1">
+<h3 data-number="6.6.1" class="anchored" data-anchor-id="linear"><span class="header-section-number">6.6.1</span> Linear</h3>
 <p><code>:linear</code> kind: continuous numerical domain mapped linearly to a continuous numerical range (d3 <code>scaleLinear</code>).</p>
 <p>Attributes:</p>
 <ul>
@@ -2171,8 +2192,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image6.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="log" class="level3" data-number="5.6.2">
-<h3 data-number="5.6.2" class="anchored" data-anchor-id="log"><span class="header-section-number">5.6.2</span> Log</h3>
+<section id="log" class="level3" data-number="6.6.2">
+<h3 data-number="6.6.2" class="anchored" data-anchor-id="log"><span class="header-section-number">6.6.2</span> Log</h3>
 <p>Positive values only; <code>:base</code> changes the tick values (here powers of two).</p>
 <p><code>:log</code> kind: logarithmic mapping of a positive or negative numerical domain to a continuous numerical range (d3 <code>scaleLog</code>).</p>
 <p>Attributes:</p>
@@ -2196,8 +2217,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image7.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="pow" class="level3" data-number="5.6.3">
-<h3 data-number="5.6.3" class="anchored" data-anchor-id="pow"><span class="header-section-number">5.6.3</span> Pow</h3>
+<section id="pow" class="level3" data-number="6.6.3">
+<h3 data-number="6.6.3" class="anchored" data-anchor-id="pow"><span class="header-section-number">6.6.3</span> Pow</h3>
 <p><code>:pow</code> kind: power mapping of a continuous numerical domain to a continuous numerical range (d3 <code>scalePow</code>).</p>
 <p>Attributes:</p>
 <ul>
@@ -2217,8 +2238,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="symlog" class="level3" data-number="5.6.4">
-<h3 data-number="5.6.4" class="anchored" data-anchor-id="symlog"><span class="header-section-number">5.6.4</span> Symlog</h3>
+<section id="symlog" class="level3" data-number="6.6.4">
+<h3 data-number="6.6.4" class="anchored" data-anchor-id="symlog"><span class="header-section-number">6.6.4</span> Symlog</h3>
 <p>For data of both signs over many magnitudes. The constant <code>:C</code> isn’t passed through (wadogo’s default 1.0).</p>
 <p><code>:symlog</code> kind: bi-symmetric logarithmic mapping of a continuous numerical domain (any sign, zero included) to a continuous numerical range (d3 <code>scaleSymlog</code>).</p>
 <p>Attributes:</p>
@@ -2241,8 +2262,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="bands" class="level3" data-number="5.6.5">
-<h3 data-number="5.6.5" class="anchored" data-anchor-id="bands"><span class="header-section-number">5.6.5</span> Bands</h3>
+<section id="bands" class="level3" data-number="6.6.5">
+<h3 data-number="6.6.5" class="anchored" data-anchor-id="bands"><span class="header-section-number">6.6.5</span> Bands</h3>
 <p>Levels; the default kind for strings and keywords.</p>
 <p><code>:bands</code> kind: discrete values mapped to evenly distributed bands (intervals) of a continuous numerical range (d3 <code>scaleBand</code>).</p>
 <p>Attributes:</p>
@@ -2275,8 +2296,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image10.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="datetime" class="level3" data-number="5.6.6">
-<h3 data-number="5.6.6" class="anchored" data-anchor-id="datetime"><span class="header-section-number">5.6.6</span> Datetime</h3>
+<section id="datetime" class="level3" data-number="6.6.6">
+<h3 data-number="6.6.6" class="anchored" data-anchor-id="datetime"><span class="header-section-number">6.6.6</span> Datetime</h3>
 <p><code>java.time</code> values; <code>:formatter</code> takes a date pattern.</p>
 <p><code>:datetime</code> kind: a datetime domain mapped linearly to a continuous numerical range (d3 <code>scaleUtc</code>).</p>
 <p>Attributes:</p>
@@ -2300,8 +2321,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image11.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="interpolated" class="level3" data-number="5.6.7">
-<h3 data-number="5.6.7" class="anchored" data-anchor-id="interpolated"><span class="header-section-number">5.6.7</span> Interpolated</h3>
+<section id="interpolated" class="level3" data-number="6.6.7">
+<h3 data-number="6.6.7" class="anchored" data-anchor-id="interpolated"><span class="header-section-number">6.6.7</span> Interpolated</h3>
 <p>A piecewise mapping of the domain values onto evenly spaced (or given) <code>:stops</code> of the panel, through an <code>:interpolator</code>:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2384,8 +2405,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="reference.scales_axes_coords_files/image12.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="radial" class="level3" data-number="5.6.8">
-<h3 data-number="5.6.8" class="anchored" data-anchor-id="radial"><span class="header-section-number">5.6.8</span> Radial</h3>
+<section id="radial" class="level3" data-number="6.6.8">
+<h3 data-number="6.6.8" class="anchored" data-anchor-id="radial"><span class="header-section-number">6.6.8</span> Radial</h3>
 <p>Radii of areas proportional to the values - for polar charts whose bar areas should read as values.</p>
 <p><code>:radial</code> kind: linear mapping of a continuous numerical domain to the squared range, so that the range values are radii of areas proportional to the domain values (d3 <code>scaleRadial</code>).</p>
 <p>Attributes:</p>
@@ -2408,8 +2429,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="coordinates" class="level2" data-number="5.7">
-<h2 data-number="5.7" class="anchored" data-anchor-id="coordinates"><span class="header-section-number">5.7</span> Coordinates</h2>
+<section id="coordinates" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="coordinates"><span class="header-section-number">6.7</span> Coordinates</h2>
 <p><code>:flip true</code> draws <code>:x</code> vertically; scales, labels and theme keys keep their names. <code>:aspect :iso</code> gives both linear axes the same pixels per data unit (the panel shrinks to fit). Polar coordinates map the horizontal scale to angles and the vertical one to radii.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3275,12 +3296,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./reference.aesthetics_legends.html" class="pagination-link" aria-label="Aesthetics and legends">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./reference.layering_position.html" class="pagination-link" aria-label="Layering and position">
-        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Layering and position</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

@@ -6,7 +6,7 @@
 ;; Parts without chapters are left out of the book.
 ["book/index.clj"
  {:part "Reference: concepts" :chapters ["reference/intro.clj" "reference/render.clj" "reference/data_mapping.clj"
-                                "reference/aesthetics_legends.clj" "reference/scales_axes_coords.clj"
+                                "reference/types.clj" "reference/aesthetics_legends.clj" "reference/scales_axes_coords.clj"
                                 "reference/layering_position.clj" "reference/labels_text.clj"
                                 "reference/facets_arrange.clj" "reference/theme.clj" "reference/shared_options.clj"
                                 "reference/errors.clj" "reference/limits.clj"]}

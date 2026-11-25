@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>36&nbsp; Colours – cljplot2</title>
+<title>37&nbsp; Colours – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -113,6 +113,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
 .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
 .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+.options { margin: 0.5rem 0 1rem 0; }
+.options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+.options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+.options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+.options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.options dd { margin: 0; padding: 0.5rem 0.75rem; }
+.options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+.options .option-example code { background: none; padding: 0; }
+.options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+.options code, .mapping code { overflow-wrap: anywhere; }
+.mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+.mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+.mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.mapping ul { margin: 0; padding-left: 1.25rem; }
+.mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
 </style>
 
 
@@ -127,7 +142,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -187,56 +202,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./reference.types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Types</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
   </div>
 </li>
       </ul>
@@ -253,55 +274,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
   </div>
 </li>
       </ul>
@@ -318,19 +339,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
   </div>
 </li>
       </ul>
@@ -347,31 +368,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
   </div>
 </li>
       </ul>
@@ -388,43 +409,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -441,19 +462,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
   </div>
 </li>
       </ul>
@@ -468,39 +489,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#specifying-colours" id="toc-specifying-colours" class="nav-link active" data-scroll-target="#specifying-colours"><span class="header-section-number">36.1</span> Specifying colours</a>
+  <li><a href="#specifying-colours" id="toc-specifying-colours" class="nav-link active" data-scroll-target="#specifying-colours"><span class="header-section-number">37.1</span> Specifying colours</a>
   <ul>
-  <li><a href="#calling-a-colour" id="toc-calling-a-colour" class="nav-link" data-scroll-target="#calling-a-colour"><span class="header-section-number">36.1.1</span> Calling a colour</a></li>
+  <li><a href="#calling-a-colour" id="toc-calling-a-colour" class="nav-link" data-scroll-target="#calling-a-colour"><span class="header-section-number">37.1.1</span> Calling a colour</a></li>
   </ul></li>
-  <li><a href="#palettes" id="toc-palettes" class="nav-link" data-scroll-target="#palettes"><span class="header-section-number">36.2</span> Palettes</a>
+  <li><a href="#palettes" id="toc-palettes" class="nav-link" data-scroll-target="#palettes"><span class="header-section-number">37.2</span> Palettes</a>
   <ul>
-  <li><a href="#palette-types" id="toc-palette-types" class="nav-link" data-scroll-target="#palette-types"><span class="header-section-number">36.2.1</span> Palette types</a></li>
-  <li><a href="#palette-families" id="toc-palette-families" class="nav-link" data-scroll-target="#palette-families"><span class="header-section-number">36.2.2</span> Palette families</a></li>
-  <li><a href="#palette-swatches" id="toc-palette-swatches" class="nav-link" data-scroll-target="#palette-swatches"><span class="header-section-number">36.2.3</span> Palette swatches</a></li>
+  <li><a href="#palette-types" id="toc-palette-types" class="nav-link" data-scroll-target="#palette-types"><span class="header-section-number">37.2.1</span> Palette types</a></li>
+  <li><a href="#palette-families" id="toc-palette-families" class="nav-link" data-scroll-target="#palette-families"><span class="header-section-number">37.2.2</span> Palette families</a></li>
+  <li><a href="#palette-swatches" id="toc-palette-swatches" class="nav-link" data-scroll-target="#palette-swatches"><span class="header-section-number">37.2.3</span> Palette swatches</a></li>
   </ul></li>
-  <li><a href="#discrete-colour-scales" id="toc-discrete-colour-scales" class="nav-link" data-scroll-target="#discrete-colour-scales"><span class="header-section-number">36.3</span> Discrete colour scales</a>
+  <li><a href="#discrete-colour-scales" id="toc-discrete-colour-scales" class="nav-link" data-scroll-target="#discrete-colour-scales"><span class="header-section-number">37.3</span> Discrete colour scales</a>
   <ul>
-  <li><a href="#manual-colours" id="toc-manual-colours" class="nav-link" data-scroll-target="#manual-colours"><span class="header-section-number">36.3.1</span> Manual colours</a></li>
-  <li><a href="#highlighting-a-group" id="toc-highlighting-a-group" class="nav-link" data-scroll-target="#highlighting-a-group"><span class="header-section-number">36.3.2</span> Highlighting a group</a></li>
-  <li><a href="#sequential-palettes-on-categories" id="toc-sequential-palettes-on-categories" class="nav-link" data-scroll-target="#sequential-palettes-on-categories"><span class="header-section-number">36.3.3</span> Sequential palettes on categories</a></li>
+  <li><a href="#manual-colours" id="toc-manual-colours" class="nav-link" data-scroll-target="#manual-colours"><span class="header-section-number">37.3.1</span> Manual colours</a></li>
+  <li><a href="#highlighting-a-group" id="toc-highlighting-a-group" class="nav-link" data-scroll-target="#highlighting-a-group"><span class="header-section-number">37.3.2</span> Highlighting a group</a></li>
+  <li><a href="#sequential-palettes-on-categories" id="toc-sequential-palettes-on-categories" class="nav-link" data-scroll-target="#sequential-palettes-on-categories"><span class="header-section-number">37.3.3</span> Sequential palettes on categories</a></li>
   </ul></li>
-  <li><a href="#continuous-colour-scales" id="toc-continuous-colour-scales" class="nav-link" data-scroll-target="#continuous-colour-scales"><span class="header-section-number">36.4</span> Continuous colour scales</a>
+  <li><a href="#continuous-colour-scales" id="toc-continuous-colour-scales" class="nav-link" data-scroll-target="#continuous-colour-scales"><span class="header-section-number">37.4</span> Continuous colour scales</a>
   <ul>
-  <li><a href="#gradients" id="toc-gradients" class="nav-link" data-scroll-target="#gradients"><span class="header-section-number">36.4.1</span> Gradients</a></li>
-  <li><a href="#diverging-gradient-with-a-midpoint" id="toc-diverging-gradient-with-a-midpoint" class="nav-link" data-scroll-target="#diverging-gradient-with-a-midpoint"><span class="header-section-number">36.4.2</span> Diverging gradient with a midpoint</a></li>
-  <li><a href="#reversing" id="toc-reversing" class="nav-link" data-scroll-target="#reversing"><span class="header-section-number">36.4.3</span> Reversing</a></li>
-  <li><a href="#binned-colours" id="toc-binned-colours" class="nav-link" data-scroll-target="#binned-colours"><span class="header-section-number">36.4.4</span> Binned colours</a></li>
+  <li><a href="#gradients" id="toc-gradients" class="nav-link" data-scroll-target="#gradients"><span class="header-section-number">37.4.1</span> Gradients</a></li>
+  <li><a href="#diverging-gradient-with-a-midpoint" id="toc-diverging-gradient-with-a-midpoint" class="nav-link" data-scroll-target="#diverging-gradient-with-a-midpoint"><span class="header-section-number">37.4.2</span> Diverging gradient with a midpoint</a></li>
+  <li><a href="#reversing" id="toc-reversing" class="nav-link" data-scroll-target="#reversing"><span class="header-section-number">37.4.3</span> Reversing</a></li>
+  <li><a href="#binned-colours" id="toc-binned-colours" class="nav-link" data-scroll-target="#binned-colours"><span class="header-section-number">37.4.4</span> Binned colours</a></li>
   </ul></li>
-  <li><a href="#colour-in-practice" id="toc-colour-in-practice" class="nav-link" data-scroll-target="#colour-in-practice"><span class="header-section-number">36.5</span> Colour in practice</a>
+  <li><a href="#colour-in-practice" id="toc-colour-in-practice" class="nav-link" data-scroll-target="#colour-in-practice"><span class="header-section-number">37.5</span> Colour in practice</a>
   <ul>
-  <li><a href="#missing-values-and-the-theme-palette" id="toc-missing-values-and-the-theme-palette" class="nav-link" data-scroll-target="#missing-values-and-the-theme-palette"><span class="header-section-number">36.5.1</span> Missing values and the theme palette</a></li>
-  <li><a href="#transparency-against-overplotting" id="toc-transparency-against-overplotting" class="nav-link" data-scroll-target="#transparency-against-overplotting"><span class="header-section-number">36.5.2</span> Transparency against overplotting</a></li>
-  <li><a href="#a-line-coloured-by-a-variable" id="toc-a-line-coloured-by-a-variable" class="nav-link" data-scroll-target="#a-line-coloured-by-a-variable"><span class="header-section-number">36.5.3</span> A line coloured by a variable</a></li>
+  <li><a href="#missing-values-and-the-theme-palette" id="toc-missing-values-and-the-theme-palette" class="nav-link" data-scroll-target="#missing-values-and-the-theme-palette"><span class="header-section-number">37.5.1</span> Missing values and the theme palette</a></li>
+  <li><a href="#transparency-against-overplotting" id="toc-transparency-against-overplotting" class="nav-link" data-scroll-target="#transparency-against-overplotting"><span class="header-section-number">37.5.2</span> Transparency against overplotting</a></li>
+  <li><a href="#a-line-coloured-by-a-variable" id="toc-a-line-coloured-by-a-variable" class="nav-link" data-scroll-target="#a-line-coloured-by-a-variable"><span class="header-section-number">37.5.3</span> A line coloured by a variable</a></li>
   </ul></li>
-  <li><a href="#accessibility" id="toc-accessibility" class="nav-link" data-scroll-target="#accessibility"><span class="header-section-number">36.6</span> Accessibility</a>
+  <li><a href="#accessibility" id="toc-accessibility" class="nav-link" data-scroll-target="#accessibility"><span class="header-section-number">37.6</span> Accessibility</a>
   <ul>
-  <li><a href="#colour-blind-preview" id="toc-colour-blind-preview" class="nav-link" data-scroll-target="#colour-blind-preview"><span class="header-section-number">36.6.1</span> Colour-blind preview</a></li>
-  <li><a href="#colour-caveats" id="toc-colour-caveats" class="nav-link" data-scroll-target="#colour-caveats"><span class="header-section-number">36.6.2</span> Colour caveats</a></li>
+  <li><a href="#colour-blind-preview" id="toc-colour-blind-preview" class="nav-link" data-scroll-target="#colour-blind-preview"><span class="header-section-number">37.6.1</span> Colour-blind preview</a></li>
+  <li><a href="#colour-caveats" id="toc-colour-caveats" class="nav-link" data-scroll-target="#colour-caveats"><span class="header-section-number">37.6.2</span> Colour caveats</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -508,9 +529,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.colors.html"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></h1>
+<h1 class="title"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></h1>
 </div>
 
 
@@ -5068,11 +5089,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="specifying-colours" class="level2" data-number="36.1">
-<h2 data-number="36.1" class="anchored" data-anchor-id="specifying-colours"><span class="header-section-number">36.1</span> Specifying colours</h2>
+<section id="specifying-colours" class="level2" data-number="37.1">
+<h2 data-number="37.1" class="anchored" data-anchor-id="specifying-colours"><span class="header-section-number">37.1</span> Specifying colours</h2>
 <p>A colour is a clojure2d colour: a name keyword, a hex string, an RGB vector, or RGBA with alpha in 0-255.</p>
-<section id="calling-a-colour" class="level3" data-number="36.1.1">
-<h3 data-number="36.1.1" class="anchored" data-anchor-id="calling-a-colour"><span class="header-section-number">36.1.1</span> Calling a colour</h3>
+<section id="calling-a-colour" class="level3" data-number="37.1.1">
+<h3 data-number="37.1.1" class="anchored" data-anchor-id="calling-a-colour"><span class="header-section-number">37.1.1</span> Calling a colour</h3>
 <p>Literal rects take a vector of fills, one per interval; the labels are a text chart. <code>:axis false</code> on both scales leaves out axes and grid lines that would mean nothing here.</p>
 <p>Source: R Graph Gallery - Dealing with color in base R; colour names (<a href="https://r-graph-gallery.com/colors.html">1</a>, <a href="https://r-graph-gallery.com/42-colors-names.html">2</a>).</p>
 <div class="sourceClojure">
@@ -5091,11 +5112,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="palettes" class="level2" data-number="36.2">
-<h2 data-number="36.2" class="anchored" data-anchor-id="palettes"><span class="header-section-number">36.2</span> Palettes</h2>
+<section id="palettes" class="level2" data-number="37.2">
+<h2 data-number="37.2" class="anchored" data-anchor-id="palettes"><span class="header-section-number">37.2</span> Palettes</h2>
 <p>Palettes are named lists of colours (<code>plot/palette</code> gives one, <code>plot/find-palette</code> lists the names); gradients are functions of <code>t</code> in <code>[0 1]</code> (<code>plot/gradient</code>, names from <code>plot/find-gradient</code>). A scale’s <code>:range</code> takes either name.</p>
-<section id="palette-types" class="level3" data-number="36.2.1">
-<h3 data-number="36.2.1" class="anchored" data-anchor-id="palette-types"><span class="header-section-number">36.2.1</span> Palette types</h3>
+<section id="palette-types" class="level3" data-number="37.2.1">
+<h3 data-number="37.2.1" class="anchored" data-anchor-id="palette-types"><span class="header-section-number">37.2.1</span> Palette types</h3>
 <p>Qualitative palettes for categories, sequential for ordered values, diverging around a meaningful middle (here the mean mpg, <code>:midpoint</code>). The lightest end of a sequential palette is almost white and nearly disappears against the grey panel - a property of the palette worth knowing when choosing one.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5118,8 +5139,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image1.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="palette-families" class="level3" data-number="36.2.2">
-<h3 data-number="36.2.2" class="anchored" data-anchor-id="palette-families"><span class="header-section-number">36.2.2</span> Palette families</h3>
+<section id="palette-families" class="level3" data-number="37.2.2">
+<h3 data-number="37.2.2" class="anchored" data-anchor-id="palette-families"><span class="header-section-number">37.2.2</span> Palette families</h3>
 <p>The same scatter with a ColorBrewer, viridis, MetBrewer and Tableau palette; <code>plot/find-palette</code> lists palettes by name:</p>
 <p>Source: R Graph Gallery - paletteer, viridis, RColorBrewer (<a href="https://r-graph-gallery.com/package/paletteer.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>, <a href="https://r-graph-gallery.com/38-rcolorbrewers-palettes.html">3</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5154,8 +5175,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>:viridis</code> has 256 colours, so its scale uses <code>:spread true</code> - three colours across the whole palette instead of its first three.</p>
 </section>
-<section id="palette-swatches" class="level3" data-number="36.2.3">
-<h3 data-number="36.2.3" class="anchored" data-anchor-id="palette-swatches"><span class="header-section-number">36.2.3</span> Palette swatches</h3>
+<section id="palette-swatches" class="level3" data-number="37.2.3">
+<h3 data-number="37.2.3" class="anchored" data-anchor-id="palette-swatches"><span class="header-section-number">37.2.3</span> Palette swatches</h3>
 <p>A palette shown as colours: rects with an identity colour scale (the data values are the colours). Every row is resampled to nine colours with <code>(plot/palette p 9)</code>, which also samples a gradient (given as <code>(plot/gradient name)</code>).</p>
 <p>Source: <a href="https://r-graph-gallery.com/color-palette-finder">R Graph Gallery - Color palette finder</a>.</p>
 <div class="sourceClojure">
@@ -5178,11 +5199,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="discrete-colour-scales" class="level2" data-number="36.3">
-<h2 data-number="36.3" class="anchored" data-anchor-id="discrete-colour-scales"><span class="header-section-number">36.3</span> Discrete colour scales</h2>
+<section id="discrete-colour-scales" class="level2" data-number="37.3">
+<h2 data-number="37.3" class="anchored" data-anchor-id="discrete-colour-scales"><span class="header-section-number">37.3</span> Discrete colour scales</h2>
 <p>Categories take palette colours in level order, unless a scale says otherwise.</p>
-<section id="manual-colours" class="level3" data-number="36.3.1">
-<h3 data-number="36.3.1" class="anchored" data-anchor-id="manual-colours"><span class="header-section-number">36.3.1</span> Manual colours</h3>
+<section id="manual-colours" class="level3" data-number="37.3.1">
+<h3 data-number="37.3.1" class="anchored" data-anchor-id="manual-colours"><span class="header-section-number">37.3.1</span> Manual colours</h3>
 <p>A level map as <code>:range</code> gives every level its own colour; a level without one is an error.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5197,8 +5218,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="highlighting-a-group" class="level3" data-number="36.3.2">
-<h3 data-number="36.3.2" class="anchored" data-anchor-id="highlighting-a-group"><span class="header-section-number">36.3.2</span> Highlighting a group</h3>
+<section id="highlighting-a-group" class="level3" data-number="37.3.2">
+<h3 data-number="37.3.2" class="anchored" data-anchor-id="highlighting-a-group"><span class="header-section-number">37.3.2</span> Highlighting a group</h3>
 <p>One group in colour, the others grey. Cylinder counts are numbers, so the scale is declared categorical.</p>
 <p>Source: data-to-viz - The spaghetti plot; don’t use color if it communicates nothing (<a href="https://www.data-to-viz.com/caveat/spaghetti.html">1</a>, <a href="https://www.data-to-viz.com/caveat/color_com_nothing.html">2</a>). Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5213,8 +5234,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image5.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="sequential-palettes-on-categories" class="level3" data-number="36.3.3">
-<h3 data-number="36.3.3" class="anchored" data-anchor-id="sequential-palettes-on-categories"><span class="header-section-number">36.3.3</span> Sequential palettes on categories</h3>
+<section id="sequential-palettes-on-categories" class="level3" data-number="37.3.3">
+<h3 data-number="37.3.3" class="anchored" data-anchor-id="sequential-palettes-on-categories"><span class="header-section-number">37.3.3</span> Sequential palettes on categories</h3>
 <p>A sequential palette has more colours than there are levels: by default the levels take its first colours (all light here, the first nearly invisible on the grey panel); <code>:spread true</code> resamples it across its whole range.</p>
 <p>Source: <a href="https://r-graph-gallery.com/38-rcolorbrewers-palettes.html">R Graph Gallery - RColorBrewer palettes</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -5233,11 +5254,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="continuous-colour-scales" class="level2" data-number="36.4">
-<h2 data-number="36.4" class="anchored" data-anchor-id="continuous-colour-scales"><span class="header-section-number">36.4</span> Continuous colour scales</h2>
+<section id="continuous-colour-scales" class="level2" data-number="37.4">
+<h2 data-number="37.4" class="anchored" data-anchor-id="continuous-colour-scales"><span class="header-section-number">37.4</span> Continuous colour scales</h2>
 <p>Numbers on <code>:color</code> get a gradient and a colour bar.</p>
-<section id="gradients" class="level3" data-number="36.4.1">
-<h3 data-number="36.4.1" class="anchored" data-anchor-id="gradients"><span class="header-section-number">36.4.1</span> Gradients</h3>
+<section id="gradients" class="level3" data-number="37.4.1">
+<h3 data-number="37.4.1" class="anchored" data-anchor-id="gradients"><span class="header-section-number">37.4.1</span> Gradients</h3>
 <p><code>:range</code> takes two colours, several colours, a gradient name or any function of <code>t</code> in <code>[0 1]</code>.</p>
 <p>Source: R Graph Gallery - Dealing with color in ggplot2; viridis (<a href="https://r-graph-gallery.com/ggplot2-color.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>). Data: Earthquakes off Fiji since 1964, R datasets package <code>quakes</code> (Harvard PRIM-H project); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5258,8 +5279,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image7.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="diverging-gradient-with-a-midpoint" class="level3" data-number="36.4.2">
-<h3 data-number="36.4.2" class="anchored" data-anchor-id="diverging-gradient-with-a-midpoint"><span class="header-section-number">36.4.2</span> Diverging gradient with a midpoint</h3>
+<section id="diverging-gradient-with-a-midpoint" class="level3" data-number="37.4.2">
+<h3 data-number="37.4.2" class="anchored" data-anchor-id="diverging-gradient-with-a-midpoint"><span class="header-section-number">37.4.2</span> Diverging gradient with a midpoint</h3>
 <p><code>:midpoint</code> puts a value at the middle of the gradient and scales both sides by the larger distance to it; the colour bar ticks the midpoint. <code>:reverse true</code> turns RdBu around, so high horse power is red.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5275,8 +5296,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="reversing" class="level3" data-number="36.4.3">
-<h3 data-number="36.4.3" class="anchored" data-anchor-id="reversing"><span class="header-section-number">36.4.3</span> Reversing</h3>
+<section id="reversing" class="level3" data-number="37.4.3">
+<h3 data-number="37.4.3" class="anchored" data-anchor-id="reversing"><span class="header-section-number">37.4.3</span> Reversing</h3>
 <p><code>:reverse true</code> turns the colours around: categories keep their order with the colours reversed, a gradient runs the other way.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5297,8 +5318,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="binned-colours" class="level3" data-number="36.4.4">
-<h3 data-number="36.4.4" class="anchored" data-anchor-id="binned-colours"><span class="header-section-number">36.4.4</span> Binned colours</h3>
+<section id="binned-colours" class="level3" data-number="37.4.4">
+<h3 data-number="37.4.4" class="anchored" data-anchor-id="binned-colours"><span class="header-section-number">37.4.4</span> Binned colours</h3>
 <p><code>:kind :binned</code> colours values by bin: a count of equal bins, a breaks vector, or quantile bins (<code>{:quantiles 5}</code>: five bins of about equal counts, an <code>:estimation</code> strategy optional); the colour bar has one block per bin. For a discrete legend of intervals, bin the data with <code>levels/bin</code>, which takes the same <code>:bins</code>.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -6557,10 +6578,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="colour-in-practice" class="level2" data-number="36.5">
-<h2 data-number="36.5" class="anchored" data-anchor-id="colour-in-practice"><span class="header-section-number">36.5</span> Colour in practice</h2>
-<section id="missing-values-and-the-theme-palette" class="level3" data-number="36.5.1">
-<h3 data-number="36.5.1" class="anchored" data-anchor-id="missing-values-and-the-theme-palette"><span class="header-section-number">36.5.1</span> Missing values and the theme palette</h3>
+<section id="colour-in-practice" class="level2" data-number="37.5">
+<h2 data-number="37.5" class="anchored" data-anchor-id="colour-in-practice"><span class="header-section-number">37.5</span> Colour in practice</h2>
+<section id="missing-values-and-the-theme-palette" class="level3" data-number="37.5.1">
+<h3 data-number="37.5.1" class="anchored" data-anchor-id="missing-values-and-the-theme-palette"><span class="header-section-number">37.5.1</span> Missing values and the theme palette</h3>
 <p>A missing value gets the theme’s NA colour and the last legend entry; the theme <code>:palette</code> sets the default colours of every plot (here a MetBrewer palette and a magenta NA).</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7307,8 +7328,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image11.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="transparency-against-overplotting" class="level3" data-number="36.5.2">
-<h3 data-number="36.5.2" class="anchored" data-anchor-id="transparency-against-overplotting"><span class="header-section-number">36.5.2</span> Transparency against overplotting</h3>
+<section id="transparency-against-overplotting" class="level3" data-number="37.5.2">
+<h3 data-number="37.5.2" class="anchored" data-anchor-id="transparency-against-overplotting"><span class="header-section-number">37.5.2</span> Transparency against overplotting</h3>
 <p>With 53,940 diamonds the opaque points hide where most of them are; a colour with a low alpha shows the density.</p>
 <p>Source: <a href="https://www.data-to-viz.com/caveat/overplotting.html">data-to-viz - Overplotting</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -7325,8 +7346,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image12.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="a-line-coloured-by-a-variable" class="level3" data-number="36.5.3">
-<h3 data-number="36.5.3" class="anchored" data-anchor-id="a-line-coloured-by-a-variable"><span class="header-section-number">36.5.3</span> A line coloured by a variable</h3>
+<section id="a-line-coloured-by-a-variable" class="level3" data-number="37.5.3">
+<h3 data-number="37.5.3" class="anchored" data-anchor-id="a-line-coloured-by-a-variable"><span class="header-section-number">37.5.3</span> A line coloured by a variable</h3>
 <p>A linear or binned colour on a line colours it along its length: each segment takes the colour of the mean of its two ends.</p>
 <p>Source: <a href="https://r-graph-gallery.com/ggplot2-color.html">R Graph Gallery - Dealing with color in ggplot2</a>. Data: Weather in Lincoln, Nebraska, 2016, R ggridges package <code>lincoln_weather</code> (Weather Underground, via Wilke); licence: GPL-2 (ggridges).</p>
 <div class="sourceClojure">
@@ -8177,10 +8198,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="accessibility" class="level2" data-number="36.6">
-<h2 data-number="36.6" class="anchored" data-anchor-id="accessibility"><span class="header-section-number">36.6</span> Accessibility</h2>
-<section id="colour-blind-preview" class="level3" data-number="36.6.1">
-<h3 data-number="36.6.1" class="anchored" data-anchor-id="colour-blind-preview"><span class="header-section-number">36.6.1</span> Colour-blind preview</h3>
+<section id="accessibility" class="level2" data-number="37.6">
+<h2 data-number="37.6" class="anchored" data-anchor-id="accessibility"><span class="header-section-number">37.6</span> Accessibility</h2>
+<section id="colour-blind-preview" class="level3" data-number="37.6.1">
+<h3 data-number="37.6.1" class="anchored" data-anchor-id="colour-blind-preview"><span class="header-section-number">37.6.1</span> Colour-blind preview</h3>
 <p>The render option <code>:cvd</code> draws a whole plot as seen with a colour vision deficiency; <code>plot/cvd-image</code> turns an image already rendered. The default palette as most people see it, then with deuteranopia and protanopia (the render option) and tritanopia (<code>plot/cvd-image</code>).</p>
 <p>Source: <a href="https://r-graph-gallery.com/package/viridis.html">R Graph Gallery - viridis (colour-blind friendly maps)</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -8218,8 +8239,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.colors_files/image17.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="colour-caveats" class="level3" data-number="36.6.2">
-<h3 data-number="36.6.2" class="anchored" data-anchor-id="colour-caveats"><span class="header-section-number">36.6.2</span> Colour caveats</h3>
+<section id="colour-caveats" class="level3" data-number="37.6.2">
+<h3 data-number="37.6.2" class="anchored" data-anchor-id="colour-caveats"><span class="header-section-number">37.6.2</span> Colour caveats</h3>
 <p>A rainbow gradient has bright bands that look like edges in the data; viridis changes evenly. Red against green separates categories for most readers but not for deuteranopes: the last panel draws the same colours as a deuteranope sees them (mapped through <code>c/cvd-filter</code>).</p>
 <p>Source: data-to-viz - pitfalls; R Graph Gallery - viridis (<a href="https://www.data-to-viz.com/caveats.html">1</a>, <a href="https://r-graph-gallery.com/package/viridis.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -8656,12 +8677,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./use_cases.flow.html" class="pagination-link" aria-label="Flow">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./galleries.cljplot_extras.html" class="pagination-link" aria-label="cljplot extras">
-        <span class="nav-page-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">cljplot extras</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

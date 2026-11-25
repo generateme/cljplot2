@@ -20,7 +20,7 @@
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
             [cljplot2.theme]
-            [cljplot2.test-util :refer [explicit-defaults pixels same-pixels?]]))
+            [cljplot2.test-util :refer [explicit-defaults migrated pixels same-pixels?]]))
 
 (def chart-constructors
   "Kind -> constructor (var) of every built-in chart."
@@ -183,7 +183,7 @@
          [kind path t])))
 
 (deftest writing-rules-test
-  (let [rows (all-rows)]
+  (let [rows (remove #(contains? migrated (:kind %)) (all-rows))]
     (testing "descriptions"
       (is (= [] (rule-breaks rows :description))))
     (testing "default texts"
@@ -197,7 +197,8 @@
                                    :description)))))
     (testing "a mapped :group reads the same in every chart"
       (is (every? #(str/starts-with? (:description %) "groups without a visual aesthetic")
-                  (filter #(= [:group] (:path %)) (mapcat (comp describe/mapping #(%)) (vals chart-constructors))))))))
+                  (filter #(= [:group] (:path %))
+                          (mapcat (comp describe/mapping #(%)) (vals (apply dissoc chart-constructors migrated)))))))))
 
 ;; fragments
 

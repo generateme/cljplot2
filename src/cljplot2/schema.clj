@@ -7,19 +7,21 @@
 
   Entry properties documenting an option (read by [[cljplot2.describe]], ignored by validation):
 
-  - `:description` - one sentence.
+  - `:description` - one sentence (an owner migrated to option cards: one or two full sentences, see `CLAUDE.md`).
   - `:default` - a constant default of a behaviour option; style options take theme defaults instead.
   - `:cljplot2/default-doc` - the text of a computed default.
+  - `:cljplot2/value-meanings` - meanings of literal values, `{value meaning}` (`nil` too, when it isn't the default; also on an `:enum` schema's properties, shared by its entries); `:cljplot2/form-meanings` - meanings of the other accepted forms, `{form meaning}` (a form is a named type's keyword, e.g. `::function`, or a malli type, e.g. `:vector`); `:cljplot2/other-values` - one meaning for the values without their own (a long list).
+  - `:cljplot2/example` - the option's example value, printed as code (a form such as `'(r/rng :mersenne 7)` for a value that doesn't print).
   - `:cljplot2/fragment` - the shared group of options the entry belongs to, set by [[in-fragment]].
   - `:cljplot2/entries-fragment` - the shared group documenting the entries of the entry's map (one table for many entries, e.g. text roles).
   - `:cljplot2/section` - the slice of a long option table the entry belongs to (a keyword; in one map every user entry has one or none has; nested entries inherit it), see [[in-section]].
   - `:cljplot2/internal` - not a user option (no table row).
 
-  Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides).
+  Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides). Named types also take `:cljplot2/type-name` (a short name) and `:cljplot2/type-meaning` (what it is, with an example) - the documented ones are [[documented-types]]; `:cljplot2/value-set` (the literal values a predicate type accepts) and `:cljplot2/other-types` (the named types of its other values), so its forms can be listed; `:cljplot2/value-meanings` (value meanings shared by every entry of the type).
 
   Functions and vars:
 
-  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
+  - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; [[documented-types]] - the types the book explains; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
   - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]], [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
   - Checking: [[errors]], [[explain!]], [[check-options!]], [[throw-errors!]], [[fail!]] (built by [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly)."
   (:refer-clojure :exclude [accessor])
@@ -47,16 +49,16 @@
   - `type-name` (qualified keyword): the type's name, printed in schema forms.
   - `pred` (function): the predicate a valid value satisfies.
   - `message` (string or function): the error message, or a function of the invalid value returning it.
-  - `type-doc` (string, optional): the type's text in option tables (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]); without it the tables take a string `message` without its leading `should be`.
+  - `doc` (string or map, optional): a string is the type's text in option tables (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]); without it the tables take a string `message` without its leading `should be`. A map holds documenting type properties (see the namespace doc): `:cljplot2/type-doc`, `:cljplot2/type-name`, `:cljplot2/type-meaning`, `:cljplot2/value-set`, `:cljplot2/other-types`, `:cljplot2/value-meanings`.
 
   Returns a malli schema (an `IntoSchema` value) usable in any schema form."
   ([type-name pred message] (named-type type-name pred message nil))
-  ([type-name pred message type-doc]
+  ([type-name pred message doc]
    (malli/-simple-schema {:type type-name :pred pred
-                          :type-properties (cond-> (if (fn? message)
-                                                     {:error/fn (fn [{:keys [value]} _] (message value))}
-                                                     {:error/message message})
-                                             type-doc (assoc :cljplot2/type-doc type-doc))})))
+                          :type-properties (merge (if (fn? message)
+                                                    {:error/fn (fn [{:keys [value]} _] (message value))}
+                                                    {:error/message message})
+                                                  (if (string? doc) {:cljplot2/type-doc doc} doc))})))
 
 (defn- non-neg-number?
   "Tests whether `v` is a number greater than or equal to zero.
@@ -127,51 +129,65 @@
 
 (def non-neg
   "Schema of a non-negative number."
-  (named-type ::non-neg non-neg-number? "should be a non-negative number"))
+  (named-type ::non-neg non-neg-number? "should be a non-negative number"
+              {:cljplot2/type-name "non-negative number" :cljplot2/type-meaning "A number zero or greater, e.g. `0` or `2.5`."}))
 (def pos
   "Schema of a positive number."
-  (named-type ::pos pos-number? "should be a positive number"))
+  (named-type ::pos pos-number? "should be a positive number"
+              {:cljplot2/type-name "positive number" :cljplot2/type-meaning "A number greater than zero, e.g. `0.5`."}))
 (def pos-int
   "Schema of a positive integer."
-  (named-type ::pos-int #(and (integer? %) (m/pos? (long %))) "should be a positive integer"))
+  (named-type ::pos-int #(and (integer? %) (m/pos? (long %))) "should be a positive integer"
+              {:cljplot2/type-name "positive integer" :cljplot2/type-meaning "A whole number from 1 up, e.g. `200`."}))
 (def finite
   "Schema of a finite number, see [[finite?]]."
-  (named-type ::finite finite? "should be a finite number"))
+  (named-type ::finite finite? "should be a finite number"
+              {:cljplot2/type-name "finite number" :cljplot2/type-meaning "A number that is neither infinite nor NaN, e.g. `-3.2`."}))
 (def fraction
   "Schema of a number in `[0 1]`."
-  (named-type ::fraction #(and (number? %) (m/<= 0.0 (double %) 1.0)) "should be a number in [0 1]"))
+  (named-type ::fraction #(and (number? %) (m/<= 0.0 (double %) 1.0)) "should be a number in [0 1]"
+              {:cljplot2/type-name "fraction" :cljplot2/type-meaning "A number from 0 to 1, both ends included, e.g. `0.3`."}))
 (def open-fraction
   "Schema of a number in `(0 1)`, both ends excluded."
-  (named-type ::open-fraction #(and (number? %) (m/< 0.0 (double %) 1.0)) "should be a number in (0 1)"))
+  (named-type ::open-fraction #(and (number? %) (m/< 0.0 (double %) 1.0)) "should be a number in (0 1)"
+              {:cljplot2/type-name "open fraction" :cljplot2/type-meaning "A number strictly between 0 and 1, e.g. `0.95`."}))
 (def finite-pos
   "Schema of a positive finite number."
-  (named-type ::finite-pos #(and (finite? %) (m/pos? (double %))) "should be a positive finite number"))
+  (named-type ::finite-pos #(and (finite? %) (m/pos? (double %))) "should be a positive finite number"
+              {:cljplot2/type-name "positive finite number" :cljplot2/type-meaning "A finite number greater than zero, e.g. `1.5`."}))
 (def finite-non-neg
   "Schema of a non-negative finite number."
-  (named-type ::finite-non-neg #(and (finite? %) (m/not-neg? (double %))) "should be a non-negative finite number"))
+  (named-type ::finite-non-neg #(and (finite? %) (m/not-neg? (double %))) "should be a non-negative finite number"
+              {:cljplot2/type-name "non-negative finite number" :cljplot2/type-meaning "A finite number zero or greater, e.g. `0` or `12`."}))
 (def finite-interval
   "Schema of an interval `[lo hi]` of finite numbers with `lo < hi`."
   (named-type ::finite-interval #(and (vector? %) (m/== 2 (count %)) (every? finite? %) (m/< (double (% 0)) (double (% 1))))
-              "should be [lo hi], finite numbers, lo < hi"))
+              "should be [lo hi], finite numbers, lo < hi"
+              {:cljplot2/type-name "interval" :cljplot2/type-meaning "Two finite numbers `[lo hi]` with `lo` below `hi`, e.g. `[0 10]`."}))
 (def bool
   "Schema of `true` or `false`."
-  (named-type ::boolean boolean? "should be true or false"))
+  (named-type ::boolean boolean? "should be true or false"
+              {:cljplot2/type-name "boolean" :cljplot2/type-meaning "Either `true` or `false`."}))
 (def malli-schema
   "Schema of a value malli accepts as a schema."
-  (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"))
+  (named-type ::malli-schema #(try (some? (malli/schema %)) (catch Exception _ false)) "should be a malli schema"
+              {:cljplot2/type-name "malli schema" :cljplot2/type-meaning "Any value malli accepts as a schema, e.g. `[:int {:min 0}]`."}))
 (def function
   "Schema of a function."
-  (named-type ::function fn? "should be a function"))
+  (named-type ::function fn? "should be a function"
+              {:cljplot2/type-name "function" :cljplot2/type-meaning "A Clojure function; its option says what it takes and returns, e.g. `(fn [x] (* 2 x))`."}))
 (def accessor
   "Schema of a data accessor: a keyword, a function, or a categorical marker of one (see [[cljplot2.data.accessor/categorical?]])."
   (named-type ::accessor #(or (keyword? %) (fn? %)
                                          (and (accessor/categorical? %) (let [a (accessor/unwrap %)] (or (keyword? a) (fn? a)))))
-                          "should be a keyword, a function or a categorical marker of one"))
+                          "should be a keyword, a function or a categorical marker of one"
+                          {:cljplot2/type-name "accessor" :cljplot2/type-meaning "How a value comes from a row: a key such as `:x`, a function of the row such as `#(* 2 (:x %))`, or either wrapped in `levels/categorical` to treat numbers or dates as levels."}))
 
 (def padding
   "Schema of a padding `[lo hi]` of two non-negative numbers."
   (named-type ::padding #(and (vector? %) (m/== 2 (count %)) (every? non-neg-number? %))
-              "should be [lo hi], non-negative numbers"))
+              "should be [lo hi], non-negative numbers"
+              {:cljplot2/type-name "padding" :cljplot2/type-meaning "Two non-negative fractions of the data span `[lo hi]`: the room added at the low and the high end, e.g. `[0.05 0]`."}))
 
 (def dash-styles
   "Named dash styles: name -> dash lengths in pixels (fixed, not scaled by the line width; names after ggplot linetypes). Every pattern shows a gap within 14 pixels (a legend key), so the styles stay apart in legends; `:solid` draws a solid line, as `:none`."
@@ -217,7 +233,9 @@
   (malli/-simple-schema {:type ::dash :pred dash?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (dash-message value))
                                            :cljplot2/type-doc (str ":none, a dash style (" dash-names-text
-                                                                   ") or a sequence of positive numbers")}}))
+                                                                   ") or a sequence of positive numbers")
+                                           :cljplot2/type-name "dash"
+                                           :cljplot2/type-meaning "How a line is dashed: a style name such as `:dashed` or `:dotted`, a vector of dash and gap lengths in pixels such as `[5 3]`, or `:none` (also `:solid`) for a solid line."}}))
 
 (def pattern-styles
   "Named fill patterns: name -> pattern spec (see [[pattern?]]); pixels, fixed. Every pattern shows at least two marks within 14 pixels (a legend key); `:solid` - no pattern (the plain fill)."
@@ -287,7 +305,9 @@
   "Schema of a fill pattern, see [[pattern?]]; a misspelt name gets a spelling suggestion."
   (malli/-simple-schema {:type ::pattern :pred pattern?
                          :type-properties {:error/fn (fn [{:keys [value]} _] (pattern-message value))
-                                           :cljplot2/type-doc (str "a pattern name (" pattern-names-text ") or a pattern map")}}))
+                                           :cljplot2/type-doc (str "a pattern name (" pattern-names-text ") or a pattern map")
+                                           :cljplot2/type-name "fill pattern"
+                                           :cljplot2/type-meaning "A pattern drawn over a filled mark: a name such as `:hatch` or `:dots`, or a map such as `{:kind :lines :angle 45 :spacing 6 :width 1}`."}}))
 
 (def interpolation-methods
   "fastmath `interpolation` methods taking one-dimensional `xs`, `ys` (the 2D grid methods excluded): line curves and `:interpolated` position scales."
@@ -300,7 +320,7 @@
   (named-type ::interpolator #(or (fn? %) (contains? interpolation-methods %))
               (str "should be a function (fn [xs ys & params] f) or a fastmath 1D interpolation method: "
                    (str/join " " (sort interpolation-methods)))
-              "a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)"))
+              {:cljplot2/type-name "interpolator" :cljplot2/type-meaning "A fastmath 1D interpolation method such as `:cubic` or `:monotone`, or a function of the points' `xs` and `ys` (and any parameters) that returns the curve as a function from x to y." :cljplot2/type-doc "a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)"}))
 
 (def ^:private h-aligns
   "Horizontal alignments."
@@ -312,28 +332,33 @@
 (def align
   "Schema of an alignment `[h v]`: `h` one of `:left` `:center` `:right`, `v` one of `:top` `:middle` `:bottom`."
   (named-type ::align #(and (vector? %) (m/== 2 (count %)) (contains? h-aligns (% 0)) (contains? v-aligns (% 1)))
-              "should be [h v], h one of :left :center :right, v one of :top :middle :bottom"))
+              "should be [h v], h one of :left :center :right, v one of :top :middle :bottom"
+              {:cljplot2/type-name "alignment" :cljplot2/type-meaning "A pair `[h v]`: `h` is `:left`, `:center` or `:right` and `v` is `:top`, `:middle` or `:bottom`, e.g. `[:center :middle]`."}))
 
 (def color
   "Schema of a colour or `:none`, see [[color?]]."
-  (named-type ::color color? "should be a clojure2d color or :none"))
+  (named-type ::color color? "should be a clojure2d color or :none"
+              {:cljplot2/type-name "colour" :cljplot2/type-meaning "A solid colour, or `:none` for nothing drawn." :cljplot2/value-set #{:none} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:none "Draws nothing."}}))
 
 (def cvd-deficiency
   "Schema of a clojure2d colour vision deficiency (`clojure2d.color/cvd-filter` arguments): a keyword or `[keyword severity]`."
   (named-type ::cvd-deficiency
               (fn [v] (and (or (keyword? v) (and (vector? v) (m/== 2 (count v)) (keyword? (first v))))
                           (try (some? (if (vector? v) (apply c/cvd-filter v) (c/cvd-filter v))) (catch Exception _ false))))
-              "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"))
+              "should be a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1])"
+              {:cljplot2/type-name "colour vision deficiency" :cljplot2/type-meaning "A simulated deficiency: `:protanopia`, `:deuteranopia`, `:tritanopia` or `:achromatopsia`, or a pair `[kind severity]` of an `-anomaly` kind and a severity from 0 to 1, e.g. `[:deuteranomaly 0.5]`."}))
 (def solid-color
   "Schema of a colour, `:none` excluded, see [[solid-color?]]."
-  (named-type ::solid-color solid-color? "should be a clojure2d color"))
+  (named-type ::solid-color solid-color? "should be a clojure2d color"
+              {:cljplot2/type-name "solid colour" :cljplot2/type-meaning "Any clojure2d colour: a name such as `:steelblue`, a hex string such as `#0072b2`, an integer such as `0x0072b2`, a vector of channels such as `[0 114 178]`, or `(c/color 0 114 178 128)` with an alpha."}))
 (def temporal
   "Schema of a `java.time` value (a date, a date-time, an instant, a time)."
-  (named-type ::temporal #(instance? java.time.temporal.Temporal %) "should be a java.time value" "a java.time value"))
+  (named-type ::temporal #(instance? java.time.temporal.Temporal %) "should be a java.time value"
+              {:cljplot2/type-name "date or time" :cljplot2/type-meaning "A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time.LocalDate/of 2024 1 31)`." :cljplot2/type-doc "a java.time value"}))
 (def text-color
   "Schema of a text colour: a clojure2d colour or `:contrast` - black or white, whichever reads on what's behind the text (see [[cljplot2.graphics.draw/text-color]])."
   (named-type ::text-color #(or (= :contrast %) (solid-color? %)) "should be a clojure2d color or :contrast"
-              "a clojure2d color or :contrast"))
+              {:cljplot2/type-name "text colour" :cljplot2/type-meaning "A solid colour, or `:contrast` for black or white, whichever reads better on the fill behind the text." :cljplot2/type-doc "a clojure2d color or :contrast" :cljplot2/value-set #{:contrast} :cljplot2/other-types [::solid-color] :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on the fill behind the text."}}))
 
 (defn- formats?
   "Tests whether a format string formats a sample value.
@@ -351,13 +376,13 @@
   "Schema of the text format of a number: a `java.lang.String/format` pattern formatting a double (e.g. `%.1f`) or a function of the number giving its text (see [[text-formatter]])."
   (named-type ::number-format #(or (fn? %) (formats? 1.5 %))
               "should be a format string of a number (e.g. \"%.1f\") or a function"
-              "a number format string or a function"))
+              {:cljplot2/type-name "number format" :cljplot2/type-meaning "A format string such as `%.1f` (see `format`), or a function of the number that returns its text." :cljplot2/type-doc "a number format string or a function"}))
 
 (def count-format
   "Schema of the text format of a count: a `java.lang.String/format` pattern formatting a long (e.g. `n=%d`) or a function of the count giving its text (see [[text-formatter]])."
   (named-type ::count-format #(or (fn? %) (formats? 1 %))
               "should be a format string of a count (e.g. \"n=%d\") or a function"
-              "a count format string or a function"))
+              {:cljplot2/type-name "count format" :cljplot2/type-meaning "A format string for a whole number such as `n=%d`, or a function of the count that returns its text." :cljplot2/type-doc "a count format string or a function"}))
 
 (defn text-formatter
   "Gives the function a text format describes.
@@ -370,14 +395,22 @@
   [format-spec]
   (if (string? format-spec) #(format format-spec %) format-spec))
 (def shape
-  "Schema of a point shape: a built-in character, keyword or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
-  (named-type ::shape shape/shape? shape/shape-problem "a shape character, keyword or shape map"))
+  "Schema of a point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
+  (named-type ::shape shape/shape? shape/shape-problem {:cljplot2/type-name "point shape" :cljplot2/type-meaning "A built-in shape character such as `\\o`, or a map `{:path svg-path}`, `{:text string}`, `{:svg source}` or `{:image image}`." :cljplot2/type-doc "a shape character or shape map"}))
 (def font
   "Schema of a font: a bundled, installed or logical font name, or a `java.awt.Font`."
-  (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"))
+  (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"
+              {:cljplot2/type-name "font" :cljplot2/type-meaning "A font name - the bundled `DejaVu Sans Mono`, an installed family or a logical font such as `SansSerif` - or a `java.awt.Font`."}))
 (def font-style
   "Schema of a font style: one of the keys of [[cljplot2.graphics.font/font-styles]]."
   (into [:enum] (sort (keys font/font-styles))))
+
+(def documented-types
+  "The named types the book's Types page explains: type keyword -> schema, each with its `:cljplot2/type-name` and `:cljplot2/type-meaning` (option cards link a form of these types to its explanation)."
+  (into {} (map (fn [s] [(malli/type s) s]))
+        [non-neg pos pos-int finite fraction open-fraction finite-pos finite-non-neg finite-interval bool malli-schema
+         function accessor padding dash pattern interpolator align color cvd-deficiency solid-color temporal text-color
+         number-format count-format shape font]))
 
 (defn optional
   "Creates a map entry that may be absent.

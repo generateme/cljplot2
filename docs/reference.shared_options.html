@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>10&nbsp; Shared options – cljplot2</title>
+<title>11&nbsp; Shared options – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -113,6 +113,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
 .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
 .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+.options { margin: 0.5rem 0 1rem 0; }
+.options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+.options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+.options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+.options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.options dd { margin: 0; padding: 0.5rem 0.75rem; }
+.options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+.options .option-example code { background: none; padding: 0; }
+.options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+.options code, .mapping code { overflow-wrap: anywhere; }
+.mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+.mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+.mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.mapping ul { margin: 0; padding-left: 1.25rem; }
+.mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
 </style>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
@@ -156,7 +171,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -216,56 +231,62 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./reference.types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Types</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
   </div>
 </li>
       </ul>
@@ -282,55 +303,55 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
   </div>
 </li>
       </ul>
@@ -347,19 +368,19 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
   </div>
 </li>
       </ul>
@@ -376,31 +397,31 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
   </div>
 </li>
       </ul>
@@ -417,43 +438,43 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -470,19 +491,19 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
   </div>
 </li>
       </ul>
@@ -497,59 +518,59 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#charts" id="toc-charts" class="nav-link active" data-scroll-target="#charts"><span class="header-section-number">10.1</span> Charts</a>
+  <li><a href="#charts" id="toc-charts" class="nav-link active" data-scroll-target="#charts"><span class="header-section-number">11.1</span> Charts</a>
   <ul>
-  <li><a href="#common-options" id="toc-common-options" class="nav-link" data-scroll-target="#common-options"><span class="header-section-number">10.1.1</span> Common options</a></li>
-  <li><a href="#annotation-options" id="toc-annotation-options" class="nav-link" data-scroll-target="#annotation-options"><span class="header-section-number">10.1.2</span> Annotation options</a></li>
-  <li><a href="#line-style" id="toc-line-style" class="nav-link" data-scroll-target="#line-style"><span class="header-section-number">10.1.3</span> Line style</a></li>
-  <li><a href="#curves" id="toc-curves" class="nav-link" data-scroll-target="#curves"><span class="header-section-number">10.1.4</span> Curves</a></li>
-  <li><a href="#fill-patterns" id="toc-fill-patterns" class="nav-link" data-scroll-target="#fill-patterns"><span class="header-section-number">10.1.5</span> Fill patterns</a></li>
-  <li><a href="#rounded-corners" id="toc-rounded-corners" class="nav-link" data-scroll-target="#rounded-corners"><span class="header-section-number">10.1.6</span> Rounded corners</a></li>
-  <li><a href="#strip-options" id="toc-strip-options" class="nav-link" data-scroll-target="#strip-options"><span class="header-section-number">10.1.7</span> Strip options</a>
+  <li><a href="#common-options" id="toc-common-options" class="nav-link" data-scroll-target="#common-options"><span class="header-section-number">11.1.1</span> Common options</a></li>
+  <li><a href="#annotation-options" id="toc-annotation-options" class="nav-link" data-scroll-target="#annotation-options"><span class="header-section-number">11.1.2</span> Annotation options</a></li>
+  <li><a href="#line-style" id="toc-line-style" class="nav-link" data-scroll-target="#line-style"><span class="header-section-number">11.1.3</span> Line style</a></li>
+  <li><a href="#curves" id="toc-curves" class="nav-link" data-scroll-target="#curves"><span class="header-section-number">11.1.4</span> Curves</a></li>
+  <li><a href="#fill-patterns" id="toc-fill-patterns" class="nav-link" data-scroll-target="#fill-patterns"><span class="header-section-number">11.1.5</span> Fill patterns</a></li>
+  <li><a href="#rounded-corners" id="toc-rounded-corners" class="nav-link" data-scroll-target="#rounded-corners"><span class="header-section-number">11.1.6</span> Rounded corners</a></li>
+  <li><a href="#strip-options" id="toc-strip-options" class="nav-link" data-scroll-target="#strip-options"><span class="header-section-number">11.1.7</span> Strip options</a>
   <ul class="collapse">
-  <li><a href="#placement" id="toc-placement" class="nav-link" data-scroll-target="#placement"><span class="header-section-number">10.1.7.1</span> Placement</a></li>
-  <li><a href="#groups" id="toc-groups" class="nav-link" data-scroll-target="#groups"><span class="header-section-number">10.1.7.2</span> Groups</a></li>
-  <li><a href="#counts" id="toc-counts" class="nav-link" data-scroll-target="#counts"><span class="header-section-number">10.1.7.3</span> Counts</a></li>
+  <li><a href="#placement" id="toc-placement" class="nav-link" data-scroll-target="#placement"><span class="header-section-number">11.1.7.1</span> Placement</a></li>
+  <li><a href="#groups" id="toc-groups" class="nav-link" data-scroll-target="#groups"><span class="header-section-number">11.1.7.2</span> Groups</a></li>
+  <li><a href="#counts" id="toc-counts" class="nav-link" data-scroll-target="#counts"><span class="header-section-number">11.1.7.3</span> Counts</a></li>
   </ul></li>
-  <li><a href="#mirrored-strips" id="toc-mirrored-strips" class="nav-link" data-scroll-target="#mirrored-strips"><span class="header-section-number">10.1.8</span> Mirrored strips</a></li>
-  <li><a href="#ridgelines" id="toc-ridgelines" class="nav-link" data-scroll-target="#ridgelines"><span class="header-section-number">10.1.9</span> Ridgelines</a></li>
-  <li><a href="#cell-style" id="toc-cell-style" class="nav-link" data-scroll-target="#cell-style"><span class="header-section-number">10.1.10</span> Cell style</a></li>
-  <li><a href="#fields" id="toc-fields" class="nav-link" data-scroll-target="#fields"><span class="header-section-number">10.1.11</span> Fields</a>
+  <li><a href="#mirrored-strips" id="toc-mirrored-strips" class="nav-link" data-scroll-target="#mirrored-strips"><span class="header-section-number">11.1.8</span> Mirrored strips</a></li>
+  <li><a href="#ridgelines" id="toc-ridgelines" class="nav-link" data-scroll-target="#ridgelines"><span class="header-section-number">11.1.9</span> Ridgelines</a></li>
+  <li><a href="#cell-style" id="toc-cell-style" class="nav-link" data-scroll-target="#cell-style"><span class="header-section-number">11.1.10</span> Cell style</a></li>
+  <li><a href="#fields" id="toc-fields" class="nav-link" data-scroll-target="#fields"><span class="header-section-number">11.1.11</span> Fields</a>
   <ul class="collapse">
-  <li><a href="#a-function" id="toc-a-function" class="nav-link" data-scroll-target="#a-function"><span class="header-section-number">10.1.11.1</span> A function</a></li>
-  <li><a href="#a-density-estimate" id="toc-a-density-estimate" class="nav-link" data-scroll-target="#a-density-estimate"><span class="header-section-number">10.1.11.2</span> A density estimate</a></li>
-  <li><a href="#the-grid" id="toc-the-grid" class="nav-link" data-scroll-target="#the-grid"><span class="header-section-number">10.1.11.3</span> The grid</a></li>
+  <li><a href="#a-function" id="toc-a-function" class="nav-link" data-scroll-target="#a-function"><span class="header-section-number">11.1.11.1</span> A function</a></li>
+  <li><a href="#a-density-estimate" id="toc-a-density-estimate" class="nav-link" data-scroll-target="#a-density-estimate"><span class="header-section-number">11.1.11.2</span> A density estimate</a></li>
+  <li><a href="#the-grid" id="toc-the-grid" class="nav-link" data-scroll-target="#the-grid"><span class="header-section-number">11.1.11.3</span> The grid</a></li>
   </ul></li>
-  <li><a href="#hierarchy-labels" id="toc-hierarchy-labels" class="nav-link" data-scroll-target="#hierarchy-labels"><span class="header-section-number">10.1.12</span> Hierarchy labels</a></li>
-  <li><a href="#d-frame" id="toc-d-frame" class="nav-link" data-scroll-target="#d-frame"><span class="header-section-number">10.1.13</span> 3D frame</a>
+  <li><a href="#hierarchy-labels" id="toc-hierarchy-labels" class="nav-link" data-scroll-target="#hierarchy-labels"><span class="header-section-number">11.1.12</span> Hierarchy labels</a></li>
+  <li><a href="#d-frame" id="toc-d-frame" class="nav-link" data-scroll-target="#d-frame"><span class="header-section-number">11.1.13</span> 3D frame</a>
   <ul class="collapse">
-  <li><a href="#view" id="toc-view" class="nav-link" data-scroll-target="#view"><span class="header-section-number">10.1.13.1</span> View</a></li>
-  <li><a href="#axes" id="toc-axes" class="nav-link" data-scroll-target="#axes"><span class="header-section-number">10.1.13.2</span> Axes</a></li>
-  <li><a href="#domains" id="toc-domains" class="nav-link" data-scroll-target="#domains"><span class="header-section-number">10.1.13.3</span> Domains</a></li>
+  <li><a href="#view" id="toc-view" class="nav-link" data-scroll-target="#view"><span class="header-section-number">11.1.13.1</span> View</a></li>
+  <li><a href="#axes" id="toc-axes" class="nav-link" data-scroll-target="#axes"><span class="header-section-number">11.1.13.2</span> Axes</a></li>
+  <li><a href="#domains" id="toc-domains" class="nav-link" data-scroll-target="#domains"><span class="header-section-number">11.1.13.3</span> Domains</a></li>
   </ul></li>
-  <li><a href="#d-shading" id="toc-d-shading" class="nav-link" data-scroll-target="#d-shading"><span class="header-section-number">10.1.14</span> 3D shading</a></li>
-  <li><a href="#text-style" id="toc-text-style" class="nav-link" data-scroll-target="#text-style"><span class="header-section-number">10.1.15</span> Text style</a></li>
+  <li><a href="#d-shading" id="toc-d-shading" class="nav-link" data-scroll-target="#d-shading"><span class="header-section-number">11.1.14</span> 3D shading</a></li>
+  <li><a href="#text-style" id="toc-text-style" class="nav-link" data-scroll-target="#text-style"><span class="header-section-number">11.1.15</span> Text style</a></li>
   </ul></li>
-  <li><a href="#builders" id="toc-builders" class="nav-link" data-scroll-target="#builders"><span class="header-section-number">10.2</span> Builders</a>
+  <li><a href="#builders" id="toc-builders" class="nav-link" data-scroll-target="#builders"><span class="header-section-number">11.2</span> Builders</a>
   <ul>
-  <li><a href="#builder-options" id="toc-builder-options" class="nav-link" data-scroll-target="#builder-options"><span class="header-section-number">10.2.1</span> Builder options</a></li>
-  <li><a href="#multiplot-layout" id="toc-multiplot-layout" class="nav-link" data-scroll-target="#multiplot-layout"><span class="header-section-number">10.2.2</span> Multiplot layout</a></li>
+  <li><a href="#builder-options" id="toc-builder-options" class="nav-link" data-scroll-target="#builder-options"><span class="header-section-number">11.2.1</span> Builder options</a></li>
+  <li><a href="#multiplot-layout" id="toc-multiplot-layout" class="nav-link" data-scroll-target="#multiplot-layout"><span class="header-section-number">11.2.2</span> Multiplot layout</a></li>
   </ul></li>
-  <li><a href="#builders-and-data-functions" id="toc-builders-and-data-functions" class="nav-link" data-scroll-target="#builders-and-data-functions"><span class="header-section-number">10.3</span> Builders and data functions</a>
+  <li><a href="#builders-and-data-functions" id="toc-builders-and-data-functions" class="nav-link" data-scroll-target="#builders-and-data-functions"><span class="header-section-number">11.3</span> Builders and data functions</a>
   <ul>
-  <li><a href="#graph" id="toc-graph" class="nav-link" data-scroll-target="#graph"><span class="header-section-number">10.3.1</span> Graph</a></li>
-  <li><a href="#graph-layout" id="toc-graph-layout" class="nav-link" data-scroll-target="#graph-layout"><span class="header-section-number">10.3.2</span> Graph layout</a></li>
-  <li><a href="#chord-layout" id="toc-chord-layout" class="nav-link" data-scroll-target="#chord-layout"><span class="header-section-number">10.3.3</span> Chord layout</a></li>
-  <li><a href="#arc-layout" id="toc-arc-layout" class="nav-link" data-scroll-target="#arc-layout"><span class="header-section-number">10.3.4</span> Arc layout</a></li>
-  <li><a href="#sankey-layout" id="toc-sankey-layout" class="nav-link" data-scroll-target="#sankey-layout"><span class="header-section-number">10.3.5</span> Sankey layout</a></li>
-  <li><a href="#alluvial-graph" id="toc-alluvial-graph" class="nav-link" data-scroll-target="#alluvial-graph"><span class="header-section-number">10.3.6</span> Alluvial graph</a></li>
-  <li><a href="#dendrogram-layout" id="toc-dendrogram-layout" class="nav-link" data-scroll-target="#dendrogram-layout"><span class="header-section-number">10.3.7</span> Dendrogram layout</a></li>
-  <li><a href="#node-link-tree-layout" id="toc-node-link-tree-layout" class="nav-link" data-scroll-target="#node-link-tree-layout"><span class="header-section-number">10.3.8</span> Node-link tree layout</a></li>
-  <li><a href="#edge-bundling" id="toc-edge-bundling" class="nav-link" data-scroll-target="#edge-bundling"><span class="header-section-number">10.3.9</span> Edge bundling</a></li>
-  <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">10.3.10</span> Sequences</a></li>
-  <li><a href="#autocorrelation-rows" id="toc-autocorrelation-rows" class="nav-link" data-scroll-target="#autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</a></li>
-  <li><a href="#horizon-rows" id="toc-horizon-rows" class="nav-link" data-scroll-target="#horizon-rows"><span class="header-section-number">10.3.12</span> Horizon rows</a></li>
-  <li><a href="#named-theme-styles" id="toc-named-theme-styles" class="nav-link" data-scroll-target="#named-theme-styles"><span class="header-section-number">10.3.13</span> Named theme styles</a></li>
+  <li><a href="#graph" id="toc-graph" class="nav-link" data-scroll-target="#graph"><span class="header-section-number">11.3.1</span> Graph</a></li>
+  <li><a href="#graph-layout" id="toc-graph-layout" class="nav-link" data-scroll-target="#graph-layout"><span class="header-section-number">11.3.2</span> Graph layout</a></li>
+  <li><a href="#chord-layout" id="toc-chord-layout" class="nav-link" data-scroll-target="#chord-layout"><span class="header-section-number">11.3.3</span> Chord layout</a></li>
+  <li><a href="#arc-layout" id="toc-arc-layout" class="nav-link" data-scroll-target="#arc-layout"><span class="header-section-number">11.3.4</span> Arc layout</a></li>
+  <li><a href="#sankey-layout" id="toc-sankey-layout" class="nav-link" data-scroll-target="#sankey-layout"><span class="header-section-number">11.3.5</span> Sankey layout</a></li>
+  <li><a href="#alluvial-graph" id="toc-alluvial-graph" class="nav-link" data-scroll-target="#alluvial-graph"><span class="header-section-number">11.3.6</span> Alluvial graph</a></li>
+  <li><a href="#dendrogram-layout" id="toc-dendrogram-layout" class="nav-link" data-scroll-target="#dendrogram-layout"><span class="header-section-number">11.3.7</span> Dendrogram layout</a></li>
+  <li><a href="#node-link-tree-layout" id="toc-node-link-tree-layout" class="nav-link" data-scroll-target="#node-link-tree-layout"><span class="header-section-number">11.3.8</span> Node-link tree layout</a></li>
+  <li><a href="#edge-bundling" id="toc-edge-bundling" class="nav-link" data-scroll-target="#edge-bundling"><span class="header-section-number">11.3.9</span> Edge bundling</a></li>
+  <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">11.3.10</span> Sequences</a></li>
+  <li><a href="#autocorrelation-rows" id="toc-autocorrelation-rows" class="nav-link" data-scroll-target="#autocorrelation-rows"><span class="header-section-number">11.3.11</span> Autocorrelation rows</a></li>
+  <li><a href="#horizon-rows" id="toc-horizon-rows" class="nav-link" data-scroll-target="#horizon-rows"><span class="header-section-number">11.3.12</span> Horizon rows</a></li>
+  <li><a href="#named-theme-styles" id="toc-named-theme-styles" class="nav-link" data-scroll-target="#named-theme-styles"><span class="header-section-number">11.3.13</span> Named theme styles</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -557,9 +578,9 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.intro.html">Reference: concepts</a></li><li class="breadcrumb-item"><a href="./reference.shared_options.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></h1>
+<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></h1>
 </div>
 
 
@@ -1969,10 +1990,10 @@ window.Quarto = {
 </table>
 </div>
 </div>
-<section id="charts" class="level2" data-number="10.1">
-<h2 data-number="10.1" class="anchored" data-anchor-id="charts"><span class="header-section-number">10.1</span> Charts</h2>
-<section id="common-options" class="level3" data-number="10.1.1">
-<h3 data-number="10.1.1" class="anchored" data-anchor-id="common-options"><span class="header-section-number">10.1.1</span> Common options</h3>
+<section id="charts" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="charts"><span class="header-section-number">11.1</span> Charts</h2>
+<section id="common-options" class="level3" data-number="11.1.1">
+<h3 data-number="11.1.1" class="anchored" data-anchor-id="common-options"><span class="header-section-number">11.1.1</span> Common options</h3>
 <p>Every chart may read its own rows and merge its own mapping over the plot’s - e.g.&nbsp;a reference curve beside the data (Data and mapping chapter) - and leave its key glyph out of the legends.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2032,8 +2053,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image1.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="annotation-options" class="level3" data-number="10.1.2">
-<h3 data-number="10.1.2" class="anchored" data-anchor-id="annotation-options"><span class="header-section-number">10.1.2</span> Annotation options</h3>
+<section id="annotation-options" class="level3" data-number="11.1.2">
+<h3 data-number="11.1.2" class="anchored" data-anchor-id="annotation-options"><span class="header-section-number">11.1.2</span> Annotation options</h3>
 <p>The rule, rect and text charts mark literal positions. By default their positions count for the scales (the axis reaches them); <code>:extent false</code> leaves them out - the rule at y = 2 is then off the panel (right).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2070,8 +2091,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="line-style" class="level3" data-number="10.1.3">
-<h3 data-number="10.1.3" class="anchored" data-anchor-id="line-style"><span class="header-section-number">10.1.3</span> Line style</h3>
+<section id="line-style" class="level3" data-number="11.1.3">
+<h3 data-number="11.1.3" class="anchored" data-anchor-id="line-style"><span class="header-section-number">11.1.3</span> Line style</h3>
 <p>Colour, width and dash of the lines of line-like charts (line, rule, segment, smooth, density, ecdf …); a mapped aesthetic wins over the fixed value.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2129,8 +2150,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="curves" class="level3" data-number="10.1.4">
-<h3 data-number="10.1.4" class="anchored" data-anchor-id="curves"><span class="header-section-number">10.1.4</span> Curves</h3>
+<section id="curves" class="level3" data-number="11.1.4">
+<h3 data-number="11.1.4" class="anchored" data-anchor-id="curves"><span class="header-section-number">11.1.4</span> Curves</h3>
 <p>The line between data points of lines and ribbons: straight, a fastmath interpolation or a step, sampled for drawing.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2280,8 +2301,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="fill-patterns" class="level3" data-number="10.1.5">
-<h3 data-number="10.1.5" class="anchored" data-anchor-id="fill-patterns"><span class="header-section-number">10.1.5</span> Fill patterns</h3>
+<section id="fill-patterns" class="level3" data-number="11.1.5">
+<h3 data-number="11.1.5" class="anchored" data-anchor-id="fill-patterns"><span class="header-section-number">11.1.5</span> Fill patterns</h3>
 <p>A pattern drawn over filled marks (bars, areas, boxes, tiles of hierarchies …), in its own colour.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2322,8 +2343,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="rounded-corners" class="level3" data-number="10.1.6">
-<h3 data-number="10.1.6" class="anchored" data-anchor-id="rounded-corners"><span class="header-section-number">10.1.6</span> Rounded corners</h3>
+<section id="rounded-corners" class="level3" data-number="11.1.6">
+<h3 data-number="11.1.6" class="anchored" data-anchor-id="rounded-corners"><span class="header-section-number">11.1.6</span> Rounded corners</h3>
 <p>Rounded bar corners: all of them, or only the end away from the baseline.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2363,11 +2384,11 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image10.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="strip-options" class="level3" data-number="10.1.7">
-<h3 data-number="10.1.7" class="anchored" data-anchor-id="strip-options"><span class="header-section-number">10.1.7</span> Strip options</h3>
+<section id="strip-options" class="level3" data-number="11.1.7">
+<h3 data-number="11.1.7" class="anchored" data-anchor-id="strip-options"><span class="header-section-number">11.1.7</span> Strip options</h3>
 <p>Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a categorical axis.</p>
-<section id="placement" class="level4" data-number="10.1.7.1">
-<h4 data-number="10.1.7.1" class="anchored" data-anchor-id="placement"><span class="header-section-number">10.1.7.1</span> Placement</h4>
+<section id="placement" class="level4" data-number="11.1.7.1">
+<h4 data-number="11.1.7.1" class="anchored" data-anchor-id="placement"><span class="header-section-number">11.1.7.1</span> Placement</h4>
 <p>Where the items sit across the value axis, how wide, and which axis holds the levels:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2450,8 +2471,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image13.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="groups" class="level4" data-number="10.1.7.2">
-<h4 data-number="10.1.7.2" class="anchored" data-anchor-id="groups"><span class="header-section-number">10.1.7.2</span> Groups</h4>
+<section id="groups" class="level4" data-number="11.1.7.2">
+<h4 data-number="11.1.7.2" class="anchored" data-anchor-id="groups"><span class="header-section-number">11.1.7.2</span> Groups</h4>
 <p>Groups of one level share its band: side by side (<code>:dodge</code>, with a gap), on top of each other, or one half each (<code>:mirror</code>).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2491,8 +2512,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image14.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="counts" class="level4" data-number="10.1.7.3">
-<h4 data-number="10.1.7.3" class="anchored" data-anchor-id="counts"><span class="header-section-number">10.1.7.3</span> Counts</h4>
+<section id="counts" class="level4" data-number="11.1.7.3">
+<h4 data-number="11.1.7.3" class="anchored" data-anchor-id="counts"><span class="header-section-number">11.1.7.3</span> Counts</h4>
 <p>Each item’s row count written past its largest value.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2533,8 +2554,8 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="mirrored-strips" class="level3" data-number="10.1.8">
-<h3 data-number="10.1.8" class="anchored" data-anchor-id="mirrored-strips"><span class="header-section-number">10.1.8</span> Mirrored strips</h3>
+<section id="mirrored-strips" class="level3" data-number="11.1.8">
+<h3 data-number="11.1.8" class="anchored" data-anchor-id="mirrored-strips"><span class="header-section-number">11.1.8</span> Mirrored strips</h3>
 <p>Two groups on the two sides of the value axis, e.g.&nbsp;a population pyramid.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2586,8 +2607,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image17.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="ridgelines" class="level3" data-number="10.1.9">
-<h3 data-number="10.1.9" class="anchored" data-anchor-id="ridgelines"><span class="header-section-number">10.1.9</span> Ridgelines</h3>
+<section id="ridgelines" class="level3" data-number="11.1.9">
+<h3 data-number="11.1.9" class="anchored" data-anchor-id="ridgelines"><span class="header-section-number">11.1.9</span> Ridgelines</h3>
 <p>Histograms and densities over a categorical axis - one row per level, overlapping by <code>:overlap</code> rows.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2623,8 +2644,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image18.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="cell-style" class="level3" data-number="10.1.10">
-<h3 data-number="10.1.10" class="anchored" data-anchor-id="cell-style"><span class="header-section-number">10.1.10</span> Cell style</h3>
+<section id="cell-style" class="level3" data-number="11.1.10">
+<h3 data-number="11.1.10" class="anchored" data-anchor-id="cell-style"><span class="header-section-number">11.1.10</span> Cell style</h3>
 <p>The cell shape and outline of grid-cell charts (tile, bin2d): any fastmath grid type, scaled. Every cell type binning the same points:</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2686,11 +2707,11 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image19.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="fields" class="level3" data-number="10.1.11">
-<h3 data-number="10.1.11" class="anchored" data-anchor-id="fields"><span class="header-section-number">10.1.11</span> Fields</h3>
+<section id="fields" class="level3" data-number="11.1.11">
+<h3 data-number="11.1.11" class="anchored" data-anchor-id="fields"><span class="header-section-number">11.1.11</span> Fields</h3>
 <p>Raster and contour charts draw a scalar field.</p>
-<section id="a-function" class="level4" data-number="10.1.11.1">
-<h4 data-number="10.1.11.1" class="anchored" data-anchor-id="a-function"><span class="header-section-number">10.1.11.1</span> A function</h4>
+<section id="a-function" class="level4" data-number="11.1.11.1">
+<h4 data-number="11.1.11.1" class="anchored" data-anchor-id="a-function"><span class="header-section-number">11.1.11.1</span> A function</h4>
 <p>The field as a function of a point over a domain …</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2745,8 +2766,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image20.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="a-density-estimate" class="level4" data-number="10.1.11.2">
-<h4 data-number="10.1.11.2" class="anchored" data-anchor-id="a-density-estimate"><span class="header-section-number">10.1.11.2</span> A density estimate</h4>
+<section id="a-density-estimate" class="level4" data-number="11.1.11.2">
+<h4 data-number="11.1.11.2" class="anchored" data-anchor-id="a-density-estimate"><span class="header-section-number">11.1.11.2</span> A density estimate</h4>
 <p>… or the kernel density estimate of mapped points …</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2798,8 +2819,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image21.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="the-grid" class="level4" data-number="10.1.11.3">
-<h4 data-number="10.1.11.3" class="anchored" data-anchor-id="the-grid"><span class="header-section-number">10.1.11.3</span> The grid</h4>
+<section id="the-grid" class="level4" data-number="11.1.11.3">
+<h4 data-number="11.1.11.3" class="anchored" data-anchor-id="the-grid"><span class="header-section-number">11.1.11.3</span> The grid</h4>
 <p>… sampled on a grid of <code>:n</code> points per axis (interpolating gridded data with <code>:interpolation</code>).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2838,8 +2859,8 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="hierarchy-labels" class="level3" data-number="10.1.12">
-<h3 data-number="10.1.12" class="anchored" data-anchor-id="hierarchy-labels"><span class="header-section-number">10.1.12</span> Hierarchy labels</h3>
+<section id="hierarchy-labels" class="level3" data-number="11.1.12">
+<h3 data-number="11.1.12" class="anchored" data-anchor-id="hierarchy-labels"><span class="header-section-number">11.1.12</span> Hierarchy labels</h3>
 <p>Group and leaf labels of treemaps, partitions and circle packings: off, on, or a function writing them.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2924,11 +2945,11 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image23.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="d-frame" class="level3" data-number="10.1.13">
-<h3 data-number="10.1.13" class="anchored" data-anchor-id="d-frame"><span class="header-section-number">10.1.13</span> 3D frame</h3>
+<section id="d-frame" class="level3" data-number="11.1.13">
+<h3 data-number="11.1.13" class="anchored" data-anchor-id="d-frame"><span class="header-section-number">11.1.13</span> 3D frame</h3>
 <p>3D charts (cloud, surface) draw their data in a box seen in perspective.</p>
-<section id="view" class="level4" data-number="10.1.13.1">
-<h4 data-number="10.1.13.1" class="anchored" data-anchor-id="view"><span class="header-section-number">10.1.13.1</span> View</h4>
+<section id="view" class="level4" data-number="11.1.13.1">
+<h4 data-number="11.1.13.1" class="anchored" data-anchor-id="view"><span class="header-section-number">11.1.13.1</span> View</h4>
 <p>The eye sits at an azimuth and elevation, at a perspective distance; the box has proportions and may mirror axes.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -2999,8 +3020,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image24.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="axes" class="level4" data-number="10.1.13.2">
-<h4 data-number="10.1.13.2" class="anchored" data-anchor-id="axes"><span class="header-section-number">10.1.13.2</span> Axes</h4>
+<section id="axes" class="level4" data-number="11.1.13.2">
+<h4 data-number="11.1.13.2" class="anchored" data-anchor-id="axes"><span class="header-section-number">11.1.13.2</span> Axes</h4>
 <p>The box, the ticks and the axis titles.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3071,8 +3092,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image25.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="domains" class="level4" data-number="10.1.13.3">
-<h4 data-number="10.1.13.3" class="anchored" data-anchor-id="domains"><span class="header-section-number">10.1.13.3</span> Domains</h4>
+<section id="domains" class="level4" data-number="11.1.13.3">
+<h4 data-number="11.1.13.3" class="anchored" data-anchor-id="domains"><span class="header-section-number">11.1.13.3</span> Domains</h4>
 <p>Explicit domains - needed when several 3D charts share a plot.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3130,8 +3151,8 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="d-shading" class="level3" data-number="10.1.14">
-<h3 data-number="10.1.14" class="anchored" data-anchor-id="d-shading"><span class="header-section-number">10.1.14</span> 3D shading</h3>
+<section id="d-shading" class="level3" data-number="11.1.14">
+<h3 data-number="11.1.14" class="anchored" data-anchor-id="d-shading"><span class="header-section-number">11.1.14</span> 3D shading</h3>
 <p>Shaded 3D faces (surface quads, cloud bars) are lit by Lambert’s law: an ambient share of the colour plus the rest by the face’s angle to the light, whose direction is given in view coordinates (x right, y up, z away from the eye).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3177,8 +3198,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image27.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="text-style" class="level3" data-number="10.1.15">
-<h3 data-number="10.1.15" class="anchored" data-anchor-id="text-style"><span class="header-section-number">10.1.15</span> Text style</h3>
+<section id="text-style" class="level3" data-number="11.1.15">
+<h3 data-number="11.1.15" class="anchored" data-anchor-id="text-style"><span class="header-section-number">11.1.15</span> Text style</h3>
 <p>Font, size, colour, padding, alignment and background of the <code>text</code> chart - also the style of every theme text role (Theme chapter).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3257,10 +3278,10 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="builders" class="level2" data-number="10.2">
-<h2 data-number="10.2" class="anchored" data-anchor-id="builders"><span class="header-section-number">10.2</span> Builders</h2>
-<section id="builder-options" class="level3" data-number="10.2.1">
-<h3 data-number="10.2.1" class="anchored" data-anchor-id="builder-options"><span class="header-section-number">10.2.1</span> Builder options</h3>
+<section id="builders" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="builders"><span class="header-section-number">11.2</span> Builders</h2>
+<section id="builder-options" class="level3" data-number="11.2.1">
+<h3 data-number="11.2.1" class="anchored" data-anchor-id="builder-options"><span class="header-section-number">11.2.1</span> Builder options</h3>
 <p>Title, scales and theme of the plot a builder returns.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3348,8 +3369,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image29.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="multiplot-layout" class="level3" data-number="10.2.2">
-<h3 data-number="10.2.2" class="anchored" data-anchor-id="multiplot-layout"><span class="header-section-number">10.2.2</span> Multiplot layout</h3>
+<section id="multiplot-layout" class="level3" data-number="11.2.2">
+<h3 data-number="11.2.2" class="anchored" data-anchor-id="multiplot-layout"><span class="header-section-number">11.2.2</span> Multiplot layout</h3>
 <p>The grid of <code>plot/arrange</code> (and of a plot’s <code>:arrange</code>): shape, weights, panel alignment.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3426,11 +3447,11 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="builders-and-data-functions" class="level2" data-number="10.3">
-<h2 data-number="10.3" class="anchored" data-anchor-id="builders-and-data-functions"><span class="header-section-number">10.3</span> Builders and data functions</h2>
+<section id="builders-and-data-functions" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="builders-and-data-functions"><span class="header-section-number">11.3</span> Builders and data functions</h2>
 <p>The options a builder forwards to the data function computing its layout; the function takes them directly too.</p>
-<section id="graph" class="level3" data-number="10.3.1">
-<h3 data-number="10.3.1" class="anchored" data-anchor-id="graph"><span class="header-section-number">10.3.1</span> Graph</h3>
+<section id="graph" class="level3" data-number="11.3.1">
+<h3 data-number="11.3.1" class="anchored" data-anchor-id="graph"><span class="header-section-number">11.3.1</span> Graph</h3>
 <p>The edge rows’ ends, weight and node ids, optional node rows, directedness. A directed <a href="reference.builders_graphs.html#network">network</a> with node labels (<code>:labels</code>) and a seeded layout (<code>:rng</code>):</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3530,8 +3551,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image31.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="graph-layout" class="level3" data-number="10.3.2">
-<h3 data-number="10.3.2" class="anchored" data-anchor-id="graph-layout"><span class="header-section-number">10.3.2</span> Graph layout</h3>
+<section id="graph-layout" class="level3" data-number="11.3.2">
+<h3 data-number="11.3.2" class="anchored" data-anchor-id="graph-layout"><span class="header-section-number">11.3.2</span> Graph layout</h3>
 <p>Node positions of a network: force-directed, a circle, or random.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3580,8 +3601,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image32.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="chord-layout" class="level3" data-number="10.3.3">
-<h3 data-number="10.3.3" class="anchored" data-anchor-id="chord-layout"><span class="header-section-number">10.3.3</span> Chord layout</h3>
+<section id="chord-layout" class="level3" data-number="11.3.3">
+<h3 data-number="11.3.3" class="anchored" data-anchor-id="chord-layout"><span class="header-section-number">11.3.3</span> Chord layout</h3>
 <p>Node order, gaps between sectors, the ring’s inner radius and the smallest drawn flow.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3630,8 +3651,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image33.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="arc-layout" class="level3" data-number="10.3.4">
-<h3 data-number="10.3.4" class="anchored" data-anchor-id="arc-layout"><span class="header-section-number">10.3.4</span> Arc layout</h3>
+<section id="arc-layout" class="level3" data-number="11.3.4">
+<h3 data-number="11.3.4" class="anchored" data-anchor-id="arc-layout"><span class="header-section-number">11.3.4</span> Arc layout</h3>
 <p>Node order along the line.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3662,8 +3683,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image34.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="sankey-layout" class="level3" data-number="10.3.5">
-<h3 data-number="10.3.5" class="anchored" data-anchor-id="sankey-layout"><span class="header-section-number">10.3.5</span> Sankey layout</h3>
+<section id="sankey-layout" class="level3" data-number="11.3.5">
+<h3 data-number="11.3.5" class="anchored" data-anchor-id="sankey-layout"><span class="header-section-number">11.3.5</span> Sankey layout</h3>
 <p>Columns, node width, gaps and relaxation of a sankey diagram.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3724,8 +3745,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image35.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="alluvial-graph" class="level3" data-number="10.3.6">
-<h3 data-number="10.3.6" class="anchored" data-anchor-id="alluvial-graph"><span class="header-section-number">10.3.6</span> Alluvial graph</h3>
+<section id="alluvial-graph" class="level3" data-number="11.3.6">
+<h3 data-number="11.3.6" class="anchored" data-anchor-id="alluvial-graph"><span class="header-section-number">11.3.6</span> Alluvial graph</h3>
 <p>The axes (categorical columns) the strands cross, their weights and which axis colours them.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3771,8 +3792,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image36.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="dendrogram-layout" class="level3" data-number="10.3.7">
-<h3 data-number="10.3.7" class="anchored" data-anchor-id="dendrogram-layout"><span class="header-section-number">10.3.7</span> Dendrogram layout</h3>
+<section id="dendrogram-layout" class="level3" data-number="11.3.7">
+<h3 data-number="11.3.7" class="anchored" data-anchor-id="dendrogram-layout"><span class="header-section-number">11.3.7</span> Dendrogram layout</h3>
 <p>A cut into <code>:k</code> clusters and a circular layout.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3820,8 +3841,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image37.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="node-link-tree-layout" class="level3" data-number="10.3.8">
-<h3 data-number="10.3.8" class="anchored" data-anchor-id="node-link-tree-layout"><span class="header-section-number">10.3.8</span> Node-link tree layout</h3>
+<section id="node-link-tree-layout" class="level3" data-number="11.3.8">
+<h3 data-number="11.3.8" class="anchored" data-anchor-id="node-link-tree-layout"><span class="header-section-number">11.3.8</span> Node-link tree layout</h3>
 <p>Tidy or cluster placement, diagonal or straight (<code>:line</code>) links, circular.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3870,8 +3891,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image38.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="edge-bundling" class="level3" data-number="10.3.9">
-<h3 data-number="10.3.9" class="anchored" data-anchor-id="edge-bundling"><span class="header-section-number">10.3.9</span> Edge bundling</h3>
+<section id="edge-bundling" class="level3" data-number="11.3.9">
+<h3 data-number="11.3.9" class="anchored" data-anchor-id="edge-bundling"><span class="header-section-number">11.3.9</span> Edge bundling</h3>
 <p>Edges between the tree’s leaves, bent along the tree with strength <code>:beta</code>.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3915,8 +3936,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image39.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="sequences" class="level3" data-number="10.3.10">
-<h3 data-number="10.3.10" class="anchored" data-anchor-id="sequences"><span class="header-section-number">10.3.10</span> Sequences</h3>
+<section id="sequences" class="level3" data-number="11.3.10">
+<h3 data-number="11.3.10" class="anchored" data-anchor-id="sequences"><span class="header-section-number">11.3.10</span> Sequences</h3>
 <p>Step sequences as text (<code>"home-search-end"</code>) split into rings of a flow sunburst.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -3974,8 +3995,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image40.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="autocorrelation-rows" class="level3" data-number="10.3.11">
-<h3 data-number="10.3.11" class="anchored" data-anchor-id="autocorrelation-rows"><span class="header-section-number">10.3.11</span> Autocorrelation rows</h3>
+<section id="autocorrelation-rows" class="level3" data-number="11.3.11">
+<h3 data-number="11.3.11" class="anchored" data-anchor-id="autocorrelation-rows"><span class="header-section-number">11.3.11</span> Autocorrelation rows</h3>
 <p>The lags of the correlogram, the confidence level of its bands and whether the rows are the partial autocorrelation (<code>plot/acf</code> forwards <code>:lags</code> and <code>:level</code>; it picks the correlograms with its own <code>:correlograms</code>).</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -4019,8 +4040,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image41.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="horizon-rows" class="level3" data-number="10.3.12">
-<h3 data-number="10.3.12" class="anchored" data-anchor-id="horizon-rows"><span class="header-section-number">10.3.12</span> Horizon rows</h3>
+<section id="horizon-rows" class="level3" data-number="11.3.12">
+<h3 data-number="11.3.12" class="anchored" data-anchor-id="horizon-rows"><span class="header-section-number">11.3.12</span> Horizon rows</h3>
 <p>The keys of the series rows, the number and height of the bands and resampling between points.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -4090,8 +4111,8 @@ window.Quarto = {
 <p><img src="reference.shared_options_files/image42.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="named-theme-styles" class="level3" data-number="10.3.13">
-<h3 data-number="10.3.13" class="anchored" data-anchor-id="named-theme-styles"><span class="header-section-number">10.3.13</span> Named theme styles</h3>
+<section id="named-theme-styles" class="level3" data-number="11.3.13">
+<h3 data-number="11.3.13" class="anchored" data-anchor-id="named-theme-styles"><span class="header-section-number">11.3.13</span> Named theme styles</h3>
 <p>A chart’s style comes from the theme <code>[:chart kind]</code>; <code>:theme-style</code> names a <code>[:chart name]</code> entry merged over it - a partial style a theme defines once and charts pick by name (builders draw with their own, see each builder’s page). <code>build</code> checks the merged style against the chart’s style keys; a name the theme hasn’t is an error.</p>
 <div class="clay-table">
 <div class="table-responsive">
@@ -4538,12 +4559,12 @@ window.Quarto = {
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./reference.theme.html" class="pagination-link" aria-label="Theme">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Theme</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./reference.errors.html" class="pagination-link" aria-label="Errors">
-        <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Errors</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

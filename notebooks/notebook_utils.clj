@@ -1,6 +1,7 @@
 (ns notebook-utils
   "Notebook helpers: datasets read through the manifest `data/datasets.edn`, the attribution line of an example, the
-  option tables of the reference part ([[options-table]]) and data tables ([[data-table]]).
+  option tables and option cards of the reference part ([[options-table]], [[option-cards]], [[mapping-list]], the
+  Types page's [[type-entries]]) and data tables ([[data-table]]).
   No plotting helpers - examples use the plain cljplot2 API."
   (:require [clojure.data.csv :as csv]
             [clojure.data.json :as json]
@@ -12,8 +13,10 @@
             [scicloj.kindly.v4.api :as kindly]
             [scicloj.kindly.v4.kind :as kind]
             [wadogo.scale :as ws]
+            [malli.core :as malli]
             [cljplot2.data.shingle :as shingle]
-            [cljplot2.describe :as describe])
+            [cljplot2.describe :as describe]
+            [cljplot2.schema :as schema])
   (:import [fastmath.vector Vec2 Vec3 Vec4]))
 
 (def ^:private data-folder "data/")
@@ -279,6 +282,120 @@
                                     (format "[%s](%s#%s) (%s)" title shared-options-page (heading-anchor title)
                                             (str/join " " (map #(str "`" (pr-str %) "`") ks)))))
                    ".")))))
+
+;; option cards (reference pages rewritten for readability)
+
+(def ^:private types-page
+  "The book page of the Types chapter (Clay names a page by its notebook namespace)."
+  "reference.types.html")
+
+(defn- rich-text
+  "Hiccup of `text` with its backtick spans as code: `nil` for `nil`."
+  [text]
+  (when text
+    (map-indexed (fn [i part] (if (odd? i) [:code part] part)) (str/split text #"`" -1))))
+
+(defn- printed
+  "`v` as printed code, colours and functions readable (see [[readable-value]])."
+  [v]
+  (pr-str (readable-value v)))
+
+(defn- card-default
+  "Hiccup of the default of option `row` on its card's header line: the value as code (`theme` after a theme
+  default), the default text, both or `nil`."
+  [{:keys [key default default-doc theme-default]}]
+  (when (or (some? default) default-doc)
+    (into [:span {:class "option-default"} "Default: "]
+          (concat (when (some? default)
+                    [[:code (if (and (color-key? key) (integer? default)) (str (hex-color default)) (printed default))]
+                     (when theme-default " (theme)")])
+                  (when (and (some? default) default-doc) ["; "])
+                  (rich-text default-doc)))))
+
+(defn- type-link
+  "Hiccup of the type text of a form: a link to its section of the Types page for a documented type."
+  [{:keys [form type]}]
+  (if (contains? schema/documented-types form)
+    [:a {:href (str types-page "#" (heading-anchor type))} type]
+    [:span type]))
+
+(defn- bullet
+  "A list item: `head` (hiccup) and the rich text of `meaning` after a dash, when there is one."
+  [head meaning]
+  (into [:li head] (when meaning (cons " – " (rich-text meaning)))))
+
+(defn- card-values
+  "Hiccup list items of what option `row` accepts: its values with meanings (the default first), the values without
+  one on one line after the row's `:other-values` text, then its other forms."
+  [{:keys [values forms other-values default]}]
+  (let [meant (sort-by #(not= default (:value %)) (filter :meaning values))
+        rest-values (remove :meaning values)]
+    (concat (map #(bullet [:code (printed (:value %))] (:meaning %)) meant)
+            (when (seq rest-values)
+              [(into [:li {:class "option-other"}]
+                     (concat (rich-text other-values) (when other-values [" "])
+                             (interpose ", " (map #(vector :code (printed (:value %))) rest-values))))])
+            (map #(bullet (type-link %) (:meaning %)) forms))))
+
+(defn- example-call
+  "The example of option `row` as code `(call {path value})`, nested paths as nested maps; `nil` without an example."
+  [call {:keys [path] :as row}]
+  (when-let [[v] (describe/example row)]
+    (str "(" call " " (printed (assoc-in {} path v)) ")")))
+
+(defn- option-card
+  "Hiccup of the card of option `row`, three parts: the header (the option and its default), its example as a call of
+  `call`, then its description and what it accepts."
+  [call {:keys [path] :as row}]
+  (let [items (card-values row)
+        example (example-call call row)]
+    [:div {:class "option-card"}
+     [:dt [:code (str/join " " (map pr-str path))] (card-default row)]
+     (cond-> [:dd]
+       example (conj [:div {:class "option-example"} [:code example]])
+       :always (conj (cond-> (into [:div {:class "option-text"}] (rich-text (:description row)))
+                       (seq items) (conj (into [:ul] items)))))]))
+
+(defn option-cards
+  "Option cards of `rows` (from `cljplot2.describe/options`, the chart's or function's own), its code hidden: per
+  option a boxed card - a header (the option and its default), an example call of `call` (a symbol, e.g.
+  `chart/smooth`), then its description, a bullet per value or form with its meaning and the values without one on
+  one line (styles in `clay.edn`). With `section`
+  only the rows of that slice (see [[options-table]]).
+  Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."
+  ([call rows]
+   (when (empty? rows)
+     (throw (ex-info "Option cards need rows." {:key :rows :value rows})))
+   (kindly/hide-code
+    (kind/hiccup (into [:dl {:class "options"}] (map #(option-card call %)) rows))))
+  ([call rows section]
+   (option-cards call (section-rows rows section))))
+
+(defn mapping-list
+  "The mapping keys of a chart in a titled box, its code hidden: each key, `required` when the chart needs it, and its
+  description. `rows` - `cljplot2.describe/mapping` of the chart. Throws `ex-info {:key :rows}` for no rows."
+  [rows]
+  (when (empty? rows)
+    (throw (ex-info "A mapping list needs rows." {:key :rows :value rows})))
+  (kindly/hide-code
+   (kind/hiccup [:div {:class "mapping"}
+                 [:div {:class "mapping-title"} "Mapping"
+                  [:span {:class "mapping-hint"} " – the row values the chart reads, under " [:code ":mapping"]]]
+                 (into [:ul]
+                       (map (fn [{:keys [path required description]}]
+                              (into [:li [:code (str/join " " (map pr-str path))]]
+                                    (concat (when required [" " [:span {:class "required"} "required"]])
+                                            [" – "] (rich-text description)))))
+                       rows)])))
+
+(defn type-entries
+  "The Types page's sections, its code hidden: a `##` heading per documented type (`cljplot2.schema/documented-types`,
+  sorted by name) with its meaning - the targets of the option cards' type links."
+  []
+  (kindly/hide-code
+   (kind/md (str/join "\n\n" (for [{:cljplot2/keys [type-name type-meaning]}
+                                    (sort-by :cljplot2/type-name (map malli/type-properties (vals schema/documented-types)))]
+                                (str "## " type-name "\n\n" type-meaning))))))
 
 (defn scale-kind-doc
   "wadogo's description of position scale kind `k` (`wadogo.scale/kind-info`, Markdown), its code hidden."

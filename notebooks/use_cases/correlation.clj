@@ -148,7 +148,7 @@
 
 ;; ### Linear fit with a confidence band
 
-;; [`chart/smooth {:method :lm}`](reference.charts_series.html#smooth) adds the least-squares line and its 95 % confidence band.
+;; [`chart/smooth {:method :lm}`](reference.charts_series.html#smoothing) adds the least-squares line and its 95 % confidence band.
 
 (nu/source-note {:source "R Graph Gallery - Scatterplot with a regression line"
                  :url "https://r-graph-gallery.com/50-51-52-scatter-plot-with-ggplot2.html"

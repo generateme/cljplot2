@@ -13,6 +13,21 @@ format:
         .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
         .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
         .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        .options { margin: 0.5rem 0 1rem 0; }
+        .options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+        .options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+        .options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+        .options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .options dd { margin: 0; padding: 0.5rem 0.75rem; }
+        .options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+        .options .option-example code { background: none; padding: 0; }
+        .options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+        .options code, .mapping code { overflow-wrap: anywhere; }
+        .mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+        .mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .mapping ul { margin: 0; padding-left: 1.25rem; }
+        .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
         </style>
 code-block-background: true
 
@@ -200,17 +215,15 @@ the span on y:
 Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:sample-step`).
 
 
-## smooth
+## Smoothing
 
-A curve fitted to the rows of each group, by default with a confidence band.
+`chart/smooth` fits a curve to each group's points, by default with a confidence band. Use it to show the trend
+of scattered data.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x position (data units)</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>y value to fit (data units)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>curve and band colour per group</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>curve dash style per group</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>band fill pattern per group</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own fit</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of the points, a number or a date.</li><li><code>:y</code> <span class="required">required</span> – The values the curve fits.</li><li><code>:color</code> – Splits the rows into groups, each with its own curve, band and colour.</li><li><code>:dash</code> – Splits the rows into groups, each curve with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each band with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each with its own fit.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -233,16 +246,13 @@ A curve fitted to the rows of each group, by default with a confidence band.
 
 ### Fit
 
-The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
-spans only its own x range, and the space the fit runs in (a log axis's log10 coordinates by default):
+These options choose how the curve is fitted. Change them when the default loess curve is too wiggly or too stiff,
+when you want a straight line or a polynomial, or when groups should share one x range.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:method</td><td>a function (fn [xs ys] f) or one of [:akima :b-spline :barycentric :cir :cubic :cubic-smoothing :divided-difference :glm :gp :kriging :linear :lm :loess :microsphere-projection :monotone :neville :pava :pchip :polynomial :rbf :shepard :sprague :step :step-after :step-before]</td><td>:loess</td><td>fit method: :loess, :lm, :glm, :gp, another fastmath 1D interpolation method or a function (fn [xs ys] f)</td></tr><tr><td>:method-params</td><td>map of keyword to any value or nil</td><td></td><td>options of the method (e.g. loess :bandwidth and :degree, lm :degree), else its extra argument</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>200</td><td>number of grid points the curve is evaluated at</td></tr><tr><td>:full-range</td><td>true or false or nil</td><td>false</td><td>fit over the plot's x :domain when given, else the x range of all groups of the panel (false - each group's x range)</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:scale</td><td>space of the fit: :scale (the x and y scales' coordinates - log10 on a :log axis, values it can't place left out) or :data (data units)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:loess</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:method :lm})</code></div><div class="option-text">How the curve is fitted to each group's points.<ul><li><code>:loess</code> – Local regression: a quadratic fit around each x over the nearest 75% of the points (ggplot2's span and degree).</li><li><code>:glm</code> – A generalized linear model; <code>:method-params</code> sets its <code>:family</code>.</li><li><code>:gp</code> – A Gaussian process: its mean, with a band from its standard deviation.</li><li><code>:lm</code> – A least-squares polynomial: a straight line unless <code>:method-params</code> sets a <code>:degree</code>.</li><li class="option-other">Other fastmath 1D interpolation methods. They have no band of their own; <code>:band :bootstrap</code> adds one. <code>:akima</code>, <code>:b-spline</code>, <code>:barycentric</code>, <code>:cir</code>, <code>:cubic</code>, <code>:cubic-smoothing</code>, <code>:divided-difference</code>, <code>:kriging</code>, <code>:linear</code>, <code>:microsphere-projection</code>, <code>:monotone</code>, <code>:neville</code>, <code>:pava</code>, <code>:pchip</code>, <code>:polynomial</code>, <code>:rbf</code>, <code>:shepard</code>, <code>:sprague</code>, <code>:step</code>, <code>:step-after</code>, <code>:step-before</code></li><li><a href="reference.types.html#function">function</a> – Your own fit: a function of the points' <code>xs</code> and <code>ys</code> (and of <code>:method-params</code> as a third argument, when given) that returns the curve as a function from x to y. It has no band of its own.</li></ul></div></dd></div><div class="option-card"><dt><code>:method-params</code><span class="option-default">Default: The method's own defaults; <code>:loess</code> uses <code>{:bandwidth 0.75 :degree 2}</code>.</span></dt><dd><div class="option-example"><code>(chart/smooth {:method-params {:bandwidth 0.3}})</code></div><div class="option-text">Options of the fit method, e.g. the loess <code>:bandwidth</code> and <code>:iters</code> (robustness iterations, <code>0</code> for ggplot2's plain fit) or the <code>:lm</code> <code>:degree</code>. Other methods get it as an extra argument.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>200</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:n 50})</code></div><div class="option-text">How many points along x the curve is evaluated at.<ul><li><span>integer, >= 2</span></li></ul></div></dd></div><div class="option-card"><dt><code>:full-range</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:full-range true})</code></div><div class="option-text">Whether each group's curve spans a common x range instead of the group's own.<ul><li><code>false</code> – The group's own x range.</li><li><code>true</code> – The plot's x <code>:domain</code> when it's given, else the x range of all groups in the panel.</li></ul></div></dd></div><div class="option-card"><dt><code>:stat-space</code><span class="option-default">Default: <code>:scale</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:stat-space :data})</code></div><div class="option-text">The space the curve is fitted in.<ul><li><code>:scale</code> – The axes' coordinates: on a <code>:log</code> axis the fit uses log10 values and leaves out zeros and negatives.</li><li><code>:data</code> – Data units, whatever the axes.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/smooth {:padding {:x [0 0]}})</code></div><div class="option-text">Room added around the data along each position axis, as fractions of the data span.<ul><li><span>map of one of :x :y to [lo hi], non-negative numbers</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -268,8 +278,8 @@ spans only its own x range, and the space the fit runs in (a log axis's log10 co
 :::
 
 
-The curve sampled at only `:n 6` points (a polyline), and two groups - short and long eruptions - fitted over
-their own x ranges or, with `:full-range true`, over the range of both (and the panel without padding on x):
+With `:n 6` the curve is a polyline through six points. Short and long eruptions each fit over their own x range
+unless `:full-range` is `true` (the right panel also drops the x padding):
 
 
 ::: {.sourceClojure}
@@ -298,7 +308,7 @@ their own x ranges or, with `:full-range true`, over the range of both (and the 
 :::
 
 
-Values growing with the logarithm of x (random, seeded), x spread evenly over three decades:
+These seeded random values grow with log x; x spreads evenly over three decades:
 
 
 ::: {.sourceClojure}
@@ -316,8 +326,8 @@ Values growing with the logarithm of x (random, seeded), x spread evenly over th
 ```
 
 
-On a log axis the fit runs in the axis's log10 coordinates (`:stat-space :scale`, the default) - a straight line
-there; `:stat-space :data` fits in data units, a line in x that the log axis bends:
+On a log axis the default `:stat-space :scale` gives a straight line; `:stat-space :data` fits data units, so the
+axis bends it:
 
 
 ::: {.sourceClojure}
@@ -342,16 +352,13 @@ there; `:stat-space :data` fits in data units, a line in x that the log axis ben
 
 ### Band
 
-The band around the curve: confidence or prediction, nested levels, a bootstrap (seeded here), or none, and
-its fill:
+These options shape the uncertainty band around the curve. Use them to show where the fitted curve may lie or
+where new points may fall, to widen or nest the band, or to leave it out.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:color</td><td>band fill: :color (the line colour, its own alpha times :alpha), a colour or :none (no band, as :band :none)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.3</td><td>factor of the line colour's alpha filling the band with :fill :color</td></tr><tr><td>:band</td><td>one of :confidence :prediction :bootstrap :none</td><td>:confidence for :loess, :lm, :glm and :gp, else :none</td><td>band around the curve: :confidence, :prediction (:lm), :bootstrap or :none</td></tr><tr><td>:level</td><td>a number in (0 1) or vector of a number in (0 1) (at least 1)</td><td>0.95</td><td>confidence level of the band in (0, 1), or a vector of levels (nested bands)</td></tr><tr><td>:bootstrap</td><td>map</td><td></td><td>options of the :band :bootstrap (see fastmath.interpolation/bootstrap)</td></tr><tr><td>:bootstrap :samples</td><td>a positive integer</td><td>200</td><td>number of bootstrap samples</td></tr><tr><td>:bootstrap :rng</td><td>a fastmath random generator</td><td>an unseeded generator (builds differ)</td><td>random number generator of the samples (seeded for reproducible plots)</td></tr><tr><td>:bootstrap :ci</td><td>one of :basic :bc :normal :percentile</td><td>:percentile</td><td>confidence interval kind of a band point</td></tr><tr><td>:bootstrap :estimation</td><td>keyword</td><td>:legacy</td><td>quantile estimation strategy of the interval (not used by :normal)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:color</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/smooth {:fill :none})</code></div><div class="option-text">How the band is filled.<ul><li><code>:color</code> – The curve's colour, faded by <code>:alpha</code>.</li><li><code>:none</code> – No band, as with <code>:band :none</code>.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – A colour of its own.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.3</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/smooth {:alpha 0.5})</code></div><div class="option-text">How opaque the band is with <code>:fill :color</code>: a factor on the curve colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:band</code><span class="option-default">Default: <code>:confidence</code> for <code>:loess</code>, <code>:lm</code>, <code>:glm</code> and <code>:gp</code>; <code>:none</code> for the other methods.</span></dt><dd><div class="option-example"><code>(chart/smooth {:band :bootstrap})</code></div><div class="option-text">The band drawn around the curve.<ul><li><code>:confidence</code> – Where the fitted curve may lie, at the confidence <code>:level</code>.</li><li><code>:prediction</code> – Where new points may fall, at the confidence <code>:level</code> (only with <code>:method :lm</code>).</li><li><code>:bootstrap</code> – A band from refitting resampled points, for any method (see <code>:bootstrap</code>).</li><li><code>:none</code> – No band.</li></ul></div></dd></div><div class="option-card"><dt><code>:level</code><span class="option-default">Default: <code>0.95</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:level [0.5 0.95]})</code></div><div class="option-text">The band's level.<ul><li><a href="reference.types.html#open-fraction">open fraction</a> – One band at this level.</li><li><span>vector of a number in (0 1) (at least 1)</span> – Nested bands, one per level; the widest is drawn first.</li></ul></div></dd></div><div class="option-card"><dt><code>:bootstrap</code></dt><dd><div class="option-text">Options of the bootstrap band; they apply with <code>:band :bootstrap</code>.</div></dd></div><div class="option-card"><dt><code>:bootstrap :samples</code><span class="option-default">Default: <code>200</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:bootstrap {:samples 500}})</code></div><div class="option-text">How many resampled fits make the band.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bootstrap :rng</code><span class="option-default">Default: An unseeded generator, so each build draws a different band.</span></dt><dd><div class="option-example"><code>(chart/smooth {:bootstrap {:rng (r/rng :mersenne 7)}})</code></div><div class="option-text">The random generator that draws the samples. A seeded one gives the same band on every build.<ul><li><span>a fastmath random generator</span></li></ul></div></dd></div><div class="option-card"><dt><code>:bootstrap :ci</code><span class="option-default">Default: <code>:percentile</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:bootstrap {:ci :basic}})</code></div><div class="option-text">How the interval at each point of the band is computed from the samples.<ul><li><code>:percentile</code> – The samples' percentiles.</li><li><code>:basic</code> – The percentiles reflected around the fitted value.</li><li><code>:bc</code> – Percentiles corrected for the samples' bias.</li><li><code>:normal</code> – A normal interval from the samples' standard deviation.</li></ul></div></dd></div><div class="option-card"><dt><code>:bootstrap :estimation</code><span class="option-default">Default: <code>:legacy</code></span></dt><dd><div class="option-example"><code>(chart/smooth {:bootstrap {:estimation :r7}})</code></div><div class="option-text">How the samples' percentiles are estimated: <code>:legacy</code> or one of R's quantile types <code>:r1</code> to <code>:r9</code>. <code>:ci :normal</code> doesn't use it.<ul><li><span>keyword</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -379,8 +386,7 @@ its fill:
 :::
 
 
-The confidence band (`:band :confidence`, the default of `:loess`, `:lm`, `:glm` and `:gp`) at a higher level - a
-wider band, in its own fill - and no band (`:band :none`):
+A higher `:level` widens the confidence band, here in its own fill; `:band :none` leaves it out:
 
 
 ::: {.sourceClojure}

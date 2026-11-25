@@ -13,6 +13,21 @@ format:
         .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
         .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
         .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+        .options { margin: 0.5rem 0 1rem 0; }
+        .options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+        .options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+        .options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+        .options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .options dd { margin: 0; padding: 0.5rem 0.75rem; }
+        .options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+        .options .option-example code { background: none; padding: 0; }
+        .options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+        .options code, .mapping code { overflow-wrap: anywhere; }
+        .mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+        .mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .mapping ul { margin: 0; padding-left: 1.25rem; }
+        .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
         </style>
 code-block-background: true
 
@@ -51,7 +66,7 @@ part says what exists.
 ## How the part is organised
 
 
-* **Concepts** (this chapter and the next eleven) - rendering, data and mapping, aesthetics and legends, scales
+* **Concepts** (this chapter and the next twelve) - rendering, data and mapping, types, aesthetics and legends, scales
   and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors
   and what the library doesn't do.
 
@@ -79,6 +94,9 @@ Each table is one group of related options, followed by an example using them - 
 * **Description** - what the key does.
 * **Group** - shown when a table mixes keys of a shared group (data and mapping, curves, strips ...) with others;
   a group is described once, in the Shared options chapter.
+
+Some sections show options as cards instead: each gives the option's default, what it does, the values or
+[types](reference.types.html) it takes with their meanings, and an example.
 
 
 ## A plot is a map
@@ -462,7 +480,13 @@ cells. A row is a plain map; `:section` names its table slice:
  :type
  "a sequence of rows (maps) or a map of columns (sequences) or nil",
  :default-doc nil,
- :required false}
+ :values [],
+ :other-values nil,
+ :required false,
+ :forms
+ [{:form :cljplot2.data.rows/data,
+   :type "a sequence of rows (maps) or a map of columns (sequences)",
+   :meaning nil}]}
 
 ```
 :::

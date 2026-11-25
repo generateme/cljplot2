@@ -321,7 +321,7 @@
 ;; A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rect) over an x
 ;; interval), a threshold ([rule](reference.charts_annotations.html#rule)) and a note
 ;; ([text](reference.charts_annotations.html#text)) layered over a scatter with a loess
-;; [smooth](reference.charts_series.html#smooth):
+;; [smooth](reference.charts_series.html#smoothing):
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}

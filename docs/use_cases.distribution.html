@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>30&nbsp; Distribution – cljplot2</title>
+<title>31&nbsp; Distribution – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -113,6 +113,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .data-table table { font-size: 0.75rem; width: auto; margin: 0; }
 .data-table th, .data-table td { padding: 0.1rem 0.45rem !important; white-space: nowrap; }
 .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
+.options { margin: 0.5rem 0 1rem 0; }
+.options .option-card { margin: 0 0 0.9rem 0; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 0.375rem; overflow: hidden; }
+.options dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 1rem; margin: 0; padding: 0.4rem 0.75rem; background: #eef2f7; border-bottom: 1px solid var(--bs-border-color, #dee2e6); font-weight: normal; }
+.options dt > code { font-weight: 700; font-size: 1rem; background: none; padding: 0; }
+.options .option-default { font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.options dd { margin: 0; padding: 0.5rem 0.75rem; }
+.options .option-example { font-size: 0.85rem; padding: 0 0 0.45rem 0; margin-bottom: 0.45rem; border-bottom: 1px dashed var(--bs-border-color, #dee2e6); }
+.options .option-example code { background: none; padding: 0; }
+.options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
+.options code, .mapping code { overflow-wrap: anywhere; }
+.mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
+.mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
+.mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.mapping ul { margin: 0; padding-left: 1.25rem; }
+.mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
 </style>
 
 
@@ -127,7 +142,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.distribution.html"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.distribution.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -187,56 +202,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./reference.types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Types</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./reference.aesthetics_legends.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Aesthetics and legends</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.scales_axes_coords.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Scales, axes and coordinates</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.layering_position.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Layering and position</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.labels_text.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Labels and text</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.facets_arrange.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Facets, multiplots and margins</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.theme.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Theme</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.shared_options.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Shared options</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.errors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Errors</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.limits.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Limits</span></span></a>
   </div>
 </li>
       </ul>
@@ -253,55 +274,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_points_paths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: points and paths</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_annotations.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: annotations</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_bars_ranges.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: bars and ranges</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_strip_distributions.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: strip distributions</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_distribution_stats.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: distribution statistics</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_grids_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: grids and fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_part_of_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_multivariate_3d.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Charts: multivariate and 3D</span></span></a>
   </div>
 </li>
       </ul>
@@ -318,19 +339,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_graphs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: graphs</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.builders_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Builders: series</span></span></a>
   </div>
 </li>
       </ul>
@@ -347,31 +368,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: levels</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_graphs_trees.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: graphs and trees</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_sets_series.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: sets and series</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.data_fields.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Data functions: fields</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.specific_cases.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Specific cases</span></span></a>
   </div>
 </li>
       </ul>
@@ -388,43 +409,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.distribution.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.correlation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Correlation</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.ranking.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Ranking</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.part_of_a_whole.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Part of a whole</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.evolution.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Evolution</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.flow.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flow</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./use_cases.colors.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">Colours</span></span></a>
   </div>
 </li>
       </ul>
@@ -441,19 +462,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.cljplot_extras.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">cljplot extras</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.lattice.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Lattice</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./galleries.vega.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Vega</span></span></a>
   </div>
 </li>
       </ul>
@@ -468,74 +489,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#violin" id="toc-violin" class="nav-link active" data-scroll-target="#violin"><span class="header-section-number">30.1</span> Violin</a>
+  <li><a href="#violin" id="toc-violin" class="nav-link active" data-scroll-target="#violin"><span class="header-section-number">31.1</span> Violin</a>
   <ul>
-  <li><a href="#basic-violin" id="toc-basic-violin" class="nav-link" data-scroll-target="#basic-violin"><span class="header-section-number">30.1.1</span> Basic violin</a></li>
-  <li><a href="#ordered-violins" id="toc-ordered-violins" class="nav-link" data-scroll-target="#ordered-violins"><span class="header-section-number">30.1.2</span> Ordered violins</a></li>
-  <li><a href="#horizontal-and-vertical" id="toc-horizontal-and-vertical" class="nav-link" data-scroll-target="#horizontal-and-vertical"><span class="header-section-number">30.1.3</span> Horizontal and vertical</a></li>
-  <li><a href="#violin-with-a-box-and-sample-sizes" id="toc-violin-with-a-box-and-sample-sizes" class="nav-link" data-scroll-target="#violin-with-a-box-and-sample-sizes"><span class="header-section-number">30.1.4</span> Violin with a box and sample sizes</a></li>
-  <li><a href="#grouped-violins" id="toc-grouped-violins" class="nav-link" data-scroll-target="#grouped-violins"><span class="header-section-number">30.1.5</span> Grouped violins</a></li>
-  <li><a href="#inner-marks" id="toc-inner-marks" class="nav-link" data-scroll-target="#inner-marks"><span class="header-section-number">30.1.6</span> Inner marks</a></li>
+  <li><a href="#basic-violin" id="toc-basic-violin" class="nav-link" data-scroll-target="#basic-violin"><span class="header-section-number">31.1.1</span> Basic violin</a></li>
+  <li><a href="#ordered-violins" id="toc-ordered-violins" class="nav-link" data-scroll-target="#ordered-violins"><span class="header-section-number">31.1.2</span> Ordered violins</a></li>
+  <li><a href="#horizontal-and-vertical" id="toc-horizontal-and-vertical" class="nav-link" data-scroll-target="#horizontal-and-vertical"><span class="header-section-number">31.1.3</span> Horizontal and vertical</a></li>
+  <li><a href="#violin-with-a-box-and-sample-sizes" id="toc-violin-with-a-box-and-sample-sizes" class="nav-link" data-scroll-target="#violin-with-a-box-and-sample-sizes"><span class="header-section-number">31.1.4</span> Violin with a box and sample sizes</a></li>
+  <li><a href="#grouped-violins" id="toc-grouped-violins" class="nav-link" data-scroll-target="#grouped-violins"><span class="header-section-number">31.1.5</span> Grouped violins</a></li>
+  <li><a href="#inner-marks" id="toc-inner-marks" class="nav-link" data-scroll-target="#inner-marks"><span class="header-section-number">31.1.6</span> Inner marks</a></li>
   </ul></li>
-  <li><a href="#density" id="toc-density" class="nav-link" data-scroll-target="#density"><span class="header-section-number">30.2</span> Density</a>
+  <li><a href="#density" id="toc-density" class="nav-link" data-scroll-target="#density"><span class="header-section-number">31.2</span> Density</a>
   <ul>
-  <li><a href="#basic-density" id="toc-basic-density" class="nav-link" data-scroll-target="#basic-density"><span class="header-section-number">30.2.1</span> Basic density</a></li>
-  <li><a href="#mirror-density" id="toc-mirror-density" class="nav-link" data-scroll-target="#mirror-density"><span class="header-section-number">30.2.2</span> Mirror density</a></li>
-  <li><a href="#several-groups" id="toc-several-groups" class="nav-link" data-scroll-target="#several-groups"><span class="header-section-number">30.2.3</span> Several groups</a></li>
-  <li><a href="#annotated-density" id="toc-annotated-density" class="nav-link" data-scroll-target="#annotated-density"><span class="header-section-number">30.2.4</span> Annotated density</a></li>
-  <li><a href="#small-multiples" id="toc-small-multiples" class="nav-link" data-scroll-target="#small-multiples"><span class="header-section-number">30.2.5</span> Small multiples</a></li>
-  <li><a href="#stacked-density" id="toc-stacked-density" class="nav-link" data-scroll-target="#stacked-density"><span class="header-section-number">30.2.6</span> Stacked density</a></li>
-  <li><a href="#marginal-density" id="toc-marginal-density" class="nav-link" data-scroll-target="#marginal-density"><span class="header-section-number">30.2.7</span> Marginal density</a></li>
+  <li><a href="#basic-density" id="toc-basic-density" class="nav-link" data-scroll-target="#basic-density"><span class="header-section-number">31.2.1</span> Basic density</a></li>
+  <li><a href="#mirror-density" id="toc-mirror-density" class="nav-link" data-scroll-target="#mirror-density"><span class="header-section-number">31.2.2</span> Mirror density</a></li>
+  <li><a href="#several-groups" id="toc-several-groups" class="nav-link" data-scroll-target="#several-groups"><span class="header-section-number">31.2.3</span> Several groups</a></li>
+  <li><a href="#annotated-density" id="toc-annotated-density" class="nav-link" data-scroll-target="#annotated-density"><span class="header-section-number">31.2.4</span> Annotated density</a></li>
+  <li><a href="#small-multiples" id="toc-small-multiples" class="nav-link" data-scroll-target="#small-multiples"><span class="header-section-number">31.2.5</span> Small multiples</a></li>
+  <li><a href="#stacked-density" id="toc-stacked-density" class="nav-link" data-scroll-target="#stacked-density"><span class="header-section-number">31.2.6</span> Stacked density</a></li>
+  <li><a href="#marginal-density" id="toc-marginal-density" class="nav-link" data-scroll-target="#marginal-density"><span class="header-section-number">31.2.7</span> Marginal density</a></li>
   </ul></li>
-  <li><a href="#histogram" id="toc-histogram" class="nav-link" data-scroll-target="#histogram"><span class="header-section-number">30.3</span> Histogram</a>
+  <li><a href="#histogram" id="toc-histogram" class="nav-link" data-scroll-target="#histogram"><span class="header-section-number">31.3</span> Histogram</a>
   <ul>
-  <li><a href="#basic-histogram" id="toc-basic-histogram" class="nav-link" data-scroll-target="#basic-histogram"><span class="header-section-number">30.3.1</span> Basic histogram</a></li>
-  <li><a href="#bin-size" id="toc-bin-size" class="nav-link" data-scroll-target="#bin-size"><span class="header-section-number">30.3.2</span> Bin size</a></li>
-  <li><a href="#mirror-histogram" id="toc-mirror-histogram" class="nav-link" data-scroll-target="#mirror-histogram"><span class="header-section-number">30.3.3</span> Mirror histogram</a></li>
-  <li><a href="#groups-on-one-axis" id="toc-groups-on-one-axis" class="nav-link" data-scroll-target="#groups-on-one-axis"><span class="header-section-number">30.3.4</span> Groups on one axis</a></li>
-  <li><a href="#small-multiples-1" id="toc-small-multiples-1" class="nav-link" data-scroll-target="#small-multiples-1"><span class="header-section-number">30.3.5</span> Small multiples</a></li>
-  <li><a href="#marginal-histogram" id="toc-marginal-histogram" class="nav-link" data-scroll-target="#marginal-histogram"><span class="header-section-number">30.3.6</span> Marginal histogram</a></li>
-  <li><a href="#strips-on-a-histogram" id="toc-strips-on-a-histogram" class="nav-link" data-scroll-target="#strips-on-a-histogram"><span class="header-section-number">30.3.7</span> Strips on a histogram</a></li>
+  <li><a href="#basic-histogram" id="toc-basic-histogram" class="nav-link" data-scroll-target="#basic-histogram"><span class="header-section-number">31.3.1</span> Basic histogram</a></li>
+  <li><a href="#bin-size" id="toc-bin-size" class="nav-link" data-scroll-target="#bin-size"><span class="header-section-number">31.3.2</span> Bin size</a></li>
+  <li><a href="#mirror-histogram" id="toc-mirror-histogram" class="nav-link" data-scroll-target="#mirror-histogram"><span class="header-section-number">31.3.3</span> Mirror histogram</a></li>
+  <li><a href="#groups-on-one-axis" id="toc-groups-on-one-axis" class="nav-link" data-scroll-target="#groups-on-one-axis"><span class="header-section-number">31.3.4</span> Groups on one axis</a></li>
+  <li><a href="#small-multiples-1" id="toc-small-multiples-1" class="nav-link" data-scroll-target="#small-multiples-1"><span class="header-section-number">31.3.5</span> Small multiples</a></li>
+  <li><a href="#marginal-histogram" id="toc-marginal-histogram" class="nav-link" data-scroll-target="#marginal-histogram"><span class="header-section-number">31.3.6</span> Marginal histogram</a></li>
+  <li><a href="#strips-on-a-histogram" id="toc-strips-on-a-histogram" class="nav-link" data-scroll-target="#strips-on-a-histogram"><span class="header-section-number">31.3.7</span> Strips on a histogram</a></li>
   </ul></li>
-  <li><a href="#boxplot" id="toc-boxplot" class="nav-link" data-scroll-target="#boxplot"><span class="header-section-number">30.4</span> Boxplot</a>
+  <li><a href="#boxplot" id="toc-boxplot" class="nav-link" data-scroll-target="#boxplot"><span class="header-section-number">31.4</span> Boxplot</a>
   <ul>
-  <li><a href="#basic-boxplot" id="toc-basic-boxplot" class="nav-link" data-scroll-target="#basic-boxplot"><span class="header-section-number">30.4.1</span> Basic boxplot</a></li>
-  <li><a href="#boxplot-with-jittered-points" id="toc-boxplot-with-jittered-points" class="nav-link" data-scroll-target="#boxplot-with-jittered-points"><span class="header-section-number">30.4.2</span> Boxplot with jittered points</a></li>
-  <li><a href="#group-order" id="toc-group-order" class="nav-link" data-scroll-target="#group-order"><span class="header-section-number">30.4.3</span> Group order</a></li>
-  <li><a href="#highlight-a-group" id="toc-highlight-a-group" class="nav-link" data-scroll-target="#highlight-a-group"><span class="header-section-number">30.4.4</span> Highlight a group</a></li>
-  <li><a href="#grouped-boxplot" id="toc-grouped-boxplot" class="nav-link" data-scroll-target="#grouped-boxplot"><span class="header-section-number">30.4.5</span> Grouped boxplot</a></li>
-  <li><a href="#faceted-boxplot" id="toc-faceted-boxplot" class="nav-link" data-scroll-target="#faceted-boxplot"><span class="header-section-number">30.4.6</span> Faceted boxplot</a></li>
-  <li><a href="#variable-width" id="toc-variable-width" class="nav-link" data-scroll-target="#variable-width"><span class="header-section-number">30.4.7</span> Variable width</a></li>
-  <li><a href="#binned-continuous-variable" id="toc-binned-continuous-variable" class="nav-link" data-scroll-target="#binned-continuous-variable"><span class="header-section-number">30.4.8</span> Binned continuous variable</a></li>
-  <li><a href="#mean-marker" id="toc-mean-marker" class="nav-link" data-scroll-target="#mean-marker"><span class="header-section-number">30.4.9</span> Mean marker</a></li>
-  <li><a href="#sample-size" id="toc-sample-size" class="nav-link" data-scroll-target="#sample-size"><span class="header-section-number">30.4.10</span> Sample size</a></li>
-  <li><a href="#horizontal-and-vertical-1" id="toc-horizontal-and-vertical-1" class="nav-link" data-scroll-target="#horizontal-and-vertical-1"><span class="header-section-number">30.4.11</span> Horizontal and vertical</a></li>
-  <li><a href="#intervals" id="toc-intervals" class="nav-link" data-scroll-target="#intervals"><span class="header-section-number">30.4.12</span> Intervals</a></li>
+  <li><a href="#basic-boxplot" id="toc-basic-boxplot" class="nav-link" data-scroll-target="#basic-boxplot"><span class="header-section-number">31.4.1</span> Basic boxplot</a></li>
+  <li><a href="#boxplot-with-jittered-points" id="toc-boxplot-with-jittered-points" class="nav-link" data-scroll-target="#boxplot-with-jittered-points"><span class="header-section-number">31.4.2</span> Boxplot with jittered points</a></li>
+  <li><a href="#group-order" id="toc-group-order" class="nav-link" data-scroll-target="#group-order"><span class="header-section-number">31.4.3</span> Group order</a></li>
+  <li><a href="#highlight-a-group" id="toc-highlight-a-group" class="nav-link" data-scroll-target="#highlight-a-group"><span class="header-section-number">31.4.4</span> Highlight a group</a></li>
+  <li><a href="#grouped-boxplot" id="toc-grouped-boxplot" class="nav-link" data-scroll-target="#grouped-boxplot"><span class="header-section-number">31.4.5</span> Grouped boxplot</a></li>
+  <li><a href="#faceted-boxplot" id="toc-faceted-boxplot" class="nav-link" data-scroll-target="#faceted-boxplot"><span class="header-section-number">31.4.6</span> Faceted boxplot</a></li>
+  <li><a href="#variable-width" id="toc-variable-width" class="nav-link" data-scroll-target="#variable-width"><span class="header-section-number">31.4.7</span> Variable width</a></li>
+  <li><a href="#binned-continuous-variable" id="toc-binned-continuous-variable" class="nav-link" data-scroll-target="#binned-continuous-variable"><span class="header-section-number">31.4.8</span> Binned continuous variable</a></li>
+  <li><a href="#mean-marker" id="toc-mean-marker" class="nav-link" data-scroll-target="#mean-marker"><span class="header-section-number">31.4.9</span> Mean marker</a></li>
+  <li><a href="#sample-size" id="toc-sample-size" class="nav-link" data-scroll-target="#sample-size"><span class="header-section-number">31.4.10</span> Sample size</a></li>
+  <li><a href="#horizontal-and-vertical-1" id="toc-horizontal-and-vertical-1" class="nav-link" data-scroll-target="#horizontal-and-vertical-1"><span class="header-section-number">31.4.11</span> Horizontal and vertical</a></li>
+  <li><a href="#intervals" id="toc-intervals" class="nav-link" data-scroll-target="#intervals"><span class="header-section-number">31.4.12</span> Intervals</a></li>
   </ul></li>
-  <li><a href="#ridgeline" id="toc-ridgeline" class="nav-link" data-scroll-target="#ridgeline"><span class="header-section-number">30.5</span> Ridgeline</a>
+  <li><a href="#ridgeline" id="toc-ridgeline" class="nav-link" data-scroll-target="#ridgeline"><span class="header-section-number">31.5</span> Ridgeline</a>
   <ul>
-  <li><a href="#basic-ridgeline" id="toc-basic-ridgeline" class="nav-link" data-scroll-target="#basic-ridgeline"><span class="header-section-number">30.5.1</span> Basic ridgeline</a></li>
-  <li><a href="#ridge-shapes" id="toc-ridge-shapes" class="nav-link" data-scroll-target="#ridge-shapes"><span class="header-section-number">30.5.2</span> Ridge shapes</a></li>
-  <li><a href="#gradient-fill" id="toc-gradient-fill" class="nav-link" data-scroll-target="#gradient-fill"><span class="header-section-number">30.5.3</span> Gradient fill</a></li>
-  <li><a href="#double-ridgeline" id="toc-double-ridgeline" class="nav-link" data-scroll-target="#double-ridgeline"><span class="header-section-number">30.5.4</span> Double ridgeline</a></li>
+  <li><a href="#basic-ridgeline" id="toc-basic-ridgeline" class="nav-link" data-scroll-target="#basic-ridgeline"><span class="header-section-number">31.5.1</span> Basic ridgeline</a></li>
+  <li><a href="#ridge-shapes" id="toc-ridge-shapes" class="nav-link" data-scroll-target="#ridge-shapes"><span class="header-section-number">31.5.2</span> Ridge shapes</a></li>
+  <li><a href="#gradient-fill" id="toc-gradient-fill" class="nav-link" data-scroll-target="#gradient-fill"><span class="header-section-number">31.5.3</span> Gradient fill</a></li>
+  <li><a href="#double-ridgeline" id="toc-double-ridgeline" class="nav-link" data-scroll-target="#double-ridgeline"><span class="header-section-number">31.5.4</span> Double ridgeline</a></li>
   </ul></li>
-  <li><a href="#beeswarm" id="toc-beeswarm" class="nav-link" data-scroll-target="#beeswarm"><span class="header-section-number">30.6</span> Beeswarm</a></li>
-  <li><a href="#strip-plot-and-rug" id="toc-strip-plot-and-rug" class="nav-link" data-scroll-target="#strip-plot-and-rug"><span class="header-section-number">30.7</span> Strip plot and rug</a>
+  <li><a href="#beeswarm" id="toc-beeswarm" class="nav-link" data-scroll-target="#beeswarm"><span class="header-section-number">31.6</span> Beeswarm</a></li>
+  <li><a href="#strip-plot-and-rug" id="toc-strip-plot-and-rug" class="nav-link" data-scroll-target="#strip-plot-and-rug"><span class="header-section-number">31.7</span> Strip plot and rug</a>
   <ul>
-  <li><a href="#strip-plot" id="toc-strip-plot" class="nav-link" data-scroll-target="#strip-plot"><span class="header-section-number">30.7.1</span> Strip plot</a></li>
-  <li><a href="#rug" id="toc-rug" class="nav-link" data-scroll-target="#rug"><span class="header-section-number">30.7.2</span> Rug</a></li>
+  <li><a href="#strip-plot" id="toc-strip-plot" class="nav-link" data-scroll-target="#strip-plot"><span class="header-section-number">31.7.1</span> Strip plot</a></li>
+  <li><a href="#rug" id="toc-rug" class="nav-link" data-scroll-target="#rug"><span class="header-section-number">31.7.2</span> Rug</a></li>
   </ul></li>
-  <li><a href="#d-strips" id="toc-d-strips" class="nav-link" data-scroll-target="#d-strips"><span class="header-section-number">30.8</span> 1d strips</a></li>
-  <li><a href="#empirical-cumulative-distribution" id="toc-empirical-cumulative-distribution" class="nav-link" data-scroll-target="#empirical-cumulative-distribution"><span class="header-section-number">30.9</span> Empirical cumulative distribution</a></li>
+  <li><a href="#d-strips" id="toc-d-strips" class="nav-link" data-scroll-target="#d-strips"><span class="header-section-number">31.8</span> 1d strips</a></li>
+  <li><a href="#empirical-cumulative-distribution" id="toc-empirical-cumulative-distribution" class="nav-link" data-scroll-target="#empirical-cumulative-distribution"><span class="header-section-number">31.9</span> Empirical cumulative distribution</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.distribution.html"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./use_cases.distribution.html">Use cases</a></li><li class="breadcrumb-item"><a href="./use_cases.distribution.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Distribution</span></h1>
+<h1 class="title"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Distribution</span></h1>
 </div>
 
 
@@ -5820,11 +5841,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="violin" class="level2" data-number="30.1">
-<h2 data-number="30.1" class="anchored" data-anchor-id="violin"><span class="header-section-number">30.1</span> Violin</h2>
+<section id="violin" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="violin"><span class="header-section-number">31.1</span> Violin</h2>
 <p>A violin is a kernel density estimate mirrored around the centre line of its group, here with a small box inside (the default <code>:inner</code>).</p>
-<section id="basic-violin" class="level3" data-number="30.1.1">
-<h3 data-number="30.1.1" class="anchored" data-anchor-id="basic-violin"><span class="header-section-number">30.1.1</span> Basic violin</h3>
+<section id="basic-violin" class="level3" data-number="31.1.1">
+<h3 data-number="31.1.1" class="anchored" data-anchor-id="basic-violin"><span class="header-section-number">31.1.1</span> Basic violin</h3>
 <p>Source: <a href="https://r-graph-gallery.com/95-violin-plot-with-ggplot2.html">R Graph Gallery - Violin plot</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -5838,8 +5859,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image0.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="ordered-violins" class="level3" data-number="30.1.2">
-<h3 data-number="30.1.2" class="anchored" data-anchor-id="ordered-violins"><span class="header-section-number">30.1.2</span> Ordered violins</h3>
+<section id="ordered-violins" class="level3" data-number="31.1.2">
+<h3 data-number="31.1.2" class="anchored" data-anchor-id="ordered-violins"><span class="header-section-number">31.1.2</span> Ordered violins</h3>
 <p><a href="reference.data_levels.html#levelsorder-levels"><code>levels/order-levels</code></a> orders the levels by any statistic of a value; the result is the scale’s <code>:domain</code>, its first level at the bottom (y grows upward) - ascending medians put the largest on top (setosa, first in the data and at the bottom by default).</p>
 <p>Source: <a href="https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html">R Graph Gallery - Violin plot (reorder)</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5855,8 +5876,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image1.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="horizontal-and-vertical" class="level3" data-number="30.1.3">
-<h3 data-number="30.1.3" class="anchored" data-anchor-id="horizontal-and-vertical"><span class="header-section-number">30.1.3</span> Horizontal and vertical</h3>
+<section id="horizontal-and-vertical" class="level3" data-number="31.1.3">
+<h3 data-number="31.1.3" class="anchored" data-anchor-id="horizontal-and-vertical"><span class="header-section-number">31.1.3</span> Horizontal and vertical</h3>
 <p>The R Graph Gallery draws violins and boxplots vertically; here that is <code>:flip true</code> on the same plot - values stay on <code>:x</code>, which is now drawn vertically.</p>
 <p>Source: <a href="https://r-graph-gallery.com/violin_horizontal_ggplot2.html">R Graph Gallery - Horizontal violin plot</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -5874,8 +5895,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image2.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="violin-with-a-box-and-sample-sizes" class="level3" data-number="30.1.4">
-<h3 data-number="30.1.4" class="anchored" data-anchor-id="violin-with-a-box-and-sample-sizes"><span class="header-section-number">30.1.4</span> Violin with a box and sample sizes</h3>
+<section id="violin-with-a-box-and-sample-sizes" class="level3" data-number="31.1.4">
+<h3 data-number="31.1.4" class="anchored" data-anchor-id="violin-with-a-box-and-sample-sizes"><span class="header-section-number">31.1.4</span> Violin with a box and sample sizes</h3>
 <p>Two strip charts share the bands: a violin without inner marks and a narrow box. <code>:n-label</code> writes each group’s count past its largest value.</p>
 <p>Source: <a href="https://r-graph-gallery.com/violin_and_boxplot_ggplot2.html">R Graph Gallery - Violin with boxplot and sample size</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -5891,8 +5912,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image3.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="grouped-violins" class="level3" data-number="30.1.5">
-<h3 data-number="30.1.5" class="anchored" data-anchor-id="grouped-violins"><span class="header-section-number">30.1.5</span> Grouped violins</h3>
+<section id="grouped-violins" class="level3" data-number="31.1.5">
+<h3 data-number="31.1.5" class="anchored" data-anchor-id="grouped-violins"><span class="header-section-number">31.1.5</span> Grouped violins</h3>
 <p>A second grouping (here the year, coloured) dodges the violins inside each band, in legend order; with exactly two groups <code>:position :mirror</code> draws split violins, one half per group. The year is a number, so <code>:scales {:color {:type :categorical}}</code> declares it categorical: one colour per year instead of a gradient.</p>
 <p>Source: <a href="https://r-graph-gallery.com/violin_grouped_ggplot2.html">R Graph Gallery - Grouped violin plot</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -5911,8 +5932,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="inner-marks" class="level3" data-number="30.1.6">
-<h3 data-number="30.1.6" class="anchored" data-anchor-id="inner-marks"><span class="header-section-number">30.1.6</span> Inner marks</h3>
+<section id="inner-marks" class="level3" data-number="31.1.6">
+<h3 data-number="31.1.6" class="anchored" data-anchor-id="inner-marks"><span class="header-section-number">31.1.6</span> Inner marks</h3>
 <p><code>:inner</code> chooses what a violin shows inside: a box (default), quartile lines, a rug or the points. The data is a fixed 5% sample of chem97 (31022 rows), so the rug and the points stay readable.</p>
 <p>Source: R Graph Gallery - Violin plot; seaborn violinplot (<a href="https://r-graph-gallery.com/violin.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.violinplot.html">2</a>). Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -6966,11 +6987,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="density" class="level2" data-number="30.2">
-<h2 data-number="30.2" class="anchored" data-anchor-id="density"><span class="header-section-number">30.2</span> Density</h2>
+<section id="density" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="density"><span class="header-section-number">31.2</span> Density</h2>
 <p>A kernel density estimate (fastmath) of the values, per panel and group.</p>
-<section id="basic-density" class="level3" data-number="30.2.1">
-<h3 data-number="30.2.1" class="anchored" data-anchor-id="basic-density"><span class="header-section-number">30.2.1</span> Basic density</h3>
+<section id="basic-density" class="level3" data-number="31.2.1">
+<h3 data-number="31.2.1" class="anchored" data-anchor-id="basic-density"><span class="header-section-number">31.2.1</span> Basic density</h3>
 <p><code>:bandwidth</code> is a number or a fastmath rule (<code>:nrd0</code> by default, as R); <code>:kernel</code> any fastmath kernel.</p>
 <p>Source: <a href="https://r-graph-gallery.com/21-distribution-plot-using-ggplot2.html">R Graph Gallery - Density plot</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -6990,8 +7011,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image6.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="mirror-density" class="level3" data-number="30.2.2">
-<h3 data-number="30.2.2" class="anchored" data-anchor-id="mirror-density"><span class="header-section-number">30.2.2</span> Mirror density</h3>
+<section id="mirror-density" class="level3" data-number="31.2.2">
+<h3 data-number="31.2.2" class="anchored" data-anchor-id="mirror-density"><span class="header-section-number">31.2.2</span> Mirror density</h3>
 <p>Two groups, the second drawn downward, with the y = 0 line (<code>:zero-line</code>, on by default). <code>:symmetric</code> puts both halves on one range so they compare by height.</p>
 <p>Source: <a href="https://r-graph-gallery.com/density_mirror_ggplot2.html">R Graph Gallery - Mirror density chart</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -7011,8 +7032,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image7.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="several-groups" class="level3" data-number="30.2.3">
-<h3 data-number="30.2.3" class="anchored" data-anchor-id="several-groups"><span class="header-section-number">30.2.3</span> Several groups</h3>
+<section id="several-groups" class="level3" data-number="31.2.3">
+<h3 data-number="31.2.3" class="anchored" data-anchor-id="several-groups"><span class="header-section-number">31.2.3</span> Several groups</h3>
 <p>Groups from a colour mapping, overlaid. The line takes the group colour; <code>:fill :color</code> fills each area with its group colour at opacity <code>:alpha</code>, a fixed <code>:fill</code> colour fills every area alike.</p>
 <p>Source: <a href="https://r-graph-gallery.com/density-plot.html">R Graph Gallery - Density with multiple groups</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7036,8 +7057,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image8.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="annotated-density" class="level3" data-number="30.2.4">
-<h3 data-number="30.2.4" class="anchored" data-anchor-id="annotated-density"><span class="header-section-number">30.2.4</span> Annotated density</h3>
+<section id="annotated-density" class="level3" data-number="31.2.4">
+<h3 data-number="31.2.4" class="anchored" data-anchor-id="annotated-density"><span class="header-section-number">31.2.4</span> Annotated density</h3>
 <p>Annotation charts take literal positions: a rule at the mean, a text label and a band (<code>chart/rect</code>) over the central 50% of the values.</p>
 <p>Source: <a href="https://r-graph-gallery.com/density-plot.html">R Graph Gallery - Density chart with annotation</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7060,8 +7081,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image9.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="small-multiples" class="level3" data-number="30.2.5">
-<h3 data-number="30.2.5" class="anchored" data-anchor-id="small-multiples"><span class="header-section-number">30.2.5</span> Small multiples</h3>
+<section id="small-multiples" class="level3" data-number="31.2.5">
+<h3 data-number="31.2.5" class="anchored" data-anchor-id="small-multiples"><span class="header-section-number">31.2.5</span> Small multiples</h3>
 <p>A facet mapping gives one panel per level; the colour still groups inside each panel.</p>
 <p>Source: <a href="https://r-graph-gallery.com/density-plot.html">R Graph Gallery - Density small multiples</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -7076,8 +7097,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image10.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="stacked-density" class="level3" data-number="30.2.6">
-<h3 data-number="30.2.6" class="anchored" data-anchor-id="stacked-density"><span class="header-section-number">30.2.6</span> Stacked density</h3>
+<section id="stacked-density" class="level3" data-number="31.2.6">
+<h3 data-number="31.2.6" class="anchored" data-anchor-id="stacked-density"><span class="header-section-number">31.2.6</span> Stacked density</h3>
 <p><code>:position :stack</code> piles the group densities on one common grid; <code>:normalize</code> shows each group’s share.</p>
 <p>Source: <a href="https://r-graph-gallery.com/135-stacked-density-graph.html">R Graph Gallery - Stacked density chart</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -7094,8 +7115,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image11.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="marginal-density" class="level3" data-number="30.2.7">
-<h3 data-number="30.2.7" class="anchored" data-anchor-id="marginal-density"><span class="header-section-number">30.2.7</span> Marginal density</h3>
+<section id="marginal-density" class="level3" data-number="31.2.7">
+<h3 data-number="31.2.7" class="anchored" data-anchor-id="marginal-density"><span class="header-section-number">31.2.7</span> Marginal density</h3>
 <p><code>:margins</code> adds charts beside the panel: the top margin shares the horizontal axis, the right margin the vertical one. Margin charts read the plot’s data and colour mapping, with <code>:x</code> mapped to the shared dimension for them; they have no axes of their own, so the scatter keeps the only x and y axes.</p>
 <p>Source: <a href="https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html">R Graph Gallery - Marginal distribution</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7113,11 +7134,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="histogram" class="level2" data-number="30.3">
-<h2 data-number="30.3" class="anchored" data-anchor-id="histogram"><span class="header-section-number">30.3</span> Histogram</h2>
+<section id="histogram" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="histogram"><span class="header-section-number">31.3</span> Histogram</h2>
 <p>Counts of the values in bins shared by all panels and groups.</p>
-<section id="basic-histogram" class="level3" data-number="30.3.1">
-<h3 data-number="30.3.1" class="anchored" data-anchor-id="basic-histogram"><span class="header-section-number">30.3.1</span> Basic histogram</h3>
+<section id="basic-histogram" class="level3" data-number="31.3.1">
+<h3 data-number="31.3.1" class="anchored" data-anchor-id="basic-histogram"><span class="header-section-number">31.3.1</span> Basic histogram</h3>
 <p><code>:y</code> chooses the bar height: percent of the total (default), count, density (area 1) or probability.</p>
 <p>Source: <a href="https://r-graph-gallery.com/220-basic-ggplot2-histogram.html">R Graph Gallery - Histogram</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7134,8 +7155,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image13.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="bin-size" class="level3" data-number="30.3.2">
-<h3 data-number="30.3.2" class="anchored" data-anchor-id="bin-size"><span class="header-section-number">30.3.2</span> Bin size</h3>
+<section id="bin-size" class="level3" data-number="31.3.2">
+<h3 data-number="31.3.2" class="anchored" data-anchor-id="bin-size"><span class="header-section-number">31.3.2</span> Bin size</h3>
 <p><code>:bins</code> takes a fastmath estimation rule, a number of equal bins or explicit breaks.</p>
 <p>Source: <a href="https://r-graph-gallery.com/220-basic-ggplot2-histogram.html">R Graph Gallery - Histogram bin size</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7152,8 +7173,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image14.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="mirror-histogram" class="level3" data-number="30.3.3">
-<h3 data-number="30.3.3" class="anchored" data-anchor-id="mirror-histogram"><span class="header-section-number">30.3.3</span> Mirror histogram</h3>
+<section id="mirror-histogram" class="level3" data-number="31.3.3">
+<h3 data-number="31.3.3" class="anchored" data-anchor-id="mirror-histogram"><span class="header-section-number">31.3.3</span> Mirror histogram</h3>
 <p>Two groups back to back. Bars are filled by the group colour and outlined by <code>:stroke-color</code> - a colour, <code>:none</code> or <code>:darker</code> (the darkened fill, default); <code>:symmetric</code> gives both halves one range.</p>
 <p>Source: <a href="https://r-graph-gallery.com/190-mirrored-histogram.html">R Graph Gallery - Mirror histogram</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -7171,8 +7192,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image15.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="groups-on-one-axis" class="level3" data-number="30.3.4">
-<h3 data-number="30.3.4" class="anchored" data-anchor-id="groups-on-one-axis"><span class="header-section-number">30.3.4</span> Groups on one axis</h3>
+<section id="groups-on-one-axis" class="level3" data-number="31.3.4">
+<h3 data-number="31.3.4" class="anchored" data-anchor-id="groups-on-one-axis"><span class="header-section-number">31.3.4</span> Groups on one axis</h3>
 <p><code>:position</code> places the groups’ bars: over each other (translucent), side by side, stacked or normalized.</p>
 <p>Source: <a href="https://r-graph-gallery.com/histogram_several_group.html">R Graph Gallery - Histogram with several groups</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7189,8 +7210,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image16.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="small-multiples-1" class="level3" data-number="30.3.5">
-<h3 data-number="30.3.5" class="anchored" data-anchor-id="small-multiples-1"><span class="header-section-number">30.3.5</span> Small multiples</h3>
+<section id="small-multiples-1" class="level3" data-number="31.3.5">
+<h3 data-number="31.3.5" class="anchored" data-anchor-id="small-multiples-1"><span class="header-section-number">31.3.5</span> Small multiples</h3>
 <p>Source: <a href="https://r-graph-gallery.com/histogram.html">R Graph Gallery - Histogram small multiples</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7205,8 +7226,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image17.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="marginal-histogram" class="level3" data-number="30.3.6">
-<h3 data-number="30.3.6" class="anchored" data-anchor-id="marginal-histogram"><span class="header-section-number">30.3.6</span> Marginal histogram</h3>
+<section id="marginal-histogram" class="level3" data-number="31.3.6">
+<h3 data-number="31.3.6" class="anchored" data-anchor-id="marginal-histogram"><span class="header-section-number">31.3.6</span> Marginal histogram</h3>
 <p>A margin may hold several charts, <code>:size</code> sets its thickness in pixels and <code>:axis true</code> shows the magnitude (count, density) of a histogram or density margin; strips (boxes, rugs, …) work in margins too.</p>
 <p>Source: <a href="https://r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html">R Graph Gallery - Marginal histogram</a>. Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7224,8 +7245,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image18.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="strips-on-a-histogram" class="level3" data-number="30.3.7">
-<h3 data-number="30.3.7" class="anchored" data-anchor-id="strips-on-a-histogram"><span class="header-section-number">30.3.7</span> Strips on a histogram</h3>
+<section id="strips-on-a-histogram" class="level3" data-number="31.3.7">
+<h3 data-number="31.3.7" class="anchored" data-anchor-id="strips-on-a-histogram"><span class="header-section-number">31.3.7</span> Strips on a histogram</h3>
 <p>Any strip chart (box, violin, rug, stripplot, beeswarm, extent) layers on a histogram or density: <code>{:at v}</code> centres it on y = v; <code>:place :bottom</code> draws it below y = 0 in room the chart asks for.</p>
 <p>Source: R Graph Gallery - Histogram with boxplot on top; lattice Fig 3.1 (<a href="https://r-graph-gallery.com/82-boxplot-on-top-of-histogram.html">1</a>, <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7250,11 +7271,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="boxplot" class="level2" data-number="30.4">
-<h2 data-number="30.4" class="anchored" data-anchor-id="boxplot"><span class="header-section-number">30.4</span> Boxplot</h2>
+<section id="boxplot" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="boxplot"><span class="header-section-number">31.4</span> Boxplot</h2>
 <p>A Tukey box per group: quartiles, whiskers to the most extreme values within 1.5 IQR, outliers beyond.</p>
-<section id="basic-boxplot" class="level3" data-number="30.4.1">
-<h3 data-number="30.4.1" class="anchored" data-anchor-id="basic-boxplot"><span class="header-section-number">30.4.1</span> Basic boxplot</h3>
+<section id="basic-boxplot" class="level3" data-number="31.4.1">
+<h3 data-number="31.4.1" class="anchored" data-anchor-id="basic-boxplot"><span class="header-section-number">31.4.1</span> Basic boxplot</h3>
 <p>Source: <a href="https://r-graph-gallery.com/262-basic-boxplot-with-ggplot2.html">R Graph Gallery - Boxplot</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7270,8 +7291,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The cylinder count is a number, so it is declared categorical - one band per value instead of a numeric axis - with <code>:scales {:y {:type :categorical}}</code>; strings and keywords are categorical by themselves.</p>
 </section>
-<section id="boxplot-with-jittered-points" class="level3" data-number="30.4.2">
-<h3 data-number="30.4.2" class="anchored" data-anchor-id="boxplot-with-jittered-points"><span class="header-section-number">30.4.2</span> Boxplot with jittered points</h3>
+<section id="boxplot-with-jittered-points" class="level3" data-number="31.4.2">
+<h3 data-number="31.4.2" class="anchored" data-anchor-id="boxplot-with-jittered-points"><span class="header-section-number">31.4.2</span> Boxplot with jittered points</h3>
 <p>Source: <a href="https://r-graph-gallery.com/96-boxplot-with-jitter.html">R Graph Gallery - Boxplot with jitter</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7287,8 +7308,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image21.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="group-order" class="level3" data-number="30.4.3">
-<h3 data-number="30.4.3" class="anchored" data-anchor-id="group-order"><span class="header-section-number">30.4.3</span> Group order</h3>
+<section id="group-order" class="level3" data-number="31.4.3">
+<h3 data-number="31.4.3" class="anchored" data-anchor-id="group-order"><span class="header-section-number">31.4.3</span> Group order</h3>
 <p>The band scale’s <code>:order-by</code> orders the levels by a function of each level’s rows, from the bottom up; <code>:descending true</code> reverses it.</p>
 <p>Source: <a href="https://r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html">R Graph Gallery - Reorder boxplot</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -7308,8 +7329,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image22.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="highlight-a-group" class="level3" data-number="30.4.4">
-<h3 data-number="30.4.4" class="anchored" data-anchor-id="highlight-a-group"><span class="header-section-number">30.4.4</span> Highlight a group</h3>
+<section id="highlight-a-group" class="level3" data-number="31.4.4">
+<h3 data-number="31.4.4" class="anchored" data-anchor-id="highlight-a-group"><span class="header-section-number">31.4.4</span> Highlight a group</h3>
 <p>A derived column and an explicit colour scale: grey for the rest, red for the group in focus. Each band holds one colour group, so every box stays on its band’s centre line.</p>
 <p>Source: <a href="https://r-graph-gallery.com/23-add-colors-to-specific-groups-of-a-boxplot.html">R Graph Gallery - Highlight a group in boxplot</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7326,8 +7347,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image23.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="grouped-boxplot" class="level3" data-number="30.4.5">
-<h3 data-number="30.4.5" class="anchored" data-anchor-id="grouped-boxplot"><span class="header-section-number">30.4.5</span> Grouped boxplot</h3>
+<section id="grouped-boxplot" class="level3" data-number="31.4.5">
+<h3 data-number="31.4.5" class="anchored" data-anchor-id="grouped-boxplot"><span class="header-section-number">31.4.5</span> Grouped boxplot</h3>
 <p>Source: <a href="https://r-graph-gallery.com/265-grouped-boxplot-with-ggplot2.html">R Graph Gallery - Grouped boxplot</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7342,8 +7363,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image24.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="faceted-boxplot" class="level3" data-number="30.4.6">
-<h3 data-number="30.4.6" class="anchored" data-anchor-id="faceted-boxplot"><span class="header-section-number">30.4.6</span> Faceted boxplot</h3>
+<section id="faceted-boxplot" class="level3" data-number="31.4.6">
+<h3 data-number="31.4.6" class="anchored" data-anchor-id="faceted-boxplot"><span class="header-section-number">31.4.6</span> Faceted boxplot</h3>
 <p>Source: <a href="https://r-graph-gallery.com/boxplot.html">R Graph Gallery - Boxplot small multiples</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -7358,8 +7379,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image25.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="variable-width" class="level3" data-number="30.4.7">
-<h3 data-number="30.4.7" class="anchored" data-anchor-id="variable-width"><span class="header-section-number">30.4.7</span> Variable width</h3>
+<section id="variable-width" class="level3" data-number="31.4.7">
+<h3 data-number="31.4.7" class="anchored" data-anchor-id="variable-width"><span class="header-section-number">31.4.7</span> Variable width</h3>
 <p><code>:varwidth</code> makes each box’s width proportional to the square root of its count.</p>
 <p>Source: <a href="https://r-graph-gallery.com/266-ggplot2-boxplot-with-variable-width.html">R Graph Gallery - Boxplot with variable width</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -7375,8 +7396,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image26.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="binned-continuous-variable" class="level3" data-number="30.4.8">
-<h3 data-number="30.4.8" class="anchored" data-anchor-id="binned-continuous-variable"><span class="header-section-number">30.4.8</span> Binned continuous variable</h3>
+<section id="binned-continuous-variable" class="level3" data-number="31.4.8">
+<h3 data-number="31.4.8" class="anchored" data-anchor-id="binned-continuous-variable"><span class="header-section-number">31.4.8</span> Binned continuous variable</h3>
 <p><code>levels/bin</code> cuts a numeric column into half-open interval bins; the bins are ordered levels for the boxes.</p>
 <p>Source: <a href="https://r-graph-gallery.com/268-ggplot2-boxplot-from-continuous-variable.html">R Graph Gallery - Boxplot from continuous variable</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -7391,8 +7412,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image27.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="mean-marker" class="level3" data-number="30.4.9">
-<h3 data-number="30.4.9" class="anchored" data-anchor-id="mean-marker"><span class="header-section-number">30.4.9</span> Mean marker</h3>
+<section id="mean-marker" class="level3" data-number="31.4.9">
+<h3 data-number="31.4.9" class="anchored" data-anchor-id="mean-marker"><span class="header-section-number">31.4.9</span> Mean marker</h3>
 <p>The categorical declaration can also sit on the mapping: <code>(levels/categorical :gear)</code> reads <code>:gear</code> as usual and makes its dimension categorical, here instead of a <code>:scales</code> entry.</p>
 <p>Source: <a href="https://r-graph-gallery.com/269-ggplot2-boxplot-with-average-value.html">R Graph Gallery - Boxplot with mean</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7407,8 +7428,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image28.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="sample-size" class="level3" data-number="30.4.10">
-<h3 data-number="30.4.10" class="anchored" data-anchor-id="sample-size"><span class="header-section-number">30.4.10</span> Sample size</h3>
+<section id="sample-size" class="level3" data-number="31.4.10">
+<h3 data-number="31.4.10" class="anchored" data-anchor-id="sample-size"><span class="header-section-number">31.4.10</span> Sample size</h3>
 <p><code>:n-label</code> with <code>:n-format</code> (a format string for the count).</p>
 <p>Source: <a href="https://r-graph-gallery.com/26-add-text-over-a-boxplot.html">R Graph Gallery - Boxplot with sample size</a>. Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -7424,8 +7445,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image29.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="horizontal-and-vertical-1" class="level3" data-number="30.4.11">
-<h3 data-number="30.4.11" class="anchored" data-anchor-id="horizontal-and-vertical-1"><span class="header-section-number">30.4.11</span> Horizontal and vertical</h3>
+<section id="horizontal-and-vertical-1" class="level3" data-number="31.4.11">
+<h3 data-number="31.4.11" class="anchored" data-anchor-id="horizontal-and-vertical-1"><span class="header-section-number">31.4.11</span> Horizontal and vertical</h3>
 <p>Source: <a href="https://r-graph-gallery.com/boxplot.html">R Graph Gallery - Horizontal boxplot</a>. Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [p {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:am</span>} <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:type</span> <span class="at">:categorical</span>}} <span class="at">:charts</span> [(chart/box)]</span>
@@ -7440,8 +7461,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image30.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="intervals" class="level3" data-number="30.4.12">
-<h3 data-number="30.4.12" class="anchored" data-anchor-id="intervals"><span class="header-section-number">30.4.12</span> Intervals</h3>
+<section id="intervals" class="level3" data-number="31.4.12">
+<h3 data-number="31.4.12" class="anchored" data-anchor-id="intervals"><span class="header-section-number">31.4.12</span> Intervals</h3>
 <p><code>chart/extent</code> draws an interval per group from fastmath.stats: here the 95% confidence interval of the mean, mean ± standard deviation and a bootstrap percentile interval.</p>
 <p>Source: seaborn - pointplot (confidence intervals); cljplot - extents (<a href="https://seaborn.pydata.org/generated/seaborn.pointplot.html">1</a>, <a href="https://github.com/generateme/cljplot/blob/master/sketches/examples.clj">2</a>). Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -7460,11 +7481,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="ridgeline" class="level2" data-number="30.5">
-<h2 data-number="30.5" class="anchored" data-anchor-id="ridgeline"><span class="header-section-number">30.5</span> Ridgeline</h2>
+<section id="ridgeline" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="ridgeline"><span class="header-section-number">31.5</span> Ridgeline</h2>
 <p>Histograms and densities with a categorical <code>:y</code> become ridgelines: one profile per level, growing toward the next level, all on one height scale (<code>:overlap</code> - the tallest profile in band steps).</p>
-<section id="basic-ridgeline" class="level3" data-number="30.5.1">
-<h3 data-number="30.5.1" class="anchored" data-anchor-id="basic-ridgeline"><span class="header-section-number">30.5.1</span> Basic ridgeline</h3>
+<section id="basic-ridgeline" class="level3" data-number="31.5.1">
+<h3 data-number="31.5.1" class="anchored" data-anchor-id="basic-ridgeline"><span class="header-section-number">31.5.1</span> Basic ridgeline</h3>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> months </span>[<span class="st">"January"</span> <span class="st">"February"</span> <span class="st">"March"</span> <span class="st">"April"</span> <span class="st">"May"</span> <span class="st">"June"</span> <span class="st">"July"</span> <span class="st">"August"</span> <span class="st">"September"</span> <span class="st">"October"</span> <span class="st">"November"</span></span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>             <span class="st">"December"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -7483,8 +7504,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image32.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="ridge-shapes" class="level3" data-number="30.5.2">
-<h3 data-number="30.5.2" class="anchored" data-anchor-id="ridge-shapes"><span class="header-section-number">30.5.2</span> Ridge shapes</h3>
+<section id="ridge-shapes" class="level3" data-number="31.5.2">
+<h3 data-number="31.5.2" class="anchored" data-anchor-id="ridge-shapes"><span class="header-section-number">31.5.2</span> Ridge shapes</h3>
 <p>Histograms make ridgelines too; any strip chart can share the bands.</p>
 <p>Source: <a href="https://r-graph-gallery.com/294-basic-ridgeline-plot.html">R Graph Gallery - Ridgeline chart</a>. Data: Prices and attributes of round cut diamonds, R ggplot2 package <code>diamonds</code> (Wickham et al.); licence: MIT (ggplot2).</p>
 <div class="sourceClojure">
@@ -7503,8 +7524,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image33.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="gradient-fill" class="level3" data-number="30.5.3">
-<h3 data-number="30.5.3" class="anchored" data-anchor-id="gradient-fill"><span class="header-section-number">30.5.3</span> Gradient fill</h3>
+<section id="gradient-fill" class="level3" data-number="31.5.3">
+<h3 data-number="31.5.3" class="anchored" data-anchor-id="gradient-fill"><span class="header-section-number">31.5.3</span> Gradient fill</h3>
 <p><code>:fill-gradient</code> colours the area along <code>:x</code> with a clojure2d gradient.</p>
 <p>Source: <a href="https://r-graph-gallery.com/294-basic-ridgeline-plot.html">R Graph Gallery - Ridgeline with gradient</a>. Data: Weather in Lincoln, Nebraska, 2016, R ggridges package <code>lincoln_weather</code> (Weather Underground, via Wilke); licence: GPL-2 (ggridges).</p>
 <div class="sourceClojure">
@@ -7520,8 +7541,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image34.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="double-ridgeline" class="level3" data-number="30.5.4">
-<h3 data-number="30.5.4" class="anchored" data-anchor-id="double-ridgeline"><span class="header-section-number">30.5.4</span> Double ridgeline</h3>
+<section id="double-ridgeline" class="level3" data-number="31.5.4">
+<h3 data-number="31.5.4" class="anchored" data-anchor-id="double-ridgeline"><span class="header-section-number">31.5.4</span> Double ridgeline</h3>
 <p>With two groups, <code>:position :mirror</code> grows the second group away from the next level.</p>
 <p>Source: <a href="https://r-graph-gallery.com/web-double-ridgeline-plot.html">R Graph Gallery - Ridgeline (two groups)</a>. Data: A-level chemistry scores, England 1997, R mlmRev package <code>Chem97</code> (Yang et al.&nbsp;2002); licence: GPL (&gt;= 2) (mlmRev).</p>
 <div class="sourceClojure">
@@ -7538,8 +7559,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="beeswarm" class="level2" data-number="30.6">
-<h2 data-number="30.6" class="anchored" data-anchor-id="beeswarm"><span class="header-section-number">30.6</span> Beeswarm</h2>
+<section id="beeswarm" class="level2" data-number="31.6">
+<h2 data-number="31.6" class="anchored" data-anchor-id="beeswarm"><span class="header-section-number">31.6</span> Beeswarm</h2>
 <p>Points packed across their band so none overlap (<code>:fit</code> squeezes a swarm that is too wide into its band). A colour mapping makes groups - here each species is alone in its band, so the swarm stays centred - and the box opts out of the colour with <code>:mapping {:color nil}</code>.</p>
 <p>Source: R Graph Gallery - Beeswarm (<a href="https://r-graph-gallery.com/370-basic-beeswarm-plot.html">1</a>, <a href="https://r-graph-gallery.com/371-custom-dots-beeswarm.html">2</a>, <a href="https://r-graph-gallery.com/372-grouped-beeswarm.html">3</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7564,10 +7585,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image36.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="strip-plot-and-rug" class="level2" data-number="30.7">
-<h2 data-number="30.7" class="anchored" data-anchor-id="strip-plot-and-rug"><span class="header-section-number">30.7</span> Strip plot and rug</h2>
-<section id="strip-plot" class="level3" data-number="30.7.1">
-<h3 data-number="30.7.1" class="anchored" data-anchor-id="strip-plot"><span class="header-section-number">30.7.1</span> Strip plot</h3>
+<section id="strip-plot-and-rug" class="level2" data-number="31.7">
+<h2 data-number="31.7" class="anchored" data-anchor-id="strip-plot-and-rug"><span class="header-section-number">31.7</span> Strip plot and rug</h2>
+<section id="strip-plot" class="level3" data-number="31.7.1">
+<h3 data-number="31.7.1" class="anchored" data-anchor-id="strip-plot"><span class="header-section-number">31.7.1</span> Strip plot</h3>
 <p>Jittered points; <code>:rng</code> makes the jitter reproducible.</p>
 <p>Source: lattice stripplot; seaborn stripplot (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.stripplot.html">2</a>). Data: Barley yields, Minnesota 1931-1932, R lattice package <code>barley</code> (Immer et al.&nbsp;1934; Fisher 1971; Cleveland 1993); licence: GPL (&gt;= 2) (lattice).</p>
 <div class="sourceClojure">
@@ -7583,8 +7604,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image37.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="rug" class="level3" data-number="30.7.2">
-<h3 data-number="30.7.2" class="anchored" data-anchor-id="rug"><span class="header-section-number">30.7.2</span> Rug</h3>
+<section id="rug" class="level3" data-number="31.7.2">
+<h3 data-number="31.7.2" class="anchored" data-anchor-id="rug"><span class="header-section-number">31.7.2</span> Rug</h3>
 <p>One line per value along the panel edge (<code>:edge</code>, the default without <code>:y</code>) or below y = 0 (<code>:bottom</code>).</p>
 <p>Source: seaborn rugplot; lattice densityplot (<a href="https://seaborn.pydata.org/generated/seaborn.rugplot.html">1</a>, <a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7601,8 +7622,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="d-strips" class="level2" data-number="30.8">
-<h2 data-number="30.8" class="anchored" data-anchor-id="d-strips"><span class="header-section-number">30.8</span> 1d strips</h2>
+<section id="d-strips" class="level2" data-number="31.8">
+<h2 data-number="31.8" class="anchored" data-anchor-id="d-strips"><span class="header-section-number">31.8</span> 1d strips</h2>
 <p>Every strip chart also works on one variable alone: without <code>:y</code> it is placed in the middle of the panel (the rug, on the panel’s edge by default, takes <code>:place :center</code>) and the plot has no y axis.</p>
 <p>Source: seaborn boxplot, swarmplot (1d) (<a href="https://seaborn.pydata.org/generated/seaborn.boxplot.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.swarmplot.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
@@ -7624,8 +7645,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="use_cases.distribution_files/image39.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="empirical-cumulative-distribution" class="level2" data-number="30.9">
-<h2 data-number="30.9" class="anchored" data-anchor-id="empirical-cumulative-distribution"><span class="header-section-number">30.9</span> Empirical cumulative distribution</h2>
+<section id="empirical-cumulative-distribution" class="level2" data-number="31.9">
+<h2 data-number="31.9" class="anchored" data-anchor-id="empirical-cumulative-distribution"><span class="header-section-number">31.9</span> Empirical cumulative distribution</h2>
 <p>Source: lattice ecdfplot; seaborn ecdfplot (<a href="http://lmdvr.r-forge.r-project.org/figures/figures.html">1</a>, <a href="https://seaborn.pydata.org/generated/seaborn.ecdfplot.html">2</a>). Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -8048,12 +8069,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./reference.specific_cases.html" class="pagination-link" aria-label="Specific cases">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Specific cases</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Specific cases</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./use_cases.correlation.html" class="pagination-link" aria-label="Correlation">
-        <span class="nav-page-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Correlation</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Correlation</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

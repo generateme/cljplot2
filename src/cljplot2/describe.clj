@@ -8,6 +8,9 @@
   - `:path` - longer than `[k]` for the entries of nested closed maps (each nested map also has its own row).
   - `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a nested map's with [[rows-under]].
   - `:default` / `:default-doc` / `:description` / `:fragment` / `:section` - `nil` when absent.
+  - `:values` - `[{:value v :meaning m} ...]`, the literal values the entry accepts (enum members, `:=` constants, `true` / `false`, a named type's `:cljplot2/value-set`), `nil` only when documented; `:forms` - `[{:form k :type text :meaning m} ...]`, its other accepted forms (`k` a named type's keyword or a malli type, `text` the short type name); `:other-values` - the meaning of the values without their own; meanings from the entry's `:cljplot2/value-meanings` / `:cljplot2/form-meanings`, else the schema's `:cljplot2/value-meanings` (see [[cljplot2.schema]]). Empty for a flattened map's row.
+  - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can.
+  - `:theme-default` - true on a chart's style row whose `:default` comes from the theme.
   - `:required` - false in a merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides).
   - `:default` is the value used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines).
 
@@ -18,7 +21,7 @@
   - [[options]] - rows of a chart value's options (style defaults from theme `[:chart kind]`), of a builder or API function var (its `:cljplot2/options` schema) or of a map schema; [[schema-rows]], [[mapping]] - rows of the mapping keys a chart reads.
   - [[theme-rows]] - the theme's rows with their defaults and text roles; [[style-rows]] - the rows of a named theme style (a builder's) with its defaults.
   - [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts), [[fragment-keys]], [[own-rows]].
-  - Slicing: [[top-level-rows]], [[rows-under]], [[container-row?]]; [[type-text]] - readable type text of a schema.
+  - Slicing: [[top-level-rows]], [[rows-under]], [[container-row?]]; [[type-text]] - readable type text of a schema; [[example]] - an option's example value; [[concepts]] - section titles.
   - Listings: [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every namespace holding them), [[chart-constructors]], [[plot-level-schemas]], [[attribute-values]]."
   (:require [clojure.string :as str]
             [fastmath.core :as m]
@@ -59,6 +62,10 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def concepts
+  "Section titles of the reference part: chart kind, builder or function -> the concept its section is named after (the heading `## title`; the first sentence names the function). Kinds without an entry keep the kind's name (pages not yet rewritten)."
+  {:smooth "Smoothing"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -205,6 +212,86 @@
         (when (symbol? t) (get predicate-texts t (str/replace (name t) #"\?$" "")))
         (pr-str (malli/form s)))))
 
+(def ^:private boolean-types
+  "Schema types of `true` / `false`: malli's `:boolean`, the predicate `boolean?` and [[cljplot2.schema/bool]]."
+  #{:boolean 'boolean? :cljplot2.schema/boolean})
+
+(defn- form-of
+  "Gives the form of a schema that isn't a literal value: its type key and its short type text.
+
+  Parameters:
+
+  - `s`: a malli schema.
+
+  Returns `{:form k :type text}` - `k` the schema's type (a named type's keyword, a malli type), `text` a named type's `:cljplot2/type-name`, else its [[type-text]]."
+  [s]
+  (let [compiled (malli/schema s)]
+    {:form (malli/type compiled)
+     :type (or (:cljplot2/type-name (malli/type-properties compiled)) (type-text compiled))}))
+
+(defn- alternatives
+  "Gives the values and forms an entry schema accepts, `nil` left out.
+
+  The top-level alternatives of `:maybe` and `:or` are taken apart: `:enum` and `:=` give literal values, a boolean type `true` and `false`, a named type with `:cljplot2/value-set` / `:cljplot2/other-types` its values and the forms of those types; anything else is one form (see [[form-of]]).
+
+  Parameters:
+
+  - `schema`: an entry's malli schema.
+
+  Returns `{:values [[v meanings] ...] :forms [{:form :type} ...]}` - `meanings` the value meanings of the schema the value comes from (`:cljplot2/value-meanings` of an enum's or a named type's properties), or `nil`. Throws `ex-info` for an `:cljplot2/other-types` keyword that isn't in [[cljplot2.schema/documented-types]]."
+  [schema]
+  (let [s (malli/schema schema)
+        t (malli/type s)
+        tp (malli/type-properties s)
+        children (malli/children s)]
+    (cond
+      (= :maybe t) (alternatives (first children))
+      (= :or t) (apply merge-with into {:values [] :forms []} (map alternatives children))
+      (= :enum t) {:values (mapv (fn [v] [v (:cljplot2/value-meanings (malli/properties s))]) children) :forms []}
+      (= := t) {:values [[(first children) nil]] :forms []}
+      (contains? boolean-types t) {:values [[true nil] [false nil]] :forms []}
+      (or (:cljplot2/value-set tp) (:cljplot2/other-types tp))
+      {:values (mapv (fn [v] [v (:cljplot2/value-meanings tp)]) (sort-by str (:cljplot2/value-set tp)))
+       :forms (mapv (fn [k]
+                      (form-of (or (get schema/documented-types k)
+                                   (throw (ex-info (str "Not a documented type: " k) {:key :cljplot2/other-types :value k})))))
+                    (:cljplot2/other-types tp))}
+      :else {:values [] :forms [(form-of s)]})))
+
+(defn- option-forms
+  "Gives the row keys describing what an entry accepts: its values with their meanings and its other forms.
+
+  Parameters:
+
+  - `props` (map): the entry's properties - `:cljplot2/value-meanings` (value meanings, winning over the schema's; a `nil` key adds `nil` as a value), `:cljplot2/form-meanings`, `:cljplot2/other-values`.
+  - `s`: the entry's malli schema.
+
+  Returns `{:values [{:value v :meaning m} ...] :forms [{:form k :type text :meaning m} ...] :other-values text}` - each value once, in schema order (`nil` first when documented), with the first meaning any part of the schema gives it; meanings `nil` when absent."
+  [props s]
+  (let [{:keys [values forms]} (alternatives s)
+        own (:cljplot2/value-meanings props)
+        listed (cond->> values (contains? own nil) (cons [nil nil]))]
+    {:values (let [entries (map (fn [[v meanings]] {:value v :meaning (get own v (get meanings v))}) listed)
+                   by-value (group-by :value entries)]
+               (mapv (fn [v] (let [same (by-value v)] (or (first (filter :meaning same)) (first same))))
+                     (distinct (map :value entries))))
+     :forms (mapv #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %))) forms)
+     :other-values (:cljplot2/other-values props)}))
+
+(defn example
+  "Gives the example value of an option row: shown as code next to the option.
+
+  Parameters:
+
+  - `row` (map): an option row (see the namespace doc).
+
+  Returns `[v]` - the example wrapped, so `false` is one too: the row's own `:example` (the entry's `:cljplot2/example`) when it has one, else the first of its values - those with a meaning first - other than its `:default` and `nil`; `nil` when there is none (a row taking no literal value needs its own example)."
+  [{:keys [values default] :as row}]
+  (if (contains? row :example)
+    [(:example row)]
+    (some (fn [{:keys [value]}] (when (and (some? value) (not= value default)) [value]))
+          (concat (filter :meaning values) (remove :meaning values)))))
+
 ;; rows
 
 (defn- entries-map
@@ -279,11 +366,14 @@
 
   The row's metadata `::container` marks an entry holding entries of its own (see [[with-defaults]]) - not one whose entries a shared group documents (`:cljplot2/entries-fragment`): that row keeps its own value as the default (e.g. a text role's style)."
   [[path k props s] merged? section]
-  (with-meta {:key k :path path :type (if (flattened? props s) "map" (type-text s))
-              :required (and (not merged?) (not (:optional props)))
-              :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
-              :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
-    {::container (and (container? s) (not (:cljplot2/entries-fragment props)))}))
+  (let [flat? (flattened? props s)]
+    (with-meta (cond-> (into {:key k :path path :type (if flat? "map" (type-text s))
+                              :required (and (not merged?) (not (:optional props)))
+                              :default (:default props) :default-doc (:cljplot2/default-doc props) :description (:description props)
+                              :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
+                             (if flat? {:values [] :forms [] :other-values nil} (option-forms props s)))
+                 (contains? props :cljplot2/example) (assoc :example (:cljplot2/example props)))
+      {::container (and (container? s) (not (:cljplot2/entries-fragment props)))})))
 
 (defn- map-rows
   "Returns the rows of the entries of a map schema, nested closed maps flattened after their own row.
@@ -322,7 +412,7 @@
 
   - `chart` (map): a chart value - `:kind`, `:schema` (`:options`, `:style`).
 
-  Returns its options schema's rows, the top-level style entries with their `:default` from the default theme `[:chart kind]`."
+  Returns its options schema's rows, the top-level style entries with their `:default` from the default theme `[:chart kind]` and `:theme-default true`."
   [{:keys [kind] :as chart}]
   (let [style-keys (set (map :key (schema-rows (get-in chart [:schema :style]))))
         style (get-in theme/default-theme [:chart kind])]
@@ -331,7 +421,7 @@
               (and (m/one? (count path))
                    (contains? style-keys option-key)
                    (contains? style option-key))
-              (assoc :default (get style option-key))))
+              (assoc :default (get style option-key) :theme-default true)))
           (schema-rows (get-in chart [:schema :options])))))
 
 (defn- with-defaults

@@ -28,7 +28,7 @@
 
 (def ^:private concept-chapters
   "The concept chapters (R3), in reading order."
-  ["intro" "render" "data_mapping" "aesthetics_legends" "scales_axes_coords" "layering_position" "labels_text"
+  ["intro" "render" "data_mapping" "types" "aesthetics_legends" "scales_axes_coords" "layering_position" "labels_text"
    "facets_arrange" "theme" "shared_options" "errors" "limits"])
 
 (def ^:private chart-chapters
@@ -99,6 +99,34 @@
 
 (def ^:private options-table 'notebook-utils/options-table)
 
+(def ^:private option-cards
+  "Option cards: `(option-cards call rows [section])` - the readable form of an options table (pages migrated)."
+  'notebook-utils/option-cards)
+
+(def ^:private table-heads
+  "Calls showing option rows: options tables, option cards and mapping lists."
+  #{options-table option-cards 'notebook-utils/mapping-list})
+
+(defn- table-call?
+  "Tests whether `form` is a call showing option rows (see [[table-heads]])."
+  [form]
+  (and (seq? form) (contains? table-heads (first form))))
+
+(defn- table-rows-form
+  "The rows form of a table call: option cards take the call first."
+  [form]
+  (if (= option-cards (first form)) (nth form 2) (second form)))
+
+(defn- table-section
+  "The section of a table call, `nil` for the whole rows."
+  [form]
+  (nth form (if (= option-cards (first form)) 3 2) nil))
+
+(defn- all-table-calls
+  "Every table call (see [[table-heads]]) anywhere in `forms`."
+  [forms]
+  (mapcat #(calls forms %) table-heads))
+
 (def ^:private max-table-rows
   "The most rows a table shows - longer ones are sliced into sections."
   12)
@@ -116,8 +144,8 @@
   "Every options table of the pages: `{:page p :rows-form f :section s}` (`s` nil - the whole rows)."
   []
   (for [[page forms] (notebook-forms)
-        call (calls forms options-table)]
-    {:page page :rows-form (normalized (second call)) :section (nth call 2 nil)}))
+        call (all-table-calls forms)]
+    {:page page :rows-form (normalized (table-rows-form call)) :section (table-section call)}))
 
 (defn- eval-rows-arg
   "The value of a (resolved) form of a table's rows or of their source."
@@ -138,7 +166,7 @@
 (defn- options-table-args
   "The arguments of every `describe/options` call inside an options table anywhere in `forms`."
   [forms]
-  (set (for [table (calls forms options-table)
+  (set (for [table (all-table-calls forms)
              call (calls table 'cljplot2.describe/options)]
          (second call))))
 
@@ -240,7 +268,7 @@
   "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs,
   data tables, option tables and shared group lists."
   #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table
-    'notebook-utils/shared-groups options-table})
+    'notebook-utils/shared-groups options-table option-cards 'notebook-utils/mapping-list})
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown, also a data table of a
@@ -260,7 +288,7 @@
   (loop [[form & more] forms, pending nil, missing []]
     (cond
       (nil? form) (cond-> missing pending (conj pending))
-      (and (seq? form) (= options-table (first form))) (recur more (second form) (cond-> missing pending (conj pending)))
+      (table-call? form) (recur more (table-rows-form form) (cond-> missing pending (conj pending)))
       (illustration? form) (recur more nil missing)
       :else (recur more pending missing))))
 
@@ -279,6 +307,8 @@
     (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym]))))
   (testing "a data table of a computed value is an example; of a defined name, setup"
     (is (= [] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (f x))])))
+    (is (= [:b] (tables-without-example [(list option-cards 'c :b) (list 'notebook-utils/mapping-list :c) '(f)]))
+        "option cards and mapping lists are tables too")
     (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))
     (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (notebook-utils/dataset :k))]))
         "a dataset as read is input, not an example")
@@ -310,7 +340,7 @@
   "Row keys (see [[row-keys]]) of every options table of the page forms `forms`, and of every shared group list
   (`:groups`)."
   [forms]
-  {:tables (set (map #(row-keys (eval-rows (normalized (second %)))) (calls forms options-table)))
+  {:tables (set (map #(row-keys (eval-rows (normalized (table-rows-form %)))) (all-table-calls forms)))
    :groups (set (map #(row-keys (eval-rows (second %))) (calls forms 'notebook-utils/shared-groups)))})
 
 (deftest chart-pages-test
@@ -326,8 +356,8 @@
             :let [rows (describe/options (@(constructors kind)))
                   mapping (describe/mapping (@(constructors kind)))
                   own (describe/own-rows rows)]]
-      (testing (str page " " kind ": a heading, the mapping table, the own options table, the shared groups")
-        (is (re-find (re-pattern (str "(?m)^;; ## " (name kind) "$")) text))
+      (testing (str page " " kind ": a heading (its concept, see describe/concepts), the mapping table, the own options table, the shared groups")
+        (is (re-find (re-pattern (str "(?m)^;; ## " (java.util.regex.Pattern/quote (get describe/concepts kind (name kind))) "$")) text))
         (when (seq mapping) (is (tables (row-keys mapping))))
         (when (seq own) (is (tables (row-keys own))))
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))))))

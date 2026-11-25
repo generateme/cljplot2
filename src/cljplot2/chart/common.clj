@@ -42,7 +42,9 @@
 
   - `default` (keyword): the chart's default, `:data` or `:scale`.
   - `description` (string): the entry's description (what runs in that space).
+  - `props` (map, optional): further documenting properties of the entry (e.g. `:cljplot2/value-meanings`, see [[cljplot2.schema]]).
 
   Returns a nilable schema entry `:stat-space`."
-  [default description]
-  (schema/nilable :stat-space {:description description :default default} [:enum :data :scale]))
+  ([default description] (stat-space-option default description nil))
+  ([default description props]
+   (schema/nilable :stat-space (merge {:description description :default default} props) [:enum :data :scale])))

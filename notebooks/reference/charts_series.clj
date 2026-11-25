@@ -77,11 +77,12 @@
 
 (nu/shared-groups (describe/options (chart/ribbon)))
 
-;; ## smooth
+;; ## Smoothing
 
-;; A curve fitted to the rows of each group, by default with a confidence band.
+;; `chart/smooth` fits a curve to each group's points, by default with a confidence band. Use it to show the trend
+;; of scattered data.
 
-(nu/options-table (describe/mapping (chart/smooth)))
+(nu/mapping-list (describe/mapping (chart/smooth)))
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -91,10 +92,10 @@
 
 ;; ### Fit
 
-;; The fit method and its parameters, the number of points the curve is evaluated at, and whether each group's fit
-;; spans only its own x range, and the space the fit runs in (a log axis's log10 coordinates by default):
+;; These options choose how the curve is fitted. Change them when the default loess curve is too wiggly or too stiff,
+;; when you want a straight line or a polynomial, or when groups should share one x range.
 
-(nu/options-table (describe/own-rows (describe/options (chart/smooth))) :fit)
+(nu/option-cards 'chart/smooth (describe/own-rows (describe/options (chart/smooth))) :fit)
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:method :lm})]
@@ -108,8 +109,8 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; The curve sampled at only `:n 6` points (a polyline), and two groups - short and long eruptions - fitted over
-;; their own x ranges or, with `:full-range true`, over the range of both (and the panel without padding on x):
+;; With `:n 6` the curve is a polyline through six points. Short and long eruptions each fit over their own x range
+;; unless `:full-range` is `true` (the right panel also drops the x padding):
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:n 6})]
@@ -127,7 +128,7 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; Values growing with the logarithm of x (random, seeded), x spread evenly over three decades:
+;; These seeded random values grow with log x; x spreads evenly over three decades:
 
 (def log-growth (mapv (fn [^double u ^double e] {:x (m/pow 10.0 u) :y (+ (* 3.0 u) e)})
                       (m/slice-range 0.0 3.0 60)
@@ -135,8 +136,8 @@
 
 (nu/data-table log-growth)
 
-;; On a log axis the fit runs in the axis's log10 coordinates (`:stat-space :scale`, the default) - a straight line
-;; there; `:stat-space :data` fits in data units, a line in x that the log axis bends:
+;; On a log axis the default `:stat-space :scale` gives a straight line; `:stat-space :data` fits data units, so the
+;; axis bends it:
 
 (plot/render-image (plot/arrange [{:data log-growth :mapping {:x :x :y :y} :scales {:x {:kind :log}}
                                    :charts [(chart/scatter) (chart/smooth {:method :lm :stat-space :scale})]
@@ -149,10 +150,10 @@
 
 ;; ### Band
 
-;; The band around the curve: confidence or prediction, nested levels, a bootstrap (seeded here), or none, and
-;; its fill:
+;; These options shape the uncertainty band around the curve. Use them to show where the fitted curve may lie or
+;; where new points may fall, to widen or nest the band, or to leave it out.
 
-(nu/options-table (describe/own-rows (describe/options (chart/smooth))) :band)
+(nu/option-cards 'chart/smooth (describe/own-rows (describe/options (chart/smooth))) :band)
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:method :lm :band :prediction})]
@@ -168,8 +169,7 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; The confidence band (`:band :confidence`, the default of `:loess`, `:lm`, `:glm` and `:gp`) at a higher level - a
-;; wider band, in its own fill - and no band (`:band :none`):
+;; A higher `:level` widens the confidence band, here in its own fill; `:band :none` leaves it out:
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/smooth {:band :confidence :level 0.999 :fill [200 80 40 90]})]

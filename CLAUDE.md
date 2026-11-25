@@ -13,7 +13,8 @@ Design history, specs and the roadmap live in the user's Obsidian vault: `~/note
 (`01 Build Steps/Architecture Design.md`; `02 Malli Validation/` - option schemas and validation; `03 Use Case
 Notebooks/` - a folder per section or gallery, the roadmap with section status and backlog in `00 Frame and
 Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference part of the book; `05 Code Review/` - code
-review rounds, their specs and implementation notes). Read them when a decision's rationale is unclear.
+review rounds, their specs and implementation notes; `06 Reference Readability/` - option cards, concept headings
+and prose of the reference part). Read them when a decision's rationale is unclear.
 
 ## Commands
 
@@ -264,14 +265,15 @@ the theme: banned names, and one type family per name across all owners). One na
 - `notebooks/reference/*.clj` (four Reference parts - concepts, charts, builders, data functions - before Use cases;
   Quarto books have one level of parts), `notebooks/use_cases/*.clj` and
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
-  only from `nu/options-table` over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
+  only from `nu/options-table` (option cards on migrated pages - see below) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
   time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
   `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key and section
   has a table of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
   `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
   some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
   class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`). Chart pages (`charts_*.clj`, kinds per
-  page in `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading, its mapping table, its own
+  page in `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
+  below), its mapping table, its own
   options (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by `:cljplot2/section` when
   over 12 rows), each followed by an example, then `nu/shared-groups` (links to the group's `###` heading there);
   `chart-coverage-test`: every own top-level option set in a literal `(chart/kind {...})` map on the page and every
@@ -280,6 +282,14 @@ the theme: banned names, and one type family per name across all owners). One na
   heading per `:cljplot2/api` function, its full options table); the same coverage rule over a call's literal last
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
+  Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, the one switch):
+  `nu/option-cards call rows [section]` instead of options tables (per option a boxed card: a header with the option
+  and its default, an example call, then its description, a bullet per value or form with its meaning and the other
+  values of a long list on one line), each card group after a sentence or two on what the options are for, and
+  `nu/mapping-list` (a titled Mapping box) instead of the mapping table; the section heading names the concept
+  (`describe/concepts`, e.g. `## Smoothing`), its first sentence names the function and says what it's for; type
+  names link to the Types chapter (`nu/type-entries`, from `schema/documented-types`). Links into a reference section
+  are checked against its headings (`option-cards-test/reference-links-test`).
   Conventions: a heading, 1-3 lines, code ending in `plot/render-image`; every random value from a seeded rng
   (`(r/rng :mersenne n)`); no notebook plotting helpers. `book-data-test` checks the rest:
   - images at most 1000×800 - a bigger one states its reason in the prose and is listed in
@@ -290,6 +300,11 @@ the theme: banned names, and one type family per name across all owners). One na
   - data shown: rows, columns and samples (more than 12 numbers or number vectors);
   - use cases in the R Graph Gallery site order - distribution, correlation, ranking, part of a whole, evolution,
     flow, colours - in `chapters.edn`, the index, `specific_cases` and the README.
+- Book prose (reference rewrites): natural English as a person explaining - the actor named (no hiding passive), the
+  verbs developers use for code (returns, takes, parses, checks - not "gives nil", "writes", "tells"), subject and
+  verb first, no comma chains or habitual ", and" joins, short names (`chart/smooth`, not fully qualified), no spec
+  jargon, nothing said twice (no intro that lists what the cards show), no verbless fragments; not longer than
+  before; every claim checked against the code.
 - `docs/` holds only Clay output (wiped on every build); the `:clay` classpath is `notebooks/` only, so notebooks
   can't require `dev/` code.
 - Datasets: `notebooks/data/` + `datasets.edn` (source, licence, via); load with `(nu/dataset :key)`. A test checks
@@ -306,7 +321,8 @@ the theme: banned names, and one type family per name across all owners). One na
 - Never mutate a caller's arrays.
 - Option schemas are closed; new options are off by default (existing images unchanged).
 - Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one sentence, lowercase, no
-  period), `:default` for a constant behaviour default (never on style entries - the theme holds those) or
+  period; a migrated chart's - one or two full sentences, at most 300 characters, saying what the option controls),
+  `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
   `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
   entries a group documents; `:cljplot2/section` slices the table of the map holding the entry (in one map all user
@@ -317,6 +333,13 @@ the theme: banned names, and one type family per name across all owners). One na
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
   described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
   `default-theme`, text roles their descriptions and sections from `theme/text-roles`.
+  For option cards an entry also gives `:cljplot2/value-meanings` (value meanings), `:cljplot2/form-meanings` (meanings of
+  other forms, keyed by named type or malli type), `:cljplot2/other-values` (one meaning for a long list's rest) and
+  `:cljplot2/example`; a named type gives `:cljplot2/type-name`, `:cljplot2/type-meaning` and, for a predicate over
+  values, `:cljplot2/value-set` / `:cljplot2/other-types`. `option-cards-test` checks a migrated chart: sentences, a
+  meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
+  option taking several, a default for every optional option, a valid example for every option; `migrated` equals
+  the keys of `describe/concepts` and each migrated section uses cards, never an options table.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
   `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`
   var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema

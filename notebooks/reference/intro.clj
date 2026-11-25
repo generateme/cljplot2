@@ -14,7 +14,7 @@
 
 ;; ## How the part is organised
 
-;; * **Concepts** (this chapter and the next eleven) - rendering, data and mapping, aesthetics and legends, scales
+;; * **Concepts** (this chapter and the next twelve) - rendering, data and mapping, types, aesthetics and legends, scales
 ;;   and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors
 ;;   and what the library doesn't do.
 ;; * **Charts** (from [Points and paths](reference.charts_points_paths.html)) - the options of each chart kind.
@@ -36,6 +36,9 @@
 ;; * **Description** - what the key does.
 ;; * **Group** - shown when a table mixes keys of a shared group (data and mapping, curves, strips ...) with others;
 ;;   a group is described once, in the Shared options chapter.
+
+;; Some sections show options as cards instead: each gives the option's default, what it does, the values or
+;; [types](reference.types.html) it takes with their meanings, and an example.
 
 ;; ## A plot is a map
 

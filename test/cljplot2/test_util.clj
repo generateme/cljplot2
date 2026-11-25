@@ -4,6 +4,11 @@
             [cljplot2.describe :as describe]
             [cljplot2.theme :as theme]))
 
+(def migrated
+  "Chart kinds whose reference sections show option cards (`nu/option-cards`) and follow the card rules of
+  `option-cards-test` - the one switch of the readability rewrite; `cljplot2.describe/concepts` names their sections."
+  #{:smooth})
+
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."
   [f]
