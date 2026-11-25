@@ -109,7 +109,7 @@ The data panel's fill and border; `:alternate-fill` shades every other facet pan
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>panel background colour</td></tr><tr><td>:panel :alternate-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 12]</td><td>drawn over odd facet panels (row + column odd); :none - off</td></tr><tr><td>:panel :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>panel border colour</td></tr><tr><td>:panel :border-width</td><td>a non-negative number</td><td>1</td><td>panel border width in pixels (drawn inside the panel)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>panel background colour</td></tr><tr><td>:panel :alternate-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 12]</td><td>drawn over odd facet panels (row + column odd); :none - off</td></tr><tr><td>:panel :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>panel border colour</td></tr><tr><td>:panel :border-width</td><td>a non-negative number</td><td>1</td><td>panel border width in pixels (drawn inside the panel)</td></tr><tr><td>:panel :invalid-band-size</td><td>a non-negative number</td><td>24</td><td>pixels across the band of invalid values beside a panel's axis (charts' :invalid :show), at least its label's</td></tr></tbody></table>
 ```
 
 :::

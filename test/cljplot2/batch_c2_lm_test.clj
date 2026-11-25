@@ -90,8 +90,8 @@
   (testing "a wrong value, an unknown side"
     (is (= [:margins :bottom] (:in (error #(plot/build (scatter-plot {:bottom 3}) options)))))
     (is (= [:margins :below] (:in (error #(plot/build (scatter-plot {:below (chart/rug)}) options))))))
-  (testing "not with facets or polar coordinates"
-    (is (some? (error #(plot/build (assoc-in (scatter-plot {:left (chart/rug)}) [:mapping :facet] :g) options))))
+  (testing "with facets (batch C3), not with polar coordinates"
+    (is (some? (plot/build (assoc-in (scatter-plot {:left (chart/rug)}) [:mapping :facet] :g) options)))
     (is (= :coord (:key (error #(plot/build (assoc (scatter-plot {:bottom (chart/rug)}) :coord {:kind :polar}) options)))))))
 
 (deftest bottom-left-margin-legend-test

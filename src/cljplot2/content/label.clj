@@ -19,7 +19,8 @@
   Content is validated against [[label-options]] by [[cljplot2.graphics.measure/validate-content]] (called from
   `grid/prepare`).
 
-  Functions: [[quarter-turn]], [[text-frame]], [[name-text]], [[value-text]], [[box-at]], [[draw-at!]], [[draw-at-frame!]]; schema
+  Functions: [[quarter-turn]], [[text-frame]], [[name-text]], [[value-text]], [[box-at]], [[frame-corners]], [[draw-at!]],
+  [[draw-at-frame!]]; style [[drawn-style]]; leader lines [[draw-leader!]]; text along a path [[draw-along-path!]]; schema
   [[label-options]]; methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:label`.
 
@@ -39,6 +40,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.font :as font]
             [cljplot2.graphics.measure :as measure]
+            [cljplot2.graphics.text-path :as text-path]
             [cljplot2.schema :as schema]
             [cljplot2.theme :as theme])
   (:import [fastmath.vector Vec2]))
@@ -109,6 +111,44 @@
      :color (draw/resolved-text-color (:color style) (draw/plot-backdrop theme))
      :background (:background style)
      :font (font/resolve-font (:font style) (:font-style style) (:size style))}))
+
+(defn drawn-style
+  "Gives the style a label is drawn with - its role's style with its inline keys over it, resolved.
+
+  Parameters:
+
+  - `theme` (map): the merged theme.
+  - `content` (map): the label content (`:role`, inline style keys).
+
+  Returns `{:font :color :background :inset}` - the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the
+  colour resolved against the plot backdrop (`:contrast` - black or white), the role's or the inline `:background`
+  (`:none` or `nil` - none) and `:inset` in pixels.
+
+  Throws as [[cljplot2.theme/text-style]] for an unknown role."
+  [theme content]
+  (select-keys (label-spec theme content) [:font :color :background :inset]))
+
+(def ^{:private true :const true :tag 'double} leader-width
+  "Width of a leader line joining a label to what it labels, pixels (one rule for every chart's leaders)."
+  1.0)
+
+(defn draw-leader!
+  "Draws a leader line joining a label to what it labels: thin, in the label's drawn colour (see [[drawn-style]]).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `content` (map): the label content (`:role`, `:color` ...).
+  - `[[x0 y0] [x1 y1]]`: the line's ends in pixels.
+  - `env` (map): `:theme`.
+
+  Returns `nil`; the canvas state is isolated."
+  [canvas content [[^double x0 ^double y0] [^double x1 ^double y1]] env]
+  (c2d/with-isolated-canvas [c canvas]
+    (c2d/set-color c (:color (drawn-style (:theme env) content)))
+    (c2d/set-stroke-custom c {:size leader-width})
+    (c2d/line c x0 y0 x1 y1))
+  nil)
 
 (defn- text-metrics
   "Sets the label font on a canvas and measures the label's lines.
@@ -407,6 +447,37 @@
      :y (m/round (m/- (double y) (m/* (double (anchor-fraction v)) (.y size))))
      :w (.x size) :h (.y size)}))
 
+(defn frame-corners
+  "Gives the corners of the text frame [[draw-at!]] draws for a label with its anchor at a point.
+
+  For a rotation that is a multiple of 90 the frame is the box itself ([[box-at]]); else the unrotated text frame
+  ([[text-frame]]) turned about the box's centre - inside the box, which is its rounded-up bounding box.
+
+  Parameters:
+
+  - `c`: a canvas in graphics context, measuring.
+  - `content` (map): the label content (`:rotation` - clockwise degrees, default 0).
+  - `anchor` (`[h v]`): the anchor of the box (see [[box-at]]).
+  - `x`, `y` (numbers): the anchor's pixel.
+  - `env` (map): `:theme`.
+
+  Returns a vector of four `[x y]` in order around the frame."
+  [c content anchor x y env]
+  (let [{bx :x by :y bw :w bh :h} (box-at c content anchor x y env)
+        rotation (double (get content :rotation 0))]
+    (if (quarter-turn rotation)
+      (let [x0 (double bx) y0 (double by) x1 (m/+ x0 (double bw)) y1 (m/+ y0 (double bh))]
+        [[x0 y0] [x1 y0] [x1 y1] [x0 y1]])
+      (let [[^double fw ^double fh] (text-frame content c (:theme env))
+            cx (m/+ (double bx) (m/* 0.5 (double bw)))
+            cy (m/+ (double by) (m/* 0.5 (double bh)))
+            a (m/radians rotation)
+            cosine (m/cos a) sine (m/sin a)]
+        (mapv (fn [[^double u ^double v]]
+                (let [fu (m/* u 0.5 fw) fv (m/* v 0.5 fh)]
+                  [(m/+ cx (m/- (m/* fu cosine) (m/* fv sine))) (m/+ cy (m/+ (m/* fu sine) (m/* fv cosine)))]))
+              [[-1.0 -1.0] [1.0 -1.0] [1.0 1.0] [-1.0 1.0]])))))
+
 (defn draw-at-frame!
   "Draws a label with an anchor of its unrotated text frame at a point, the text rotated about that point.
 
@@ -457,6 +528,23 @@
   (c2d/with-isolated-canvas [isolated c]
     (draw/draw-content content isolated (box-at isolated content anchor x y env) env))
   nil)
+
+(defn draw-along-path!
+  "Draws a label's text along a pixel polyline, glyph by glyph, in the label's drawn style (see [[drawn-style]]).
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `content` (map): the label content - `:text` (converted with `str`; one line), `:role`, inline style keys; its
+    `:background` (the role's or inline; `:none` / `nil` - none) fills a band under the glyphs, `:inset` pixels past
+    the text on each side of it.
+  - `points` (sequence of `[x y]`): the pixel polyline.
+  - `placement` (map): `:position`, `:anchor`, `:offset` (see [[cljplot2.graphics.text-path/draw!]]).
+  - `env` (map): `:theme`.
+
+  Returns a truthy value when the text is drawn, `nil` when it isn't (see [[cljplot2.graphics.text-path/draw!]])."
+  [canvas content points placement env]
+  (text-path/draw! canvas (str (:text content)) points (drawn-style (:theme env) content) placement))
 
 (def ^{:private true :const true :tag 'double} min-fitted-size
   "Smallest font size fitted text lines shrink to in a narrow box."

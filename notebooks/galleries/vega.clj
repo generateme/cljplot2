@@ -2830,23 +2830,16 @@
 
 ;; ### Histogram null values
 
-;; IMDB ratings in bins of 1, the movies without a rating as a separate grey bar on the left (a second plot sharing the
-;; count axis - cljplot2 has no null bin).
+;; IMDB ratings in bins of 1, the movies without a rating as a separate grey bar on the left - the histogram's
+;; `:invalid :show` band beside the x axis, on the same count scale.
 
 (nu/source-note {:source "Vega - Histogram null values" :url (vg-url "histogram-null-values") :dataset :movies})
 
-(let [nulls (count (remove #(number? (:imdb-rating %)) movies))
-      y {:domain [0 (max nulls 1000)]}]
-  (plot/render-image
-   (plot/arrange
-    [{:data [{:x "null" :n nulls}] :mapping {:x :x :y :n}
-      :charts [(chart/bar {:color [170 170 170] :width 0.9})]
-      :scales {:y y} :labels {:x " " :y "count"}}
-     {:data imdb :mapping {:x :imdb-rating}
-      :charts [(chart/histogram {:bins (vec (range 1 11)) :y :count})]
-      :scales {:y (assoc y :axis false)} :labels {:x "IMDB Rating" :y nil}}]
-    {:columns 2 :widths [2 9]})
-   {:width 700 :height 350}))
+(plot/render-image
+ {:data movies :mapping {:x :imdb-rating}
+  :charts [(chart/histogram {:bins (vec (range 1 11)) :y :count :invalid :show :invalid-label "null"})]
+  :labels {:x "IMDB Rating" :y "count"}}
+ {:width 700 :height 350})
 
 ;; ### Violin plot
 

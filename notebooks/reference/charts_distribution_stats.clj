@@ -105,6 +105,45 @@
                                  {:columns 2})
                    {:width 900 :height 300})
 
+;; Bins are shared by every facet panel, so panels compare bar by bar. Under a free (or sliced) facet x scale each
+;; panel gets bins over its own range instead - a count of bins (here 8) or a method applies per panel, so the bars
+;; fill each panel's own axis; explicit breaks stay shared. Margin histograms follow their panel's scale the same way.
+
+(plot/render-image {:data iris
+                    :mapping {:x :petal-length :facet :species}
+                    :facets {:scales {:x :free}}
+                    :charts [(chart/histogram {:bins 8 :y :count})]
+                    :labels {:x "petal length [cm]"}}
+                   {:width 900 :height 300})
+
+;; ### Invalid values
+
+;; Rows whose x is missing, NaN or not a number (or a value the stat space can't place) are dropped and counted;
+;; `:invalid :show` draws their count as a bar in a band beside the x axis's start, outside the axis line, on the
+;; same y scale, in the chart's own fill (or the mapped one), labelled by `:invalid-label` (which needs `:invalid
+;; :show`). Shares (`:percent`, `:pmf`) are then of all rows, the invalid ones included; groups stack or dodge in the
+;; band as in the bins, every facet panel has its own band and a flipped plot puts it under the panel. Only the main
+;; charts of a generated grid draw a band: `:invalid :show` in a margin chart or a `:custom-grid` plot is an error.
+
+(nu/options-table (describe/own-rows (describe/options (chart/histogram))) :invalid)
+
+(def gappy (mapv (fn [i {:keys [value]}] {:value (when-not (zero? (mod i 5)) value) :group (if (even? i) "a" "b")})
+                 (range) skewed))
+
+(nu/data-table gappy)
+
+(plot/render-image (plot/arrange [{:data gappy
+                                   :mapping {:x :value}
+                                   :charts [(chart/histogram {:bins 20 :y :count :invalid :show})]
+                                   :labels {:title ":invalid :show"}}
+                                  {:data gappy
+                                   :mapping {:x :value :color :group}
+                                   :flip true
+                                   :charts [(chart/histogram {:bins 12 :position :stack :invalid :show :invalid-label "missing"})]
+                                   :labels {:title "flipped, stacked groups, :invalid-label"}}]
+                                 {:columns 2})
+                   {:width 900 :height 300})
+
 ;; ### Position
 
 ;; How groups combine and the zero line and y range of mirrored groups:

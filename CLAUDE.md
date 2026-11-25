@@ -46,7 +46,8 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 **Chart contract** (`cljplot2.chart` ns doc): a chart value is a plain map `{:kind :options :compute :draw :legend
 :schema}` with top-level functions, so built plots print and compare as data.
 - `compute` gets all panels' grouped rows and returns stats (`:data` per panel, `:extents`, `:padding`, `:dropped`,
-  optional `:axis-titles`, `:scale-defaults`, `:padding-px` …); `draw` renders one panel's computed data.
+  optional `:axis-titles`, `:scale-defaults`, `:padding-px`, `:invalid-bands` …); `draw` renders one panel's
+  computed data (and a band's, in band coordinates).
 - Draw through `cljplot2.scale.position/projection` (or the coord helpers) - never assume `:x` is horizontal
   (`:flip`, polar `:coord`).
 - Optional keys: `:computed-aesthetics` (e.g. a computed colour), `:coords` (`#{:cartesian :polar}`; `#{:three-d}`
@@ -83,6 +84,17 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   a bar whose value lies outside it is drawn in the NA colour); box / violin take a categorical one only. Strip end
   labels go past the larger values (`scale.position/value-direction`, reversed axes too); an item's `:n-label-gap`
   keeps its n label past drawn marks (box outliers).
+- Label repel and paths: text `:overlapping-labels :repel` moves a label that overlaps one placed before it (row
+  order the priority), or leaves the panel, to the nearest free shift within `:repel-distance` pixels
+  (`measure/repelled-placements`: off placed boxes - the whole drawn box with its inset - and other labels' points;
+  candidates bounded by the panel), else leaves it out (a label larger than the panel stays put); `:label-leader`
+  draws a line (`content.label/draw-leader!` - every chart's leaders, the label's drawn colour) from the point to the
+  moved label's turned frame, for a move over 6 px, and no leader crosses a label (such places aren't free). Text
+  `:along-path` lays each label along its group's polyline (`content.label/draw-along-path!` over
+  `graphics.text-path`): glyphs by arc length along the path offset to the baseline, upright by the whole path's
+  direction (vertical - bottom to top), the label's `:background` as a band; text longer than its path is skipped
+  (`:anchor` places the text's start, centre or end at `:path-position`). Point along a polyline:
+  `polyline/point-at-length`.
 - Label collisions: the text chart's `:overlapping-labels :drop` keeps each label not overlapping one kept before it
   (row order is the priority; `measure/kept-box-indices`); builders (sankey, network, alluvial) use it, larger nodes
   first; mapping `:x-span` is a label's room along x in x units (fitted only for text along x: unrotated, unflipped
@@ -110,6 +122,21 @@ or sliced facet scale takes no partial domain.
 
 **Layout** is a track grid (`layout/grid`, `layout/plot-grid`) with a measure → solve → re-tick loop; a grid cell may
 hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
+- Axis overhangs beside margins and bands: a margin's magnitude axis reserves its start label in its own `-axis-start`
+  track; facet panel axes put their start / end overhangs in their column's / row's inner tracks (left / bottom
+  margin or band first); `plot-grid/axis-panels` / `axis-panel?` say which facet panel carries an axis.
+- Facets with margins: every facet panel gets its margins, computed from its rows and sharing its scale (margin
+  content `{:kind :panel :margin side :panel k}`, `:panel-scales` in the margin env); with `:same` scales margins
+  align along rows / columns; one magnitude scale per side.
+- Statistics per panel-local scale: compute env `:panel-scale-groups {dim [#{panel-key} ...]}` (free / sliced facet
+  scales; a margin chart's `:x` gets the shared dimension's); histograms bin each group over its own values (main
+  and margin; a count or method per group, explicit breaks shared), otherwise bins are shared by all panels.
+- Invalid-value bands: a chart with `:invalid :show` (histogram) returns `:invalid-bands {dim {:label :data}}` -
+  its invalid rows (nil, NaN, non-numeric, or unplaceable on the scale) drawn in a band on the left / bottom side of
+  the panel (also on a reversed axis) (`content.invalid-band`: `:invalid-band`, `:invalid-band-axis`; theme `[:panel :invalid-band-size]`), labelled
+  `:invalid-label` (the first chart's per dimension), bars in the chart's own colour; rows shown there are not
+  `:dropped`; a row invalid in two band dimensions is dropped under the first; `:invalid :show` in a margin chart or a
+  custom grid is a rule error (no band there).
 - `:margins` take four sides (`content.axis/margin-sides`, the one list): a margin shares the main panel's scale
   along it, its magnitude grows away from the panel, the main panel's axes stay outermost; left / bottom margins
   have a measured inner track (as the overhang beside right / top ones), margin axes sit next to their own panel.
@@ -132,7 +159,8 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
 chart contract, placement and end labels, `chart.statistic-cell` - correlation / pairwise cells), `data/` (rows, groups, facets,
 levels, the strip frame, and row/layout functions such as `data.graph`, `data.tree`, `data.series`,
 `data.vector-field`, `data.pairwise`), `scale/` (position and aesthetic scales, coords), `graphics/` (fonts, shapes,
-polylines, curves, patterns, cells, measuring), `content/` (panel, axis, legend, strip, label, subplot, the 3D frame),
+polylines, curves, patterns, cells, measuring, text along a path), `content/` (panel, axis, legend, strip, label,
+subplot, the 3D frame, invalid-value bands),
 `layout/` (grid, plot grid, alignment, pack, treemap, venn), `cache.clj` (bounded caches), `error.clj`, `schema.clj`,
 `theme.clj`, `pipeline.clj`, `render.clj`, `describe.clj` (option rows for the book). Builders (`graphs.clj`,
 `series_plots.clj`, `multiplot.clj`) turn layout rows into ordinary plot maps; their `:scales` option is deep-merged
@@ -179,6 +207,11 @@ the theme: banned names, and one type family per name across all owners). One na
   accessors of wide rows' variables (parallel, alluvial, pairs), their display names `:variable-names`; `:columns` -
   a count of grid columns (arrange, facets, waffle); `:axes` - a 3D or parallel flag; `:cell-shape` - a waffle cell's
   shape (`:shape` is a point shape); `:length-scale` - the arrows' length factor (`:scale` is violin's width mode).
+- `:invalid` - what a chart does with rows whose mapped value is invalid: `:drop` (default, counted in `:dropped`)
+  or `:show` (drawn in a band beside the axis, labelled `:invalid-label`). Invalid means nil, NaN, non-numeric or
+  unplaceable on the scale; NA (`:na-panel`, `:na-level`, `[:palette :na]`) means nil only.
+- `:overlapping-labels` - `:keep` / `:drop` (scales, text); `:repel` only for the text chart (labels move to free
+  places - tick labels never move); `:repel-distance` - pixels, the farthest a repelled label moves.
 - `:as` - the output key of a data function; booleans never end in `?` (also data fields a function returns and keys of internal data -
   `:closed`, `:leaf`, `:flip`; only local names and predicate functions end in `?`); one flag one key; label toggles are named
   after what they label (`:labels`, `:group-labels`, `:n-label`, `:value-label`).
@@ -187,8 +220,8 @@ the theme: banned names, and one type family per name across all owners). One na
 
 **Contracts**:
 - `:dropped` (chart compute): one key per mapped dimension, each row counted once, plus only `:group`, `:field`,
-  `:duplicate`, `:value`, `:set`, `:variables` (the `cljplot2.chart` ns doc); data functions outside charts report a
-  plain count.
+  `:duplicate`, `:value`, `:set`, `:variables` (the `cljplot2.chart` ns doc); rows a chart draws in an invalid-value
+  band (`:invalid :show`) are not dropped; data functions outside charts report a plain count.
 - Checks: option shapes and conflicts between options are schemas - closed maps, `schema/with-rules` for relations
   between keys - so `build` reports them before any stage runs; compute checks only what depends on the data, the
   theme or the plot (`fail!` there). Every data chart calls `rows/check-mapped!` (all-invalid mapped data throws

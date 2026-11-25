@@ -166,7 +166,7 @@
 
 ;; ## Margins
 
-;; `:margins` puts charts above (`:top`), right of (`:right`), below (`:bottom`) and left of (`:left`) a single panel,
+;; `:margins` puts charts above (`:top`), right of (`:right`), below (`:bottom`) and left of (`:left`) a panel,
 ;; sharing its horizontal / vertical scale; margin charts read the plot's data with `:x` mapped to the shared
 ;; dimension. A margin is a chart or a vector of charts ...
 
@@ -191,7 +191,7 @@
 ;; Bottom and left margins sit between the panel and its axes - the panel keeps its axes on the outer side - and
 ;; their magnitudes grow away from the panel (bars hang down, densities grow to the left). A margin's magnitude axis
 ;; stays next to its own margin panel - with a left margin too, the bottom margin's axis sits between the left margin
-;; and the panel:
+;; and the panel - and its tick labels keep a gap from the panel axis's labels:
 
 (plot/render-image {:data mtcars
                     :mapping {:x :wt :y :mpg}
@@ -199,6 +199,28 @@
                     :margins {:bottom {:charts (chart/histogram {:bins 10}) :size 60 :axis true}
                               :left [(chart/density) (chart/rug)]}}
                    {:width 600 :height 500})
+
+;; With facets every panel gets its own margins, computed from that panel's rows. With shared scales the margins of
+;; a panel column (top, bottom) or row (right, left) line up; a magnitude axis stands where the panels' axes of the
+;; other dimension are - here at the first panel of each row:
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet-col :am :facet-row :vs}
+                    :charts [(chart/scatter)]
+                    :margins {:top {:charts (chart/density) :size 50 :axis true}
+                              :right {:charts (chart/box) :size 40}}}
+                   {:width 700 :height 600})
+
+;; With free facet scales each margin follows its own panel's scale: a margin histogram bins over its panel's own
+;; range (5 bins per panel here), so its bars span that panel's axis:
+
+(plot/render-image {:data mtcars
+                    :mapping {:x :wt :y :mpg :facet :cyl}
+                    :facets {:scales {:x :free}}
+                    :charts [(chart/scatter)]
+                    :margins {:bottom {:charts (chart/histogram {:bins 5}) :size 50 :axis true}
+                              :left [(chart/density) (chart/rug)]}}
+                   {:width 900 :height 450})
 
 ;; ## Custom grid
 

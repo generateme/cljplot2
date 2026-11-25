@@ -19,7 +19,7 @@
   - `:coord` - `{:kind :polar ...}`: polar coordinates - the horizontal scale maps to angles, the vertical one to radii (`:flip` swaps them; see [[cljplot2.scale.coord]]); polar guides inside the panel, no outer axes; only charts declaring `:polar` in their `:coords` (bar, segment, scatter, line, text, rule, rect, parallel, partition); not with `:aspect :iso`, `:margins`, `:custom-grid` or `:arrange` (sub-plots may be polar).
   - `:custom-grid` - a hand-written grid (see [[cljplot2.layout.grid]]) used instead of the generated one; only `:labels {:title t}` may accompany it (a title row above it). Items with `{:kind :plot :plot p}` content hold whole plots (see [[cljplot2.content.subplot]]).
   - `:arrange` - `{:plots [p ...] :columns :rows :widths :heights :row-spans :align :equal-panels}`: a multiplot, its grid generated from the merged theme (see [[cljplot2.multiplot/arrange]], [[cljplot2.layout.plot-grid/arrange-grid]]); only `:labels {:title t}` may accompany it; can't be combined with `:custom-grid`; the sub-plots' panels are aligned unless `:align false`.
-  - `:margins` - `{:top m :right m :bottom m :left m}`: charts beside the panel sharing its horizontal (top, bottom) / vertical (right, left) scale - the main panel keeps its axes on the outer side: a bottom margin sits between the panel and its horizontal axis, a left margin between its vertical axis and the panel; each margin's magnitude grows away from the panel - `m` a chart, a vector of charts or `{:charts c :size px :axis bool}` (thickness, default 80; `:axis` - the magnitude axis of histogram / density margins); margin charts read the plot's data and aesthetic mapping with `:x` mapped to the shared dimension (their own `:mapping` wins), no axes of their own; single-panel generated grids only (not with facets, `:arrange` or `:custom-grid` - put margins on the sub-plots), see [[margin-stats]].
+  - `:margins` - `{:top m :right m :bottom m :left m}`: charts beside the panel sharing its horizontal (top, bottom) / vertical (right, left) scale - the main panel keeps its axes on the outer side: a bottom margin sits between the panel and its horizontal axis, a left margin between its vertical axis and the panel; each margin's magnitude grows away from the panel - `m` a chart, a vector of charts or `{:charts c :size px :axis bool}` (thickness, default 80; `:axis` - the magnitude axis of histogram / density margins); margin charts read the plot's data and aesthetic mapping with `:x` mapped to the shared dimension (their own `:mapping` wins), no axes of their own; generated grids only (not with `:arrange` or `:custom-grid` - put margins on the sub-plots); with facets every panel gets its own margins, computed from that panel's rows and sharing that panel's scale (aligned along a panel row / column with `:same` scales, following each panel with free / sliced ones; one magnitude scale per side), see [[margin-stats]].
   - `:alignment-padding` - internal: `{:left :top :right :bottom}` pixels added to the generated grid's margins (set on sub-plots by multiplot alignment).
   - `:options` - render options (see [[default-options]]), merged under `build`'s options; stored resolved.
   - `:theme` - deep-merged over [[cljplot2.theme/default-theme]]; stored resolved.
@@ -48,7 +48,8 @@
             [cljplot2.content.axis :as axis]
             [cljplot2.content.strip]
             [cljplot2.content.legend :as legend]
-            [cljplot2.content.subplot :as subplot]))
+            [cljplot2.content.subplot :as subplot]
+            [cljplot2.content.invalid-band]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -78,10 +79,48 @@
        (not-any? (fn [d] (let [acc (data/row-accessor d (mapping d))] (some #(some? (acc %)) rows)))
                  (facet/facet-dims mapping))))
 
+(defn- in-every-panel?
+  "Tests whether a chart input is drawn in every facet panel: its mapping has no facet key, or its own data has no facet values (see [[without-facet-values?]]).
+
+  Parameters:
+
+  - `input` (map): a chart input `{:rows :mapping :own-data}`.
+
+  Returns truthy for such an input."
+  [input]
+  (or (empty? (facet/facet-dims (:mapping input))) (without-facet-values? input)))
+
+(defn- facet-accessors
+  "Gives the row accessors of facet dimensions in a mapping.
+
+  Parameters:
+
+  - `mapping` (map): a chart's merged mapping.
+  - `dims` (sequence): the facet dimensions.
+
+  Returns `{dim accessor}`."
+  [mapping dims]
+  (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
+
+(defn- panel-groups
+  "Gives a chart input's rows grouped by facet panel.
+
+  Parameters:
+
+  - `split-facets` (map): `{:dims :levels}` of the split (see [[facet-split]]); empty `:dims` - no facets.
+  - `input` (map): a chart input `{:rows :mapping :own-data}`.
+
+  Returns `{:groups {panel-key rows} :dropped n}`: one group under [[cljplot2.data.facet/single-panel]] without facets, under [[cljplot2.data.facet/all-panels]] for an input drawn in every panel (see [[in-every-panel?]]), else by panel key (`:dropped` - the rows without a panel)."
+  [{:keys [dims levels]} {:keys [rows mapping] :as input}]
+  (cond
+    (empty? dims) {:groups {facet/single-panel rows} :dropped 0}
+    (in-every-panel? input) {:groups {facet/all-panels rows} :dropped 0}
+    :else (facet/group-rows rows dims (facet-accessors mapping dims) levels)))
+
 (defn- facet-split
   "Facet dimensions, levels and per-chart panel groups of the chart inputs.
 
-  The facet dimensions are those of the first faceted chart; levels are ordered by the facet scales (see [[cljplot2.data.facet/ordered-levels]]). A chart without facet keys, or whose own data has no facet values (see [[without-facet-values?]]), is drawn in every panel (its rows under [[cljplot2.data.facet/all-panels]]).
+  The facet dimensions are those of the first faceted chart; levels are ordered by the facet scales (see [[cljplot2.data.facet/ordered-levels]]). A chart without facet keys, or whose own data has no facet values (see [[in-every-panel?]]), is drawn in every panel (its rows under [[cljplot2.data.facet/all-panels]]); see [[panel-groups]].
 
   Parameters:
 
@@ -91,26 +130,21 @@
 
   Returns `{:facets {:dims [d ...] :levels {d [level ...]}} :charts [{:mapping :groups :dropped n} ...]}` - one chart entry per input, `:groups` keyed by panel key, `:dropped` the rows without a panel. Without facet dimensions, or when a dimension has no level, the facets are empty and every chart has one group under [[cljplot2.data.facet/single-panel]]."
   [chart-inputs scales na-panel?]
-  (let [in-every-panel? (fn [input] (or (empty? (facet/facet-dims (:mapping input))) (without-facet-values? input)))
-        faceted (remove in-every-panel? chart-inputs)
+  (let [faceted (remove in-every-panel? chart-inputs)
         dims (vec (first (distinct (map (comp facet/facet-dims :mapping) faceted))))
-        accessors (fn [mapping] (into {} (map (fn [d] [d (data/row-accessor d (mapping d))])) dims))
         levels (into {} (map (fn [d]
                                (let [keyed (mapcat (fn [{:keys [rows mapping]}]
-                                                     (let [acc (get (accessors mapping) d)] (map (fn [r] [(acc r) r]) rows)))
+                                                     (let [acc (get (facet-accessors mapping dims) d)] (map (fn [r] [(acc r) r]) rows)))
                                                    faceted)
                                      rows-of (update-vals (group-by first keyed) #(mapv second %))]
                                  [d (facet/ordered-levels (facet/levels d (map first keyed) (get scales d) na-panel?)
                                                           #(get rows-of %) (get scales d))])))
                      dims)
-        active? (and (seq dims) (every? seq (vals levels)))]
-    {:facets {:dims (if active? dims []) :levels (if active? levels {})}
-     :charts (mapv (fn [{:keys [rows mapping] :as input}]
-                     (cond
-                       (not active?) {:mapping mapping :groups {facet/single-panel rows} :dropped 0}
-                       (in-every-panel? input) {:mapping mapping :groups {facet/all-panels rows} :dropped 0}
-                       :else (let [{:keys [groups dropped]} (facet/group-rows rows dims (accessors mapping) levels)]
-                               {:mapping mapping :groups groups :dropped dropped})))
+        active? (and (seq dims) (every? seq (vals levels)))
+        split-facets {:dims (if active? dims []) :levels (if active? levels {})}]
+    {:facets split-facets
+     :charts (mapv (fn [{:keys [mapping] :as input}]
+                     (assoc (panel-groups split-facets input) :mapping mapping))
                    chart-inputs)}))
 
 (defn- chart-mapping
@@ -193,6 +227,25 @@
   [plot]
   (into {} (keep (fn [side] (when-some [m (get-in plot [:margins side])] [side (margin-spec m)]))) axis/margin-sides))
 
+(defn- panel-scale-groups
+  "Groups of the facet panels sharing each panel-local position scale.
+
+  Panels share a scale as they share an axis: in a wrap layout none, in a facet grid the horizontal scale per column and the vertical one per row (see [[cljplot2.data.facet/scale-relation]]).
+
+  Parameters:
+
+  - `plot` (map): the plot map after the `:split` stage - `:facets`, `:split`, `:scales`, `:flip`.
+
+  Returns `{dim [#{panel-key ...} ...]}` of the position dimensions with a `:free` or `:sliced` relation (an empty map when every relation is `:same`); `nil` when the facets ask for no panel-local scales or the plot has no facets."
+  [{:keys [facets split scales flip]}]
+  (when (and (facet/panel-scales? facets) (seq (get-in split [:facets :dims])))
+    (let [{:keys [panels wrap]} (plot-grid/facet-panels (:facets split) scales facets)
+          horizontal (scale/horizontal-key flip)
+          group-of (fn [k panel] (cond wrap (:key panel) (= k horizontal) (:col panel) :else (:row panel)))]
+      (into {} (keep (fn [k] (when-not (= :same (facet/scale-relation facets k))
+                               [k (mapv #(set (map :key %)) (vals (group-by #(group-of k %) panels)))])))
+            position-scales))))
+
 (defn- groupable-aesthetics
   "Aesthetic keys of the plot mapping whose scale groups rows.
 
@@ -216,19 +269,21 @@
 (defn- margin-stats
   "Computed charts of every plot margin.
 
-  A margin chart reads the plot's data (or its own) with the plot's grouping aesthetics (see [[groupable-aesthetics]]) and `:group` mapping, `:x` mapped to the plot's accessor of the shared dimension - the horizontal one for `:top` and `:bottom`, the vertical one for `:right` and `:left` - and its own `:mapping` merged over; annotation charts (`:inherit-mapping :facets`) take their own mapping only. Margins have one panel; the right and left margins compute as flipped (their values run vertically).
+  A margin chart reads the plot's data (or its own) with the plot's grouping aesthetics (see [[groupable-aesthetics]]), `:group` and facet mappings, `:x` mapped to the plot's accessor of the shared dimension - the horizontal one for `:top` and `:bottom`, the vertical one for `:right` and `:left` - and its own `:mapping` merged over; annotation charts (`:inherit-mapping :facets`) take the facet keys and their own mapping only. Its rows are grouped by the plot's facet panels as a main chart's (see [[panel-groups]]): a faceted plot's margin charts compute one margin per panel from that panel's rows (one group without facets, see [[cljplot2.data.facet/single-panel]]); the right and left margins compute as flipped (their values run vertically).
 
   Parameters:
 
-  - `plot` (map): the plot map; reads `:data`, `:mapping`, `:flip` and `:margins`.
+  - `plot` (map): the plot map after the `:split` stage; reads `:data`, `:mapping`, `:flip`, `:margins` and `[:split :facets]`.
   - `env` (map): the charts' compute environment (see [[stats-stage]]).
 
-  Returns `{side spec}`: the margin spec (see [[margin-spec]]) with `:mappings` (each chart's mapping) and `:stats` (each chart's computed data); an empty map without margins.
+  Returns `{side spec}`: the margin spec (see [[margin-spec]]) with `:mappings` (each chart's mapping) and `:stats` (each chart's computed data, `:data` keyed by panel); an empty map without margins.
 
   Throws `ex-info` with `{:key :margins}` when the plot doesn't map the shared dimension."
-  [{:keys [data mapping flip] :as plot} env]
+  [{:keys [data mapping flip split] :as plot} env]
   (let [horizontal (scale/horizontal-key flip)
         vertical (if (= horizontal :x) :y :x)
+        split-facets (get split :facets {:dims []})
+        facet-mapping (select-keys mapping facet/facet-keys)
         plot-rows (delay (data/rows data))]
     (into {} (for [[side {:keys [charts] :as spec}] (plot-margins plot)]
                (let [shared-key (if (horizontal-margin-sides side) horizontal vertical)
@@ -236,19 +291,24 @@
                      _ (when (nil? shared)
                          (schema/fail! (str "Plot :margins " side " needs the plot :mapping of " shared-key ".")
                                        {:key :margins :in [:margins side] :value shared-key}))
-                     inherited (assoc (select-keys mapping (conj (groupable-aesthetics mapping (:plot-scales env) @plot-rows) :group))
+                     inherited (assoc (merge (select-keys mapping (conj (groupable-aesthetics mapping (:plot-scales env) @plot-rows) :group))
+                                             facet-mapping)
                                       :x shared)
-                     side-env (assoc env :flip (not (horizontal-margin-sides side)))
-                     ;; annotation charts (:inherit-mapping :facets) take only their own mapping, as in the panel
+                     ;; a margin chart's :x is the shared dimension: it follows that dimension's panel-local scale
+                     side-env (assoc env :flip (not (horizontal-margin-sides side))
+                                     :panel-scale-groups (some->> (get-in env [:panel-scale-groups shared-key]) (hash-map :x)))
+                     ;; annotation charts (:inherit-mapping :facets) take only the facet keys and their own mapping, as in the panel
                      mappings (mapv (fn [{:keys [options inherit-mapping]}]
-                                      (merge (if (= :facets inherit-mapping) {} inherited) (:mapping options)))
+                                      (merge (if (= :facets inherit-mapping) facet-mapping inherited) (:mapping options)))
                                     charts)]
                  [side (assoc spec
                               :mappings mappings
                               :stats (mapv (fn [{:keys [options] :as chart} side-mapping]
-                                             (let [rows (if (some? (:data options)) (data/rows (:data options)) @plot-rows)]
-                                               ((:compute chart) chart {:mapping side-mapping :groups {facet/single-panel rows}}
-                                                side-env)))
+                                             (let [own-data (some? (:data options))
+                                                   rows (if own-data (data/rows (:data options)) @plot-rows)
+                                                   {:keys [groups]} (panel-groups split-facets {:rows rows :mapping side-mapping
+                                                                                                :own-data own-data})]
+                                               ((:compute chart) chart {:mapping side-mapping :groups groups} side-env)))
                                            charts mappings))])))))
 
 (defn- margin-env
@@ -259,15 +319,17 @@
   - `plot` (map): the plot map with `:margin-stats` (see [[margin-stats]], `:spec` - the magnitude spec, see [[scale-specs-stage]]), `:grid`, `:flip` and `:theme`.
   - `layout` (map or `nil`): the solved layout; `nil` - provisional (before the first layout round).
   - `scales` (map): the plot's finalized scales.
+  - `main-panel-scales` (map or `nil`): the main panels' panel-local scales (see [[panel-scales]]).
 
-  Returns `{side {:charts :stats :scales}}`; `:scales` holds the plot's aesthetic scales, `:x` - the plot's scale of the shared dimension (its direction kept) and `:y` - the margin's magnitude scale (counts, densities) finalized for the margin panel's size (provisional range `[0 1]` without a layout), across the shared one, growing away from the main panel; no `:y` when the margin charts give no magnitude (e.g. strips only)."
-  [plot layout scales]
+  Returns `{side {:charts :stats :scales :panel-scales}}`; `:scales` holds the plot's aesthetic scales, `:x` - the plot's scale of the shared dimension (its direction kept) and `:y` - the margin's magnitude scale (counts, densities) finalized for the margin panel's size (provisional range `[0 1]` without a layout), across the shared one, growing away from the main panel; no `:y` when the margin charts give no magnitude (e.g. strips only). Every margin of a side has the same thickness, so one magnitude scale serves all facet panels' margins of the side. `:panel-scales` - with panel-local main scales, per panel key `:scales` with `:x` that panel's scale of the shared dimension (a margin follows its panel's free scale or weighted size), else `nil`."
+  [plot layout scales main-panel-scales]
   (let [horizontal (scale/horizontal-key (:flip plot))
         vertical (if (= horizontal :x) :y :x)]
     (into {} (for [[side {:keys [charts stats spec]}] (:margin-stats plot)]
                (let [across (horizontal-margin-sides side)
-                     shared (get scales (if across horizontal vertical))
-                     box (when layout (grid/find-content-box (:grid plot) layout #(= side (:margin %))))
+                     shared-key (if across horizontal vertical)
+                     shared (get scales shared-key)
+                     box (when layout (grid/find-content-box (:grid plot) layout #(and (= :panel (:kind %)) (= side (:margin %)))))
                      spacing (double (get-in plot [:theme :axis :y :tick-spacing]))
                      ;; the magnitude grows away from the main panel
                      magnitude (when spec
@@ -278,18 +340,22 @@
                                        :top (scale/finalize spec [(double h) 0.0] (scale/tick-hint h spacing))
                                        :bottom (scale/finalize spec [0.0 (double h)] (scale/tick-hint h spacing))
                                        :right (scale/finalize spec [0.0 (double w)] (scale/tick-hint w spacing))
-                                       :left (scale/finalize spec [(double w) 0.0] (scale/tick-hint w spacing))))))]
+                                       :left (scale/finalize spec [(double w) 0.0] (scale/tick-hint w spacing))))))
+                     ;; aesthetic scales shared with the plot: margins colour their groups as the panel does
+                     side-scales (fn [shared-scale]
+                                   (cond-> (into {} (filter (comp aesthetic/dim? key)) scales)
+                                     shared-scale (assoc :x shared-scale)
+                                     magnitude (assoc :y (assoc magnitude :direction (if across :vertical :horizontal)))))]
                  [side {:charts charts
                         :stats stats
-                        ;; aesthetic scales shared with the plot: margins colour their groups as the panel does
-                        :scales (cond-> (into {} (filter (comp aesthetic/dim? key)) scales)
-                                  shared (assoc :x shared)
-                                  magnitude (assoc :y (assoc magnitude :direction (if across :vertical :horizontal))))}])))))
+                        :scales (side-scales shared)
+                        :panel-scales (when main-panel-scales
+                                        (update-vals main-panel-scales #(side-scales (get % shared-key))))}])))))
 
 (defn- stats-stage
   "Pipeline stage `:stats`: every chart's computed data.
 
-  Each chart's `:compute` runs on its split groups (see [[split-stage]]) with an environment of the theme, NA grouping, plot scales, flip, rendering hint, coordinates, aspect and a delayed estimate of the panel size (see [[cljplot2.layout.plot-grid/estimated-panel-size]]; it measures text, so charts deref it only when needed); margin charts compute too (see [[margin-stats]]).
+  Each chart's `:compute` runs on its split groups (see [[split-stage]]) with an environment of the theme, NA grouping, plot scales, flip, rendering hint, coordinates, aspect, the panels sharing each panel-local position scale (see [[panel-scale-groups]]; a margin chart's `:x` takes the shared dimension's) and a delayed estimate of the panel size (see [[cljplot2.layout.plot-grid/estimated-panel-size]]; it measures text, so charts deref it only when needed); margin charts compute too (see [[margin-stats]]).
 
   Parameters:
 
@@ -299,7 +365,7 @@
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [facet-dims (get-in split [:facets :dims])
         env {:theme theme :na-level (get groups :na true) :plot-scales scales :flip (true? flip)
-             :hint (:hint options) :coord (:coord plot) :aspect aspect
+             :hint (:hint options) :coord (:coord plot) :aspect aspect :panel-scale-groups (panel-scale-groups plot)
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
              :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
                                                                 (plot-margins plot) (plot-grid/panel-layout (:facets split) facets)
@@ -580,24 +646,20 @@
   - `specs` (map): the shared phase-1 specs.
 
   Returns `{panel-key {k spec}}` of the dimensions with such a relation; `nil` when the facets ask for no panel-local scales or the plot has no facets."
-  [{:keys [facets split scales flip extents] :as plot} specs]
-  (when (and (facet/panel-scales? facets) (seq (get-in split [:facets :dims])))
-    (let [{:keys [panels wrap]} (plot-grid/facet-panels (:facets split) scales facets)
-          horizontal (scale/horizontal-key flip)
-          group-of (fn [k panel] (cond wrap (:key panel) (= k horizontal) (:col panel) :else (:row panel)))]
-      (reduce (fn [acc k]
-                (let [relation (facet/scale-relation facets k)
-                      shared (get specs k)
-                      user-spec (dissoc (get scales k {}) :type)]
-                  (if (or (= :same relation) (nil? shared))
-                    acc
-                    (let [keysets (mapv #(set (map :key %)) (vals (group-by #(group-of k %) panels)))
-                          group-specs (if (= :free relation)
-                                        (map #(free-spec plot k user-spec shared %) keysets)
-                                        (sliced-specs plot k user-spec shared (get extents k) keysets))]
-                      (reduce (fn [specs-acc [ks spec]] (reduce #(assoc-in %1 [%2 k] spec) specs-acc ks))
-                              acc (map vector keysets group-specs))))))
-              {} position-scales))))
+  [{:keys [facets scales extents] :as plot} specs]
+  (when-let [groups (panel-scale-groups plot)]
+    (reduce (fn [acc [k keysets]]
+              (let [relation (facet/scale-relation facets k)
+                    shared (get specs k)
+                    user-spec (dissoc (get scales k {}) :type)]
+                (if (nil? shared)
+                  acc
+                  (let [group-specs (if (= :free relation)
+                                      (map #(free-spec plot k user-spec shared %) keysets)
+                                      (sliced-specs plot k user-spec shared (get extents k) keysets))]
+                    (reduce (fn [specs-acc [ks spec]] (reduce #(assoc-in %1 [%2 k] spec) specs-acc ks))
+                            acc (map vector keysets group-specs))))))
+            {} groups)))
 
 (defn- scale-specs-stage
   "Pipeline stage `:scale-specs`: phase-1 specs of the position and aesthetic scales.
@@ -1063,10 +1125,11 @@
         box {:x 0 :y 0 :w width :h height}
         measure-for (fn [layout]
                       (grid/measure-items prepared
-                                          (let [scales (finalize-scales plot layout)]
+                                          (let [scales (finalize-scales plot layout)
+                                                local-scales (panel-scales plot layout scales)]
                                             {:canvas canvas :theme (:theme plot) :scales scales
-                                             :panel-scales (panel-scales plot layout scales)
-                                             :margins (margin-env plot layout scales)})
+                                             :panel-scales local-scales
+                                             :margins (margin-env plot layout scales local-scales)})
                                           layout))]
     (loop [round (long 1)
            measurements (measure-for nil)]
@@ -1189,9 +1252,10 @@
 
   Returns `plot` with `:finalized-scales` (see [[finalize-scales]]), `:margin-env` (see [[margin-env]]) and, for panel-local facet scales, `:panel-scales` (see [[panel-scales]])."
   [plot]
-  (let [scales (finalize-scales plot (:layout plot))]
-    (cond-> (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales))
-      (facet/panel-scales? (:facets plot)) (assoc :panel-scales (panel-scales plot (:layout plot) scales)))))
+  (let [scales (finalize-scales plot (:layout plot))
+        local-scales (panel-scales plot (:layout plot) scales)]
+    (cond-> (assoc plot :finalized-scales scales :margin-env (margin-env plot (:layout plot) scales local-scales))
+      (facet/panel-scales? (:facets plot)) (assoc :panel-scales local-scales))))
 
 (defn- subplot-prefix
   "Gives the start of the message of a sub-plot whose tracks don't fit its cell, naming the cell path.
@@ -1675,10 +1739,41 @@
        (when (some #(not= :same (facet/scale-relation facets %)) [:x :y])
          [(error [:facets] facets "3D charts share their domains across panels: no free / sliced facet scales")])))))
 
+(defn- invalid-band-errors
+  "Errors of charts showing invalid values where no invalid-value band is drawn.
+
+  Bands (`:invalid :show`, see [[cljplot2.content.invalid-band]]) belong to the panels of generated grids: a margin chart's or a `:custom-grid` plot's chart would leave its invalid rows neither drawn nor counted in `:dropped`.
+
+  Parameters:
+
+  - `plot` (map): the plot map - `:charts`, `:margins`, `:custom-grid`.
+  - `error` (function): `(error in value message)` gives an error entry.
+
+  Returns a sequence of errors at each such chart's `:invalid` option, empty when there is none."
+  [{:keys [charts margins custom-grid]} error]
+  (let [shows (fn [c] (= :show (get-in c [:options :invalid])))
+        ;; the user's path of each margin chart: a chart, a vector of charts or {:charts c}
+        margin-paths (for [side axis/margin-sides
+                           :let [m (get margins side)]
+                           :when (some? m)
+                           [path c] (cond
+                                      (chart/chart-value? m) [[[:margins side] m]]
+                                      (and (map? m) (chart/chart-value? (:charts m))) [[[:margins side :charts] (:charts m)]]
+                                      (map? m) (map-indexed (fn [i c] [[:margins side :charts i] c]) (:charts m))
+                                      :else (map-indexed (fn [i c] [[:margins side i] c]) m))]
+                       [path c])]
+    (concat
+     (for [[path c] margin-paths :when (shows c)]
+       (error (conj path :options :invalid) :show "a margin chart draws no invalid-value band: use :invalid :drop"))
+     (when custom-grid
+       (keep-indexed (fn [i c] (when (shows c)
+                                 (error [:charts i :options :invalid] :show "a :custom-grid draws no invalid-value band: use :invalid :drop")))
+                     charts)))))
+
 (defn- rule-errors
   "Errors of the rules across plot keys, for a plot whose keys are valid.
 
-  The rules: charts' facet mappings and one facet mapping for all; a computed aesthetic mapped by no other chart; aesthetic and facet scales need a mapping of their key; `:custom-grid` / `:arrange` / `:legend-only` combinations (with labels, `:aspect :iso`, `:flip`, polar coordinates or margins); polar coordinates only with charts supporting them; panel-local facet scales (see [[facet-scale-errors]]); 3D plots (see [[three-d-errors]], [[three-d-contract-errors]]); margins without facets and a margin axis only with a histogram or density chart.
+  The rules: charts' facet mappings and one facet mapping for all; a computed aesthetic mapped by no other chart; aesthetic and facet scales need a mapping of their key; `:custom-grid` / `:arrange` / `:legend-only` combinations (with labels, `:aspect :iso`, `:flip`, polar coordinates or margins); polar coordinates only with charts supporting them; panel-local facet scales (see [[facet-scale-errors]]); 3D plots (see [[three-d-errors]], [[three-d-contract-errors]]); invalid-value bands only in generated grids' panels (see [[invalid-band-errors]]); margins only on generated grids and a margin axis only with a histogram or density chart.
 
   Parameters:
 
@@ -1731,13 +1826,12 @@
      (facet-scale-errors plot (seq dim-sets) error)
      (three-d-errors plot error)
      (three-d-contract-errors charts error)
+     (invalid-band-errors plot error)
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))
      (when (seq (:margins plot))
        (concat
-        (when (seq dim-sets)
-          [(error [:margins] (:margins plot) "margins can't be combined with facets (yet)")])
         (when (or custom-grid arrange)
           [(error [:margins] (:margins plot) "margins belong on the plots inside :arrange / :custom-grid")])
         (for [[side {:keys [axis] margin-charts :charts}] (plot-margins plot)

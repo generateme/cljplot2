@@ -4,9 +4,10 @@
 ;; plots, 2D densities, functions of two variables and the ways out of overplotting (the
 ;; [R Graph Gallery](https://r-graph-gallery.com/) correlation pages and [data-to-viz](https://www.data-to-viz.com/)).
 ;;
-;; Not here: labels along a trend line and label repel, 3D densities and interactivity; a heatmap in clustered order
-;; with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmap)) is in the
-;; [Flow](use_cases.flow.html) chapter.
+;; Labels along a trend line and labels moved apart (repel) are shown with the
+;; [text](reference.charts_annotations.html#text) chart. Not here: 3D densities and interactivity; a heatmap in
+;; clustered order with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmap)) is
+;; in the [Flow](use_cases.flow.html) chapter.
 
 (ns use-cases.correlation
   (:require [fastmath.core :as m]

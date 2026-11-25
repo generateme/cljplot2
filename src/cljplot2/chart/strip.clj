@@ -10,13 +10,11 @@
   - chart contract: [[compute]], [[draw]], [[in-frame-compute]], [[in-frame-draw]]
   - drawing in the strip frame: [[placement]], [[placeable?]], [[draw-oriented]]
   - end labels: [[end-label-room]], [[end-label-placements]], [[without-collisions]], [[draw-label-placements!]], [[draw-end-labels!]], [[outer-label-room]], [[n-label-room]], [[draw-n-labels!]]"
-  (:require [clojure2d.core :as c2d]
-            [fastmath.core :as m]
+  (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.content.label :as label]
             [cljplot2.data.rows :as data]
             [cljplot2.data.strip :as strip]
-            [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.measure :as measure]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as scale]
@@ -252,15 +250,11 @@
   - `placements` (sequence): end-label placements (see [[end-label-placements]]).
   - `env` (map): the drawing environment (`:theme`).
 
-  Leader lines are 1 pixel wide, in the label's colour, else its role's over the plot background. Returns `nil`."
+  Leader lines are drawn by [[cljplot2.content.label/draw-leader!]] (in the label's drawn colour). Returns `nil`."
   [canvas placements env]
   (doseq [{:keys [leader content]} placements
-          :when leader
-          :let [[[^double x0 ^double y0] [^double x1 ^double y1]] leader]]
-    (c2d/set-color canvas (or (:color content)
-                              (draw/text-color (:theme env) (:role content) (draw/plot-backdrop (:theme env)))))
-    (c2d/set-stroke-custom canvas {:size 1.0})
-    (c2d/line canvas x0 y0 x1 y1))
+          :when leader]
+    (label/draw-leader! canvas content leader env))
   (doseq [{:keys [content anchor x y]} placements]
     (label/draw-at! canvas content anchor x y env)))
 

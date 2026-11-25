@@ -7,6 +7,7 @@
 
 (ns reference.charts-annotations
   (:require [fastmath.core :as m]
+            [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
@@ -129,10 +130,10 @@
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 
-;; Its options: literal positions and texts, the anchor and offset, rotation, labels of only the last (or first)
-;; row per group, and room kept for labels past the data:
+;; Its options come in four parts. The labels: literal positions and texts, the text role, labels of only the last
+;; (or first) row per group:
 
-(nu/options-table (describe/own-rows (describe/options (chart/text))))
+(nu/options-table (describe/own-rows (describe/options (chart/text))) :labels)
 
 (def growth (for [g ["alpha" "beta" "gamma"] t (range 10)]
               {:g g :t t :v (+ (case g "alpha" 2.0 "beta" 0.0 "gamma" 9.0) (* t (case g "alpha" 1.0 "beta" 1.6 "gamma" 0.4)))}))
@@ -154,6 +155,11 @@
                                  {:columns 2})
                    {:width 900 :height 330})
 
+
+;; Their placement: the anchor and offset, rotation, what the anchor points into and room kept for labels past the
+;; data:
+
+(nu/options-table (describe/own-rows (describe/options (chart/text))) :placement)
 
 ;; End labels of the first row per group instead (`:select :first`), and what a rotated label's `:anchor` points
 ;; into: the rotated label's bounding box (`:box`, the default) or the text itself, turned about the anchor point
@@ -229,7 +235,11 @@
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 
-;; Crowded labels: `:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
+;; Crowded labels - left out, moved apart, fitted to a room:
+
+(nu/options-table (describe/own-rows (describe/options (chart/text))) :crowding)
+
+;; `:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
 ;; order is the priority (here the larger cities first). A mapped `:x-span` gives each label a room along x in x
 ;; units (here up to the next city east of it at about its latitude, else the panel's edge): a longer label shrinks,
 ;; down to its text role's `:min-size` (the `:annotation` role's 6 points by default; a role without one doesn't
@@ -267,6 +277,87 @@
                                                      :anchor [:left :middle] :offset [4 0] :overlapping-labels :drop})]])
                                  {:columns 3})
                    {:width 1000 :height 330})
+
+;; `:overlapping-labels :repel` moves such a label instead, in the same priority order: to the nearest free place
+;; within `:repel-distance` pixels (default 60) - inside the panel, off the labels placed before it and off the other
+;; labels' points (not other charts' marks) - and leaves out only a label with no free place there (a label larger
+;; than the panel stays where it is). It works in pixels on the drawn boxes, the same in flipped, polar and faceted
+;; plots and for rotated labels. `:label-leader true` joins a label moved more than 6 pixels to its point with a thin
+;; line in its colour, ending on the edge of its (turned) box; a place whose leader would cross another label, or
+;; whose box would cross another label's leader, isn't free - leaders never run through labels. Labels in boxes
+;; (`:background`, `:inset`) are repelled by their whole box - the text with its inset - and kept inside the panel
+;; with it (right). Here every car of `mtcars`, heaviest first; a distance of 100 pixels leaves room for the heavy cars'
+;; labels to move left of their points at the panel's right edge:
+
+(nu/source-note {:dataset :mtcars})
+
+(def mtcars (nu/dataset :mtcars))
+
+(nu/data-table mtcars)
+
+(plot/render-image (plot/arrange (map (fn [[title text-chart]]
+                                        {:data (sort-by (comp - :wt) mtcars)
+                                         :mapping {:x :wt :y :mpg}
+                                         :charts [(chart/scatter {:size 5}) text-chart]
+                                         :labels {:title title :x "weight" :y "mpg"}})
+                                      [[":drop"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :drop})]
+                                       [":repel, :repel-distance 100"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :repel :repel-distance 100
+                                                     :label-leader true})]
+                                       [":repel in label boxes"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :repel :repel-distance 100 :label-leader true
+                                                     :background [255 255 255 210] :inset 2})]])
+                                 {:columns 3})
+                   {:width 1000 :height 420})
+
+;; Text along a path - a label following its line:
+
+(nu/options-table (describe/own-rows (describe/options (chart/text))) :path)
+
+;; `:along-path true` lays each label text along the polyline of the positions of its group with that text, in data
+;; order, glyph by glyph turned to the path, upright: data rows of one group and label (a line's own rows - left), or
+;; literal positions with one text (a fitted trend line - middle; a curve - right). `:path-position` is where on the path
+;; (a fraction of its length; default 0.5), `:anchor` places the text there (`h`: start, centre or end) and on a side
+;; of the path (`v`: `:bottom` - above it, `:middle` - on it, `:top` - below it), `:offset [dx dy]` moves it along and
+;; up from the path in pixels. The glyphs follow one another along the path shifted to the text's baseline, so they
+;; keep their spacing through bends; the text reads upright by the whole path's direction (a vertical path - bottom to
+;; top). A `:background` (inline or the text role's) fills a band under the glyphs, `:inset` past them (right). A text
+;; longer than its path isn't drawn.
+
+(let [eruptions (map :eruptions faithful)
+      waiting (map :waiting faithful)
+      slope (/ (stats/covariance eruptions waiting) (stats/variance eruptions))
+      intercept (- (stats/mean waiting) (* slope (stats/mean eruptions)))
+      xs [1.5 5.2]
+      ys (mapv #(+ intercept (* slope %)) xs)
+      wave (m/slice-range 0.0 m/TWO_PI 60)]
+  (plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                     :charts [(chart/line)
+                                              (chart/text {:mapping {:x :t :y :v :color :g :label :g} :along-path true
+                                                           :path-position 0.7 :anchor [:center :bottom] :offset [0 2]})]
+                                     :labels {:title "data: along each line"}
+                                     :theme {:palette {:color :set1}}
+                                     :legend false}
+                                    {:data faithful :mapping {:x :eruptions :y :waiting}
+                                     :charts [(chart/scatter {:size 4})
+                                              (chart/function {:f #(+ intercept (* slope %)) :domain [1.5 5.2]})
+                                              (chart/text {:x xs :y ys :text (format "waiting = %.1f + %.1f eruptions" intercept slope)
+                                                           :along-path true :path-position 0.6 :anchor [:center :bottom]})]
+                                     :labels {:title "literal: along a trend line"}}
+                                    {:data (map (fn [x] {:x x :y (m/sin x)}) wave) :mapping {:x :x :y :y}
+                                     :charts [(chart/line)
+                                              (chart/text {:x (vec wave) :y (mapv m/sin wave) :text "a text along a sine wave"
+                                                           :along-path true :path-position 0.0 :anchor [:left :bottom] :offset [0 2]})
+                                              (chart/text {:x (vec wave) :y (mapv m/sin wave) :text "below the trough" :along-path true
+                                                           :path-position 0.75 :anchor [:center :top]
+                                                           :background [255 240 160] :inset 2})]
+                                     :labels {:title "[:left :bottom], [:center :top]"}}]
+                                   {:columns 3})
+                     {:width 1000 :height 330}))
 
 (nu/shared-groups (describe/options (chart/text)))
 

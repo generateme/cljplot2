@@ -254,7 +254,6 @@
   (testing "errors"
     (is (= #{[:margins :right :axis]}
            (error-ins #(built {:data xy :mapping {:x :a :y :b} :charts [(chart/scatter)] :margins {:right {:charts [(chart/box)] :axis true}}}))))
-    (is (= #{[:margins]} (error-ins #(built {:data xy :mapping {:x :a :y :b :facet :s} :charts [(chart/scatter)] :margins {:top (chart/density)}}))))
     (is (= #{[:margins]} (error-ins #(built (assoc (plot/arrange [{:data xy :mapping {:x :a} :charts [(chart/density)]}]) :margins {:top (chart/density)})))))
     (is (= :margins (:key (cljplot2.test-util/error #(built {:data xy :mapping {:y :b} :charts [(chart/density {:mapping {:x :b}})]
                                                             :margins {:top (chart/density)}})))))

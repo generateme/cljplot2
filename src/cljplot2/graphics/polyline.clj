@@ -6,7 +6,7 @@
   nothing), `:dash` `:none` / absent, a name of [[cljplot2.schema/dash-styles]] or a sequence of positive dash
   lengths (resolved by [[dash-pattern]] - every stroke with a dash goes through it).
 
-  Functions: runs [[finite-runs]], [[runs]], lengths [[segment-lengths]], [[cumulative-lengths]], [[path-length]]; strokes [[set-style!]], [[stroke-runs!]], [[draw!]],
+  Functions: runs [[finite-runs]], [[runs]], lengths [[segment-lengths]], [[cumulative-lengths]], [[path-length]], [[point-at-length]]; strokes [[set-style!]], [[stroke-runs!]], [[draw!]],
   [[draw-segments!]], [[bridge-style]], [[key-glyph!]]; shapes [[trail-shape]], [[rings-path]]; areas
   [[fill-polygons!]], [[fill-under!]], [[fill-runs-to-baseline!]], [[fill-closed-runs!]], [[fill-between!]],
   [[fill-area!]], [[area-color]], gradients [[gradient-fn]], [[fill-gradient-paint!]].
@@ -181,6 +181,33 @@
   Returns the summed segment lengths (see [[segment-lengths]]); 0.0 for fewer than 2 points."
   ^double [points]
   (reduce m/+ 0.0 (segment-lengths points)))
+
+(defn point-at-length
+  "Gives the point of a polyline at a distance from its first point along it, with the segment holding it.
+
+  Parameters:
+
+  - `points` (vector of `[x y]`): the polyline.
+  - `lengths` (vector of doubles): the distances of its points along it ([[cumulative-lengths]] of `points`).
+  - `s` (double): the distance along the polyline in pixels.
+
+  Returns `[[x y] index angle]` - `index` of the segment's first point, `angle` the segment's direction in radians,
+  clockwise as drawn (y down); segments of zero length are skipped (an end of one is on its neighbour). `nil` for `s`
+  below 0 or past the polyline's length, or a polyline without a segment of positive length."
+  [points lengths ^double s]
+  (when-not (m/neg? s)
+    (loop [i (long 0)]
+      (when (m/< (m/long-inc i) (count lengths))
+        (let [^double l0 (lengths i)
+              ^double l1 (lengths (m/long-inc i))]
+          (if (and (m/> l1 l0) (m/<= s l1))
+            (let [[^double x0 ^double y0] (points i)
+                  [^double x1 ^double y1] (points (m/long-inc i))
+                  dx (m/- x1 x0)
+                  dy (m/- y1 y0)
+                  t (m// (m/- s l0) (m/hypot dx dy))]
+              [[(m/+ x0 (m/* t dx)) (m/+ y0 (m/* t dy))] i (m/atan2 dy dx)])
+            (recur (m/long-inc i))))))))
 
 (defn draw-segments!
   "Strokes the segments between consecutive finite points, each in its own colour.

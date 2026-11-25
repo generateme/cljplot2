@@ -6,7 +6,7 @@
   Theme keys:
 
   - `:plot` - `:background` (fills the canvas), `:margin` (pixels on every side).
-  - `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box); `:alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off); `:grid {:x line :y line :minor line}` - grid lines at tick positions (`:minor` - at the minor ticks of scales with `:minor-ticks`, default `:none`), `line` is `{:color :line-width :dash}` or `:none` (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none` for a solid line); `:grid :bands` - the grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice `dotplot`; `:x` / `:y` `:none` still turns that scale's lines off); `:grid :bands-fill` - fill of every second band of a bands scale (from the second level), behind the charts, so levels with dodged groups read apart (default a light shade; `:none` turns it off).
+  - `:panel` - `:fill`, `:border-color`, `:border-width` (pixels, rounded, drawn inside the panel box); `:invalid-band-size` (pixels across the band of invalid values beside a panel's axis - charts' `:invalid :show`, see [[cljplot2.content.invalid-band]]; at least the band's label); `:alternate-fill` - drawn over the fill of facet panels with odd `row + col` (`:none` turns it off); `:grid {:x line :y line :minor line}` - grid lines at tick positions (`:minor` - at the minor ticks of scales with `:minor-ticks`, default `:none`), `line` is `{:color :line-width :dash}` or `:none` (`:dash` - a sequence of positive dash lengths, a dash style name of [[cljplot2.schema/dash-styles]], or `:none` for a solid line); `:grid :bands` - the grid line style used instead of `:x` / `:y` for a bands scale (default dotted, as lattice `dotplot`; `:x` / `:y` `:none` still turns that scale's lines off); `:grid :bands-fill` - fill of every second band of a bands scale (from the second level), behind the charts, so levels with dodged groups read apart (default a light shade; `:none` turns it off).
   - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-label-gap :tick-spacing :label-rotation :minor-tick-length :tick-label}` (pixels; `:tick-label` - text style keys of the axis's tick labels, axes and polar guides, merged over the `:tick-label` text role; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-label-gap` - the least distance between neighbouring tick labels' texts lying end to end along the axis (unrotated on a horizontal axis, at -90 or 90 degrees on a vertical one; stacked labels are spaced by their line height), closer labels are thinned (1 px less allowed: measured sizes are rounded up); `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically. 3D boxes draw their axes, edges and ticks with `[:axis :x]` (`:line-color`, `:line-width` - the box edges too).
   - `:frame-3d` - `:hidden-edge-dash` - the dash of a 3D box's hidden edges (a dash as in `:panel :grid`).
   - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
@@ -62,7 +62,7 @@
 (def default-theme
   "The default theme in old cljplot style: a light lavender-gray background, 10 px margin, panels without fill and border; every key of [[theme-schema]] has a value (see the namespace doc for the keys)."
   {:plot {:background (c/color 236 236 243) :margin 10}
-   :panel {:fill :none :alternate-fill (c/gray 0 12) :border-color :none :border-width 1
+   :panel {:fill :none :alternate-fill (c/gray 0 12) :border-color :none :border-width 1 :invalid-band-size 24
            :grid {:x {:color (c/gray 180) :line-width 0.5 :dash [4.0]}
                   :y {:color (c/gray 180) :line-width 0.5 :dash [4.0]}
                   :bands {:color (c/gray 180) :line-width 1 :dash [1.0 2.0]}
@@ -376,7 +376,10 @@
      [:alternate-fill {:description "drawn over odd facet panels (row + column odd); :none - off" :cljplot2/section :panel-box} schema/color]
      [:border-color {:description "panel border colour" :cljplot2/section :panel-box} schema/color]
      [:border-width {:description "panel border width in pixels (drawn inside the panel)" :cljplot2/section :panel-box} schema/non-neg]
-     [:grid {:description "grid lines at the ticks" :cljplot2/section :grid}
+     [:invalid-band-size {:description "pixels across the band of invalid values beside a panel's axis (charts' :invalid :show), at least its label's"
+                          :cljplot2/section :panel-box}
+      schema/non-neg]
+     [:grid{:description "grid lines at the ticks" :cljplot2/section :grid}
       [:map {:closed true}
        [:x {:description "grid lines of the x scale"} grid-line]
        [:y {:description "grid lines of the y scale"} grid-line]

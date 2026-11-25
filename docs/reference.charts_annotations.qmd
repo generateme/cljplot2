@@ -39,6 +39,7 @@ groups it takes (documented once in the Shared options chapter).
 ```clojure
 (ns reference.charts-annotations
   (:require [fastmath.core :as m]
+            [fastmath.stats :as stats]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
@@ -317,13 +318,13 @@ Labels at positions - from data (one per row, `:label` the text) or literal, als
 :::
 
 
-Its options: literal positions and texts, the anchor and offset, rotation, labels of only the last (or first)
-row per group, and room kept for labels past the data:
+Its options come in four parts. The labels: literal positions and texts, the text role, labels of only the last
+(or first) row per group:
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:select-within</td><td>one of :group-and-label :group or nil</td><td>:group-and-label</td><td>what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr><tr><td>:overlapping-labels</td><td>one of :keep :drop</td><td>:keep</td><td>labels overlapping one drawn before them (groups in order, then rows in data order): :keep (all drawn) or :drop (not drawn)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:select-within</td><td>one of :group-and-label :group or nil</td><td>:group-and-label</td><td>what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)</td></tr></tbody></table>
 ```
 
 :::
@@ -367,6 +368,18 @@ row per group, and room kept for labels past the data:
 
 ::: {.clay-image}
 ![](reference.charts_annotations_files/image5.png)
+:::
+
+
+Their placement: the anchor and offset, rotation, what the anchor points into and room kept for labels past the
+data:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
+```
+
 :::
 
 
@@ -487,7 +500,18 @@ another - a role the theme adds (here `:callout`, in the bottom right corner), o
 :::
 
 
-Crowded labels: `:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
+Crowded labels - left out, moved apart, fitted to a room:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:overlapping-labels</td><td>one of :keep :drop :repel</td><td>:keep</td><td>labels overlapping one drawn before them (groups, then rows in data order): :keep (all drawn), :drop (not drawn) or :repel (moved to a free place within :repel-distance, else not drawn)</td></tr><tr><td>:repel-distance</td><td>a positive finite number or nil</td><td>60</td><td>with :overlapping-labels :repel: the farthest a label moves from its place, pixels</td></tr><tr><td>:label-leader</td><td>true or false or nil</td><td>false</td><td>with :overlapping-labels :repel: draw a line from the point of a label moved more than 6 pixels to its box</td></tr></tbody></table>
+```
+
+:::
+
+
+`:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
 order is the priority (here the larger cities first). A mapped `:x-span` gives each label a room along x in x
 units (here up to the next city east of it at about its latitude, else the panel's edge): a longer label shrinks,
 down to its text role's `:min-size` (the `:annotation` role's 6 points by default; a role without one doesn't
@@ -547,6 +571,126 @@ node labels:
 :::
 
 
+`:overlapping-labels :repel` moves such a label instead, in the same priority order: to the nearest free place
+within `:repel-distance` pixels (default 60) - inside the panel, off the labels placed before it and off the other
+labels' points (not other charts' marks) - and leaves out only a label with no free place there (a label larger
+than the panel stays where it is). It works in pixels on the drawn boxes, the same in flipped, polar and faceted
+plots and for rotated labels. `:label-leader true` joins a label moved more than 6 pixels to its point with a thin
+line in its colour, ending on the edge of its (turned) box; a place whose leader would cross another label, or
+whose box would cross another label's leader, isn't free - leaders never run through labels. Labels in boxes
+(`:background`, `:inset`) are repelled by their whole box - the text with its inset - and kept inside the panel
+with it (right). Here every car of `mtcars`, heaviest first; a distance of 100 pixels leaves room for the heavy cars'
+labels to move left of their points at the panel's right edge:
+
+Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def mtcars (nu/dataset :mtcars))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Toyota Corona</td><td>21.5</td><td>4</td><td>120.1</td><td>97</td><td>3.7</td><td>2.465</td><td>20.01</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Dodge Challenger</td><td>15.5</td><td>8</td><td>318</td><td>150</td><td>2.76</td><td>3.52</td><td>16.87</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>AMC Javelin</td><td>15.2</td><td>8</td><td>304</td><td>150</td><td>3.15</td><td>3.435</td><td>17.3</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Camaro Z28</td><td>13.3</td><td>8</td><td>350</td><td>245</td><td>3.73</td><td>3.84</td><td>15.41</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Pontiac Firebird</td><td>19.2</td><td>8</td><td>400</td><td>175</td><td>3.08</td><td>3.845</td><td>17.05</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Fiat X1-9</td><td>27.3</td><td>4</td><td>79</td><td>66</td><td>4.08</td><td>1.935</td><td>18.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Porsche 914-2</td><td>26</td><td>4</td><td>120.3</td><td>91</td><td>4.43</td><td>2.14</td><td>16.7</td><td>0</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Lotus Europa</td><td>30.4</td><td>4</td><td>95.1</td><td>113</td><td>3.77</td><td>1.513</td><td>16.9</td><td>1</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Ford Pantera L</td><td>15.8</td><td>8</td><td>351</td><td>264</td><td>4.22</td><td>3.17</td><td>14.5</td><td>0</td><td>1</td><td>5</td><td>4</td></tr><tr><td>Ferrari Dino</td><td>19.7</td><td>6</td><td>145</td><td>175</td><td>3.62</td><td>2.77</td><td>15.5</td><td>0</td><td>1</td><td>5</td><td>6</td></tr><tr><td>Maserati Bora</td><td>15</td><td>8</td><td>301</td><td>335</td><td>3.54</td><td>3.57</td><td>14.6</td><td>0</td><td>1</td><td>5</td><td>8</td></tr><tr><td>Volvo 142E</td><td>21.4</td><td>4</td><td>121</td><td>109</td><td>4.11</td><td>2.78</td><td>18.6</td><td>1</td><td>1</td><td>4</td><td>2</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (map (fn [[title text-chart]]
+                                        {:data (sort-by (comp - :wt) mtcars)
+                                         :mapping {:x :wt :y :mpg}
+                                         :charts [(chart/scatter {:size 5}) text-chart]
+                                         :labels {:title title :x "weight" :y "mpg"}})
+                                      [[":drop"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :drop})]
+                                       [":repel, :repel-distance 100"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :repel :repel-distance 100
+                                                     :label-leader true})]
+                                       [":repel in label boxes"
+                                        (chart/text {:mapping {:x :wt :y :mpg :label :model} :size 8 :anchor [:left :middle]
+                                                     :offset [3 0] :overlapping-labels :repel :repel-distance 100 :label-leader true
+                                                     :background [255 255 255 210] :inset 2})]])
+                                 {:columns 3})
+                   {:width 1000 :height 420})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image10.png)
+:::
+
+
+Text along a path - a label following its line:
+
+::: {.clay-table}
+
+```{=html}
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:along-path</td><td>true or false or nil</td><td>false</td><td>lay each label text along the polyline of its group's positions with that text (in data order), glyph by glyph</td></tr><tr><td>:path-position</td><td>a number in [0 1] or nil</td><td>0.5</td><td>with :along-path: where on the path the text sits, a fraction of its length from its first position (:anchor h - the text's start, middle or end there)</td></tr></tbody></table>
+```
+
+:::
+
+
+`:along-path true` lays each label text along the polyline of the positions of its group with that text, in data
+order, glyph by glyph turned to the path, upright: data rows of one group and label (a line's own rows - left), or
+literal positions with one text (a fitted trend line - middle; a curve - right). `:path-position` is where on the path
+(a fraction of its length; default 0.5), `:anchor` places the text there (`h`: start, centre or end) and on a side
+of the path (`v`: `:bottom` - above it, `:middle` - on it, `:top` - below it), `:offset [dx dy]` moves it along and
+up from the path in pixels. The glyphs follow one another along the path shifted to the text's baseline, so they
+keep their spacing through bends; the text reads upright by the whole path's direction (a vertical path - bottom to
+top). A `:background` (inline or the text role's) fills a band under the glyphs, `:inset` past them (right). A text
+longer than its path isn't drawn.
+
+
+::: {.sourceClojure}
+```clojure
+(let [eruptions (map :eruptions faithful)
+      waiting (map :waiting faithful)
+      slope (/ (stats/covariance eruptions waiting) (stats/variance eruptions))
+      intercept (- (stats/mean waiting) (* slope (stats/mean eruptions)))
+      xs [1.5 5.2]
+      ys (mapv #(+ intercept (* slope %)) xs)
+      wave (m/slice-range 0.0 m/TWO_PI 60)]
+  (plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                     :charts [(chart/line)
+                                              (chart/text {:mapping {:x :t :y :v :color :g :label :g} :along-path true
+                                                           :path-position 0.7 :anchor [:center :bottom] :offset [0 2]})]
+                                     :labels {:title "data: along each line"}
+                                     :theme {:palette {:color :set1}}
+                                     :legend false}
+                                    {:data faithful :mapping {:x :eruptions :y :waiting}
+                                     :charts [(chart/scatter {:size 4})
+                                              (chart/function {:f #(+ intercept (* slope %)) :domain [1.5 5.2]})
+                                              (chart/text {:x xs :y ys :text (format "waiting = %.1f + %.1f eruptions" intercept slope)
+                                                           :along-path true :path-position 0.6 :anchor [:center :bottom]})]
+                                     :labels {:title "literal: along a trend line"}}
+                                    {:data (map (fn [x] {:x x :y (m/sin x)}) wave) :mapping {:x :x :y :y}
+                                     :charts [(chart/line)
+                                              (chart/text {:x (vec wave) :y (mapv m/sin wave) :text "a text along a sine wave"
+                                                           :along-path true :path-position 0.0 :anchor [:left :bottom] :offset [0 2]})
+                                              (chart/text {:x (vec wave) :y (mapv m/sin wave) :text "below the trough" :along-path true
+                                                           :path-position 0.75 :anchor [:center :top]
+                                                           :background [255 240 160] :inset 2})]
+                                     :labels {:title "[:left :bottom], [:center :top]"}}]
+                                   {:columns 3})
+                     {:width 1000 :height 330}))
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image11.png)
+:::
+
+
 Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:inset` `:background`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
 
@@ -573,7 +717,7 @@ image; it reads no mapping. Here a radial gradient covering the data range [-1 1
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image10.png)
+![](reference.charts_annotations_files/image12.png)
 :::
 
 
@@ -608,7 +752,7 @@ charts' domains (here a scatter's), drawn below them:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image11.png)
+![](reference.charts_annotations_files/image13.png)
 :::
 
 
@@ -639,7 +783,7 @@ may be mapped to colour or dash by the chart's own mapping.
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image12.png)
+![](reference.charts_annotations_files/image14.png)
 :::
 
 
@@ -676,7 +820,7 @@ mapping:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image13.png)
+![](reference.charts_annotations_files/image15.png)
 :::
 
 
@@ -709,7 +853,7 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image14.png)
+![](reference.charts_annotations_files/image16.png)
 :::
 
 
@@ -744,7 +888,7 @@ them, or those within `:y-limits`:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image15.png)
+![](reference.charts_annotations_files/image17.png)
 :::
 
 
@@ -761,7 +905,7 @@ The padding of the sampled span: none on x (the curve meets the panel's sides), 
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image16.png)
+![](reference.charts_annotations_files/image18.png)
 :::
 
 

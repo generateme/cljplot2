@@ -13,8 +13,9 @@
   edge falls outside) - polar guides stay inside the circle unclipped. `{:kind :panel :panel k}` draws the charts'
   data of split group `k` (default `:panel`) and of charts drawn in all panels; several panel items with the same
   key draw the same data. `{:kind :panel :margin side}` - a plot margin's panel: its charts, stats and scales come
-  from `env` `[:margins side]` (the shared axis scale and the margin's magnitude scale); only the shared axis draws
-  grid lines.
+  from `env` `[:margins side]` (the shared axis scale and the margin's magnitude scale; with `:panel k` - a facet
+  panel's margin - its data of group `k` and the scales of `k` in the margin's `:panel-scales`); only the shared axis
+  draws grid lines.
 
   Functions: methods of [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for
   `:panel`."
@@ -362,13 +363,15 @@
   Parameters:
 
   - `env` (map): the plot's draw environment, `[:margins side]` read.
-  - `side` (keyword): the margin's side.
+  - `content` (map): the margin panel content - `:margin side`, optional `:panel k` (a facet panel's margin).
 
-  Returns `env` with the margin's charts, stats and scales merged over it and no grid lines across the shared axis
-  (theme `[:panel :grid :y]` `:none` - the magnitude scale)."
-  [env side]
-  (-> (merge env (get-in env [:margins side]))
-      (assoc-in [:theme :panel :grid :y] :none)))
+  Returns `env` with the margin's charts, stats and scales merged over it - the scales of the content's panel among
+  the margin's `:panel-scales` (see [[cljplot2.scale.position/panel-scales-of]]) - and no grid lines across the shared
+  axis (theme `[:panel :grid :y]` `:none` - the magnitude scale)."
+  [env content]
+  (let [merged (merge env (get-in env [:margins (:margin content)]))]
+    (-> (assoc merged :scales (scale/panel-scales-of merged content))
+        (assoc-in [:theme :panel :grid :y] :none))))
 
 (defn- draw-panel!
   "Draws a panel: fill, alternate fill, then in panel-local coordinates the grid (or polar guides) and the charts,
@@ -408,6 +411,6 @@
 
 (defmethod draw/draw-content :panel
   [content canvas box env]
-  (draw-panel! content canvas box (if-let [side (:margin content)]
-                                    (margin-env env side)
+  (draw-panel! content canvas box (if (:margin content)
+                                    (margin-env env content)
                                     (assoc env :scales (scale/panel-scales-of env content)))))

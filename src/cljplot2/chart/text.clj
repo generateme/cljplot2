@@ -47,6 +47,38 @@
   `:overlapping-labels :drop` leaves out each label whose box overlaps one kept before it - groups in order, then
   rows in data order, so the rows' order is the priority (the axes' rule, [[cljplot2.graphics.measure/kept-box-indices]];
   empty texts never overlap; needs `:anchor-frame :box`, a schema rule); `:keep` (default) draws them all.
+  `:overlapping-labels :repel` (deterministic, in draw, by box overlap - also `:anchor-frame :box` only) moves such a
+  label instead, in the same priority order: a label stays where it is when its box lies inside the panel and
+  overlaps no label placed before it; else it takes the nearest free place of a 4 px grid of shifts within
+  `:repel-distance` pixels (default 60; ties counterclockwise from the right) - inside the panel, off the labels
+  placed before it and off the other labels' points (a 6 px square; points of the labels, not other charts' marks),
+  else it is left out (as `:drop`); a label larger than the panel (no place inside it) stays where it is - see
+  [[cljplot2.graphics.measure/repelled-placements]] (the candidate shifts are bounded by the panel, so a large
+  distance costs no more than the panel's size). The boxes compared and kept inside the panel are the drawn label
+  boxes - the text plus its `:inset` on every side, the area a `:background` fills ([[cljplot2.content.label/box-at]]);
+  rotated labels by their rotated boxes' bounding boxes. Only the chart's own labels repel one another (labels of
+  another text chart don't). It works in pixels, so flipped, polar and faceted plots alike (each panel on its own).
+  `:label-leader true` gives a label moved more than 6 px from where it would sit a leader line from its point to the
+  nearest point of its drawn frame's edge (the turned text frame of a rotated label, [[cljplot2.content.label/frame-corners]];
+  none when the point lies in the frame; starting where it leaves labels placed over the point), drawn by
+  [[cljplot2.content.label/draw-leader!]]; with leaders a place whose leader would cross a label placed before it, or
+  whose box would cross a leader placed before it, isn't free - no leader runs through a label.
+  `:repel-distance` and `:label-leader true` need `:overlapping-labels :repel` (schema rules; the default distance 60
+  is accepted without it, as `:select-within`'s default).
+
+  Text along a path: `:along-path true` lays each label text along the polyline of the positions of its group with
+  that text, in data order (literal: the positions given with one text form one path; data: the rows of a group and
+  label, as `:select` groups them), glyph by glyph turned to the path - [[cljplot2.content.label/draw-along-path!]]
+  over [[cljplot2.graphics.text-path/draw!]]: the glyphs follow one another by arc length along the path shifted to
+  the text's baseline, at `:path-position` (a fraction of that line's length from the path's first position, default
+  0.5; another fraction needs `:along-path`, a schema rule) with `:anchor`'s `h` (`:left` - the text starts there, `:center`, `:right`
+  - ends there) and `v` the side (`:middle` - on the path, `:bottom` - above it, `:top` - below it), `:offset [dx dy]`
+  pixels along the path and up from it; read upright by the whole path's direction (a path ending left of its start
+  is reversed, an exactly vertical one reads bottom to top); not drawn when longer than the path. The label's
+  `:background` (inline or its text role's) fills a band under the glyphs, `:inset` past them. The path joins the
+  positions' pixels with straight segments (polar plots too - give dense positions for a curve). Without boxes: no
+  `:select`, `:rotation`, `:anchor-frame :text`, `:overlapping-labels` but `:keep` (schema rules); a mapped `:angle` /
+  `:x-span` is ignored.
 
   Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
   (:require [clojure2d.core :as c2d]
@@ -125,45 +157,79 @@
                  (into (filter #(contains? (set style-keys) (first %)) theme/text-style-overrides))
                  (into data/common-options)
                  (into annotation/options)
-                 (conj (schema/optional :role {:description "theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys"
+                 (conj (schema/optional :role {:cljplot2/section :labels :description "theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys"
                                                :default :annotation}
                                         keyword?)
-                       (schema/nilable :x {:description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                       (schema/nilable :x {:cljplot2/section :labels :description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
                                        text-positions)
-                       (schema/nilable :y {:description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                       (schema/nilable :y {:cljplot2/section :labels :description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
                                        text-positions)
-                       (schema/nilable :text {:description "literal label text: a value or a vector of 1 or n (converted with str)"} any?)
-                       (schema/optional :anchor {:description "point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)"
+                       (schema/nilable :text {:cljplot2/section :labels :description "literal label text: a value or a vector of 1 or n (converted with str)"} any?)
+                       (schema/optional :anchor {:cljplot2/section :placement :description "point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)"
                                                  :cljplot2/default-doc "[:center :middle]; with :select just past the point; polar :radial - away from the centre"}
                                         [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
-                       (schema/optional :offset {:description "shift [dx dy] of the text in pixels, dy up"
+                       (schema/optional :offset {:cljplot2/section :placement :description "shift [dx dy] of the text in pixels, dy up"
                                                  :cljplot2/default-doc "[0 0]; with :select 5 pixels past the point"}
                                         [:tuple schema/finite schema/finite])
-                       (schema/optional :rotation {:description "text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)"
+                       (schema/optional :rotation {:cljplot2/section :placement :description "text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)"
                                                    :default 0}
                                         [:or schema/finite [:= :radial]])
-                       (schema/optional :select {:description "end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x"}
+                       (schema/optional :select {:cljplot2/section :labels :description "end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x"}
                                         [:enum :last :first])
-                       (schema/nilable :select-within {:description "what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)"
+                       (schema/nilable :select-within {:cljplot2/section :labels :description "what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)"
                                                         :default :group-and-label}
                                         [:enum :group-and-label :group])
-                       (schema/optional :anchor-frame {:description "what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)"
+                       (schema/optional :anchor-frame {:cljplot2/section :placement :description "what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)"
                                                        :default :box}
                                         [:enum :box :text])
-                       (schema/optional :reserve-room {:description "keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach"
+                       (schema/optional :reserve-room {:cljplot2/section :placement :description "keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach"
                                                        :default false}
                                         [:or schema/bool [:= :anchor]])
-                       (schema/optional :overlapping-labels {:description "labels overlapping one drawn before them (groups in order, then rows in data order): :keep (all drawn) or :drop (not drawn)"
+                       (schema/optional :overlapping-labels {:cljplot2/section :crowding :description "labels overlapping one drawn before them (groups, then rows in data order): :keep (all drawn), :drop (not drawn) or :repel (moved to a free place within :repel-distance, else not drawn)"
                                                              :default :keep}
-                                        [:enum :keep :drop])))
+                                        [:enum :keep :drop :repel])
+                       (schema/nilable :repel-distance {:cljplot2/section :crowding :description "with :overlapping-labels :repel: the farthest a label moves from its place, pixels"
+                                                        :default 60}
+                                       schema/finite-pos)
+                       (schema/nilable :label-leader {:cljplot2/section :crowding :description "with :overlapping-labels :repel: draw a line from the point of a label moved more than 6 pixels to its box"
+                                                      :default false}
+                                       schema/bool)
+                       (schema/nilable :along-path {:cljplot2/section :path :description "lay each label text along the polyline of its group's positions with that text (in data order), glyph by glyph"
+                                                    :default false}
+                                       schema/bool)
+                       (schema/nilable :path-position {:cljplot2/section :path :description "with :along-path: where on the path the text sits, a fraction of its length from its first position (:anchor h - the text's start, middle or end there)"
+                                                       :default 0.5}
+                                       schema/fraction)))
              [(fn [{:keys [select select-within]}]
                 (when (and (= :group select-within) (nil? select))
                   ":select-within :group needs :select (it says what :select keeps one label in)"))
               [:select-within]]
              [(fn [{:keys [overlapping-labels anchor-frame]}]
-                (when (and (= :drop overlapping-labels) (= :text anchor-frame))
-                  ":overlapping-labels :drop needs :anchor-frame :box (it compares the labels' boxes)"))
-              [:overlapping-labels]])
+                (when (and (#{:drop :repel} overlapping-labels) (= :text anchor-frame))
+                  (str ":overlapping-labels " overlapping-labels " needs :anchor-frame :box (it compares the labels' boxes)")))
+              [:overlapping-labels]]
+             ;; options working only with another: an other than default value without it is an error (as
+             ;; :select-within)
+             [(fn [{:keys [overlapping-labels repel-distance]}]
+                (when (and (some? repel-distance) (not (m/== 60.0 (double repel-distance))) (not= :repel overlapping-labels))
+                  ":repel-distance needs :overlapping-labels :repel (it limits how far a label moves)"))
+              [:repel-distance]]
+             [(fn [{:keys [overlapping-labels label-leader]}]
+                (when (and label-leader (not= :repel overlapping-labels))
+                  ":label-leader needs :overlapping-labels :repel (it joins a moved label to its point)"))
+              [:label-leader]]
+             [(fn [{:keys [along-path path-position]}]
+                (when (and (some? path-position) (not (m/== 0.5 (double path-position))) (not along-path))
+                  ":path-position needs :along-path true (it places the text on its path)"))
+              [:path-position]]
+             [(fn [{:keys [along-path select overlapping-labels anchor-frame rotation]}]
+                (when along-path
+                  (cond select ":along-path lays every label along its path: no :select"
+                        (#{:drop :repel} overlapping-labels) ":along-path labels aren't boxes: :overlapping-labels :keep only"
+                        (= :text anchor-frame) ":along-path turns each glyph to the path: no :anchor-frame :text"
+                        (and (some? rotation) (not (and (number? rotation) (m/zero? (double rotation)))))
+                        ":along-path turns each glyph to the path: no :rotation")))
+              [:along-path]])
    :mapping [:map
              (schema/nilable :x {:description "x position of a label, one per row"} schema/accessor)
              (schema/nilable :y {:description "y position of a label, one per row"} schema/accessor)
@@ -396,6 +462,175 @@
   [options theme]
   (merge {:color (get-in theme [:text (text-role options) :color])} (select-keys options style-keys)))
 
+(defn- texts-in-order
+  "Gives a group's labels by text, in the order the texts first appear.
+
+  Parameters:
+
+  - `labels` (sequence of maps): labels with `:text`.
+
+  Returns a lazy sequence of `[text labels]`, the texts converted with `str`, each text's labels in data order."
+  [labels]
+  (let [by-text (group-by #(str (:text %)) labels)]
+    (map (fn [t] [t (by-text t)]) (distinct (map #(str (:text %)) labels)))))
+
+(defn- anchor-point-fn
+  "Gives the function placing labels at their positions' pixels in one panel.
+
+  Parameters:
+
+  - `options` (map): the chart options (`:rotation`, `:anchor`).
+  - `scales` (map): the finalized scales (`:flip`, a polar coord's geometry).
+  - `box` (map): the panel box - `:w`, `:h` (the range of `[:panel f]` on an axis without a scale).
+
+  Returns a function of a label `{:x :y}` giving `[px py rotation anchor]` - the pixel of its position (no
+  `:offset`; NaN when unplaceable), the rotation (`:radial` along its angle in a polar plot, else `:rotation`) and
+  the anchor (`:radial` labels anchored away from the centre unless `:anchor` is given)."
+  [options scales {:keys [^double w ^double h]}]
+  (let [geometry (scale/coord-geometry scales)
+        radial? (and geometry (= :radial (:rotation options)))
+        [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
+        ;; ranges of an axis without a scale, from its low-value end
+        [h-range v-range] (if geometry
+                            [(:theta geometry) [(:inner-radius geometry) (:radius geometry)]]
+                            [[0.0 w] [h 0.0]])
+        h-pixel (annotation/axis-pixel-fn (get scales hk) h-range)
+        v-pixel (annotation/axis-pixel-fn (get scales vk) v-range)
+        rotation (numeric-rotation options)
+        anchor (data/option options :anchor [:center :middle])]
+    (fn [label]
+      (let [range-h (double (h-pixel (get label hk)))
+            range-v (double (v-pixel (get label vk)))]
+        (if geometry
+          (let [^Vec2 p (coord/to-pixel geometry range-h range-v)]
+            [(.x p) (.y p)
+             (if radial? (coord/radial-rotation range-h) rotation)
+             (if radial? (data/option options :anchor (coord/outward-anchor range-h)) anchor)])
+          [range-h range-v rotation anchor])))))
+
+(defn- draw-along-paths!
+  "Draws the labels of `:along-path` - each text along the polyline of its group's positions with that text.
+
+  Parameters:
+
+  - `canvas`: the canvas in graphics context.
+  - `groups` (sequence of maps): the panel's groups - `:labels`, `:aesthetics`.
+  - `options` (map): the chart options (`:path-position`, `:anchor`, `:offset`, style keys, `:role`).
+  - `anchor-point` (function): a label -> `[px py ..]`, its pixel (see [[anchor-point-fn]]).
+  - `scales`, `env`: the finalized scales, the drawing environment (`:theme`).
+
+  Returns `nil`; positions without a pixel are left out of a path, a text without room on its path isn't drawn (see
+  [[cljplot2.content.label/draw-along-path!]])."
+  [canvas groups options anchor-point scales env]
+  (let [placement {:position (data/option options :path-position 0.5)
+                   :anchor (data/option options :anchor [:center :middle])
+                   :offset (data/option options :offset [0 0])}
+        pixel (fn [l] (let [[^double px ^double py] (anchor-point l)]
+                        (when (and (m/valid-double? px) (m/valid-double? py)) [px py])))]
+    (doseq [{:keys [labels aesthetics]} groups
+            :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
+            :when st
+            [text ls] (texts-in-order labels)]
+      (label/draw-along-path! canvas (merge {:kind :label :role (text-role options) :text text} st)
+                              (keep pixel ls) placement env))))
+
+(defn- placed-labels
+  "Gives the boxed labels of one panel, placed at their pixels.
+
+  Parameters:
+
+  - `measuring`: a canvas in graphics context, measuring.
+  - `groups` (sequence of maps): the panel's groups - `:labels`, `:aesthetics`.
+  - `options` (map): the chart options.
+  - `anchor-point` (function): see [[anchor-point-fn]].
+  - `scales`, `env`: the finalized scales, the drawing environment (`:theme`).
+
+  Returns a vector of `{:content :anchor :x :y :point}` in groups' then data order - the label content (turned by a
+  mapped `:angle`, else the placed rotation; fitted to a mapped `:x-span`'s room along x, see
+  [[cljplot2.content.label/fitted-label]]), its anchor, its pixel with `:offset` and `:point` - the pixel without
+  it; unplaceable labels left out."
+  [measuring groups options anchor-point scales env]
+  (let [[^double dx ^double dy] (data/option options :offset [0 0])
+        flipped? (scale/flipped? scales)
+        polar? (some? (scale/coord-geometry scales))
+        x-pixel (annotation/axis-pixel-fn (:x scales))
+        ;; pixels of a label's room along x: unflipped cartesian, a numeric x and a finite :x-span; the label must
+        ;; run along x (checked with its rotation)
+        room-px (fn [x x-span]
+                  (when (and (not polar?) (not flipped?) (number? x) (schema/finite? x-span))
+                    (m/- (m/abs (m/- (double (x-pixel (m/+ (double x) (double x-span)))) (double (x-pixel x))))
+                         (m/abs dx))))]
+    (vec (for [{:keys [labels aesthetics]} groups
+               :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
+               :when st
+               {:keys [x text angle x-span] :as l} labels
+               :let [[^double px ^double py placed-rotation anchor] (anchor-point l)
+                     rotation (if (schema/finite? angle) angle placed-rotation)]
+               :when (and (m/valid-double? px) (m/valid-double? py))
+               :let [content (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st)
+                     room (when (= 0 (label/quarter-turn rotation)) (room-px x x-span))]]
+           {:content (if room
+                       (label/fitted-label content {:length (m/max 0.0 (double room)) :cut false} (assoc env :canvas measuring))
+                       content)
+            :anchor anchor :x (m/+ px dx) :y (m/- py dy) :point [px py]}))))
+
+(defn- repelled
+  "Gives the placed labels moved by `:overlapping-labels :repel`.
+
+  Parameters:
+
+  - `measuring`: a canvas in graphics context, measuring.
+  - `placed` (vector of maps): see [[placed-labels]], in priority order.
+  - `boxes` (vector of maps): each label's pixel box.
+  - `area` (map): `:w`, `:h` - the panel size, `:distance` - `:repel-distance`, `:leaders` - `:label-leader`.
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns a lazy sequence of the labels with a free position (see
+  [[cljplot2.graphics.measure/repelled-placements]]) moved there, with their `:leader` (`nil` - none)."
+  [measuring placed boxes area env]
+  (let [frames (when (:leaders area)
+                 (mapv (fn [{:keys [content anchor x y]}] (label/frame-corners measuring content anchor x y env)) placed))]
+    (keep (fn [[{:keys [^double x ^double y] :as l} placement]]
+            (when-let [{[^double sx ^double sy] :shift leader :leader} placement]
+              (assoc l :x (m/+ x sx) :y (m/+ y sy) :leader leader)))
+          (map vector placed (measure/repelled-placements boxes (mapv :point placed) (assoc area :frames frames))))))
+
+(defn- draw-boxed!
+  "Draws the labels of one panel as label boxes at their positions, crowded ones kept, dropped or repelled.
+
+  Parameters:
+
+  - `canvas`: the canvas.
+  - `groups` (sequence of maps): the panel's groups.
+  - `options` (map): the chart options (`:overlapping-labels`, `:repel-distance`, `:label-leader`, `:anchor-frame` ...).
+  - `anchor-point` (function): see [[anchor-point-fn]].
+  - `box` (map): the panel box `:w`, `:h`.
+  - `scales`, `env`: the finalized scales, the drawing environment (`:theme`).
+
+  Returns `nil`."
+  [canvas groups options anchor-point {:keys [^double w ^double h]} scales env]
+  (let [draw! (if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)
+        crowding (data/option options :overlapping-labels :keep)]
+    (c2d/with-isolated-canvas [measuring canvas]
+      (let [placed (placed-labels measuring groups options anchor-point scales env)
+            boxes (when-not (= :keep crowding)
+                    (mapv (fn [{:keys [content anchor x y]}]
+                            (if (= "" (:text content))
+                              {:x x :y y :w 0.0 :h 0.0}
+                              (label/box-at measuring content anchor x y env)))
+                          placed))
+            kept (case crowding
+                   :keep placed
+                   :drop (mapv placed (measure/kept-box-indices boxes))
+                   :repel (vec (repelled measuring placed boxes
+                                         {:w w :h h :distance (double (data/option options :repel-distance 60))
+                                          :leaders (data/option options :label-leader false)}
+                                         env)))]
+        (doseq [{:keys [content leader]} kept :when leader]
+          (label/draw-leader! canvas content leader env))
+        (doseq [{:keys [content anchor x y]} kept]
+          (draw! canvas content anchor x y env))))))
+
 (defn draw
   "Draws the labels of one panel.
 
@@ -408,62 +643,21 @@
   - `scales` (map): the finalized scales.
   - `env` (map): the drawing environment (`:theme`).
 
-  Labels are drawn through [[cljplot2.content.label/draw-at!]] (`:anchor-frame :text` - [[cljplot2.content.label/draw-at-frame!]]), turned by a mapped `:angle`, else `:rotation` (`:radial` along each label's angle in a polar plot); unplaceable positions are skipped. A label with a mapped `:x-span` running along x is fitted to that room (see [[cljplot2.content.label/fitted-label]], without cutting); with `:overlapping-labels :drop` a label whose box overlaps one kept before it is left out (see [[cljplot2.graphics.measure/kept-box-indices]]; empty texts never overlap). `[:panel f]` works also on an axis without a scale (the panel's width / height; polar - its angular / radial extent)."
-  [_chart {:keys [groups options]} canvas {:keys [^double w ^double h]} scales env]
-  (let [geometry (scale/coord-geometry scales)
-        radial? (and geometry (= :radial (:rotation options)))
-        [^double dx ^double dy] (data/option options :offset [0 0])
-        [hk vk] (if (scale/flipped? scales) [:y :x] [:x :y])
-        ;; ranges of an axis without a scale, from its low-value end
-        [h-range v-range] (if geometry
-                            [(:theta geometry) [(:inner-radius geometry) (:radius geometry)]]
-                            [[0.0 w] [h 0.0]])
-        h-pixel (annotation/axis-pixel-fn (get scales hk) h-range)
-        v-pixel (annotation/axis-pixel-fn (get scales vk) v-range)
-        ;; range position -> [pixel x, pixel y, rotation, anchor]
-        place (if geometry
-                (fn [^double range-h ^double range-v]
-                  (let [^Vec2 p (coord/to-pixel geometry range-h range-v)]
-                    [(m/+ (.x p) dx) (m/- (.y p) dy)
-                     (if radial? (coord/radial-rotation range-h) (numeric-rotation options))
-                     (data/option options :anchor (if radial? (coord/outward-anchor range-h) [:center :middle]))]))
-                (let [rotation (numeric-rotation options)
-                      anchor (data/option options :anchor [:center :middle])]
-                  (fn [^double range-h ^double range-v] [(m/+ range-h dx) (m/- range-v dy) rotation anchor])))]
-    (let [flipped? (scale/flipped? scales)
-          x-pixel (if flipped? v-pixel h-pixel)
-          ;; pixels of a label's room along x: unflipped cartesian, a numeric x and a finite :x-span; the label must run
-          ;; along x (checked with its rotation)
-          room-px (fn [x x-span]
-                    (when (and (nil? geometry) (not flipped?) (number? x) (schema/finite? x-span))
-                      (m/- (m/abs (m/- (double (x-pixel (m/+ (double x) (double x-span)))) (double (x-pixel x))))
-                           (m/abs dx))))
-          draw! (if (= :text (:anchor-frame options)) label/draw-at-frame! label/draw-at!)]
-      (c2d/with-isolated-canvas [measuring canvas]
-        (let [placed (vec (for [{:keys [labels aesthetics]} groups
-                                :let [st (group/style (base-style options (:theme env)) aesthetics scales (:theme env))]
-                                :when st
-                                {:keys [x y text angle x-span]} labels
-                                :let [pos {:x x :y y}
-                                      [^double px ^double py placed-rotation anchor] (place (double (h-pixel (pos hk))) (double (v-pixel (pos vk))))
-                                      rotation (if (schema/finite? angle) angle placed-rotation)]
-                                :when (and (m/valid-double? px) (m/valid-double? py))
-                                :let [content (merge {:kind :label :role (text-role options) :text (str text) :rotation rotation} st)
-                                      room (when (= 0 (label/quarter-turn rotation)) (room-px x x-span))]]
-                            [(if room
-                               (label/fitted-label content {:length (m/max 0.0 (double room)) :cut false} (assoc env :canvas measuring))
-                               content)
-                             anchor px py]))
-              kept (if (= :drop (data/option options :overlapping-labels :keep))
-                     (mapv placed (measure/kept-box-indices
-                                   (mapv (fn [[content anchor px py]]
-                                           (if (= "" (:text content))
-                                             {:x px :y py :w 0.0 :h 0.0}
-                                             (label/box-at measuring content anchor px py env)))
-                                         placed)))
-                     placed)]
-          (doseq [[content anchor px py] kept]
-            (draw! canvas content anchor px py env)))))))
+  Both modes place labels at their positions' pixels ([[anchor-point-fn]]); unplaceable positions are skipped.
+  Boxed labels ([[draw-boxed!]]) are drawn through [[cljplot2.content.label/draw-at!]] (`:anchor-frame :text` -
+  [[cljplot2.content.label/draw-at-frame!]]) past their `:offset`, turned by a mapped `:angle`, else `:rotation`; a
+  label with a mapped `:x-span` running along x is fitted to that room (see
+  [[cljplot2.content.label/fitted-label]], without cutting); with `:overlapping-labels :drop` a label whose box
+  overlaps one kept before it is left out (see [[cljplot2.graphics.measure/kept-box-indices]]; empty texts never
+  overlap); `:repel` moves it (see [[cljplot2.graphics.measure/repelled-placements]]), with `:label-leader` a leader
+  line from its point (see [[cljplot2.content.label/draw-leader!]]). `:along-path` lays each text along its
+  positions' polyline instead ([[draw-along-paths!]]). `[:panel f]` works also on an axis without a scale (the
+  panel's width / height; polar - its angular / radial extent)."
+  [_chart {:keys [groups options]} canvas box scales env]
+  (let [anchor-point (anchor-point-fn options scales box)]
+    (if (:along-path options)
+      (draw-along-paths! canvas groups options anchor-point scales env)
+      (draw-boxed! canvas groups options anchor-point box scales env))))
 
 (defn legend
   "Draws the key glyph: the letter `a` in the text style (the role's inset, so it fits the key), centred in the key box.

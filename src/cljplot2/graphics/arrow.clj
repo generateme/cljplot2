@@ -47,19 +47,10 @@
   - `run` (vector of `[x y]`): the pixel points.
   - `d` (double): the distance in pixels.
 
-  Returns `[point index]` - `index` of the segment holding it; `nil` past the end (or for fewer than 2 points)."
+  Returns `[point index]` - `index` of the segment holding it; `nil` past the end (or for fewer than 2 points), see
+  [[cljplot2.graphics.polyline/point-at-length]]."
   [run ^double d]
-  (loop [i (long 0)
-         acc 0.0
-         lengths (polyline/segment-lengths run)]
-    (when-let [[^double l & more] (seq lengths)]
-      (if (and (m/pos? l) (m/<= d (m/+ acc l)))
-        (let [[^double x0 ^double y0] (run i)
-              [^double x1 ^double y1] (run (m/long-inc i))
-              t (m// (m/- d acc) l)]
-          [[(m/+ x0 (m/* t (m/- x1 x0)))
-            (m/+ y0 (m/* t (m/- y1 y0)))] i])
-        (recur (m/long-inc i) (m/+ acc l) more)))))
+  (some-> (polyline/point-at-length run (polyline/cumulative-lengths run) d) (subvec 0 2)))
 
 (defn- trim-start
   "Gives a run without its first pixels along its length.
