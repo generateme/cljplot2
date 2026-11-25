@@ -160,6 +160,10 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
   Sub-plot errors name a legend cell `(legend)`.
 - `:equal-panels` rounds correct the tracks towards their mean panel (the total kept; rounds after the first by half
   the difference) and keep the round of the smallest panel spread; a round that doesn't fit ends them.
+  Then gap rounds even the space between neighbouring panels (`align/gap-paddings` - each column / row boundary
+  raised to the largest, as the arrange's internal `:gap-padding`; panel tracks recomputed around the insets) and
+  keep the round of the least panel spread plus gap spread among those within 4 px of the equal-panel spread; a
+  matrix too tight keeps uneven gaps.
 - Text fitting is one function, `content.label/fitted-label` (wrap, shrink, ellipsis; `:cut false` keeps the text
   whole): strips (no wrap), axis titles (label content `:fit true`, internal; always on - a declared fix) and text
   charts with `:x-span` (no cut) use it. One least size: the text role's `:min-size` (default `:axis-title` 8,

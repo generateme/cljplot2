@@ -955,7 +955,7 @@ by the face's angle to the light, whose direction is given in view coordinates (
 :::
 
 
-The default shading beside a darker ambient share lit from the right.
+The default shading beside a darker ambient share lit from the right, on the surface $z = \sin(xy)$.
 
 
 ::: {.sourceClojure}
@@ -967,7 +967,7 @@ The default shading beside a darker ambient share lit from the right.
                                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]
                                                             :ambient 0.2 :light [1.0 1.0 -0.5]})]
                                    :labels {:title ":ambient 0.2 :light [1 1 -0.5]"}}]
-                                 {:columns 2})
+                                 {:columns 2 :title "$z = \\sin(xy)$"})
                    {:width 800 :height 400})
 ```
 :::
@@ -1065,7 +1065,7 @@ The grid of `plot/arrange` (and of a plot's `:arrange`): shape, weights, panel a
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height</td></tr><tr><td>:row-spans</td><td>map of integer (at least 0) to a positive integer or nil</td><td>every plot one row</td><td>plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size (builds twice)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plots (required)</td><td>sequential of map (at least 1)</td><td></td><td>the sub-plots, filling the grid row by row</td></tr><tr><td>:columns</td><td>a positive integer or nil</td><td>one column (from :rows when given)</td><td>grid columns</td></tr><tr><td>:rows</td><td>a positive integer or nil</td><td>from the plot count and :columns</td><td>grid rows</td></tr><tr><td>:widths</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width</td></tr><tr><td>:heights</td><td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td><td>equal</td><td>relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height</td></tr><tr><td>:row-spans</td><td>map of integer (at least 0) to a positive integer or nil</td><td>every plot one row</td><td>plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)</td></tr><tr><td>:align</td><td>true or false or nil</td><td>true</td><td>align the sub-plots' panels in rows and columns</td></tr><tr><td>:equal-panels</td><td>true or false or nil</td><td>false</td><td>resize columns and rows so every aligned panel has the same size and the gaps between panels are even (builds twice)</td></tr></tbody></table>
 ```
 
 :::

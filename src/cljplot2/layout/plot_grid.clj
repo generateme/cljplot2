@@ -1084,15 +1084,19 @@
                                 :cljplot2/default-doc "every plot one row"}
                     [:map-of [:int {:min 0}] schema/pos-int])
     (schema/nilable :align {:description "align the sub-plots' panels in rows and columns" :default true} schema/bool)
-    (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size (builds twice)"
+    (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size and the gaps between panels are even (builds twice)"
                                    :default false}
                     schema/bool)]))
 
 (def arrange-schema
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
   (schema/with-rules
-   (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels}"}]
-         arrange-entries)
+   (conj (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels}"}]
+               arrange-entries)
+         (schema/optional :gap-padding {:cljplot2/internal true
+                                        :description "cell id -> {:right :bottom} pixels evening the gaps between an :equal-panels arrange's panels"}
+                          [:map-of any? [:map [:right {:description "pixels added right of the cell's panels"} :int]
+                                         [:bottom {:description "pixels added below the cell's panels"} :int]]]))
    [arrange-problem]))
 
 (defn- arrange-weights

@@ -29,7 +29,7 @@
             [cljplot2.core :as plot]
             [cljplot2.data.tree :as tree]
             [notebook-utils :as nu])
-  (:import [java.time LocalDate]
+  (:import [java.time Duration LocalDate LocalDateTime]
            [java.time.format DateTimeFormatter]
            [java.time.temporal TemporalAccessor]
            [java.util Locale]))
@@ -430,15 +430,20 @@
 
 ;; ### Bar Chart with bars center-aligned with time unit ticks
 
-;; The same means on a time axis: each month's bar centred on its first day (rects a month wide).
+;; The same means on a time axis: each month's bar centred on its first day, its edges two days inside the midpoints
+;; to the neighbouring months' first days - months differ in length, the gaps don't.
 
 (nu/source-note {:source "Vega-Lite - Bar Chart with bars center-aligned with time unit ticks"
                  :url (vl-url "bar_month_temporal_band_center") :dataset :seattle-weather-vega})
 
-(let [means (update-vals (group-by #(.getMonthValue (local-date (:date %))) seattle) #(stats/mean (map :precipitation %)))]
+(let [means (update-vals (group-by #(.getMonthValue (local-date (:date %))) seattle) #(stats/mean (map :precipitation %)))
+      month-start (fn [month] (.atStartOfDay (.plusMonths (LocalDate/of 2000 1 1) (dec (long month)))))
+      midpoint (fn [^LocalDateTime a ^LocalDateTime b] (.plusSeconds a (quot (.getSeconds (Duration/between a b)) 2)))]
   (plot/render-image
-   {:data (for [[month mean] means :let [start (LocalDate/of 2000 (int month) 1)]]
-            {:x0 (.minusDays start 13) :x1 (.plusDays start 13) :y0 0.0 :y1 mean})
+   {:data (for [[month mean] means :let [start (month-start month)]]
+            {:x0 (.plusDays ^LocalDateTime (midpoint (month-start (dec (long month))) start) 2)
+             :x1 (.minusDays ^LocalDateTime (midpoint start (month-start (inc (long month)))) 2)
+             :y0 0.0 :y1 mean})
     :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1} :fill [76 120 168]})]
     :scales {:x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
     :labels {:x "date (month)" :y "Mean of precipitation"}}

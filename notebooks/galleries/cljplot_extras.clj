@@ -115,7 +115,8 @@
 
 ;; ### Gaussian process
 
-;; A Gaussian process through ten noisy samples of a sine: the mean, 50 % and 95 % bands, the true function.
+;; A Gaussian process through ten noisy samples of a sine: the mean, 50 % and 95 % bands, the true function
+;; $f(x) = 10 + \sin(-0.7x)$.
 
 (nu/source-note {:source "cljplot - Gaussian process prediction" :url examples-url})
 
@@ -135,7 +136,7 @@
              (chart/function {:f truth :color [215 48 39] :line-width 1.5})
              (chart/line {:mapping {:y :mu} :color :black :line-width 2})
              (chart/scatter {:data (map (fn [x y] {:x x :y y}) xs ys) :mapping {:y :y} :size 9 :color :black})]
-    :labels {:title "Gaussian process: mean, 50 % and 95 % bands, the true function (red)" :y nil}}
+    :labels {:title "Gaussian process: mean, 50 % and 95 % bands, the true $f(x) = 10 + \\sin(-0.7x)$ (red)" :y nil}}
    {:width 800 :height 500}))
 
 ;; A posterior sample through three points, with its 95 % band (the posterior standard deviation).
@@ -180,7 +181,8 @@
 ;; ### Bayesian optimisation
 
 ;; fastmath's `bayesian-optimization` maximizes a black box: each step fits a Gaussian process to the points seen so
-;; far and evaluates where the expected improvement is highest (dashed rule). Three steps of one run:
+;; far and evaluates where the expected improvement is highest (dashed rule). Three steps of one run on the target
+;; $f(x) = e^{-(x-2)^2} + e^{-0.1(x-6)^2} + \frac{1}{1+x^2}$:
 
 (nu/source-note {:source "cljplot - Bayesian optimisation" :url bayesian-url})
 
@@ -209,11 +211,11 @@
                      :scales {:y {:domain [-1.0 2.5]}}
                      :labels {:title (str "step " i ", " (count xs) " evaluations") :y nil}}))]
   (plot/render-image
-   (plot/arrange (mapv step-plot [2 6 10]) {:columns 1})
+   (plot/arrange (mapv step-plot [2 6 10]) {:columns 1 :title "$f(x) = e^{-(x-2)^2} + e^{-0.1(x-6)^2} + \\frac{1}{1+x^2}$"})
    {:width 800 :height 750}))
 
-;; A 2D black box: its contours with every evaluated point, the process mean and its standard deviation after 15
-;; steps.
+;; A 2D black box $f(x, y) = \mathrm{sinc}(2+x+y)\,\sin 2x\,\cos 2y\,\sin 2xy$ (the normalized sinc): its
+;; contours with every evaluated point, the process mean and its standard deviation after 15 steps.
 
 (nu/source-note {:source "cljplot - Bayesian optimisation" :url bayesian-url})
 
@@ -240,7 +242,7 @@
    (plot/arrange [(panel "black box and evaluations" black-box)
                   (panel "process mean" (fn [p] (gp/predict gp p)))
                   (panel "process std dev" (fn [p] (second (gp/predict gp p true))))]
-                 {:columns 3})
+                 {:columns 3 :title "$f(x, y) = \\mathrm{sinc}(2+x+y)\\,\\sin 2x\\,\\cos 2y\\,\\sin 2xy$"})
    {:width 1000 :height 400}))
 
 ;; ## Time series
@@ -248,7 +250,7 @@
 ;; ### MA(2)
 
 ;; A moving-average series (fastmath `r/ma` over seeded white noise): each value mixes three consecutive Gaussian
-;; shocks.
+;; shocks, $y_t = e_t - 0.8e_{t-1} + 0.9e_{t-2}$.
 
 (nu/source-note {:source "cljplot - MA(2)" :url examples-url})
 
@@ -259,12 +261,13 @@
 (plot/render-image
  {:data (map-indexed (fn [t y] {:t t :y y}) ma2) :mapping {:x :t :y :y}
   :charts [(chart/line)]
-  :labels {:title "MA(2): e(t) - 0.8 e(t-1) + 0.9 e(t-2)" :x "t" :y nil}}
+  :labels {:title "MA(2): $y_t = e_t - 0.8e_{t-1} + 0.9e_{t-2}$" :x "$t$" :y nil}}
  {:width 800 :height 280})
 
 ;; ### Lag plot
 
-;; Each value against the one seven steps later: an AR(1) series (`r/ar`) driven by Gaussian noise with rare jumps.
+;; Each value against the one seven steps later: an AR(1) series (`r/ar`), $y_t = 0.95y_{t-1} + e_t$, driven by
+;; Gaussian noise $e_t$ with rare jumps.
 
 (nu/source-note {:source "cljplot - lag" :url examples-url})
 
@@ -274,7 +277,7 @@
    {:data (series/lag-rows ar 7) :mapping {:x :x :y :y}
     :charts [(chart/scatter {:size 3 :color [0 0 0 30]})]
     :aspect :iso
-    :labels {:title "Lag 7 of an AR(1) series with jumps" :x "y(t)" :y "y(t+7)"}}
+    :labels {:title "Lag 7 of $y_t = 0.95y_{t-1} + e_t$ with jumps" :x "$y_t$" :y "$y_{t+7}$"}}
    {:width 600 :height 600}))
 
 ;; ### ACF and PACF
@@ -297,22 +300,26 @@
 
 ;; ### A function of two variables
 
+;; The function $f(x, y) = -(x^2 + y^2)\sin x\,\sin y\,\sin xy$ over $[-\pi, \pi]^2$, its value coloured.
+
 (nu/source-note {:source "cljplot - function2d" :url examples-url})
 
 (plot/render-image
  {:charts [(chart/field {:f fn2d :domain fn2d-domain :n 300})]
   :aspect :iso
-  :labels {:title "-(x^2 + y^2) sin x sin y sin xy"}}
+  :labels {:title "$f(x, y) = -(x^2 + y^2)\\sin x\\,\\sin y\\,\\sin xy$"}}
  {:width 650 :height 600})
 
 ;; ### Its contours
+
+;; Twelve filled levels of the same $f(x, y)$.
 
 (nu/source-note {:source "cljplot - contour2d" :url examples-url})
 
 (plot/render-image
  {:charts [(chart/contour {:f fn2d :domain fn2d-domain :n 300 :filled true :levels 12})]
   :aspect :iso
-  :labels {:title "Filled contours of the same function"}}
+  :labels {:title "Filled contours of $-(x^2 + y^2)\\sin x\\,\\sin y\\,\\sin xy$"}}
  {:width 650 :height 600})
 
 ;; ### Value noise
@@ -328,9 +335,9 @@
 
 ;; ### A complex function
 
-;; Domain colouring: the hue is the argument of f(z), the brightness its magnitude wrapped into bands (`:log2` -
-;; where |f| + 1 doubles), every pixel computed (`:pixel-color`). The three zeros (the cube roots of 1) and the two
-;; poles (the square roots of -i) are the points every hue meets at.
+;; Domain colouring of $f(z) = \frac{z^3 - 1}{z^2 + i}$: the hue is the argument of $f(z)$, the brightness its
+;; magnitude wrapped into bands (`:log2` - where $|f| + 1$ doubles), every pixel computed (`:pixel-color`). The three
+;; zeros (the cube roots of 1) and the two poles (the square roots of $-i$) are the points every hue meets at.
 
 (nu/source-note {:source "cljplot - complex" :url examples-url})
 
@@ -339,7 +346,7 @@
                                                                              (cx/add (cx/mult z z) cx/I))))
                          :domain {:x [-2 2] :y [-2 2]}})]
   :aspect :iso
-  :labels {:title "(z^3 - 1) / (z^2 + i)" :x "re" :y "im"}}
+  :labels {:title "$f(z) = \\frac{z^3 - 1}{z^2 + i}$" :x "$\\mathrm{Re}\\,z$" :y "$\\mathrm{Im}\\,z$"}}
  {:width 650 :height 600})
 
 ;; ### Field mapping
@@ -363,7 +370,8 @@
 
 ;; ### Vector field
 
-;; Arrows of the hyperbolic field on a shifted grid, over the sine of its heading.
+;; Arrows of the hyperbolic field $v \mapsto \left(\frac{\sin\theta}{r}, r\cos\theta\right)$ ($r$, $\theta$ - the
+;; point's length and angle) on a shifted grid, over the sine of its heading.
 
 (nu/source-note {:source "cljplot - vector field" :url examples-url})
 
@@ -378,12 +386,13 @@
     :scales {:color {:range [:black :white] :title "sin heading"}
              :x {:domain [-3 3] :expand [0 0]} :y {:domain [-3 3] :expand [0 0]}}
     :aspect :iso
-    :labels {:title "Hyperbolic field"}}
+    :labels {:title "Hyperbolic field $\\left(\\frac{\\sin\\theta}{r}, r\\cos\\theta\\right)$"}}
    {:width 650 :height 600}))
 
 ;; ### Traces
 
-;; Points following the exponential field from 3000 random seeds; the traces run off to the right.
+;; Points following the exponential field $(x, y) \mapsto e^x(\cos y, \sin y)$ from 3000 random seeds; the traces run
+;; off to the right.
 
 (nu/source-note {:source "cljplot - field trace" :url examples-url})
 
@@ -394,7 +403,7 @@
     :mapping {:x :x :y :y}
     :charts [(chart/scatter {:size 1 :color [20 70 140 20]})]
     :scales {:x {:domain [-7 7] :nice false} :y {:domain [-7 7] :nice false}}
-    :labels {:title "Traces of the exponential field"}}
+    :labels {:title "Traces of the field $e^x(\\cos y, \\sin y)$"}}
    {:width 650 :height 600}))
 
 ;; ## Point density
@@ -477,7 +486,7 @@
 
 ;; ### Reference lines
 
-;; Horizontal, vertical and sloped rules with dashes and widths, under a sine.
+;; Horizontal, vertical and sloped rules with dashes and widths, under $\sin x$ over $[0, 2\pi]$.
 
 (nu/source-note {:source "cljplot - lines" :url examples-url})
 
@@ -488,7 +497,7 @@
            (chart/rule {:x (* 0.75 m/TWO_PI) :dash [10 10] :line-width 5 :color [128 0 0 100]})
            (chart/rule {:slope (/ 1.0 (* 0.75 m/TWO_PI)) :intercept -1 :dash [1 2 5 2] :line-width 3})
            (chart/function {:f m/sin :domain [0 m/TWO_PI]})]
-  :labels {:title "Rules and a sine"}}
+  :labels {:title "Rules and $\\sin x$"}}
  {:width 900 :height 320})
 
 ;; ### Wrapped random walk
@@ -587,11 +596,18 @@
 
 ;; ### Kernels
 
-;; Six fastmath kernels as functions of the distance from 0, at full and half scale.
+;; Six fastmath kernels with their default parameters as functions of the distance $d$ from 0, at full and half scale:
+;; Gaussian $e^{-d^2/2}$, periodic $e^{-2\sin^2 \pi d}$, Cauchy and rational quadratic (equal at the defaults)
+;; $\frac{1}{1+d^2}$, Matérn 1/2 $e^{-\sqrt{2}d}$ and Matérn 5/2 $(1 + \sqrt{10}d + \frac{10}{3}d^2)e^{-\sqrt{10}d}$.
 
 (nu/source-note {:source "cljplot - kernels (unsaved sketch)" :url examples-url})
 
 (def kernels [:gaussian :periodic :cauchy :rational-quadratic :matern-12 :matern-52])
+
+(def kernel-formulas
+  "Each kernel's formula at its default parameters, of the distance d."
+  {:gaussian "e^{-d^2/2}" :periodic "e^{-2\\sin^2 \\pi d}" :cauchy "\\frac{1}{1+d^2}" :rational-quadratic "\\frac{1}{1+d^2}"
+   :matern-12 "e^{-\\sqrt{2}d}" :matern-52 "(1 + \\sqrt{10}d + \\frac{10}{3}d^2)e^{-\\sqrt{10}d}"})
 
 (plot/render-image
  (plot/arrange (for [kernel kernels
@@ -600,7 +616,7 @@
                                             :domain [-3 3] :line-width 2 :mapping {:color :function}})]
                   :scales {:color {:range [[69 117 180] [215 50 40]]}}
                   :legend false
-                  :labels {:title (name kernel)}})
+                  :labels {:title (plot/runs (name kernel) " " (plot/math (kernel-formulas kernel)))}})
                {:columns 3})
  {:width 900 :height 550})
 

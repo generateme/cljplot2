@@ -178,11 +178,12 @@
 ;; ## 3D frame
 
 ;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). Here a
-;; [surface](reference.charts_multivariate_3d.html#surface) of a function over a domain:
+;; [surface](reference.charts_multivariate_3d.html#surface) of $z = \sin(xy)$ over $[-2, 2]^2$:
 
 (nu/options-table (describe/theme-rows :frame-3d))
 
 (plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [-2 2] :y [-2 2]}})]
+                    :labels {:title "$z = \\sin(xy)$"}
                     :theme {:frame-3d {:hidden-edge-dash [8 2 2 2]}
                             :axis {:x {:line-width 2}}}}
                    {:width 500 :height 400})

@@ -1484,10 +1484,93 @@
               best
               (recur next-plot best best-spread (m/long-inc round)))))))))
 
+(def ^{:private true :const true :tag 'long} max-gap-rounds
+  "Upper bound on rebuilds evening the gaps of an `:equal-panels` arrange, see [[gap-evened-arrange]]."
+  3)
+
+(def ^{:private true :const true :tag 'long} gap-panel-tolerance
+  "Pixels of panel spread a round evening the gaps may add to the equal-panel result, see [[gap-evened-arrange]]."
+  4)
+
+(defn- evened-tracks
+  "Fixed tracks of one direction of an arrange giving every panel one size with the given insets.
+
+  Parameters:
+
+  - `tracks` (vector): the arrange's tracks of the direction, `[:fixed px]` or others.
+  - `insets` (map): panel track index -> pixels around its panels (both sides, gap paddings included).
+
+  Returns the tracks: every panel track `[:fixed (+ panel inset)]`, the panel the room of the panel tracks less their
+  insets shared equally (rounded down, at least a pixel); other tracks kept."
+  [tracks insets]
+  (let [room (reduce m/+ 0 (map #(long (second (nth tracks %))) (keys insets)))
+        panel (m/max 1 (m/long-quot (m/long-sub room (long (reduce m/+ 0 (vals insets)))) (count insets)))]
+    (vec (map-indexed (fn [k t] (if-let [inset (insets k)] [:fixed (m/long-add panel (long inset))] t)) tracks))))
+
+(defn- gap-evened-arrange
+  "A built `:equal-panels` arrange with even gaps between its panels, its panels still one size.
+
+  The space between neighbouring columns' panels is raised to the largest one at every boundary (likewise rows, see
+  [[cljplot2.layout.align/gap-paddings]]): the arrange is rebuilt with those paddings (`:gap-padding`) and its panel
+  tracks giving every panel one size around its insets (see [[evened-tracks]]). A rebuild can move tick labels (a
+  panel's size changes), so the paddings and tracks are corrected again while gaps or panels differ, at most
+  [[max-gap-rounds]] times. A round counts when its panel spread (see [[panel-spread]]) is at most that of `built`
+  plus [[gap-panel-tolerance]], and the one of the smallest unevenness - its panel spread plus its gap spread (the
+  largest padding still needed, columns plus rows) - is kept, the earlier of equal ones; a matrix too tight to even
+  its gaps without unbalancing its panels keeps them uneven. A rebuild whose tracks don't fit (a cell narrower than its axis -
+  [[cljplot2.layout.grid/space-error?]]) ends the rounds.
+
+  Parameters:
+
+  - `built` (map): the built arrange plot with fixed tracks (see [[equalized-arrange]]).
+  - `rebuild` (function): builds a plot map, `(rebuild plot)`.
+
+  Returns the plot kept, `built` when its gaps are already even."
+  [built rebuild]
+  (let [{:keys [positions]} (arrange-positions (:arrange built))
+        allowed (panel-spread (arranged-panel-sizes built positions))
+        track-of (fn [side id] (let [{:keys [row column] row-span :span} (positions id)]
+                                 (if (= side :right) column (when (m/one? (long row-span)) row))))]
+    (loop [current built
+           previous-best nil
+           previous-score Long/MAX_VALUE
+           round 1]
+      (let [cells (map (fn [{:keys [id box]}] {:id id :box box :built (get-in current [:subplots id])})
+                       (grid/content-items (:grid current) (:layout current) subplot/plot-content?))
+            extra (align/gap-paddings cells)
+            unequal (panel-spread (arranged-panel-sizes current positions))
+            score (m/long-add unequal
+                              (m/long-add (long (reduce m/long-max 0 (map #(long (:right %)) (vals extra))))
+                                          (long (reduce m/long-max 0 (map #(long (:bottom %)) (vals extra))))))
+            better (and (m/<= unequal (m/long-add allowed gap-panel-tolerance)) (m/< score previous-score))
+            best (if better current previous-best)
+            best-score (if better score previous-score)]
+        (if (or (and (empty? extra) (m/zero? unequal)) (m/> round max-gap-rounds))
+          best
+          (let [gap-padding (merge-with #(merge-with m/long-add %1 %2) (get-in current [:arrange :gap-padding]) extra)
+                insets-of (fn [side]
+                            (reduce (fn [acc {:keys [id] cell-built :built}]
+                                      (let [k (track-of side id)
+                                            {:keys [left right top bottom]} (align/panel-insets cell-built)
+                                            inset (m/long-add (long (if (= side :right) (m/long-add left right) (m/long-add top bottom)))
+                                                              (long (get-in extra [id side] 0)))]
+                                        (if k (update acc k (fnil m/long-max 0) inset) acc)))
+                                    {} (filter #(align/panel-insets (:built %)) cells)))
+                plot (-> (apply dissoc current (concat stage-order (mapcat val stage-extra-keys)))
+                         (update-in [:arrange :widths] evened-tracks (insets-of :right))
+                         (update-in [:arrange :heights] evened-tracks (insets-of :bottom))
+                         (assoc-in [:arrange :gap-padding] gap-padding))
+                next-plot (try (rebuild plot)
+                               (catch clojure.lang.ExceptionInfo e
+                                 (if (grid/space-error? (ex-data e)) ::no-fit (throw e))))]
+            (if (= ::no-fit next-plot)
+              best
+              (recur next-plot best best-score (m/long-inc round)))))))))
+
 (defn- subplots-stage
   "Pipeline stage `:subplots`: every plot item of the grid built at its box size.
 
-  Items of nested grids are included; items whose box is smaller than 1x1 pixel are skipped. For `:arrange` (unless `{:align false}`) the sub-plots' panels are aligned in rows and columns (see [[cljplot2.layout.align/align-panels]]); with `:equal-panels` the plot is rebuilt with equal panels (see [[equalized-arrange]]).
+  Items of nested grids are included; items whose box is smaller than 1x1 pixel are skipped. For `:arrange` (unless `{:align false}`) the sub-plots' panels are aligned in rows and columns (see [[cljplot2.layout.align/align-panels]], with the arrange's internal `:gap-padding`); with `:equal-panels` the plot is rebuilt with equal panels (see [[equalized-arrange]]), then with even gaps between them (see [[gap-evened-arrange]]).
 
   Parameters:
 
@@ -1508,11 +1591,12 @@
                            items))
           subplots (if (and (:arrange plot) (get-in plot [:arrange :align] true))
                      (align/align-panels cells (fn [{:keys [id box] p :plot} padding]
-                                                 (build-subplot (assoc p :alignment-padding padding) id box hint)))
+                                                 (build-subplot (assoc p :alignment-padding padding) id box hint))
+                                         (get-in plot [:arrange :gap-padding]))
                      (into {} (map (juxt :id :built)) cells))]
       (if (get-in plot [:arrange :equal-panels])
         (let [rebuild #(build % (select-keys options [:width :height :hint]))]
-          (equalized-arrange (rebuild (equal-panel-plot plot cells subplots)) rebuild))
+          (gap-evened-arrange (equalized-arrange (rebuild (equal-panel-plot plot cells subplots)) rebuild) rebuild))
         (assoc plot :subplots subplots)))))
 
 (def stage-order

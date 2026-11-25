@@ -115,6 +115,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .data-table thead th { position: sticky; top: 0; background: var(--bs-body-bg, #fff); }
 </style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -3132,7 +3161,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The default shading beside a darker ambient share lit from the right.</p>
+<p>The default shading beside a darker ambient share lit from the right, on the surface <span class="math inline">\(z = \sin(xy)\)</span>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/surface {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (m/* x y)))</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">220</span>]})]</span>
@@ -3141,7 +3170,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:color</span> [<span class="dv">120</span> <span class="dv">160</span> <span class="dv">220</span>]</span>
 <span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:ambient</span> <span class="fl">0.2</span> <span class="at">:light</span> [<span class="fl">1.0</span> <span class="fl">1.0</span> -<span class="fl">0.5</span>]})]</span>
 <span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":ambient 0.2 :light [1 1 -0.5]"</span>}}]</span>
-<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:title</span> <span class="st">"$z = </span><span class="sc">\\</span><span class="st">sin(xy)$"</span>})</span>
 <span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
@@ -3380,7 +3409,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>:equal-panels</td>
 <td>true or false or nil</td>
 <td>false</td>
-<td>resize columns and rows so every aligned panel has the same size (builds twice)</td>
+<td>resize columns and rows so every aligned panel has the same size and the gaps between panels are even (builds twice)</td>
 </tr>
 </tbody>
 </table>

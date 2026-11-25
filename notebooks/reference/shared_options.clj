@@ -399,7 +399,7 @@
 
 (nu/options-table (describe/fragment-rows :shading))
 
-;; The default shading beside a darker ambient share lit from the right.
+;; The default shading beside a darker ambient share lit from the right, on the surface $z = \sin(xy)$.
 
 (plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
                                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]})]
@@ -408,7 +408,7 @@
                                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]
                                                             :ambient 0.2 :light [1.0 1.0 -0.5]})]
                                    :labels {:title ":ambient 0.2 :light [1 1 -0.5]"}}]
-                                 {:columns 2})
+                                 {:columns 2 :title "$z = \\sin(xy)$"})
                    {:width 800 :height 400})
 
 ;; ### Text style

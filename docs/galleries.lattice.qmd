@@ -2329,9 +2329,9 @@ Source: [Lattice Fig 6.7](http://lmdvr.r-forge.r-project.org/figures/figures.htm
 Ozone modelled on wind, temperature and radiation, evaluated on a wind x temperature grid at four radiation
 levels: a linear model with all interactions (as the book), and - in place of the book's loess and locfit fits -
 a Gaussian process (kernel sigma 0.25), a radial basis function fit and Shepard interpolation (fastmath, on the
-predictors scaled to [0, 1]). Shepard's inverse-distance weights use power 1 (default 2) for a smoother surface;
-it still passes through every observation, so the slices show small dimples where they come close to one. The
-view turned so the side along temperature, where ozone grows, faces us.
+predictors scaled to [0, 1]). Shepard interpolation (inverse-distance weights of power 2) passes through every
+observation, so the slices show dimples where they come close to one. The view turned so the side along
+temperature, where ozone grows, faces us.
 
 Source: [Lattice Fig 6.8](http://lmdvr.r-forge.r-project.org/figures/figures.html?chapter=06;figure=06_08;theme=stdColor;code=right). Data: Ozone and weather, New York 1973, R lattice package `environmental` (Bruntz et al. 1974; Cleveland 1993); licence: GPL (>= 2) (lattice).
 
@@ -2349,7 +2349,7 @@ Source: [Lattice Fig 6.8](http://lmdvr.r-forge.r-project.org/figures/figures.htm
         linear (regression/lm ozone (mapv terms points))
         gp (interp/interpolation :gp (mapv unit points) ozone (k/kernel :gaussian {:sigma 0.25}) {:noise 0.2})
         rbf (interp/interpolation :rbf (mapv unit points) ozone (k/rbf :gaussian {:scale 0.4}) {:lambda 0.5})
-        shepard (interp/interpolation :shepard (mapv unit points) ozone {:p 1.0})
+        shepard (interp/interpolation :shepard (mapv unit points) ozone)
         models [["linear" #(linear (terms %))] ["Gaussian process" #(gp (unit %))]
                 ["radial basis" #(rbf (unit %))] ["Shepard" #(shepard (unit %))]]
         mesh (fn [[lo hi] n] (mapv #(+ lo (* (- hi lo) (/ % (double n)))) (range (inc n))))]
