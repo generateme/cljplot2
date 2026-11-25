@@ -292,7 +292,7 @@ the theme: banned names, and one type family per name across all owners). One na
   every dataset is rows of maps (JSON arrays of objects or CSV). Demos read the same files via `cljplot2.demo.data`.
 - Demos: `dev/cljplot2/demo/<name>.clj` each define `images` (`[[file-name plot options] …]`) and optionally
   `output-dir`; register new demos in `cljplot2.demo/demos`. `img/` (logo, README example) is tracked;
-  `results/` is gitignored.
+  `results/` (every demo image) is tracked too (since `a332745`).
 
 ## Code conventions
 
