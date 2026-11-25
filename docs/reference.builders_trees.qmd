@@ -273,7 +273,7 @@ The theme styles of a node-link tree - nodes in `[:chart :tree-node]` (scatter),
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[70 130 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
 ```
 
 :::
@@ -502,7 +502,7 @@ leaves around a circle. Edges name their leaves by key - a `tree/from-parents` n
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by</td><td>one of :group :none or nil</td><td>:group</td><td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[70 110 180]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>opacity of the edges (leaf points and legend keys stay opaque)</td></tr><tr><td>:color-by</td><td>one of :group :none or nil</td><td>:group</td><td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td></tr><tr><td>:edge-color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>colour of the edges when not coloured by group</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>leaf names outward around the circle</td></tr></tbody></table>
 ```
 
 :::
@@ -563,7 +563,7 @@ leaves in `[:chart :bundle-leaf]` (scatter):
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
 ```
 
 :::
@@ -588,7 +588,7 @@ Thicker edges through the theme:
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>3</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[69 117 180 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>3</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour or :none</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character, keyword or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>the colours' own alpha</td><td>opacity of every point colour, mapped, NA or not, and of the legend keys (the outline keeps its own)</td></tr></tbody></table>
 ```
 
 :::

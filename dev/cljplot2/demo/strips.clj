@@ -140,7 +140,7 @@
   {:data faithful
    :mapping {:x :eruptions}
    :flip true
-   :charts [(chart/density {:fill [69 117 180 60]}) (chart/rug {:place :bottom :bottom-share 0.08 :width 1.0})]
+   :charts [(chart/density {:fill [0 114 178 60]}) (chart/rug {:place :bottom :bottom-share 0.08 :width 1.0})]
    :labels {:title "Density with a :bottom rug, vertical" :x "eruptions"}})
 
 (def images

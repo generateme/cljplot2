@@ -16,7 +16,7 @@
   (plot/arrange [{:data sales :mapping {:x :value :y :country}
                   :flip true :coord {:kind :polar}
                   :scales {:y {:domain (mapv :country sales)}}
-                  :charts [(chart/bar {:color [69 117 180]})]
+                  :charts [(chart/bar {:color [0 114 178]})]
                   :labels {:title "Circular barplot (:flip, ordered)" :x nil :y nil}}
                  {:data sales :mapping {:x :value :y :country}
                   :flip true :coord {:kind :polar :inner 0.35}

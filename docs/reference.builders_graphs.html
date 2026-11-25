@@ -1435,13 +1435,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Node aesthetics from the node rows or the computed degree (whole numbers: <code>:integer-ticks</code> through the builder’s <code>:scales</code>), labels beside the nodes (a label overlapping that of a larger node is left out):</p>
+<p>Node aesthetics from the node rows or the computed degree (whole numbers: <code>:integer-ticks</code> through the builder’s <code>:scales</code>, the teams in colours matching their names), labels beside the nodes (a label overlapping that of a larger node is left out):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/network friends {<span class="at">:nodes</span> people <span class="at">:rng</span> (r/rng <span class="at">:mersenne</span> <span class="dv">1</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:team</span> <span class="at">:size</span> <span class="at">:degree</span>}</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:scales</span> {<span class="at">:size</span> {<span class="at">:integer-ticks</span> <span class="va">true</span>}}</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:labels</span> <span class="va">true</span>})</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:scales</span> {<span class="at">:size</span> {<span class="at">:integer-ticks</span> <span class="va">true</span>}</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                                   <span class="at">:color</span> {<span class="at">:range</span> {<span class="st">"red"</span> [<span class="dv">213</span> <span class="dv">94</span> <span class="dv">0</span>] <span class="st">"blue"</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="st">"green"</span> [<span class="dv">0</span> <span class="dv">158</span> <span class="dv">115</span>]}}}</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:labels</span> <span class="va">true</span>})</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_graphs_files/image0.png" class="img-fluid"></p>
@@ -1485,7 +1486,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69 117 180]</td>
+<td>[0 114 178]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">
@@ -1672,8 +1673,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Node colours from their rows, arc widths from the weights (the default when weights differ), names under the line:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arc friends {<span class="at">:nodes</span> people <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:team</span>}})</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arc friends {<span class="at">:nodes</span> people <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:team</span>}</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> {<span class="st">"red"</span> [<span class="dv">213</span> <span class="dv">94</span> <span class="dv">0</span>] <span class="st">"blue"</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="st">"green"</span> [<span class="dv">0</span> <span class="dv">158</span> <span class="dv">115</span>]}}}})</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_graphs_files/image5.png" class="img-fluid"></p>
@@ -1715,7 +1717,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>:color</td>
 <td>a clojure2d color or :none</td>
-<td>[69 117 180]</td>
+<td>[0 114 178]</td>
 <td>point colour (a mapped :color wins)</td>
 </tr>
 <tr class="odd">

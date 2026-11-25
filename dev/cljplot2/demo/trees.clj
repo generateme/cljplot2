@@ -25,11 +25,11 @@
 (def ^:private clustering (cl/hclust standardized {:method :complete}))
 
 (def mtcars-dendrogram
-  (plot/dendrogram clustering {:leaf-names cars :k 3 :theme {:palette {:color :set1}}
+  (plot/dendrogram clustering {:leaf-names cars :k 3
                                 :title "mtcars: complete-linkage clustering, 3 clusters"}))
 
 (def mtcars-circular
-  (plot/dendrogram clustering {:leaf-names cars :k 3 :circular true :theme {:palette {:color :set1}}
+  (plot/dendrogram clustering {:leaf-names cars :k 3 :circular true
                               :title "The same clustering, circular"}))
 
 (def ^:private world (data/csv-rows "world-population.csv"))

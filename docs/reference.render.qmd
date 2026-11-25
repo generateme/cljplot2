@@ -196,7 +196,7 @@ partial ones; `plot/cvd-image` converts any image. Red and green species, as ren
 
 ::: {.sourceClojure}
 ```clojure
-(def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [69 117 180]]}}))
+(def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [0 114 178]]}}))
 ```
 :::
 

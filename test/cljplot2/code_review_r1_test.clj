@@ -76,7 +76,7 @@
 (deftest theme-colours-test
   (testing "colour literals of the default theme are clojure2d colours; named colours stay keywords"
     (is (= (c/color 236 236 243) (get-in theme/default-theme [:plot :background])))
-    (is (= (c/color 69 117 180 180) (get-in theme/default-theme [:chart :scatter :color])))
+    (is (= (c/set-alpha theme/default-color 180) (get-in theme/default-theme [:chart :scatter :color])))
     (is (= :black (get-in theme/default-theme [:axis :x :line-color])))))
 
 ;; named chart styles

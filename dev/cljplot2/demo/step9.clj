@@ -27,7 +27,7 @@
 (def quad
   (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting} :charts [(chart/scatter)] :labels {:title "scatter"}}
                  {:data faithful :mapping {:x :eruptions} :charts [(chart/histogram {:y :count})] :labels {:title "histogram"}}
-                 {:data faithful :mapping {:x :waiting} :charts [(chart/density {:fill [69 117 180 60]})] :labels {:title "density"}}
+                 {:data faithful :mapping {:x :waiting} :charts [(chart/density {:fill [0 114 178 60]})] :labels {:title "density"}}
                  {:data faithful :mapping {:x :waiting} :charts [(chart/ecdf)] :labels {:title "ECDF"}}]
                 {:columns 2 :widths [2 1] :title "Old Faithful"}))
 

@@ -120,23 +120,25 @@
 
 ;; 2.x scales
 
-(def ^:private category20 (vec (c/palette :category20)))
+(def ^:private default-colors
+  "The default theme's categorical palette."
+  (get-in theme/default-theme [:palette :color]))
 
 (deftest ordinal-test
-  (testing "numbers forced ordinal: sorted levels, category20 colors"
+  (testing "numbers forced ordinal: sorted levels, the default palette's colors"
     (let [s (spec (build (plot-of {:color :year} {:scales {:color {:kind :ordinal}}})) :color)
           f (aesthetic/attribute-fn :color s :na)]
       (is (= [1931 1932] (:domain s)))
-      (is (= "#1f77b4" (c/format-hex (f 1931))))
-      (is (= "#aec7e8" (c/format-hex (f 1932))))
+      (is (= (c/format-hex (default-colors 0)) (c/format-hex (f 1931))))
+      (is (= (c/format-hex (default-colors 1)) (c/format-hex (f 1932))))
       (is (nil? (f 1999)) "value outside the domain -> nil (skipped)")
       (is (= :na (f nil)) "NA")))
   (testing "numbers match as doubles: long data, double domain"
     (let [built (build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931.0 1932.0]}}}))
           f (aesthetic/attribute-fn :color (spec built :color) :na)]
       (is (false? (:na-level (spec built :color))))
-      (is (= (category20 0) (f 1931)))
-      (is (= (category20 1) (f 1932.0))))
+      (is (= (default-colors 0) (f 1931)))
+      (is (= (default-colors 1) (f 1932.0))))
     (is (= :domain (:key (error #(build (plot-of {:color :year} {:scales {:color {:kind :ordinal :domain [1931 1931.0]}}})))))
         "1931 and 1931.0 are one level")
     (is (= [1931 1932] (:domain (spec (build (plot-of {:color :year} {:data (conj rows {:x 9 :y 9 :year 1931.0}) :scales {:color {:kind :ordinal}}})) :color)))))
@@ -166,9 +168,9 @@
     (let [one (aesthetic/scale-spec :color {:domain ["x"]} nil false (:palette theme/default-theme))
           many (aesthetic/scale-spec :color {:kind :ordinal :domain (vec (range 25))} nil false (:palette theme/default-theme))
           f (aesthetic/attribute-fn :color many nil)]
-      (is (= (category20 0) ((aesthetic/attribute-fn :color one nil) "x")))
-      (is (= (f 0) (f 20)))
-      (is (= (f 4) (f 24)))))
+      (is (= (default-colors 0) ((aesthetic/attribute-fn :color one nil) "x")))
+      (is (= (f 0) (f (count default-colors))))
+      (is (= (f 4) (f (+ 4 (count default-colors)))))))
   (testing "shape: always ordinal, cycled shape sequence"
     (let [s (spec (build (plot-of {:shape :s})) :shape)
           f (aesthetic/attribute-fn :shape s nil)]
@@ -292,7 +294,7 @@
           title-h (long (.y (measured {:kind :label :role :legend-title :text "g"} (:theme built))))
           key-cx (+ (long lx) 7)
           key-cy (+ (long ly) title-h 7)]
-      (is (= (rgb (category20 0)) (pixel c key-cx key-cy)) "small mapped dot on top")
+      (is (= (rgb (default-colors 0)) (pixel c key-cx key-cy)) "small mapped dot on top")
       (is (not= [255 255 255] (pixel c (- key-cx 5) (- key-cy 5))) "square under it"))))
 
 (deftest legend-kinds-test

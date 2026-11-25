@@ -53,11 +53,13 @@
 (nu/options-table (describe/own-rows (describe/options #'plot/network)))
 
 ;; Node aesthetics from the node rows or the computed degree (whole numbers: `:integer-ticks` through the builder's
-;; `:scales`), labels beside the nodes (a label overlapping that of a larger node is left out):
+;; `:scales`, the teams in colours matching their names), labels beside the nodes (a label overlapping that of a larger
+;; node is left out):
 
 (plot/render-image (plot/network friends {:nodes people :rng (r/rng :mersenne 1)
                                           :mapping {:color :team :size :degree}
-                                          :scales {:size {:integer-ticks true}}
+                                          :scales {:size {:integer-ticks true}
+                                                   :color {:range {"red" [213 94 0] "blue" [0 114 178] "green" [0 158 115]}}}
                                           :labels true})
                    {:width 600 :height 400})
 
@@ -126,7 +128,8 @@
 ;; Node colours from their rows, arc widths from the weights (the default when weights differ), names under the
 ;; line:
 
-(plot/render-image (plot/arc friends {:nodes people :mapping {:color :team}})
+(plot/render-image (plot/arc friends {:nodes people :mapping {:color :team}
+                                     :scales {:color {:range {"red" [213 94 0] "blue" [0 114 178] "green" [0 158 115]}}}})
                    {:width 600 :height 320})
 
 ;; Arc colours and opacity, node style, labels from a node column (left); no labels (right):

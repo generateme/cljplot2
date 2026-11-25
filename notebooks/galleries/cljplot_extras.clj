@@ -614,7 +614,7 @@
                      :let [f (k/kernel kernel)]]
                  {:charts [(chart/function {:f {"full" (fn [x] (f [0.0] [x])) "half" (fn [x] (* 0.5 (double (f [0.0] [x]))))}
                                             :domain [-3 3] :line-width 2 :mapping {:color :function}})]
-                  :scales {:color {:range [[69 117 180] [215 50 40]]}}
+                  :scales {:color {:range [[0 114 178] [215 50 40]]}}
                   :legend false
                   :labels {:title (plot/runs (name kernel) " " (plot/math (kernel-formulas kernel)))}})
                {:columns 3})
@@ -658,7 +658,7 @@
                    :charts [(chart/segment {:yend 0}) (chart/scatter {:size 8})]
                    :labels {:title "frequencies" :x "value" :y "count"}}
                   {:data bins :mapping {:x :x :y :y}
-                   :charts [(chart/segment {:yend 0 :color [69 117 180 160]}) (chart/scatter {:size 3})
+                   :charts [(chart/segment {:yend 0 :color [0 114 178 160]}) (chart/scatter {:size 3})
                             (chart/density {:data (map (fn [v] {:x v}) sample) :mapping {:y nil} :bandwidth 0.04
                                             :fill [215 48 39 80] :color [215 48 39 160]})]
                    :labels {:title "histogram lollipops and a density" :x nil :y "density"}}]
@@ -731,10 +731,10 @@
                   (strip "box with points" tailed [(chart/box {:outliers true}) (chart/stripplot {:size 6 :rng (r/rng :mersenne 23)})])
                   (strip "density" skewed [(chart/density)])
                   (strip "min - mean - max" tailed [(chart/extent {:method stats/extent :shape \V :size 12})
-                                                    (chart/rug {:color [69 117 180 160]})])
+                                                    (chart/rug {:color [0 114 178 160]})])
                   (strip "rug" tailed [(chart/rug {:thickness 16})])
-                  (strip "distorted strip" tailed [(chart/stripplot {:size 9 :color [69 117 180 60] :rng (r/rng :mersenne 24)})])
-                  (strip "strip" tailed [(chart/stripplot {:size 9 :jitter 0.0 :color [69 117 180 90]})])]
+                  (strip "distorted strip" tailed [(chart/stripplot {:size 9 :color [0 114 178 60] :rng (r/rng :mersenne 24)})])
+                  (strip "strip" tailed [(chart/stripplot {:size 9 :jitter 0.0 :color [0 114 178 90]})])]
                  {:columns 1})
    {:width 800 :height 800}))
 
@@ -768,7 +768,7 @@
  {:data (map (fn [{:keys [mid count]}] {:x mid :y count}) (:bins-maps (stats/histogram (map :v skewed) 60)))
   :mapping {:x :x :y :y}
   :charts [(chart/segment {:yend 0}) (chart/scatter {:size 5})]
-  :margins {:top {:charts (chart/stripplot {:data skewed :mapping {:x :v} :size 5 :color [69 117 180 60]
+  :margins {:top {:charts (chart/stripplot {:data skewed :mapping {:x :v} :size 5 :color [0 114 178 60]
                                             :rng (r/rng :mersenne 26)})
                   :size 30}}
   :labels {:title "Lollipop histogram" :x nil :y "count"}}
@@ -798,7 +798,7 @@
       rows (vec (repeatedly 20 (fn [] {:x (r/drandom g 6 17) :y (r/drandom g 0 8) :s (r/drandom g)})))]
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
-    :charts [(chart/line {:order :data :curve :parametric :color [69 117 180]})
+    :charts [(chart/line {:order :data :curve :parametric :color [0 114 178]})
              (chart/scatter {:mapping {:size :s} :color [150 30 30]})]
     :scales {:size {:range [4 22] :legend false}}
     :labels {:title "Connected scatter"}}
@@ -848,7 +848,7 @@
   (plot/render-image
    {:data rows :mapping {:x :x :y :y}
     :charts [(chart/line {:interpolator :cubic :color [200 40 120] :line-width 1.5})
-             (chart/line {:color [69 117 180 150]})
+             (chart/line {:color [0 114 178 150]})
              (chart/scatter {:size 4})]
     :labels {:title "A line, its points and a spline"}}
    {:width 800 :height 600}))
@@ -862,7 +862,7 @@
    {:data (concat (repeatedly 1000 (fn [] {:c "a" :v (r/grandom g -0.2 0.9)}))
                   (repeatedly 1000 (fn [] {:c "b" :v (r/grandom g 2.0 1.2)})))
     :mapping {:x :c :y :v}
-    :charts [(chart/rug {:color [69 117 180 60]})]
+    :charts [(chart/rug {:color [0 114 178 60]})]
     :labels {:title "A rug per category" :x nil :y nil}}
    {:width 450 :height 450}))
 

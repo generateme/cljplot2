@@ -14,14 +14,12 @@
 (def ^:private co-occurrences @#'network/co-occurrences)
 (def ^:private characters @#'network/characters)
 
-(def ^:private regions-theme {:palette {:color :category10}})
-
 (def migration-directed
-  (plot/chord flows {:directed true :min-value 0.1 :theme regions-theme
+  (plot/chord flows {:directed true :min-value 0.1
                      :title "Migration between world regions (flows < 0.1 M left out)"}))
 
 (def migration-undirected
-  (plot/chord flows {:min-value 0.1 :theme regions-theme
+  (plot/chord flows {:min-value 0.1
                      :title "Migration exchange between world regions"}))
 
 (def miserables-arcs

@@ -71,7 +71,7 @@
 (def area
   {:data (for [x (range 40)] {:x x :y (* 10 (Math/sin (/ x 6.0)))})
    :mapping {:x :x :y :y}
-   :charts [(chart/line {:fill [69 117 180 90] :line-width 1.5})]
+   :charts [(chart/line {:fill [0 114 178 90] :line-width 1.5})]
    :labels {:title "Area: line with :fill (down to y = 0)" :x "x" :y "y"}})
 
 (def images

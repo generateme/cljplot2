@@ -14,7 +14,7 @@
   (let [mean (stats/mean eruptions)]
     {:data faithful
      :mapping {:x :eruptions}
-     :charts [(chart/density {:fill [69 117 180 60]})
+     :charts [(chart/density {:fill [0 114 178 60]})
               (chart/rule {:x mean :dash [5.0 3.0] :color :red})
               (chart/text {:x mean :y [:panel 0.95] :text (format "mean = %.2f" mean) :anchor [:left :top]
                            :offset [4 0] :color :red})]

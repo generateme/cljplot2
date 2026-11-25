@@ -4,6 +4,7 @@
             [clojure2d.color :as c]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.theme :as theme]
             [cljplot2.test-util :refer [error]]))
 
 (defn- rect-plot
@@ -38,7 +39,7 @@
   (testing "other keywords are still schema errors"
     (is (= :stroke-color (:key (error #(plot/build (rect-plot {:stroke-color :lighter}))))))))
 
-(def ^:private theme-blue (c/pack (c/color 69 117 180)))
+(def ^:private theme-blue (c/pack theme/default-color))
 
 (defn- points
   "Two seeded clusters, tagged by `:g`."
@@ -53,8 +54,10 @@
       (is (not (contains? (colors (render {:x :x :y :y} {})) theme-blue))))
     (testing "lines grouped without a mapped colour take the theme colour"
       (is (contains? (colors (render {:x :x :y :y :group :g} {})) theme-blue)))
-    (testing "lines grouped by :color take their group's colour"
-      (is (not (contains? (colors (render {:x :x :y :y :color :g} {})) theme-blue))))))
+    (testing "lines grouped by :color take their group's colour: the palette's first two (the first is the theme colour)"
+      (let [cs (colors (render {:x :x :y :y :color :g} {}))]
+        (is (contains? cs theme-blue))
+        (is (contains? cs (c/pack (second theme/default-palette))))))))
 
 (deftest correlation-color-default-test
   (let [render #(plot/render-image {:data (points) :mapping %1 :charts [(chart/correlation {:glyph :square})]}
@@ -70,4 +73,4 @@
         (is (contains? cs black))
         (is (not (contains? cs theme-blue)))))
     (testing ":number glyph grouped by :color: group lines in their mapped colours"
-      (is (contains? (colors (render {:x :x :y :y :color :g})) (c/pack (first (c/palette :category10))))))))
+      (is (contains? (colors (render {:x :x :y :y :color :g})) (c/pack (first (get-in theme/default-theme [:palette :color]))))))))

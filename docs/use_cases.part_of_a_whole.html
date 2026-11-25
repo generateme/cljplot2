@@ -554,8 +554,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            [fastmath.random <span class="at">:as</span> r]</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.chart <span class="at">:as</span> chart]</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [cljplot2.core <span class="at">:as</span> plot]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.sets <span class="at">:as</span> sets]</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.theme <span class="at">:as</span> theme]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [cljplot2.data.sets <span class="at">:as</span> sets]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> world</span></span>
@@ -2673,7 +2674,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A grid of cells: by default 10 × 10, a cell per percent of the whole (largest-remainder rounding keeps the total at 100).</p>
 <section id="basic-shapes-colours-groups" class="level3" data-number="33.7.1">
 <h3 data-number="33.7.1" class="anchored" data-anchor-id="basic-shapes-colours-groups"><span class="header-section-number">33.7.1</span> Basic, shapes, colours, groups</h3>
-<p>The regions’ shares; circle cells (<a href="reference.charts_part_of_whole.html#waffle">waffle</a> <code>:cell-shape</code>, <code>:gap</code> - a fraction of a cell); a palette; subregions within each region (a facet per region, each region’s subregions in shades of one colour - 22 subregions are more than a palette’s 20 colours).</p>
+<p>The regions’ shares; circle cells (<a href="reference.charts_part_of_whole.html#waffle">waffle</a> <code>:cell-shape</code>, <code>:gap</code> - a fraction of a cell); a palette; subregions within each region (a facet per region, each region’s subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).</p>
 <p>Source: <a href="https://r-graph-gallery.com/waffle.html">R Graph Gallery - Waffle chart</a>. Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -2690,8 +2691,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Source: <a href="https://r-graph-gallery.com/waffle.html">R Graph Gallery - Waffle chart (groups and subgroups)</a>. Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> subregion-colors</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Each region's subregions in shades of the region's colour (darker to lighter)."</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">into</span> {} (<span class="kw">for</span> [[base [_ subregions]] (<span class="kw">map</span> <span class="kw">vector</span> (plot/palette <span class="at">:category10</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Each region's subregions in shades of the region's colour in the default palette (darker to lighter)."</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">into</span> {} (<span class="kw">for</span> [[base [_ subregions]] (<span class="kw">map</span> <span class="kw">vector</span> theme/default-palette</span>
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                                             (<span class="kw">sort-by</span> <span class="kw">key</span> (<span class="kw">group-by</span> <span class="at">:region</span> world)))</span>
 <span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">:let</span> [names (<span class="kw">sort</span> (<span class="kw">distinct</span> (<span class="kw">map</span> <span class="at">:subregion</span> subregions)))]</span>
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>                 [i subregion] (map-indexed <span class="kw">vector</span> names)]</span>

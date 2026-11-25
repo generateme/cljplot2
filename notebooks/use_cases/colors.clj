@@ -324,7 +324,7 @@
 
 (plot/render-image
  (plot/arrange
-  (for [[title color] [["opaque" [69 117 180]] ["alpha 12 of 255" [69 117 180 12]]]]
+  (for [[title color] [["opaque" [0 114 178]] ["alpha 12 of 255" [0 114 178 12]]]]
     {:data diamonds :mapping {:x :carat :y :price}
      :charts [(chart/scatter {:size 4 :color color})]
      :labels {:title title :x "carat" :y "price"}})

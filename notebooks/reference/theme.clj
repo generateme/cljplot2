@@ -191,7 +191,9 @@
 ;; ## Palette
 
 ;; The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
-;; numbers, shapes, sizes, dashes and patterns.
+;; numbers, shapes, sizes, dashes and patterns. The 14 level colours are checked for colour vision deficiencies: the
+;; Okabe-Ito colours (a darker yellow, a gray in place of black), then lighter versions of the first six (the blue
+;; turned toward violet) - weak as thin lines on the background; levels past 14 repeat the colours.
 
 (nu/options-table (describe/theme-rows :palette))
 
@@ -199,6 +201,21 @@
                           :mapping {:x :sepal-length :y :petal-length :color :species :shape :species}
                           :theme {:palette {:color :tableau-10 :shape [\s \A \V]}})
                    {:width 500 :height 300})
+
+;; The default level colours, as rendered and as seen with deuteranopia (the render option `:cvd`, Render chapter):
+;; the closest pair is orange and the darker yellow (04, 07); the lighter six read as lighter versions of the first.
+
+(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
+
+(nu/data-table palette-levels)
+
+(plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
+                    :charts [(chart/bar)] :legend false :labels {:title "default palette" :x nil :y nil}}
+                   {:width 700 :height 200})
+
+(plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
+                    :charts [(chart/bar)] :legend false :labels {:title "the same, deuteranopia" :x nil :y nil}}
+                   {:width 700 :height 200 :cvd :deuteranopia})
 
 ;; ## Text
 
@@ -228,8 +245,8 @@
                    {:width 500 :height 300})
 
 ;; Labels of treemaps, partitions and circle packings - by default in the contrast colour of their cell; a colour
-;; given wins, on every cell alike (here the leaves - hard to read on the light ones, which is why `:contrast` is
-;; the default):
+;; given wins, on every cell alike (here dark leaf labels - hard to read on the dark cells, which is why `:contrast`
+;; is the default):
 
 (nu/options-table (describe/theme-rows :text) :hierarchy-text)
 
@@ -242,7 +259,7 @@
                     :mapping {:hierarchy [:dept :team] :value :cost}
                     :charts [(chart/treemap)]
                     :theme {:text {:treemap-group {:size 13 :font-style :bold-italic}
-                                   :treemap-leaf {:font-style :italic :color [255 220 120]}}}}
+                                   :treemap-leaf {:font-style :italic :color [40 40 60]}}}}
                    {:width 500 :height 300})
 
 ;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics,

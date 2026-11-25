@@ -97,7 +97,7 @@
 (nu/data-table levels-data)
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
-                                   :charts [(chart/rect {:y [[nil 60] [75 nil]] :fill [[69 117 180] [200 80 40]] :alpha 0.2
+                                   :charts [(chart/rect {:y [[nil 60] [75 nil]] :fill [[0 114 178] [200 80 40]] :alpha 0.2
                                                          :stroke-color :darker :stroke-width 2})
                                             (chart/scatter)]
                                    :labels {:title ":y intervals, :fill per interval, :stroke-width 2"}}
@@ -340,7 +340,6 @@
                                               (chart/text {:mapping {:x :t :y :v :color :g :label :g} :along-path true
                                                            :path-position 0.7 :anchor [:center :bottom] :offset [0 2]})]
                                      :labels {:title "data: along each line"}
-                                     :theme {:palette {:color :set1}}
                                      :legend false}
                                     {:data faithful :mapping {:x :eruptions :y :waiting}
                                      :charts [(chart/scatter {:size 4})
@@ -413,7 +412,7 @@
 
 (nu/options-table (describe/own-rows (describe/options (chart/function))) :curve)
 
-(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(* % % 0.5) :domain [-2 2] :fill [69 117 180 60]})]
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(* % % 0.5) :domain [-2 2] :fill [0 114 178 60]})]
                                    :labels {:title ":f, :fill"}}
                                   {:charts [(chart/function {:parametric (fn [t] [(m/sin (* 3 t)) (m/sin (* 4 t))])
                                                              :t [0 m/TWO_PI] :fill [200 80 40 60]})]

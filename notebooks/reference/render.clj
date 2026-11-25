@@ -59,7 +59,7 @@
 
 (nu/options-table (describe/options pipeline/options-schema) :color-vision)
 
-(def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [69 117 180]]}}))
+(def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [0 114 178]]}}))
 
 (plot/render-image red-green-plot {:width 500 :height 300})
 

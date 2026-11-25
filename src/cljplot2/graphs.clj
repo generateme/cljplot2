@@ -736,8 +736,8 @@
                         title (assoc :title title)))))))
 
 (def ^:private bundle-edge-color
-  "Default colour of bundled edges not coloured by group (`:edge-color`)."
-  (c/color 70 110 180))
+  "Default colour of bundled edges not coloured by group (`:edge-color`): the theme's default colour."
+  theme/default-color)
 
 (def bundle-options
   "Options schema of [[bundle]]: its own entries, those of [[cljplot2.data.tree/bundle-paths]] (forwarded) and the builder's."
@@ -765,7 +765,7 @@
   - `options` (map, optional), validated first against [[bundle-options]]:
     - `:from`, `:to` - accessors of the edge ends (default `:from`, `:to`); `:beta` - the bundling strength, straighter towards 0, default 0.85 (see [[cljplot2.data.tree/bundle-paths]]);
     - `:color-by` - `:group` (default): edges and leaves coloured by the top-level group of their (source) leaf, with a legend; `:none` - edges in `:edge-color`, no legend;
-    - `:edge-color` - the edges' colour when not coloured by group, default `[70 110 180]`;
+    - `:edge-color` - the edges' colour when not coloured by group, default the theme's default colour (see [[cljplot2.theme/default-color]]);
     - `:alpha` - the edges' opacity (leaf points and legend keys stay opaque), default 0.4;
     - `:labels` - leaf names outward around the circle, default `true`;
     - `:scales` (e.g. `{:color {:legend false}}`), `:title`, `:theme`.

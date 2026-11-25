@@ -241,7 +241,6 @@
 
 (plot/render-image
  (plot/alluvial (nu/dataset :titanic) {:variables [:class :sex :age :survived] :value :n :strand-color :class
-                                       :theme {:palette {:color :set1}}
                                        :title "Titanic: 2201 people by class, sex, age and survival"})
  {:width 900 :height 600})
 
@@ -270,8 +269,7 @@
                         :anchor [:left :middle] :offset [8 0]})]
   :scales {:y {:domain [12.5 0.5] :nice false :ticks (vec (range 1 13))}
            :x {:domain [1948 1961] :nice false :ticks (vec (range 1949 1961))}
-           :color {:domain ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"]
-                   :range :category20 :legend false}}
+           :color {:domain ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"] :legend false}}
   :labels {:title "Months ranked by air passengers, 1949-1960" :x nil :y "rank"}}
  {:width 900 :height 550})
 
@@ -374,12 +372,12 @@
 (def cars (mapv :model mtcars))
 
 (plot/render-image
- (plot/dendrogram car-clustering {:leaf-names cars :k 3 :theme {:palette {:color :set1}}
+ (plot/dendrogram car-clustering {:leaf-names cars :k 3
                                   :title "mtcars: complete-linkage clustering, 3 clusters"})
  {:width 1000 :height 500})
 
 (plot/render-image
- (plot/dendrogram car-clustering {:leaf-names cars :k 3 :circular true :theme {:palette {:color :set1}}
+ (plot/dendrogram car-clustering {:leaf-names cars :k 3 :circular true
                                   :title "The same clustering, circular"})
  {:width 700 :height 700})
 

@@ -119,7 +119,7 @@
 
 (deftest reverse-test
   (testing "4.1 ordinal: assigned colors reversed"
-    (let [pal (c/palette :category20)
+    (let [pal (get-in theme/default-theme [:palette :color])
           b (build (plot-of {:color :sp} {:color {:reverse true}}))]
       (is (= (mapv rgb [(pal 2) (pal 1) (pal 0)]) (mapv #(rgb (attr b :color %)) ["setosa" "versicolor" "virginica"])))))
   (testing "4.1 ordinal spread then reversed"
@@ -140,7 +140,7 @@
     (is (= :reverse (key-of {:color :sp} {:color {:reverse true :range {"setosa" :red "versicolor" :red "virginica" :red}}})))
     (is (= :reverse (key-of {:color :sp} {:color {:kind :identity :reverse true}}))))
   (testing "4.3 legend entries keep domain order with reversed colors"
-    (let [pal (c/palette :category20)
+    (let [pal (get-in theme/default-theme [:palette :color])
           b (build (plot-of {:color :sp} {:color {:reverse true}}))]
       (is (= ["setosa" "versicolor" "virginica"] (mapv :label (:entries (first (legends b))))))
       (is (= (rgb (pal 2)) (rgb (get-in (first (legends b)) [:entries 0 :attributes :color])))))))

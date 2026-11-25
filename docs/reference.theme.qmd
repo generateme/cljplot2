@@ -513,12 +513,14 @@ The dash of a 3D box's hidden edges; the box edges and axes take the x axis styl
 ## Palette
 
 The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
-numbers, shapes, sizes, dashes and patterns.
+numbers, shapes, sizes, dashes and patterns. The 14 level colours are checked for colour vision deficiencies: the
+Okabe-Ito colours (a darker yellow, a gray in place of black), then lighter versions of the first six (the blue
+turned toward violet) - weak as thin lines on the background; levels past 14 repeat the colours.
 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:palette</td><td>map</td><td></td><td>default aesthetic ranges</td></tr><tr><td>:palette :color</td><td>a palette name or a non-empty sequence of colors</td><td>:category20</td><td>ordinal colours: a palette name or colours</td></tr><tr><td>:palette :gradient</td><td>a function or a palette name or a non-empty sequence of colors</td><td>[[255 255 255] [127 192 236] [56 133 201] [14 83 161] [0 63 143] [0 1 11]]</td><td>linear and binned colours: colours or a palette name</td></tr><tr><td>:palette :shape</td><td>sequential of a shape character, keyword or shape map (at least 1)</td><td>[\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]</td><td>point shapes, cycled</td></tr><tr><td>:palette :size</td><td>[min max], non-negative numbers, min <= max</td><td>[2 10]</td><td>size range [min max] in pixels</td></tr><tr><td>:palette :dash</td><td>sequential of :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers (at least 1)</td><td>[:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]</td><td>dash styles, cycled</td></tr><tr><td>:palette :pattern</td><td>sequential of a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map (at least 1)</td><td>[:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]</td><td>fill patterns, cycled</td></tr><tr><td>:palette :na</td><td>a clojure2d color</td><td>[150 150 150]</td><td>colour of NA values</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:palette</td><td>map</td><td></td><td>default aesthetic ranges</td></tr><tr><td>:palette :color</td><td>a palette name or a non-empty sequence of colors</td><td>[[0 114 178] [213 94 0] [0 158 115] [230 159 0] [204 121 167] [86 180 233] [204 205 35] [110 110 110] [130 137 207] [251 152 100] [110 201 164] [255 212 122] [245 175 212] [155 227 255]]; the default palette (cljplot2.theme/default-palette): 14 colours checked for colour vision deficiencies</td><td>ordinal colours: a palette name or colours</td></tr><tr><td>:palette :gradient</td><td>a function or a palette name or a non-empty sequence of colors</td><td>[[255 255 255] [127 192 236] [56 133 201] [14 83 161] [0 63 143] [0 1 11]]</td><td>linear and binned colours: colours or a palette name</td></tr><tr><td>:palette :shape</td><td>sequential of a shape character, keyword or shape map (at least 1)</td><td>[\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]</td><td>point shapes, cycled</td></tr><tr><td>:palette :size</td><td>[min max], non-negative numbers, min <= max</td><td>[2 10]</td><td>size range [min max] in pixels</td></tr><tr><td>:palette :dash</td><td>sequential of :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers (at least 1)</td><td>[:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]</td><td>dash styles, cycled</td></tr><tr><td>:palette :pattern</td><td>sequential of a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map (at least 1)</td><td>[:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]</td><td>fill patterns, cycled</td></tr><tr><td>:palette :na</td><td>a clojure2d color</td><td>[150 150 150]</td><td>colour of NA values</td></tr></tbody></table>
 ```
 
 :::
@@ -537,6 +539,53 @@ numbers, shapes, sizes, dashes and patterns.
 
 ::: {.clay-image}
 ![](reference.theme_files/image15.png)
+:::
+
+
+The default level colours, as rendered and as seen with deuteranopia (the render option `:cvd`, Render chapter):
+the closest pair is orange and the darker yellow (04, 07); the lighter six read as lighter versions of the first.
+
+
+::: {.sourceClojure}
+```clojure
+(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>level</th><th>n</th></tr></thead><tbody><tr><td>01</td><td>1</td></tr><tr><td>02</td><td>1</td></tr><tr><td>03</td><td>1</td></tr><tr><td>04</td><td>1</td></tr><tr><td>05</td><td>1</td></tr><tr><td>06</td><td>1</td></tr><tr><td>07</td><td>1</td></tr><tr><td>08</td><td>1</td></tr><tr><td>09</td><td>1</td></tr><tr><td>10</td><td>1</td></tr><tr><td>11</td><td>1</td></tr><tr><td>12</td><td>1</td></tr><tr><td>13</td><td>1</td></tr><tr><td>14</td><td>1</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
+                    :charts [(chart/bar)] :legend false :labels {:title "default palette" :x nil :y nil}}
+                   {:width 700 :height 200})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image16.png)
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
+                    :charts [(chart/bar)] :legend false :labels {:title "the same, deuteranopia" :x nil :y nil}}
+                   {:width 700 :height 200 :cvd :deuteranopia})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image17.png)
 :::
 
 
@@ -574,7 +623,7 @@ Titles, strips and axis texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image16.png)
+![](reference.theme_files/image18.png)
 :::
 
 
@@ -600,13 +649,13 @@ Legend texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image17.png)
+![](reference.theme_files/image19.png)
 :::
 
 
 Labels of treemaps, partitions and circle packings - by default in the contrast colour of their cell; a colour
-given wins, on every cell alike (here the leaves - hard to read on the light ones, which is why `:contrast` is
-the default):
+given wins, on every cell alike (here dark leaf labels - hard to read on the dark cells, which is why `:contrast`
+is the default):
 
 ::: {.clay-table}
 
@@ -639,14 +688,14 @@ the default):
                     :mapping {:hierarchy [:dept :team] :value :cost}
                     :charts [(chart/treemap)]
                     :theme {:text {:treemap-group {:size 13 :font-style :bold-italic}
-                                   :treemap-leaf {:font-style :italic :color [255 220 120]}}}}
+                                   :treemap-leaf {:font-style :italic :color [40 40 60]}}}}
                    {:width 500 :height 300})
 ```
 :::
 
 
 ::: {.clay-image}
-![](reference.theme_files/image18.png)
+![](reference.theme_files/image20.png)
 :::
 
 
@@ -682,7 +731,7 @@ what's behind them by default). The bars write their values in their middle
 
 
 ::: {.clay-image}
-![](reference.theme_files/image19.png)
+![](reference.theme_files/image21.png)
 :::
 
 
@@ -713,7 +762,7 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 
 
 ::: {.clay-image}
-![](reference.theme_files/image20.png)
+![](reference.theme_files/image22.png)
 :::
 
 
@@ -740,7 +789,7 @@ The keys of a text style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image21.png)
+![](reference.theme_files/image23.png)
 :::
 
 
@@ -829,7 +878,7 @@ The kinds with a theme style:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image22.png)
+![](reference.theme_files/image24.png)
 :::
 
 

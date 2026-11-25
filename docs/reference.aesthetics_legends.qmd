@@ -303,7 +303,7 @@ the range reversed, size by area.
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:spread</td><td>true or false</td><td>false</td><td>ordinal :color: the range resampled to one colour per level</td></tr><tr><td>:midpoint</td><td>a finite number</td><td></td><td>linear / binned :color: the value at the gradient's middle (a diverging scale)</td></tr><tr><td>:transform</td><td>one of :exp :log :sq :sqrt or a function</td><td></td><td>linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function</td></tr><tr><td>:reverse</td><td>true or false</td><td>false</td><td>the attributes in reverse order</td></tr><tr><td>:area</td><td>true or false</td><td>false</td><td>:size: the mark's area, not its size, grows linearly with the value</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:spread</td><td>true or false</td><td>false</td><td>ordinal :color: the range resampled to one colour per level (meant for a sequential :range - a categorical palette resamples into blends)</td></tr><tr><td>:midpoint</td><td>a finite number</td><td></td><td>linear / binned :color: the value at the gradient's middle (a diverging scale)</td></tr><tr><td>:transform</td><td>one of :exp :log :sq :sqrt or a function</td><td></td><td>linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function</td></tr><tr><td>:reverse</td><td>true or false</td><td>false</td><td>the attributes in reverse order</td></tr><tr><td>:area</td><td>true or false</td><td>false</td><td>:size: the mark's area, not its size, grows linearly with the value</td></tr></tbody></table>
 ```
 
 :::
@@ -596,7 +596,7 @@ Every built-in shape (`describe/attribute-values` lists the built-in shapes, das
 ```clojure
 (plot/render-image {:data shapes
                     :mapping {:x :i :y (constantly 1) :shape :shape}
-                    :charts [(chart/scatter {:size 18 :color [69 117 180]})
+                    :charts [(chart/scatter {:size 18 :color [0 114 178]})
                              (chart/text {:mapping {:x :i :y (constantly 0.4) :label :name}})]
                     :scales {:shape {:kind :identity :legend false} :y {:domain [0 1.5] :axis false}}}
                    {:width 800 :height 200})

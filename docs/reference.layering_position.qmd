@@ -87,7 +87,7 @@ a [text](reference.charts_annotations.html#text) note at a literal position:
 ```clojure
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
-                    :charts [(chart/rect {:x [3.5 5.5] :fill [69 117 180 30]})
+                    :charts [(chart/rect {:x [3.5 5.5] :fill [0 114 178 30]})
                              (chart/scatter)
                              (chart/smooth)
                              (chart/rule {:y 70 :dash :dashed})

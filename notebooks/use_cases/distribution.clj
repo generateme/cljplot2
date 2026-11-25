@@ -180,7 +180,7 @@
                                    [":kernel :epanechnikov" {:kernel :epanechnikov}]]]
                  {:data faithful
                   :mapping {:x :eruptions}
-                  :charts [(chart/density (assoc opts :fill [69 117 180 60]))]
+                  :charts [(chart/density (assoc opts :fill [0 114 178 60]))]
                   :labels {:title title :x "eruption time [min]"}})
                {:columns 2})
  {:width 900 :height 600})
@@ -246,7 +246,7 @@
   (plot/render-image
    {:data faithful
     :mapping {:x :eruptions}
-    :charts [(chart/rect {:x [q1 q3] :fill [69 117 180 40]})
+    :charts [(chart/rect {:x [q1 q3] :fill [0 114 178 40]})
              (chart/density)
              (chart/rule {:x mean :dash [5.0 3.0] :color :red})
              (chart/text {:x mean :y [:panel 0.95] :text (format "mean %.2f" mean) :anchor [:left :top]

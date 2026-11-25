@@ -151,7 +151,7 @@
 
 (deftest tile-size-key-fill-test
   (let [p {:data (vec (for [x (range 4) y (range 3)] {:x x :y y :g (str "g" y) :s (+ x y)})) :mapping {:x :x :y :y :color :g :size :s} :charts [(chart/tile)]}]
-    (is (= (pixels p) (pixels (assoc p :theme {:chart {:tile {:size-key-fill (c/gray 110)}}}))) "the default grey")
+    (is (= (pixels p) (pixels (assoc p :theme {:chart {:tile {:size-key-fill (c/gray 180)}}}))) "the default grey")
     (is (not= (pixels p) (pixels (assoc p :theme {:chart {:tile {:size-key-fill :red}}}))) "a theme colour fills the size keys")
     (is (= [:theme :chart :tile :size-key-fill] (:in (error #(plot/build (assoc p :theme {:chart {:tile {:size-key-fill "nope"}}}))))))
     (is (= [:charts 0 :options :size-key-fill] (:in (error #(plot/build (assoc p :charts [(chart/tile {:size-key-fill :red})]))))) "theme only")))

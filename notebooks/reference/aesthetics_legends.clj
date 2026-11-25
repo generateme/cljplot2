@@ -263,7 +263,7 @@
 
 (plot/render-image {:data shapes
                     :mapping {:x :i :y (constantly 1) :shape :shape}
-                    :charts [(chart/scatter {:size 18 :color [69 117 180]})
+                    :charts [(chart/scatter {:size 18 :color [0 114 178]})
                              (chart/text {:mapping {:x :i :y (constantly 0.4) :label :name}})]
                     :scales {:shape {:kind :identity :legend false} :y {:domain [0 1.5] :axis false}}}
                    {:width 800 :height 200})

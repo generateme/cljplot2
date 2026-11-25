@@ -13,6 +13,7 @@
             [fastmath.random :as r]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
+            [cljplot2.theme :as theme]
             [cljplot2.data.sets :as sets]
             [notebook-utils :as nu]))
 
@@ -328,7 +329,7 @@
 
 ;; The regions' shares; circle cells ([waffle](reference.charts_part_of_whole.html#waffle) `:cell-shape`, `:gap` - a
 ;; fraction of a cell); a palette; subregions within each region (a facet per region, each region's
-;; subregions in shades of one colour - 22 subregions are more than a palette's 20 colours).
+;; subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).
 
 (nu/source-note {:source "R Graph Gallery - Waffle chart"
                  :url "https://r-graph-gallery.com/waffle.html"
@@ -347,8 +348,8 @@
                  :dataset :world-population})
 
 (def subregion-colors
-  "Each region's subregions in shades of the region's colour (darker to lighter)."
-  (into {} (for [[base [_ subregions]] (map vector (plot/palette :category10)
+  "Each region's subregions in shades of the region's colour in the default palette (darker to lighter)."
+  (into {} (for [[base [_ subregions]] (map vector theme/default-palette
                                              (sort-by key (group-by :region world)))
                  :let [names (sort (distinct (map :subregion subregions)))]
                  [i subregion] (map-indexed vector names)]

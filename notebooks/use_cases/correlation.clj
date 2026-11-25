@@ -255,7 +255,6 @@
     :labels {:title "one fit: y falls with x"}}
    {:data simpson :mapping {:x :x :y :y :color :group}
     :charts [(chart/scatter {:size 5}) (chart/smooth {:method :lm})]
-    :theme {:palette {:color :set1}}
     :labels {:title "a fit per group: y grows with x" :y nil}}]
   {:columns 2})
  {:width 1000 :height 430})
@@ -443,7 +442,7 @@
 
 (plot/render-image
  (plot/pairs iris {:variables [:sepal-length :sepal-width :petal-length :petal-width] :mapping {:color :species}
-                   :theme {:palette {:color :set1}} :title "Iris measurements by species"})
+                   :title "Iris measurements by species"})
  {:width 950 :height 800})
 
 ;; ### Correlation glyphs
@@ -482,7 +481,6 @@
                  :mapping {:x :gdp-per-cap :y :life-exp :size #(/ (double (:pop %)) 1.0e6) :color :continent :order :pop}
                  :scales {:x {:kind :log} :size (cond-> {:range [1 40] :title "population, M"} area? (assoc :area true))}
                  :charts [(chart/scatter {:stroke-color :white :stroke-width 0.5 :descending true})]
-                 :theme {:palette {:color :set2}}
                  :labels {:title title :x "GDP per capita, USD" :y "life expectancy, years"}})]
   (plot/render-image
    (plot/arrange [(bubbles false "diameter linear in population" false) (bubbles true "area linear in population" true)]

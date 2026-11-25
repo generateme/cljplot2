@@ -18,8 +18,8 @@
 
 (def ^:private default-colors
   "Default colours of a correlogram: the stems and points, the significance band, the points of significant lags."
-  {:stem (c/color 69 117 180)
-   :band (c/color 69 117 180)
+  {:stem theme/default-color
+   :band theme/default-color
    :significant (c/color 215 48 39)})
 
 (def ^:private kinds-of

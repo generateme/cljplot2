@@ -33,10 +33,6 @@
             [cljplot2.data.tree :as tree]
             [notebook-utils :as nu]))
 
-(def two-colors
-  "Two contrasting colours for two groups (the default palette's first two are both blue)."
-  [[31 119 180] [214 39 40]])
-
 (defn- figure-url
   "Permalink of LMDVR figure `chapter`.`figure` on the book's figures page."
   [chapter figure]
@@ -582,7 +578,7 @@
                   {:site site :year year :median (stats/median (map :root-residual (by-site-year [site year])))})]
     {:data barley-residuals
      :mapping {:x :site :y :root-residual :color :year}
-     :scales {:x {:domain sites} :color {:type :categorical :range two-colors}}
+     :scales {:x {:domain sites} :color {:type :categorical}}
      :charts [(chart/stripplot {:rng (r/rng :mersenne 317)})
               (chart/line {:data medians :mapping {:y :median}})]
      :labels {:x nil :y "√|Residual Barley Yield|"}}))
@@ -1670,7 +1666,7 @@
 (plot/render-image
  {:data (for [row gcsemv, k [:written :course] :when (some? (k row))] {:gender (:gender row) :variable (name k) :score (k row)})
   :mapping {:y :score :color :gender :facet :variable}
-  :scales {:facet {:domain ["written" "course"]} :color {:range two-colors}}
+  :scales {:facet {:domain ["written" "course"]}}
   :charts [(chart/qq {:x-distribution [:normal] :size 3 :line false})]
   :facets {:columns 2}
   :labels {:x "qnorm" :y "Score"}}
@@ -1689,7 +1685,6 @@
   (plot/render-image
    {:data (concat (map (fn [v] {:which "x1" :data v}) x1) (map (fn [v] {:which "x2" :data v}) x2))
     :mapping {:y :data :color :which}
-    :scales {:color {:range two-colors}}
     :charts [(chart/qq {:x-distribution [:exponential] :size 3 :line false})]
     :aspect :iso
     :labels {:x "qexp" :y "data"}}
@@ -1709,7 +1704,7 @@
           (assoc row :hour (+ (quot time 100) (* 24 (- day 307)) (/ (mod time 100) 60.0))
                      :activity (if (zero? activ) "inactive" "active")))
   :mapping {:x :hour :y :temp :color :activity :facet :beaver}
-  :scales {:color {:domain ["inactive" "active"] :range two-colors}}
+  :scales {:color {:domain ["inactive" "active"]}}
   :charts [(chart/scatter)]
   :facets {:columns 2 :scales {:x :sliced}}
   :labels {:x "Time (hours)" :y "Body Temperature (C)"}}
@@ -1723,7 +1718,7 @@
 
 (nu/data-table us-age)
 
-(def us-sex {:color {:domain (nu/levels :us-age :sex) :range two-colors}})
+(def us-sex {:color {:domain (nu/levels :us-age :sex)}})
 
 (plot/render-image
  {:data (filter #(contains? (set (range 1905 1976 10)) (:year %)) us-age)
@@ -1994,7 +1989,7 @@
 (plot/render-image
  {:data chem97
   :mapping {:y :gcsescore :color :gender :facet :score}
-  :scales {:color {:range two-colors} :x {:ticks [-2 0 2]}}
+  :scales {:x {:ticks [-2 0 2]}}
   :charts [(chart/qq {:x-distribution [:normal] :size 2 :line false})]
   :facets {:columns 3}
   :labels {:x "Standard normal quantiles" :y "Average GCSE score"}}

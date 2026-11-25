@@ -49,15 +49,15 @@
   (c/gray 0))
 
 (defn contrast-color
-  "Gives black or white, whichever reads better on a colour (by luma): text and lines drawn over a fill.
+  "Gives black or white, whichever reads better on a colour: text and lines drawn over a fill.
 
   Parameters:
 
   - `color`: the colour under the text (any clojure2d representation).
 
-  Returns opaque white for a luma below 127.5, else opaque black."
+  Returns opaque white when its WCAG contrast ratio with `color` is larger than black's, else opaque black (black on a tie); e.g. black on mid greens and oranges, where white reads worse."
   [color]
-  (if (m/> 127.5 (double (c/luma color))) white black))
+  (if (m/> (double (c/contrast-ratio white color)) (double (c/contrast-ratio black color))) white black))
 
 (defn plot-backdrop
   "Gives what text outside any chart fill is drawn over.

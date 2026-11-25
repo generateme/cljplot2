@@ -26,7 +26,6 @@
 
 (def titanic-alluvial
   (plot/alluvial titanic {:variables [:class :sex :age :survived] :value :n :strand-color :class
-                          :theme {:palette {:color :set1}}
                           :title "Titanic: 2201 people by class, sex, age and survival"}))
 
 (def ^:private pages ["home" "search" "product" "account" "cart" "help"])

@@ -95,7 +95,7 @@
 
 (plot/render-image (plot/arrange [{:data (series/acf-rows weekly {:lags 21 :level 0.95})
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
-                                   :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
+                                   :charts [(chart/ribbon {:color [0 114 178] :alpha 0.15})
                                             (chart/segment {:yend 0 :line-width 2})
                                             (chart/scatter {:mapping {:color #(if (:significant %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]
@@ -104,7 +104,7 @@
                                    :legend false}
                                   {:data (series/acf-rows weekly {:lags 21 :level 0.99 :partial true})
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
-                                   :charts [(chart/ribbon {:color [69 117 180] :alpha 0.15})
+                                   :charts [(chart/ribbon {:color [0 114 178] :alpha 0.15})
                                             (chart/segment {:yend 0 :line-width 2})
                                             (chart/scatter {:mapping {:color #(if (:significant %) "yes" "no")}})]
                                    :scales {:color {:domain ["no" "yes"] :range [[90 90 90] [200 40 40]]

@@ -397,6 +397,13 @@ the theme: banned names, and one type family per name across all owners). One na
   render of one build draws the same image. Interpolators drawing random values while fitting (`:kriging`,
   `:microsphere-projection`) get a fresh generator of a fixed seed per fit (`data.interpolation/fit-fn`) unless their
   params give an `:rng` - a fit is a function of its points.
+- Default categorical palette (`theme/default-palette`, `[:palette :color]`): 14 colours checked for colour vision
+  deficiencies - Okabe-Ito ordered so the second colour reads as text (contrast >= 3 on the background), a darker
+  yellow, a gray darker than `[:palette :na]`, then lighter versions of the first six (the blue turned toward violet,
+  away from sky); `default-palette-test` keeps the checks. Every single-colour default (chart styles, named styles,
+  builder defaults) is `theme/default-color`, the palette's first colour. Examples set another palette only on
+  purpose (a palette demonstration, a source's colours), never to work around the default - `palette-override-test`
+  lists each with its reason. Text over a fill (`:contrast`) is black or white by the larger WCAG contrast ratio.
 - A `nil` facet value is a real level (the NA panel, last; `:facets {:na-panel false}` drops it).
 - `case` matches boxed values by `=`: a double never matches a long literal - coerce first; compare numbers across
   types with `m/==`, not `=` or set membership (`(contains? #{1} 1.0)` is false).

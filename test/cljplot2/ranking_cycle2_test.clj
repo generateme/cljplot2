@@ -232,7 +232,9 @@
                     :charts [(chart/bar {:color :white :pattern-color red :pattern {:kind :lines :angle 90.0 :spacing 5 :width 1}})]}))))
   (testing "T5 treemap: leaves patterned, group boxes not"
     (let [data (for [g ["p" "q"] l ["a" "b"]] {:g g :l l :v 1})
-          render (fn [p] (plot/render-image {:data data :mapping {:value :v :hierarchy [:g :l]} :legend false :theme white
+          ;; leaf fills of a palette without red, so only the pattern ink is reddish
+          render (fn [p] (plot/render-image {:data data :mapping {:value :v :hierarchy [:g :l]} :legend false
+                                             :theme (assoc white :palette {:color [[0 0 200] [0 150 0]]})
                                              :charts [(chart/treemap {:pattern p :pattern-color red :gap 12})]}
                                             size))]
       (is (pos? (red-count (render :hatch))))

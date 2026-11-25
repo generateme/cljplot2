@@ -236,7 +236,9 @@
 (def palette-schema
   "Theme `:palette` (aesthetic defaults)."
   [:map {:closed true}
-   [:color {:description "ordinal colours: a palette name or colours"} palette]
+   [:color {:description "ordinal colours: a palette name or colours"
+            :cljplot2/default-doc "the default palette (cljplot2.theme/default-palette): 14 colours checked for colour vision deficiencies"}
+    palette]
    [:gradient {:description "linear and binned colours: colours or a palette name"} gradient]
    [:shape {:description "point shapes, cycled"} shapes]
    [:size {:description "size range [min max] in pixels"} size-range]
@@ -424,7 +426,7 @@
           (schema/optional :range {:cljplot2/section :range :description "attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map"
                                    :cljplot2/default-doc "theme :palette"}
                            (range-schema k))
-          (schema/optional :spread {:cljplot2/section :range-mapping :description "ordinal :color: the range resampled to one colour per level" :default false}
+          (schema/optional :spread {:cljplot2/section :range-mapping :description "ordinal :color: the range resampled to one colour per level (meant for a sequential :range - a categorical palette resamples into blends)" :default false}
                            schema/bool)
           (schema/optional :midpoint {:cljplot2/section :range-mapping :description "linear / binned :color: the value at the gradient's middle (a diverging scale)"}
                            schema/finite)

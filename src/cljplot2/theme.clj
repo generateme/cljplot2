@@ -10,12 +10,12 @@
   - `:axis {:x axis :y axis}` - `axis` is `{:line-color :line-width :tick-color :tick-length :tick-width :label-gap :tick-label-gap :tick-spacing :label-rotation :minor-tick-length :tick-label}` (pixels; `:tick-label` - text style keys of the axis's tick labels, axes and polar guides, merged over the `:tick-label` text role; `:minor-tick-length` - ticks of a scale's `:minor-ticks`; `:tick-label-gap` - the least distance between neighbouring tick labels' texts lying end to end along the axis (unrotated on a horizontal axis, at -90 or 90 degrees on a vertical one; stacked labels are spaced by their line height), closer labels are thinned (1 px less allowed: measured sizes are rounded up); `:tick-spacing` > 0 is the target distance between ticks; a line or tick of width 0 isn't drawn; `:label-rotation` - tick labels rotated clockwise by -90..90 degrees, see [[cljplot2.content.axis]]). Keyed by scale, also when a flipped plot draws `:x` vertically. 3D boxes draw their axes, edges and ticks with `[:axis :x]` (`:line-color`, `:line-width` - the box edges too).
   - `:frame-3d` - `:hidden-edge-dash` - the dash of a 3D box's hidden edges (a dash as in `:panel :grid`).
   - `:strip` - `:fill`, `:border-color`, `:border-width` of facet strips, `:shingle-fill` (bar of a shingle level); `:facet {:gap px}` between panels; `:multiplot {:gap px}` between arranged plots.
-  - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours, old cljplot `:category20`), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
+  - `:palette` - aesthetic defaults, see [[cljplot2.scale.aesthetic]]: `:color` (palette name or colours; default [[default-palette]] - 14 colours checked for colour vision deficiencies), `:gradient` (colours or palette name; `:k2` reversed), `:shape` (shape sequence), `:size` (`[min max]` pixels), `:dash` (dash sequence: the [[cljplot2.schema/dash-styles]] names, adjacent styles far apart), `:pattern` (pattern sequence: the [[cljplot2.schema/pattern-styles]] names without `:solid`), `:na` (colour of NA values).
   - `:legend` - `:gap` (pixels between key and label and between legends), `:key-size` (key box side, pixels), `:fill`, `:border-color`, `:border-width`, colour bar `:bar-length` (`:stretch` - over the space left, or a number, clamped to it), `:bar-width` (`nil` - `:key-size`), `:bar-ticks` (tick count unless the scale's `:ticks` gives one), `:bar-tick-length` and `:bar-tick-width` (pixels; width 0 - no tick lines), `:min-key-line-width` (least pixel width of line marks in keys, see [[key-line-style]]); text roles `:legend-title` and `:legend-label`.
-  - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` (old cljplot blue `[69 117 180]` - clojure2d `(last (palette :rdylbu-9))` - with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:gap`, `:stroke-color`, `:stroke-width`), `:partition` (`:stroke-color`, `:stroke-width`), `:pack` (`:gap`, `:stroke-color`, `:stroke-width`), `:waffle` (`:gap`, `:cell-shape`, outlines), `:cloud` (the point style; `:line-width` - spikes and lines; `:projection-alpha-factor`, `:band-alpha-factor` - alpha factors of projected points and density bands), `:venn` (`:alpha`, outlines, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha-factor`; tile `:size-key-fill` - a size legend key without a colour), `:field` (`:alpha-factor`), `:contour` (`:color`, `:line-width`, `:dash`, `:alpha-factor`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), `:pairwise` (`:color`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha-factor` multiplies the line alpha, optional `:line-width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
+  - `:chart` - per chart kind styles, each checked against its chart's style schema: `:scatter`, `:histogram`, `:density`, `:line`, `:ecdf` ([[default-color]], the palette's first colour, with cljplot's alphas: scatter 180, stripplot 100, rug 100), `:treemap` (`:gap`, `:stroke-color`, `:stroke-width`), `:partition` (`:stroke-color`, `:stroke-width`), `:pack` (`:gap`, `:stroke-color`, `:stroke-width`), `:waffle` (`:gap`, `:cell-shape`, outlines), `:cloud` (the point style; `:line-width` - spikes and lines; `:projection-alpha-factor`, `:band-alpha-factor` - alpha factors of projected points and density bands), `:venn` (`:alpha`, outlines, `:label-gap` - pixels between a circle and its set name), `:tile` / `:bin2d` (`:cell`, `:cell-scale`, `:stroke-color`, `:stroke-width`, `:alpha-factor`; tile `:size-key-fill` - a size legend key without a colour), `:field` (`:alpha-factor`), `:contour` (`:color`, `:line-width`, `:dash`, `:alpha-factor`), `:correlation` (`:color`, `:stroke-color`, `:stroke-width`), `:pairwise` (`:color`), strip charts `:box`, `:violin`, `:stripplot`, `:beeswarm`, `:dotplot`, `:rug`, `:extent`, `:bar`, annotations `:rule`, `:rect`, `:function`, bands `:ribbon`, `:smooth` (band `:alpha` 0.3), `:segment`, `:polygon`, probability plots `:qq` / `:pp` (scatter's point style, `:line-width`), `:image` (no style), `:candlestick` (green up, red down), `:parallel` (radar `:fill` `:alpha` 0.25); line and function `:bridge` - the style of bridges over gaps (`:alpha-factor` multiplies the line alpha, optional `:line-width`, `:dash`); line `:alpha` - opacity of `:fill :color` and stacked areas. Entries that aren't kinds are named styles (see [[named-styles]], [[chart-style]]).
   - `:text` - a text role (`:title`, `:strip`, ..., `:contour-label` - contour level labels, `:annotation` - text charts and strip n labels, see [[text-roles]]) -> a text style: `:font` (font family name or `java.awt.Font`, see [[cljplot2.graphics.font/resolve-font]]), `:size` (points), `:font-style` (`:plain`, `:bold`, `:italic` or `:bold-italic`), `:color` (any clojure2d colour), `:inset` (pixels between the text and its box edge on every side), `:align` (`[h v]` placement of the text in its box; optional, default `[:center :middle]`, see [[cljplot2.content.label]]), `:background` (a colour, alpha allowed, filling the label's box; optional, default none, `:none` - none: for labels charts place at a point - text chart, tile values ... - the text plus `:inset`; for layout labels - titles, axis titles, strips, legend labels - the whole item box), `:min-size` (optional: the least size in points a text too long for its room shrinks to - axis titles, strips, text charts with `:x-span`, builder labels; a role without it doesn't shrink; see [[cljplot2.content.label/fitted-label]]), `:dollar-math` (optional: `false` keeps every `$` of its texts literal; default on - `$...$` pairs are LaTeX formulas, see [[cljplot2.data.text]]).
 
-  Functions and vars: [[default-theme]], [[plot-theme]], [[deep-merge]], [[none?]]; chart styles [[chart-style]], [[resolved-style]], [[key-style]], [[key-line-style]], [[named-styles]], [[theme-style-entries]]; text [[text-style]], [[style-keys]], [[text-roles]], [[text-style-schema]], [[text-style-overrides]]; validation [[theme-schema]], [[errors]]."
+  Functions and vars: [[default-theme]], [[default-palette]], [[default-color]], [[plot-theme]], [[deep-merge]], [[none?]]; chart styles [[chart-style]], [[resolved-style]], [[key-style]], [[key-line-style]], [[named-styles]], [[theme-style-entries]]; text [[text-style]], [[style-keys]], [[text-roles]], [[text-style-schema]], [[text-style-overrides]]; validation [[theme-schema]], [[errors]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -59,8 +59,19 @@
    :sequences-cell :partition
    :acf-point :scatter})
 
+(def default-palette
+  "The default categorical palette, `[:palette :color]` of [[default-theme]]: 14 colours checked for colour vision deficiencies.
+
+  The Okabe-Ito colours ordered so the second one reads as text and thin lines on the plot background (contrast at least 3) - blue, vermilion, green, orange, purple, sky - then a darker yellow (still apart from orange under deuteranopia), a gray darker than the NA colour in place of black, then lighter versions of the first six: a lighter blue turned toward violet (apart from sky), lighter vermilion, green, orange, purple and sky. The lighter six are weak as thin lines and small text on the background (contrast 1.2 to 2.8). Levels past 14 repeat the colours."
+  (mapv c/color ["#0072b2" "#d55e00" "#009e73" "#e69f00" "#cc79a7" "#56b4e9" "#cccd23" "#6e6e6e"
+                 "#8289cf" "#fb9864" "#6ec9a4" "#ffd47a" "#f5afd4" "#9be3ff"]))
+
+(def default-color
+  "The colour of marks without a colour mapping: the first colour of [[default-palette]], so an ungrouped chart and the first group look alike. Chart styles add their alphas to it."
+  (first default-palette))
+
 (def default-theme
-  "The default theme in old cljplot style: a light lavender-gray background, 10 px margin, panels without fill and border; every key of [[theme-schema]] has a value (see the namespace doc for the keys)."
+  "The default theme in old cljplot style with a palette checked for colour vision deficiencies (see [[default-palette]]): a light lavender-gray background, 10 px margin, panels without fill and border; every key of [[theme-schema]] has a value (see the namespace doc for the keys)."
   {:plot {:background (c/color 236 236 243) :margin 10}
    :panel {:fill :none :alternate-fill (c/gray 0 12) :border-color :none :border-width 1 :invalid-band-size 24
            :grid {:x {:color (c/gray 180) :line-width 0.5 :dash [4.0]}
@@ -71,7 +82,7 @@
    :strip {:fill (c/gray 255 150) :border-color (c/gray 0 100) :border-width 1 :shingle-fill (c/color 255 165 0 110)}
    :facet {:gap 5}
    :multiplot {:gap 10}
-   :palette {:color :category20
+   :palette {:color default-palette
              :gradient (vec (reverse (c/palette :k2)))
              :shape [\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]
              :size [2 10]
@@ -81,70 +92,70 @@
    :legend {:gap 5 :key-size 14 :fill :none :border-color :none :border-width 1 :bar-length :stretch :bar-width nil
             :bar-ticks 5 :bar-tick-length 3 :bar-tick-width 1 :min-key-line-width 2}
    :frame-3d {:hidden-edge-dash [3 3]}
-   :chart {:scatter {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O}
-           :cloud {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :line-width 1 :shape \O :projection-alpha-factor 0.35 :band-alpha-factor 0.15}
+   :chart {:scatter {:size 6 :color (c/set-alpha default-color 180) :stroke-color :none :stroke-width 1 :shape \O}
+           :cloud {:size 6 :color (c/set-alpha default-color 180) :stroke-color :none :stroke-width 1 :line-width 1 :shape \O :projection-alpha-factor 0.35 :band-alpha-factor 0.15}
            :surface {:stroke-color (c/gray 60) :stroke-width 0.5}
-           :histogram {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+           :histogram {:color default-color :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                        :pattern :solid :pattern-color :darker
                        :zero-line-width 1}
-           :bar {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
+           :bar {:color default-color :stroke-color :darker :stroke-width 1 :alpha 0.6 :zero-line-color :black
                  :pattern :solid :pattern-color :darker
                  :zero-line-width 1}
-           :density {:color (c/color 69 117 180) :line-width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
+           :density {:color default-color :line-width 1 :dash :none :fill :none :alpha 0.6 :zero-line-color :black
                      :pattern :solid :pattern-color :darker
                      :zero-line-width 1}
-           :line {:color (c/color 69 117 180) :line-width 1 :dash :none :fill :none :alpha 0.6 :bridge {:alpha-factor 0.3}
+           :line {:color default-color :line-width 1 :dash :none :fill :none :alpha 0.6 :bridge {:alpha-factor 0.3}
                   :pattern :solid :pattern-color :darker}
-           :ecdf {:color (c/color 69 117 180) :line-width 1 :dash :none}
+           :ecdf {:color default-color :line-width 1 :dash :none}
            :treemap {:gap 3 :stroke-color :white :stroke-width 1
                      :pattern :solid :pattern-color :darker}
            :partition {:stroke-color :white :stroke-width 1 :pattern :solid :pattern-color :darker}
            :pack {:gap 3 :stroke-color :white :stroke-width 1 :pattern :solid :pattern-color :darker}
            :waffle {:gap 0.1 :cell-shape :square :stroke-color :none :stroke-width 1 :pattern :solid :pattern-color :darker}
            :venn {:alpha 0.4 :stroke-color :darker :stroke-width 1 :label-gap 4}
-           :tile {:cell :square :cell-scale 1.0 :stroke-color :none :stroke-width 1 :alpha-factor 1.0 :size-key-fill (c/gray 110)}
+           :tile {:cell :square :cell-scale 1.0 :stroke-color :none :stroke-width 1 :alpha-factor 1.0 :size-key-fill (c/gray 180)}
            :bin2d {:cell :pointy-hex :cell-scale 1.0 :stroke-color :none :stroke-width 1 :alpha-factor 1.0}
            :field {:alpha-factor 1.0}
-           :contour {:color (c/color 69 117 180) :line-width 1 :dash :none :alpha-factor 1.0}
-           :correlation {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1}
-           :pairwise {:color (c/color 69 117 180)}
-           :box {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1 :shape \O :size 5
+           :contour {:color default-color :line-width 1 :dash :none :alpha-factor 1.0}
+           :correlation {:color default-color :stroke-color :darker :stroke-width 1}
+           :pairwise {:color default-color}
+           :box {:color default-color :stroke-color :darker :stroke-width 1 :shape \O :size 5
                  :pattern :solid :pattern-color :darker}
-           :violin {:color (c/color 69 117 180) :stroke-color :darker :stroke-width 1 :inner-color :contrast
+           :violin {:color default-color :stroke-color :darker :stroke-width 1 :inner-color :contrast
                     :inner-box-width 5.0 :inner-median-size 4.0 :inner-quartile-dash [4.0 3.0] :inner-rug-width 1.0
                     :inner-point-size 3.0
                     :pattern :solid :pattern-color :darker}
-           :stripplot {:size 6 :color (c/color 69 117 180 100) :stroke-color :none :stroke-width 1 :shape \O}
-           :beeswarm {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O}
-           :dotplot {:color (c/color 69 117 180) :stroke-color :none :stroke-width 1 :shape \O}
-           :rug {:color (c/color 69 117 180 100) :line-width 1}
-           :bullet {:range-colors [(c/gray 204) (c/gray 238)] :measure-colors [(c/color 70 130 180) (c/color 176 196 222)]
+           :stripplot {:size 6 :color (c/set-alpha default-color 100) :stroke-color :none :stroke-width 1 :shape \O}
+           :beeswarm {:size 6 :color (c/set-alpha default-color 180) :stroke-color :none :stroke-width 1 :shape \O}
+           :dotplot {:color default-color :stroke-color :none :stroke-width 1 :shape \O}
+           :rug {:color (c/set-alpha default-color 100) :line-width 1}
+           :bullet {:range-colors [(c/gray 204) (c/gray 238)] :measure-colors [default-color (c/color 176 196 222)]
                     :measure-fraction 0.35 :marker-color :black :marker-width 2 :marker-length 0.7}
-           :extent {:color (c/color 69 117 180) :line-width 2 :shape \O :size 7}
+           :extent {:color default-color :line-width 2 :shape \O :size 7}
            :rule {:color (c/gray 60) :line-width 1 :dash :none}
-           :function {:color (c/color 69 117 180) :line-width 1 :dash :none :fill :none :bridge {:alpha-factor 0.3}}
-           :ribbon {:color (c/color 69 117 180) :fill :color :alpha 0.3 :stroke-color :none :stroke-width 1 :dash :none
+           :function {:color default-color :line-width 1 :dash :none :fill :none :bridge {:alpha-factor 0.3}}
+           :ribbon {:color default-color :fill :color :alpha 0.3 :stroke-color :none :stroke-width 1 :dash :none
                     :pattern :solid :pattern-color :darker}
-           :smooth {:color (c/color 69 117 180) :line-width 1 :dash :none :fill :color :alpha 0.3
+           :smooth {:color default-color :line-width 1 :dash :none :fill :color :alpha 0.3
                     :pattern :solid :pattern-color :darker}
-           :segment {:color (c/color 69 117 180) :line-width 1 :dash :none}
-           :polygon {:color (c/color 69 117 180) :alpha 1.0 :stroke-color :none :stroke-width 1}
-           :qq {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
+           :segment {:color default-color :line-width 1 :dash :none}
+           :polygon {:color default-color :alpha 1.0 :stroke-color :none :stroke-width 1}
+           :qq {:size 6 :color (c/set-alpha default-color 180) :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
            :image {}
-           :pp {:size 6 :color (c/color 69 117 180 180) :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
-           :parallel {:color (c/color 69 117 180 140) :line-width 1 :dash :none :fill :none :alpha 0.25
+           :pp {:size 6 :color (c/set-alpha default-color 180) :stroke-color :none :stroke-width 1 :shape \O :line-width 1}
+           :parallel {:color (c/set-alpha default-color 140) :line-width 1 :dash :none :fill :none :alpha 0.25
                       :pattern :solid :pattern-color :darker}
            :candlestick {:up-color (c/color 26 152 80) :down-color (c/color 215 48 39) :width 0.7 :line-width 1 :stroke-color :none :stroke-width 1
                          :up-pattern :solid :down-pattern :solid :pattern-color :darker}
            :rect {:fill (c/gray 0 30) :stroke-color :none :stroke-width 1
                   :pattern :solid :pattern-color :darker}
            ;; named styles of builders (see named-styles): partial, merged over their kind's style
-           :network-node {:size 12 :color (c/color 69 117 180) :stroke-color :white :stroke-width 1}
+           :network-node {:size 12 :color default-color :stroke-color :white :stroke-width 1}
            :network-edge {:color (c/gray 120 200)}
-           :arc-node {:size 8 :color (c/color 69 117 180) :stroke-color :white :stroke-width 1}
+           :arc-node {:size 8 :color default-color :stroke-color :white :stroke-width 1}
            :arc-edge {:color (c/gray 120) :line-width 1}
            :dendrogram-branch {:color (c/gray 70) :line-width 1}
-           :tree-node {:size 7 :color (c/color 70 130 180) :stroke-color :white :stroke-width 1}
+           :tree-node {:size 7 :color default-color :stroke-color :white :stroke-width 1}
            :tree-link {:color (c/gray 176) :line-width 0.9}
            :bundle-edge {:line-width 1}
            :bundle-leaf {:size 3}

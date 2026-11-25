@@ -38,7 +38,7 @@
     (is (same-pixels? (scatter-plot {:color [255 0 0] :stroke-color [0 0 0] :stroke-width 3 :alpha 0.4})
                       (scatter-plot {:color [255 0 0 102] :stroke-color [0 0 0] :stroke-width 3}) options)))
   (testing "mapped colours take it, NA too"
-    (let [first-color (first (c/palette :category20))
+    (let [first-color (first (get-in theme/default-theme [:palette :color]))
           one-group [{:x 0 :y 0 :g "a"} {:x 1 :y 2 :g "a"}]]
       (is (same-pixels? {:data one-group :mapping {:x :x :y :y :color :g} :legend false :charts [(chart/scatter {:size 40 :alpha 0.5})]}
                         {:data one-group :mapping {:x :x :y :y} :legend false :charts [(chart/scatter {:size 40 :color (c/set-alpha first-color 127.5)})]}
