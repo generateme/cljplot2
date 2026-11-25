@@ -13,13 +13,15 @@ A plotting library for Clojure: plots are plain maps of data, mappings and chart
 - Charts: scatter, line, bar, histogram, density, box, violin, ribbon, smooth, heatmaps, 2D fields and contours,
   Q-Q / P-P, treemap, sunburst, circle packing, waffle, Venn, networks, dendrograms, chord, arc and sankey diagrams,
   and more; facets, polar coordinates, margins, multiplots.
+- LaTeX formulas in any text (titles, axes, legends, labels); a default palette checked for colour vision
+  deficiencies.
 
 ## Install
 
 There's no release yet. Use a git coordinate in `deps.edn`:
 
 ```clojure
-io.github.generateme/cljplot2 {:git/sha "bf28bce1a4ccd0a2f2d653d5e0076c7d801670db"}
+io.github.generateme/cljplot2 {:git/sha "ac8e8e0c1e41c3c0461a43cb6f83337f0c17a917"}
 ```
 
 cljplot2 depends on SNAPSHOT versions: fastmath `3.0.0-alpha10-SNAPSHOT` is on Clojars; clojure2d
@@ -101,3 +103,6 @@ The bundled fonts (`resources/fonts/`) keep their own licences:
 - DejaVu Sans Mono - Bitstream Vera Fonts licence, DejaVu changes in the public domain, see
   [LICENSE-DejaVu.txt](resources/fonts/LICENSE-DejaVu.txt);
 - Noto Emoji - SIL Open Font License 1.1, see [LICENSE-NotoEmoji.txt](resources/fonts/LICENSE-NotoEmoji.txt).
+
+LaTeX formulas are typeset by the [JLaTeXMath](https://github.com/opencollab/jlatexmath) dependency (GPL 2.0 with
+the Classpath Exception); its Greek and Cyrillic font jars, GPL without the exception, are excluded.
