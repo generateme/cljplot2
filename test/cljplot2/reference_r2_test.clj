@@ -8,7 +8,7 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [card-groups error-data migrated-builders migrated-functions]]))
+            [cljplot2.test-util :refer [card-groups error-data migrated-builders migrated-entry-props migrated-functions path-under? schema-entries]]))
 
 (def builders
   "The builders of `cljplot2.core`."
@@ -32,19 +32,6 @@
 
 (defn- var-name [v] (symbol (str (:ns (meta v))) (str (:name (meta v)))))
 
-(defn- all-entries
-  "`[path props schema]` of every map entry anywhere in `schema`."
-  [schema]
-  (letfn [(walk [s path]
-            (let [s (malli/schema s)]
-              (case (malli/type s)
-                :map (mapcat (fn [[k props v]] (cons [(conj path k) props v] (walk v (conj path k)))) (malli/children s))
-                :multi (mapcat (fn [[_ _ v]] (walk v path)) (malli/children s))
-                (:maybe :and :or :vector :sequential :set :map-of :tuple)
-                (mapcat #(when (malli/schema? (try (malli/schema %) (catch Exception _ nil))) (walk % path)) (malli/children s))
-                nil)))]
-    (walk schema [])))
-
 (defn- documented-problems
   "Entries of `schema` breaking the documentation rules: no description, both `:default` and a default text, or a text
   breaking its style - an option table's (lowercase, no closing period, at most 200 characters) or, for the paths in
@@ -53,12 +40,12 @@
   ([schema] (documented-problems schema #{} #{}))
   ([schema card-paths] (documented-problems schema card-paths #{}))
   ([schema card-paths card-groups]
-   (let [entries (all-entries schema)
+   (let [entries (schema-entries schema)
          card-roots (into (set card-paths) (keep (fn [[path props]] (when (card-groups (:cljplot2/fragment props)) path))) entries)]
     (vec (for [[path props v] entries
               :when (not (schema/forbidden? v))
               :let [texts (keep props [:description :cljplot2/default-doc])
-                    card? (some #(= % (subvec path 0 (min (count path) (count %)))) card-roots)]
+                    card? (some #(path-under? % path) card-roots)]
               :when (or (nil? (:description props))
                         (and (contains? props :default) (contains? props :cljplot2/default-doc))
                         (if card?
@@ -95,15 +82,17 @@
     [bad (error-data #(apply @v (concat (positional-args v) [{bad 1}])))]))
 
 (deftest builders-test
-  (doseq [:let [card-group-set (card-groups)]
+  (doseq [:let [card-group-set (card-groups) migrated-props (migrated-entry-props)]
           v builders]
-    (testing (str (var-name v) ": options schema, documented")
+    (testing (str (var-name v) ": options schema, documented (entries of a migrated plot-level schema nested in it in the card style)")
       (is (some? (:cljplot2/options (meta v))))
       (is (seq (describe/options v)))
       (is (= [] (documented-problems (:cljplot2/options (meta v))
-                                     (if (migrated-builders (:name (meta v)))
-                                       (set (map :path (describe/own-rows (describe/options v))))
-                                       #{})
+                                     (into (if (migrated-builders (:name (meta v)))
+                                             (set (map :path (describe/own-rows (describe/options v))))
+                                             #{})
+                                           (keep (fn [[path props]] (when (migrated-props props) path)))
+                                           (schema-entries (:cljplot2/options (meta v))))
                                      card-group-set))))
     (testing (str (var-name v) ": the core var documents the implementation's schema")
       (let [n (:name (meta v))

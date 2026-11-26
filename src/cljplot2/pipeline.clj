@@ -1681,7 +1681,10 @@
 (def plot-schema
   "Schema of a plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]], [[options-schema]])."
   [:map {:closed true}
-   (schema/nilable :data {:cljplot2/section :content :description "rows (a sequence of maps) or columns (a map of sequences) the charts read"} data/data-schema)
+   (schema/nilable :data {:cljplot2/section :content :description "The rows or columns the charts read; a chart's own `:data` wins over it."
+                          :cljplot2/default-doc "None: each chart brings its own `:data`."
+                          :cljplot2/example [{:x 1 :y 2} {:x 2 :y 3} {:x 3 :y 1}]}
+                   data/data-schema)
    (schema/nilable :mapping {:cljplot2/section :content :description "accessors of the dimensions the charts read (keywords or functions), merged under each chart's"}
                    data/mapping-schema)
    (schema/nilable :charts {:cljplot2/section :content :description "the charts, drawn in order"} [:vector chart-schema])
@@ -1690,16 +1693,25 @@
                    facet/facet-options)
    (schema/nilable :groups {:cljplot2/section :content :description "grouping options"}
                    [:map {:closed true}
-                    (schema/nilable :na {:description "nil aesthetic values form the NA level (false - such rows are dropped)" :default true}
+                    (schema/nilable :na {:description "Whether rows with a `nil` aesthetic or `:group` value form their own NA level." :default true
+                                         :cljplot2/value-meanings {true "An NA level in the `[:palette :na]` colour, listed last in the legend." false "The rows are dropped."}}
                                     schema/bool)])
    (schema/nilable :legend {:cljplot2/section :legend :description "draw the legends (false hides all)" :default true} schema/bool)
    (schema/nilable :legend-only {:cljplot2/section :legend :description "draw only the legends (a legend cell of an :arrange)" :default false} schema/bool)
    (schema/nilable :alternate-panel {:cljplot2/section :style :description "shade a single panel as an odd facet panel (theme [:panel :alternate-fill])"
                                      :default false}
                    schema/bool)
-   (schema/nilable :aspect {:cljplot2/section :coordinates :description ":iso - equal pixels per data unit on x and y (linear scales)"} [:enum :iso])
-   (schema/nilable :flip {:cljplot2/section :coordinates :description "draw the :x scale vertically and :y horizontally" :default false} schema/bool)
-   (schema/nilable :coord {:cljplot2/section :coordinates :description "coordinate system: cartesian or polar" :cljplot2/default-doc "cartesian"} coord/coord-schema)
+   (schema/nilable :aspect {:cljplot2/section :coordinates :description "The ratio of the panel's axes in data units."
+                            :cljplot2/default-doc "Free: the panel takes the space it gets."
+                            :cljplot2/value-meanings {:iso "Equal pixels per data unit on both linear axes; the panel shrinks to fit."}}
+                   [:enum :iso])
+   (schema/nilable :flip {:cljplot2/section :coordinates :description "Whether the `:x` scale is drawn vertically and the `:y` scale horizontally; scales, labels and theme keys keep their names." :default false
+                          :cljplot2/value-meanings {true "Flipped." false "`:x` horizontal, `:y` vertical."}}
+                   schema/bool)
+   (schema/nilable :coord {:cljplot2/section :coordinates :description "The coordinate system the panels map the position scales to."
+                           :cljplot2/default-doc "Cartesian." :cljplot2/example {:kind :polar}
+                           :cljplot2/form-meanings {:map "Cartesian `{:kind :cartesian}`, or a polar coord whose keys the cards below list."}}
+                   coord/coord-schema)
    (schema/nilable :labels {:cljplot2/section :titles :description "plot title and axis titles"} plot-grid/labels-schema)
    (schema/nilable :custom-grid {:cljplot2/section :layout :description "a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)"}
                    :map)

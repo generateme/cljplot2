@@ -21,7 +21,7 @@
   - [[options]] - rows of a chart value's options (style defaults from theme `[:chart kind]`), of a builder or API function var (its `:cljplot2/options` schema) or of a map schema; [[schema-rows]], [[mapping]] - rows of the mapping keys a chart reads.
   - [[theme-rows]] - the theme's rows with their defaults and text roles (one top-level key's: the rows under it); [[style-rows]] - the rows of a named theme style (a builder's) with its defaults.
   - [[fragments]] - the shared groups of options entries belong to, [[fragment-rows]] - the rows of one group (a chart may take only some of a group's entries - its own rows are what it accepts), [[fragment-keys]], [[own-rows]].
-  - Slicing: [[top-level-rows]], [[rows-under]], [[container-row?]]; [[type-text]] - readable type text of a schema; [[documented-types]] - the types the book explains; [[example]] - an option's example value, [[example-options]] - its whole options map; [[concepts]] - section titles.
+  - Slicing: [[top-level-rows]], [[rows-under]], [[rows-at]], [[container-row?]]; [[type-text]] - readable type text of a schema; [[documented-types]] - the types the book explains; [[example]] - an option's example value, [[example-options]] - its whole options map; [[concepts]] - section titles.
   - Listings: [[api-vars]] - the user-facing data functions (`:cljplot2/api` var metadata; this namespace loads every namespace holding them), [[chart-constructors]], [[plot-level-schemas]], [[attribute-values]]."
   (:require [clojure.string :as str]
             [fastmath.core :as m]
@@ -251,14 +251,14 @@
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
 (def documented-types
-  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule, overlap fraction, data, palette, size range ...). Option cards link a form of these types to its explanation."
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule, overlap fraction, data, palette, size range, colour range ...). Option cards link a form of these types to its explanation."
   (merge schema/named-types
          (into {} (map (fn [s] [(malli/type s) s]))
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
                 kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
                 probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema shingle/overlap-schema rows/data-schema
-                aesthetic/palette aesthetic/size-range])))
+                aesthetic/palette aesthetic/size-range aesthetic/color-range])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."
@@ -722,6 +722,18 @@
   [rows path]
   (let [n (count path)]
     (filterv #(and (m/< n (count (:path %))) (= path (subvec (:path %) 0 n))) rows)))
+
+(defn rows-at
+  "Returns the rows at given key paths - the rows of some options, without those nested under them.
+
+  Parameters:
+
+  - `rows` (sequence): option rows.
+  - `paths` (set of vectors): the key paths, e.g. `#{[:aspect]}` - the plot's `:aspect` row.
+
+  Returns a vector in the rows' order; empty when no row has one of the paths."
+  [rows paths]
+  (filterv #(contains? paths (:path %)) rows))
 
 (defn- under-path?
   "Tests whether a key path is a root path or nested under it.

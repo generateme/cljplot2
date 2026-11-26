@@ -142,24 +142,37 @@
 
 (def ^:private wadogo-attributes
   "wadogo scale attributes passed through to the scale (see wadogo's kinds, `wadogo.scale/kind-info`):
-  `[key description]` pairs, in table order."
-  [[:clamp "wadogo: clamp values outside the domain to its ends"]
-   [:unknown "wadogo: the value returned for values outside a bands domain"]
-   [:round "wadogo: round band starts and widths to whole pixels"]
-   [:base "wadogo: logarithm base of a :log scale (ticks and nice only)"]
-   [:exponent "wadogo: exponent of a :pow scale"]
-   [:padding-in "wadogo: space between bands, a fraction of the step"]
-   [:padding-out "wadogo: space before the first and after the last band, a fraction of the step"]
-   [:align-outer "wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first"]
-   [:align "wadogo: position of a point inside its band, 0 - band start, 1 - band end"]
-   [:interpolator-params "wadogo: parameters of the :interpolated scale's :interpolator"]])
+  `[key card-properties]` pairs, in card order; each entry takes `any?` (wadogo checks it) and wadogo's default."
+  [[:clamp {:description "Whether wadogo clamps values outside the domain to its ends." :cljplot2/example true
+             :cljplot2/example-context {:domain [2 5]}}]
+   [:unknown {:description "The position wadogo gives a value outside a bands domain." :cljplot2/no-example true}]
+   [:round {:description "Whether wadogo rounds mapped positions, and band starts and widths, to whole pixels." :cljplot2/example true}]
+   [:base {:description "The logarithm base of a `:log` scale; it changes the ticks and the nice domain." :cljplot2/example 2
+           :cljplot2/example-context {:kind :log}}]
+   [:exponent {:description "The exponent of a `:pow` scale." :cljplot2/example 2 :cljplot2/example-context {:kind :pow}}]
+   [:padding-in {:description "The space between bands, a fraction of the step." :cljplot2/example 0.5}]
+   [:padding-out {:description "The space before the first and after the last band, a fraction of the step." :cljplot2/example 1.0}]
+   [:align-outer {:description "How the outer band space is split: 0 puts it all after the last band, 1 all before the first."
+                  :cljplot2/example 0.0 :cljplot2/example-context {:padding-out 2.0}}]
+   [:align {:description "Where a point sits inside its band: 0 at the band's start, 1 at its end." :cljplot2/example 0.0}]
+   [:interpolator-params {:description "Extra arguments an `:interpolated` scale's `:interpolator` takes after the points, e.g. its options map."
+                          :cljplot2/example [{:bandwidth 0.9}]
+                          :cljplot2/example-context {:kind :interpolated :domain [1 2 3 4 5 6 7 8 9 10] :interpolator :loess}}]])
 
 (def ^:private ticks-params
   "Schema of `:ticks-params`: the fewest ticks and calendar ticks."
   [:map {:closed true}
-   (schema/optional :min-n {:description "the fewest ticks (clamped to the tick count)"} [:and :int [:>= 0]])
-   (schema/optional :unit {:description "calendar tick unit (:datetime with :pretty ticks)"} (into [:enum] (sort pretty-datetime/calendar-units)))
-   (schema/optional :step {:description "a calendar tick every :step units" :default 1} schema/pos-int)])
+   (schema/optional :min-n {:description "The fewest ticks the algorithm gives, at most the tick count."
+                            :cljplot2/default-doc "The algorithm's own." :cljplot2/example 8
+                            :cljplot2/example-context {:ticks 8 :domain [0 13]}}
+                    [:and :int [:>= 0]])
+   (schema/optional :unit {:description "The calendar unit of `:datetime` ticks with `:ticks-method :pretty`."
+                           :cljplot2/default-doc "Chosen from the domain's span." :cljplot2/example :months
+                           :cljplot2/other-values "A tick at every `:step` of this unit."}
+                    (into [:enum] (sort pretty-datetime/calendar-units)))
+   (schema/optional :step {:description "A calendar tick every this many `:unit`s." :default 1 :cljplot2/example 3
+                           :cljplot2/example-context {:ticks-params {:unit :months}}}
+                    schema/pos-int)])
 
 (def scale-spec-schema
   "Plot scale spec of `:x` / `:y`: wadogo attributes plus `:nice` and `:expand`, see [[scale-spec]] and
@@ -168,54 +181,87 @@
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (apply schema/with-rules
    (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
-          (schema/optional :kind {:cljplot2/section :kind-domain :description "scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands"
-                                  :cljplot2/default-doc "from the data: :linear for numbers, :bands for levels, :datetime for java.time values"}
+          (schema/optional :kind {:cljplot2/section :kind-domain :description "The scale kind: how data values map to positions along the axis."
+                                  :cljplot2/default-doc "From the data: `:linear` for numbers, `:bands` for levels, `:datetime` for `java.time` values."
+                                  :cljplot2/example :log
+                                  :cljplot2/value-meanings {:linear "Numbers, evenly spaced." :log "Positive numbers by their logarithm."
+                                                            :pow "Numbers by a power, the `:exponent`." :symlog "Numbers of both signs over many magnitudes, by a logarithm symmetric around 0."
+                                                            :radial "Radii whose circle areas grow linearly with the values, for polar plots."
+                                                            :interpolated "The domain values pinned to `:stops` of the panel, interpolated between them."
+                                                            :datetime "`java.time` values on a time axis." :bands "Levels, one band each."}}
                            (into [:enum] (sort position-kinds)))
-          (schema/optional :type {:cljplot2/section :kind-domain :description "declare numbers or dates categorical (one band per value) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :kind-domain :description "Declares how the scale reads its values."
+                                  :cljplot2/default-doc "The data's kind." :cljplot2/example :categorical :cljplot2/example-context {:domain [1 4 7 10]}
+                                  :cljplot2/value-meanings {:categorical "As levels, one band per value; numbers need a `:domain` unless the charts give their levels (strip charts do)." :numeric "As numbers, the data's default; it rejects `:kind :bands` and a `levels/categorical` marker."}}
                            [:enum :categorical :numeric])
-          (schema/nilable :domain {:cljplot2/section :kind-domain :description "explicit domain: [lo hi] for continuous kinds (nil at an end - the data's, e.g. [0 nil]), the levels in order for :bands"
-                                   :cljplot2/default-doc "the charts' data extent"}
+          (schema/nilable :domain {:cljplot2/section :kind-domain :description "The data range the scale covers: `[lo hi]` for continuous kinds (`nil` at an end takes the data's, e.g. `[0 nil]`), the levels in order for `:bands`."
+                                   :cljplot2/default-doc "The charts' data extent." :cljplot2/example [0 20]}
                           [:sequential {:min 1} any?])
-          (schema/nilable :ticks {:cljplot2/section :ticks :description "a tick count hint, or the tick values themselves"
-                                  :cljplot2/default-doc "a count from the panel size and theme :tick-spacing"}
+          (schema/nilable :ticks {:cljplot2/section :ticks :description "Where the ticks go: a count the scale aims for, or the tick values."
+                                  :cljplot2/default-doc "A count from the panel size and the theme's `:tick-spacing`; a bands scale ticks every band." :cljplot2/example [2 5 8]
+                                  :cljplot2/form-meanings {:sequential "These tick values." ::schema/pos-int "About this many ticks."}}
                           [:multi {:dispatch sequential?} [true [:sequential any?]] [false schema/pos-int]])
-          (schema/nilable :nice {:cljplot2/section :kind-domain :description "extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)"
-                                 :cljplot2/default-doc "true (false for :interpolated)"}
+          (schema/nilable :nice {:cljplot2/section :kind-domain :description "Whether a continuous domain grows to nice tick values."
+                                 :cljplot2/default-doc "`true` (`false` for `:interpolated`)." :cljplot2/example false :cljplot2/example-context {:domain [1.3 9.7]}
+                                 :cljplot2/value-meanings {true "It grows to nice tick values, by at most a tenth of its span." false "It stays as computed."}
+                                 :cljplot2/form-meanings {:and "It grows by at most this fraction of its span."}}
                           [:multi {:dispatch boolean?} [true :boolean] [false [:and schema/finite schema/non-neg]]])
-          (schema/optional :expand {:cljplot2/section :kind-domain :description "padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')"
-                                    :cljplot2/default-doc "the charts' padding"}
+          (schema/optional :expand {:cljplot2/section :kind-domain :description "The room added at the ends of a continuous domain, fractions of its span; it wins over the charts' padding."
+                                    :cljplot2/default-doc "The charts' padding." :cljplot2/example [0 0]}
                            schema/padding)
-          (schema/optional :formatter {:cljplot2/section :ticks :description "tick label text: a function of the value, a java.time pattern (:datetime), or :power / :power-math (:log; a power in superscript digits / typeset)"
-                                       :cljplot2/default-doc "the charts' suggested format, else plain numbers, levels or dates"}
+          (schema/optional :formatter {:cljplot2/section :ticks :description "The text of the tick labels."
+                                       :cljplot2/default-doc "The charts' suggested format, else plain numbers, levels or dates."
+                                       :cljplot2/example '(fn [v] (str v " u"))
+                                       :cljplot2/value-meanings {:power "For `:log`: powers of the base, the exponent in superscript digits."
+                                                                 :power-math "For `:log`: powers of the base typeset as formulas."}
+                                       :cljplot2/form-meanings {:string "For `:datetime`: a `java.time` pattern, e.g. `MMM yyyy`."
+                                                                ::schema/function "A function of the tick value that returns its label."}}
                            [:multi {:dispatch #(cond (string? %) :pattern (keyword? %) :preset :else :function)}
                             [:pattern :string] [:preset [:enum :power :power-math]] [:function schema/function]])
-          (schema/nilable :order-by {:cljplot2/section :order :description "bands ordered by a function of each level's rows (not with :domain)"} schema/function)
-          (schema/nilable :descending {:cljplot2/section :order :description "reverse the :order-by order (needs :order-by)" :default false} schema/bool)
-          (schema/nilable :reverse {:cljplot2/section :order :description "the axis runs the other way (the final domain reversed)" :default false} schema/bool)
-          (schema/nilable :minor-ticks {:cljplot2/section :ticks :description "unlabelled ticks between two major ticks (continuous numeric kinds)"} schema/pos-int)
-          (schema/nilable :axis-domain {:cljplot2/section :axis :description "display only: axis and grid show the ticks of this linear domain over the panel"}
+          (schema/nilable :order-by {:cljplot2/section :order :description "Orders the bands by a function of each level's rows, smallest first; it can't be combined with `:domain`."
+                                     :cljplot2/default-doc "The levels in the order they first appear in the data; numbers, dates and intervals sorted." :cljplot2/example '(fn [rows] (reduce + (map :y rows)))}
+                          schema/function)
+          (schema/nilable :descending {:cljplot2/section :order :description "Whether `:order-by` puts the largest result first." :default false
+                                       :cljplot2/example true :cljplot2/example-context {:order-by '(fn [rows] (reduce + (map :y rows)))}
+                                       :cljplot2/value-meanings {true "Largest first." false "Smallest first."}}
+                          schema/bool)
+          (schema/nilable :reverse {:cljplot2/section :order :description "Whether the axis runs the other way: the final domain reversed." :default false
+                                    :cljplot2/value-meanings {true "Reversed." false "In domain order."}}
+                          schema/bool)
+          (schema/nilable :minor-ticks {:cljplot2/section :ticks :description "The number of unlabelled ticks between two major ticks, on continuous numeric kinds."
+                                        :cljplot2/default-doc "No minor ticks." :cljplot2/example 4}
+                          schema/pos-int)
+          (schema/nilable :axis-domain {:cljplot2/section :axis :description "A linear domain whose ticks the axis and grid lines show over the panel, for display only."
+                                        :cljplot2/default-doc "The scale's own ticks." :cljplot2/example [0 1]}
                           [:tuple schema/finite schema/finite])
-          (schema/optional :overlapping-labels {:cljplot2/section :axis :description "tick labels overlapping a drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)"
-                                                :cljplot2/default-doc ":keep with an explicit :ticks vector (the values asked for), else :drop"}
+          (schema/optional :overlapping-labels {:cljplot2/section :axis :description "What the axis does with a tick label overlapping one drawn before it."
+                                                :cljplot2/default-doc "`:keep` with an explicit `:ticks` vector (the values asked for), else `:drop`."
+                                                :cljplot2/example :keep :cljplot2/example-context {:ticks 30}
+                                                :cljplot2/value-meanings {:drop "It skips the label." :keep "It draws every label, e.g. on axes naming data items."}}
                            [:enum :drop :keep])
-          (schema/optional :axis {:cljplot2/section :axis :description "true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only"
-                                  :default true}
+          (schema/optional :axis {:cljplot2/section :axis :description "What the scale draws: its axis, its grid lines, both or neither."
+                                  :default true
+                                  :cljplot2/value-meanings {true "The axis and the grid lines." false "Neither." :grid "The grid lines only." :no-grid "The axis only."}}
                            [:or :boolean [:enum :grid :no-grid]])
-          (schema/optional :stops {:cljplot2/section :interpolated :description "panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)"
-                                   :cljplot2/default-doc "evenly spaced"}
+          (schema/optional :stops {:cljplot2/section :interpolated :description "The panel fractions the `:interpolated` domain values map to, one per value: increasing, or decreasing for a reversed axis."
+                                   :cljplot2/default-doc "Evenly spaced." :cljplot2/example [0 0.6 0.8 1]
+                                   :cljplot2/example-context {:kind :interpolated :domain [1 3 5 7]}}
                            [:sequential {:min 2} schema/finite])
-          (schema/optional :interpolator {:cljplot2/section :interpolated :description "interpolation between the :stops of an :interpolated scale (only there)"
-                                          :cljplot2/default-doc ":linear"}
+          (schema/optional :interpolator {:cljplot2/section :interpolated :description "How an `:interpolated` scale places values between its `:stops`."
+                                          :cljplot2/default-doc "`:linear`." :cljplot2/example :cubic
+                                          :cljplot2/example-context {:kind :interpolated :domain [1 3 5 7] :stops [0 0.6 0.8 1]}}
                            schema/interpolator)
-          (schema/optional :ticks-method {:cljplot2/section :ticks :description "tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())"
-                                          :cljplot2/default-doc ":pretty for :datetime, else :default"}
+          (schema/optional :ticks-method {:cljplot2/section :ticks :description "The tick algorithm of continuous kinds."
+                                          :cljplot2/default-doc "`:pretty` for `:datetime`, else `:default`." :cljplot2/example :pretty :cljplot2/example-context {:ticks 5 :domain [0 13]}
+                                          :cljplot2/value-meanings {:default "d3's ticks." :pretty "R's `pretty()` ticks."}}
                            [:enum :default :pretty])
-          (schema/optional :ticks-params {:cljplot2/section :ticks :description "tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}"}
+          (schema/optional :ticks-params {:cljplot2/section :ticks :description "Parameters of the tick algorithm: the fewest ticks and calendar ticks."
+                                          :cljplot2/example-context {:ticks-method :pretty}}
                            ticks-params)
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
-         (map (fn [[k description]] (schema/optional k {:description description :cljplot2/section :wadogo} any?)))
+         (map (fn [[k props]] (schema/optional k (assoc props :cljplot2/section :wadogo :cljplot2/default-doc "The wadogo scale's default.") any?)))
          wadogo-attributes)
    [domain-problem [:domain]]
    [#(when-let [[^double lo ^double hi] (:axis-domain %)] (when (m/== lo hi) ":axis-domain should be two different numbers"))

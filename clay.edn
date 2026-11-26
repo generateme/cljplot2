@@ -44,5 +44,6 @@
 .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .shared ul { margin: 0; padding-left: 1.25rem; }
 .shared code { overflow-wrap: anywhere; }
+p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>"}}}
           :code-block-background true}}

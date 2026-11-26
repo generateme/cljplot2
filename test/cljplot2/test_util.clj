@@ -1,8 +1,24 @@
 (ns cljplot2.test-util
   "Helpers shared by the tests."
-  (:require [cljplot2.core :as plot]
+  (:require [malli.core :as malli]
+            [cljplot2.core :as plot]
+            [cljplot2.schema :as schema]
             [cljplot2.describe :as describe]
             [cljplot2.theme :as theme]))
+
+(defn schema-entries
+  "`[path props schema]` of every map entry anywhere in `schema` - nested maps, `:multi` branches, `:and` / `:or` /
+  `:maybe` / collection children."
+  [schema]
+  (letfn [(walk [s path]
+            (let [compiled (malli/schema s)]
+              (case (malli/type compiled)
+                :map (mapcat (fn [[k props v]] (cons [(conj path k) props v] (walk v (conj path k)))) (malli/children compiled))
+                :multi (mapcat (fn [[_ _ v]] (walk v path)) (malli/children compiled))
+                (:maybe :and :or :vector :sequential :set :map-of :tuple)
+                (mapcat #(when (malli/schema? (try (malli/schema %) (catch Exception _ nil))) (walk % path)) (malli/children compiled))
+                nil)))]
+    (walk schema [])))
 
 (def migrated
   "Chart kinds whose reference sections show option cards (`nu/option-cards`) and follow the card rules of
@@ -37,9 +53,38 @@
     :mirror :pattern :ridge :shading :strip :text-style :theme-style})
 
 (def migrated-theme-keys
-  "Top-level theme keys whose Theme chapter sections show option cards (`nu/option-cards :theme`) and follow the card
-  rules of `option-cards-test` - the theme's switch; every key but `:chart` (each chart's page documents its style)."
+  "Top-level theme keys whose Theme chapter sections show option cards and follow the card
+  rules of `option-cards-test` - the theme's switch (`nu/option-cards [:theme] ...`); every key but `:chart` (each
+  chart's page documents its style)."
   #{:plot :panel :axis :strip :facet :multiplot :legend :frame-3d :palette :text})
+
+(def migrated-schemas
+  "Plot-level schemas (names in `cljplot2.describe/plot-level-schemas`) whose rows the concept chapters show as option
+  cards (the mapping: mapping lists) and whose texts read in the card style - the schemas' switch: name -> the key
+  paths migrated (`[]` - the whole schema; a path covers the entries below it)."
+  {:mapping #{[]} :position-scale #{[]} :polar-coord #{[]} :color-scale #{[]} :shape-scale #{[]} :size-scale #{[]}
+   :dash-scale #{[]} :pattern-scale #{[]} :plot #{[:data] [:groups :na] [:aspect] [:flip] [:coord]}})
+
+(defn path-under?
+  "Tests whether key `path` is `root` or lies below it (`[]` - every path)."
+  [root path]
+  (= (seq root) (seq (take (count root) path))))
+
+(defn migrated-path?
+  "Tests whether the entry at key `path` of plot-level schema `n` is migrated (see [[migrated-schemas]]): it is at or
+  below one of the schema's migrated paths."
+  [n path]
+  (some #(path-under? % path) (get migrated-schemas n)))
+
+(defn migrated-entry-props
+  "The properties of the entries at migrated paths of the migrated schemas ([[migrated-schemas]]): the same entry nested
+  in another schema (the plot's `:mapping` and `:scales`, a builder's `:mapping`) reads in the card style too, so the
+  writing rules recognise it by its properties."
+  []
+  (set (for [n (keys migrated-schemas)
+             [path props s] (schema-entries (describe/plot-level-schemas n))
+             :when (and (migrated-path? n path) (:description props) (not (schema/forbidden? s)))]
+         props)))
 
 (declare migrated-function-groups)
 

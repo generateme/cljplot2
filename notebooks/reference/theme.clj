@@ -54,7 +54,7 @@
 
 ;; These keys style the canvas behind the plot. The plot below has a cream background and a wider margin:
 
-(nu/option-cards :theme (describe/theme-rows :plot))
+(nu/option-cards [:theme] (describe/theme-rows :plot))
 
 (plot/render-image (assoc iris-plot :theme {:plot {:background [255 250 235] :margin 30}})
                    {:width 500 :height 300})
@@ -64,7 +64,7 @@
 ;; These keys style each data panel's box: its fill and border, the shading of alternate facet panels and the band
 ;; of invalid values. The plot below fills the panel white and draws a thick dark border:
 
-(nu/option-cards :theme (describe/theme-rows :panel) :panel-box)
+(nu/option-cards [:theme] (describe/theme-rows :panel) :panel-box)
 
 (plot/render-image (assoc iris-plot
                           :theme {:panel {:fill :white :border-color [60 60 60] :border-width 2}})
@@ -74,7 +74,7 @@
 
 ;; These keys draw the grid behind the charts. The plot below draws solid x lines, no y lines and light minor x lines:
 
-(nu/option-cards :theme (describe/theme-rows :panel) :grid)
+(nu/option-cards [:theme] (describe/theme-rows :panel) :grid)
 
 (plot/render-image (assoc iris-plot
                           :scales {:x {:minor-ticks 4}}
@@ -88,7 +88,7 @@
 ;; These keys set the x axis line, its ticks and its tick labels. The plot below turns the long level names 45 degrees
 ;; and draws no ticks and no axis line:
 
-(nu/option-cards :theme (describe/theme-rows :axis) :x-axis)
+(nu/option-cards [:theme] (describe/theme-rows :axis) :x-axis)
 
 (plot/render-image {:data long-levels
                     :mapping {:x :k :y :v}
@@ -107,7 +107,7 @@
 
 ;; The y axis takes the same keys:
 
-(nu/option-cards :theme (describe/theme-rows :axis) :y-axis)
+(nu/option-cards [:theme] (describe/theme-rows :axis) :y-axis)
 
 ;; The plot below draws more y ticks, longer and red:
 
@@ -130,7 +130,7 @@
 ;; These keys style the facet strips. The plot below fills the strips dark blue without a border and writes their
 ;; texts in white:
 
-(nu/option-cards :theme (describe/theme-rows :strip))
+(nu/option-cards [:theme] (describe/theme-rows :strip))
 
 (def faceted-iris (assoc iris-plot :mapping {:x :sepal-length :y :petal-length :facet :species}))
 
@@ -155,7 +155,7 @@
 
 ;; This key sets how far apart the facet panels sit. The plot below widens the gap:
 
-(nu/option-cards :theme (describe/theme-rows :facet))
+(nu/option-cards [:theme] (describe/theme-rows :facet))
 
 (plot/render-image (assoc faceted-iris :theme {:facet {:gap 25}}) {:width 700 :height 280})
 
@@ -164,7 +164,7 @@
 ;; This key sets how far apart arranged plots sit; `plot/arrange` takes it in its `:theme` option. The plot below
 ;; widens the gap:
 
-(nu/option-cards :theme (describe/theme-rows :multiplot))
+(nu/option-cards [:theme] (describe/theme-rows :multiplot))
 
 (plot/render-image (plot/arrange [iris-plot (assoc iris-plot :mapping {:x :sepal-width :y :petal-width :color :species})]
                                  {:columns 2 :theme {:multiplot {:gap 40}}})
@@ -175,7 +175,7 @@
 ;; These keys set the legend keys' size and spacing, the legend box and the colour bar. The plot below draws larger,
 ;; wider spaced keys in a white box with a gray border:
 
-(nu/option-cards :theme (describe/theme-rows :legend))
+(nu/option-cards [:theme] (describe/theme-rows :legend))
 
 (plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
                    {:width 500 :height 300})
@@ -204,7 +204,7 @@
 ;; plot below draws a [surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$
 ;; with dash-dot hidden edges and thicker axes:
 
-(nu/option-cards :theme (describe/theme-rows :frame-3d))
+(nu/option-cards [:theme] (describe/theme-rows :frame-3d))
 
 (plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [-2 2] :y [-2 2]}})]
                     :labels {:title "$z = \\sin(xy)$"}
@@ -219,7 +219,7 @@
 ;; darker yellow and a gray in place of black, then repeat the first six lighter, the blue turned toward violet. The
 ;; lighter six are weak as thin lines. The plot below takes the Tableau 10 colours and three other shapes:
 
-(nu/option-cards :theme (describe/theme-rows :palette))
+(nu/option-cards [:theme] (describe/theme-rows :palette))
 
 (plot/render-image (assoc iris-plot
                           :mapping {:x :sepal-length :y :petal-length :color :species :shape :species}
@@ -248,7 +248,7 @@
 ;; These roles style the titles, strips and axis texts. The plot below draws a larger italic title on the left, dark
 ;; red axis titles and smaller tick labels:
 
-(nu/option-cards :theme (describe/theme-rows :text) :plot-text)
+(nu/option-cards [:theme] (describe/theme-rows :text) :plot-text)
 
 (plot/render-image (assoc iris-plot
                           :labels {:title "Iris" :x "sepal length" :y "petal length"}
@@ -266,7 +266,7 @@
 
 ;; These roles style the legend texts. The plot below draws a smaller, plain gray legend title and italic labels:
 
-(nu/option-cards :theme (describe/theme-rows :text) :legend-text)
+(nu/option-cards [:theme] (describe/theme-rows :text) :legend-text)
 
 (plot/render-image (assoc iris-plot :theme {:text {:legend-title {:size 9 :font-style :plain :color [100 100 100]}
                                                    :legend-label {:font-style :italic}}})
@@ -276,7 +276,7 @@
 ;; alike. The plot below sets dark leaf labels, which are hard to read on the dark cells; that is why `:contrast` is
 ;; the default:
 
-(nu/option-cards :theme (describe/theme-rows :text) :hierarchy-text)
+(nu/option-cards [:theme] (describe/theme-rows :text) :hierarchy-text)
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
@@ -288,7 +288,7 @@
 ;; These roles style the texts of other charts. The plot below draws a larger red annotation on a white box and bold
 ;; bar values in the bars' middle ([bar](reference.charts_bars.html#bar-charts) `:value-label`, `:label-position`):
 
-(nu/option-cards :theme (describe/theme-rows :text) :chart-text)
+(nu/option-cards [:theme] (describe/theme-rows :text) :chart-text)
 
 (plot/render-image (plot/arrange [(assoc iris-plot
                                           :charts [(chart/scatter) (chart/text {:x 6.5 :y 2 :text "an annotation"})]
@@ -304,7 +304,7 @@
 ;; These roles style the labels of builders. The plot below draws larger bold sankey labels and smaller red names on
 ;; a scatter-plot matrix (`plot/pairs` `:diagonal :names`):
 
-(nu/option-cards :theme (describe/theme-rows :text) :builder-text)
+(nu/option-cards [:theme] (describe/theme-rows :text) :builder-text)
 
 (plot/render-image (plot/arrange [(plot/sankey [{:from "in" :to "a" :value 3} {:from "in" :to "b" :value 2}]
                                                {:theme {:text {:sankey-label {:size 12 :font-style :bold}}}})

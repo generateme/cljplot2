@@ -36,6 +36,7 @@ format:
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .shared ul { margin: 0; padding-left: 1.25rem; }
         .shared code { overflow-wrap: anywhere; }
+        p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -54,8 +55,8 @@ code-block-background: true
 
 Five aesthetics style marks from data: `:color`, `:shape`, `:size`, `:dash` and `:pattern`. Each mapped
 aesthetic has a scale (`:scales {:color spec}`) mapping its domain (levels or a numeric range) onto attributes
-(colours, shapes ...), and every scale draws a legend unless told not to. All five share one spec; the colour
-scale uses every key, the others differ only in their `:range`.
+(colours, shapes ...); each scale draws a legend unless its `:legend` is false. All five take one spec: most
+options act on colour and size scales, and shape, dash and pattern scales differ mainly in their `:range`.
 
 
 ::: {.sourceClojure}
@@ -71,6 +72,8 @@ scale uses every key, the others differ only in their `:range`.
 ```
 :::
 
+
+The table below holds the Gapminder countries of 2007; most sections draw them:
 
 Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset `4_ThreeNum` (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).
 
@@ -88,22 +91,86 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 ```
 
 
+The table below holds made-up readings on dates; the first section colours them by date:
+
+
+::: {.sourceClojure}
+```clojure
+(def readings (for [i (range 40)]
+                {:day (.plusDays (LocalDate/of 2024 1 1) (* 9 i)) :x (mod (* i 7) 13) :y (mod (* i 5) 11)}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>2024-01-01</td><td>0</td><td>0</td></tr><tr><td>2024-01-10</td><td>7</td><td>5</td></tr><tr><td>2024-01-19</td><td>1</td><td>10</td></tr><tr><td>2024-01-28</td><td>8</td><td>4</td></tr><tr><td>2024-02-06</td><td>2</td><td>9</td></tr><tr><td>2024-02-15</td><td>9</td><td>3</td></tr><tr><td>2024-02-24</td><td>3</td><td>8</td></tr><tr><td>2024-03-04</td><td>10</td><td>2</td></tr><tr><td>2024-03-13</td><td>4</td><td>7</td></tr><tr><td>2024-03-22</td><td>11</td><td>1</td></tr><tr><td>2024-03-31</td><td>5</td><td>6</td></tr><tr><td>2024-04-09</td><td>12</td><td>0</td></tr><tr><td>2024-04-18</td><td>6</td><td>5</td></tr><tr><td>2024-04-27</td><td>0</td><td>10</td></tr><tr><td>2024-05-06</td><td>7</td><td>4</td></tr><tr><td>2024-05-15</td><td>1</td><td>9</td></tr><tr><td>2024-05-24</td><td>8</td><td>3</td></tr><tr><td>2024-06-02</td><td>2</td><td>8</td></tr><tr><td>2024-06-11</td><td>9</td><td>2</td></tr><tr><td>2024-06-20</td><td>3</td><td>7</td></tr><tr><td>2024-06-29</td><td>10</td><td>1</td></tr><tr><td>2024-07-08</td><td>4</td><td>6</td></tr><tr><td>2024-07-17</td><td>11</td><td>0</td></tr><tr><td>2024-07-26</td><td>5</td><td>5</td></tr><tr><td>2024-08-04</td><td>12</td><td>10</td></tr><tr><td>2024-08-13</td><td>6</td><td>4</td></tr><tr><td>2024-08-22</td><td>0</td><td>9</td></tr><tr><td>2024-08-31</td><td>7</td><td>3</td></tr><tr><td>2024-09-09</td><td>1</td><td>8</td></tr><tr><td>2024-09-18</td><td>8</td><td>2</td></tr><tr><td>2024-09-27</td><td>2</td><td>7</td></tr><tr><td>2024-10-06</td><td>9</td><td>1</td></tr><tr><td>2024-10-15</td><td>3</td><td>6</td></tr><tr><td>2024-10-24</td><td>10</td><td>0</td></tr><tr><td>2024-11-02</td><td>4</td><td>5</td></tr><tr><td>2024-11-11</td><td>11</td><td>10</td></tr><tr><td>2024-11-20</td><td>5</td><td>4</td></tr><tr><td>2024-11-29</td><td>12</td><td>9</td></tr><tr><td>2024-12-08</td><td>6</td><td>3</td></tr><tr><td>2024-12-17</td><td>0</td><td>8</td></tr></tbody></table></div>
+```
+
+
+The table below holds the values 1 to 20 and their tenths; the sections on placing values and on sizes draw them:
+
+
+::: {.sourceClojure}
+```clojure
+(def ramp (for [i (range 1 21)] {:i i :tenth (* 0.1 i) :row "value"}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>i</th><th>tenth</th><th>row</th></tr></thead><tbody><tr><td>1</td><td>0.1</td><td>value</td></tr><tr><td>2</td><td>0.2</td><td>value</td></tr><tr><td>3</td><td>0.30000000000000004</td><td>value</td></tr><tr><td>4</td><td>0.4</td><td>value</td></tr><tr><td>5</td><td>0.5</td><td>value</td></tr><tr><td>6</td><td>0.6000000000000001</td><td>value</td></tr><tr><td>7</td><td>0.7000000000000001</td><td>value</td></tr><tr><td>8</td><td>0.8</td><td>value</td></tr><tr><td>9</td><td>0.9</td><td>value</td></tr><tr><td>10</td><td>1.0</td><td>value</td></tr><tr><td>11</td><td>1.1</td><td>value</td></tr><tr><td>12</td><td>1.2000000000000002</td><td>value</td></tr><tr><td>13</td><td>1.3</td><td>value</td></tr><tr><td>14</td><td>1.4000000000000001</td><td>value</td></tr><tr><td>15</td><td>1.5</td><td>value</td></tr><tr><td>16</td><td>1.6</td><td>value</td></tr><tr><td>17</td><td>1.7000000000000002</td><td>value</td></tr><tr><td>18</td><td>1.8</td><td>value</td></tr><tr><td>19</td><td>1.9000000000000001</td><td>value</td></tr><tr><td>20</td><td>2.0</td><td>value</td></tr></tbody></table></div>
+```
+
+
+The table below holds the mtcars cars; the legend section draws them:
+
+Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def mtcars (nu/dataset :mtcars))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Toyota Corona</td><td>21.5</td><td>4</td><td>120.1</td><td>97</td><td>3.7</td><td>2.465</td><td>20.01</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Dodge Challenger</td><td>15.5</td><td>8</td><td>318</td><td>150</td><td>2.76</td><td>3.52</td><td>16.87</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>AMC Javelin</td><td>15.2</td><td>8</td><td>304</td><td>150</td><td>3.15</td><td>3.435</td><td>17.3</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Camaro Z28</td><td>13.3</td><td>8</td><td>350</td><td>245</td><td>3.73</td><td>3.84</td><td>15.41</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Pontiac Firebird</td><td>19.2</td><td>8</td><td>400</td><td>175</td><td>3.08</td><td>3.845</td><td>17.05</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Fiat X1-9</td><td>27.3</td><td>4</td><td>79</td><td>66</td><td>4.08</td><td>1.935</td><td>18.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Porsche 914-2</td><td>26</td><td>4</td><td>120.3</td><td>91</td><td>4.43</td><td>2.14</td><td>16.7</td><td>0</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Lotus Europa</td><td>30.4</td><td>4</td><td>95.1</td><td>113</td><td>3.77</td><td>1.513</td><td>16.9</td><td>1</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Ford Pantera L</td><td>15.8</td><td>8</td><td>351</td><td>264</td><td>4.22</td><td>3.17</td><td>14.5</td><td>0</td><td>1</td><td>5</td><td>4</td></tr><tr><td>Ferrari Dino</td><td>19.7</td><td>6</td><td>145</td><td>175</td><td>3.62</td><td>2.77</td><td>15.5</td><td>0</td><td>1</td><td>5</td><td>6</td></tr><tr><td>Maserati Bora</td><td>15</td><td>8</td><td>301</td><td>335</td><td>3.54</td><td>3.57</td><td>14.6</td><td>0</td><td>1</td><td>5</td><td>8</td></tr><tr><td>Volvo 142E</td><td>21.4</td><td>4</td><td>121</td><td>109</td><td>4.11</td><td>2.78</td><td>18.6</td><td>1</td><td>1</td><td>4</td><td>2</td></tr></tbody></table></div>
+```
+
+
+The table below holds three made-up groups of points; the shape and dash sections draw them:
+
+
+::: {.sourceClojure}
+```clojure
+(def groups (for [[gi g] (map-indexed vector ["a" "b" "c"]) i (range 8)]
+              {:g g :x i :y (+ (* 3 gi) (mod (* i 7) 3))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>1</td></tr><tr><td>a</td><td>2</td><td>2</td></tr><tr><td>a</td><td>3</td><td>0</td></tr><tr><td>a</td><td>4</td><td>1</td></tr><tr><td>a</td><td>5</td><td>2</td></tr><tr><td>a</td><td>6</td><td>0</td></tr><tr><td>a</td><td>7</td><td>1</td></tr><tr><td>b</td><td>0</td><td>3</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>5</td></tr><tr><td>b</td><td>3</td><td>3</td></tr><tr><td>b</td><td>4</td><td>4</td></tr><tr><td>b</td><td>5</td><td>5</td></tr><tr><td>b</td><td>6</td><td>3</td></tr><tr><td>b</td><td>7</td><td>4</td></tr><tr><td>c</td><td>0</td><td>6</td></tr><tr><td>c</td><td>1</td><td>7</td></tr><tr><td>c</td><td>2</td><td>8</td></tr><tr><td>c</td><td>3</td><td>6</td></tr><tr><td>c</td><td>4</td><td>7</td></tr><tr><td>c</td><td>5</td><td>8</td></tr><tr><td>c</td><td>6</td><td>6</td></tr><tr><td>c</td><td>7</td><td>7</td></tr></tbody></table></div>
+```
+
+
 
 ## Levels or numbers
 
-An aesthetic scale has its own kinds - not those of the position scales (`:log`, `:datetime` ... in the
-examples below are the x axis's, Scales chapter). The kind follows the data: levels (strings, keywords) get an
-`:ordinal` scale - one attribute per level, in `:domain` order - numbers a `:linear` one - a gradient or a size
-range; `:binned` cuts numbers into classes; `:type :categorical` treats numbers or dates as levels; `:identity`
-reads the attributes from the data.
+These options set the scale's kind and domain. An aesthetic scale has kinds of its own (`:ordinal`, `:linear`,
+`:binned`, `:identity`); the `:log` kind in the plots below belongs to the x axis
+([Scales, axes and coordinates](reference.scales_axes_coords.html)). The left plot colours the continents in a
+given order, the right one life expectancy on a gradient:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :binned :identity :linear :ordinal</td><td>:linear for numeric :color / :size data, else :ordinal</td><td>scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color or :size by bins) or :identity (values are the attributes)</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (ordinal levels) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value or nil</td><td>the data's levels (sorted) or [min max]</td><td>ordinal: the levels in order; linear / binned: [lo hi] (nil at an end - the data's, e.g. [0 nil])</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:kind</code><span class="option-default">Default: <code>:linear</code> for numbers on <code>:color</code> or <code>:size</code>, dates on <code>:color</code> or a domain of two numbers; else <code>:ordinal</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:kind :binned}}}</code></div><div class="option-text">The scale kind: how the domain maps to attributes.<ul><li><code>:binned</code> – Numbers cut into classes, an attribute each (<code>:color</code>, <code>:size</code>).</li><li><code>:identity</code> – The data's values are the attributes.</li><li><code>:linear</code> – Numbers along a gradient (<code>:color</code>) or a size range (<code>:size</code>).</li><li><code>:ordinal</code> – Levels, one attribute each, in <code>:domain</code> order.</li></ul></div></dd></div><div class="option-card"><dt><code>:type</code><span class="option-default">Default: The data's kind.</span></dt><dd><div class="option-example"><code>{:scales {:color {:type :categorical}}}</code></div><div class="option-text">Declares how the scale reads numbers or dates, overriding the data's kind.<ul><li><code>:categorical</code> – As levels: an ordinal scale.</li><li><code>:numeric</code> – As numbers: a linear scale.</li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The data's levels, sorted, or <code>[min max]</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:domain [0 10]}}}</code></div><div class="option-text">The values the scale maps: the levels in order (ordinal), or <code>[lo hi]</code> (linear, binned; <code>nil</code> at an end takes the data's, e.g. <code>[0 nil]</code>).<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -129,23 +196,8 @@ reads the attributes from the data.
 :::
 
 
-Dates (`java.time` values) mapped to `:color` get a linear gradient over time, the colour bar ticked at dates (a
-`Year` / `YearMonth` reads as the date its period starts, on every scale):
-
-
-::: {.sourceClojure}
-```clojure
-(def readings (for [i (range 40)]
-                {:day (.plusDays (LocalDate/of 2024 1 1) (* 9 i)) :x (mod (* i 7) 13) :y (mod (* i 5) 11)}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>2024-01-01</td><td>0</td><td>0</td></tr><tr><td>2024-01-10</td><td>7</td><td>5</td></tr><tr><td>2024-01-19</td><td>1</td><td>10</td></tr><tr><td>2024-01-28</td><td>8</td><td>4</td></tr><tr><td>2024-02-06</td><td>2</td><td>9</td></tr><tr><td>2024-02-15</td><td>9</td><td>3</td></tr><tr><td>2024-02-24</td><td>3</td><td>8</td></tr><tr><td>2024-03-04</td><td>10</td><td>2</td></tr><tr><td>2024-03-13</td><td>4</td><td>7</td></tr><tr><td>2024-03-22</td><td>11</td><td>1</td></tr><tr><td>2024-03-31</td><td>5</td><td>6</td></tr><tr><td>2024-04-09</td><td>12</td><td>0</td></tr><tr><td>2024-04-18</td><td>6</td><td>5</td></tr><tr><td>2024-04-27</td><td>0</td><td>10</td></tr><tr><td>2024-05-06</td><td>7</td><td>4</td></tr><tr><td>2024-05-15</td><td>1</td><td>9</td></tr><tr><td>2024-05-24</td><td>8</td><td>3</td></tr><tr><td>2024-06-02</td><td>2</td><td>8</td></tr><tr><td>2024-06-11</td><td>9</td><td>2</td></tr><tr><td>2024-06-20</td><td>3</td><td>7</td></tr><tr><td>2024-06-29</td><td>10</td><td>1</td></tr><tr><td>2024-07-08</td><td>4</td><td>6</td></tr><tr><td>2024-07-17</td><td>11</td><td>0</td></tr><tr><td>2024-07-26</td><td>5</td><td>5</td></tr><tr><td>2024-08-04</td><td>12</td><td>10</td></tr><tr><td>2024-08-13</td><td>6</td><td>4</td></tr><tr><td>2024-08-22</td><td>0</td><td>9</td></tr><tr><td>2024-08-31</td><td>7</td><td>3</td></tr><tr><td>2024-09-09</td><td>1</td><td>8</td></tr><tr><td>2024-09-18</td><td>8</td><td>2</td></tr><tr><td>2024-09-27</td><td>2</td><td>7</td></tr><tr><td>2024-10-06</td><td>9</td><td>1</td></tr><tr><td>2024-10-15</td><td>3</td><td>6</td></tr><tr><td>2024-10-24</td><td>10</td><td>0</td></tr><tr><td>2024-11-02</td><td>4</td><td>5</td></tr><tr><td>2024-11-11</td><td>11</td><td>10</td></tr><tr><td>2024-11-20</td><td>5</td><td>4</td></tr><tr><td>2024-11-29</td><td>12</td><td>9</td></tr><tr><td>2024-12-08</td><td>6</td><td>3</td></tr><tr><td>2024-12-17</td><td>0</td><td>8</td></tr></tbody></table></div>
-```
-
+A colour scale maps dates (`java.time` values) linearly onto its gradient and ticks its colour bar at dates. A
+`Year` or `YearMonth` reads as the date its period starts, on every scale:
 
 
 ::: {.sourceClojure}
@@ -186,20 +238,16 @@ Its `:ticks` take dates, and `:formatter` gets ticks in the data's type (here `L
 
 ## Colour range
 
-The attributes the domain maps to: a sequence of colours, a level → colour map, or a clojure2d palette or
-gradient name - 7339 palettes and 5009 gradients. Without `:range` the theme `:palette` supplies it.
+This option sets the colours. clojure2d names 7339 palettes and 5009 gradients:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range</td><td>map of any value to a clojure2d color or a function or a palette or gradient name, or a non-empty sequence of colors</td><td>theme :palette</td><td>attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range</code><span class="option-default">Default: The theme's <code>:palette</code> entry of the dimension; <code>:gradient</code> for a linear or binned colour scale.</span></dt><dd><div class="option-example"><code>{:scales {:color {:range [:gold :darkred]}}}</code></div><div class="option-text">The colours the domain maps to.<ul><li><span>map of any value to solid colour</span> – A level -> colour map, for an ordinal scale.</li><li><a href="reference.types.html#function">function</a> – A function of <code>t</code> from 0 to 1 that returns a colour: a gradient.</li><li><a href="reference.types.html#colour-range">colour range</a> – One colour per level, or a gradient through the colours for numbers.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 Search palettes and gradients by name with `plot/find-palette` and `plot/find-gradient` (a regular expression,
-or a namespace and one); `plot/palette` gives a palette's colours, `plot/gradient` a gradient function:
+or a namespace and one); `plot/palette` returns a palette's colours, `plot/gradient` a gradient function:
 
 
 ::: {.sourceClojure}
@@ -225,8 +273,8 @@ or a namespace and one); `plot/palette` gives a palette's colours, `plot/gradien
 :::
 
 
-Swatches of a few palettes, a [tile](reference.charts_bins_fields.html#heatmaps) per colour (an `:identity` colour
-scale reads the colours from the data):
+The plot below draws a few palettes, a [tile](reference.charts_bins_fields.html#heatmaps) per colour; an `:identity`
+colour scale reads the colours from the data:
 
 
 ::: {.sourceClojure}
@@ -270,7 +318,7 @@ scale reads the colours from the data):
 :::
 
 
-Gradients, each sampled at 32 points (tiles without outlines, `:stroke-color :none` -
+The plot below samples the viridis gradients at 32 points and draws tiles without outlines (`:stroke-color :none` -
 [Cell style](reference.shared_options.html#cell-style)):
 
 
@@ -320,16 +368,13 @@ Gradients, each sampled at 32 points (tiles without outlines, `:stroke-color :no
 
 ## Placing values on the range
 
-How values spread over the attributes: a diverging gradient around `:midpoint`, values placed by a transform,
-the range reversed, size by area.
+These options set how values spread over the attributes. The plots below centre a diverging gradient on 65
+(left) and place the population by its logarithm on a reversed gradient (right):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:spread</td><td>true or false</td><td>false</td><td>ordinal :color: the range resampled to one colour per level (meant for a sequential :range - a categorical palette resamples into blends)</td></tr><tr><td>:midpoint</td><td>a finite number</td><td></td><td>linear / binned :color: the value at the gradient's middle (a diverging scale)</td></tr><tr><td>:transform</td><td>one of :exp :log :sq :sqrt or a function</td><td></td><td>linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function</td></tr><tr><td>:reverse</td><td>true or false</td><td>false</td><td>the attributes in reverse order</td></tr><tr><td>:area</td><td>true or false</td><td>false</td><td>:size: the mark's area, not its size, grows linearly with the value</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:spread</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:range [:gold :darkred], :spread true}}}</code></div><div class="option-text">Whether an ordinal colour scale spreads its levels over the whole <code>:range</code>, for a sequential range; with a categorical palette the levels get blends of its colours.<ul><li><code>false</code> – The range's colours in order.</li><li><code>true</code> – One colour per level, spread over the range.</li></ul></div></dd></div><div class="option-card"><dt><code>:midpoint</code><span class="option-default">Default: None: the gradient spans the domain evenly.</span></dt><dd><div class="option-example"><code>{:scales {:color {:midpoint 1.0}}}</code></div><div class="option-text">The value a linear or binned colour scale puts at the gradient's middle, making it diverging.<ul><li><a href="reference.types.html#finite-number">finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:transform</code><span class="option-default">Default: None: evenly.</span></dt><dd><div class="option-example"><code>{:scales {:color {:transform :sq}}}</code></div><div class="option-text">How a linear colour scale places values along its gradient.<ul><li><code>:exp</code> – By their exponential.</li><li><code>:log</code> – By their logarithm.</li><li><code>:sq</code> – By their square.</li><li><code>:sqrt</code> – By their square root.</li><li><a href="reference.types.html#function">function</a> – By a function of the value, monotonic over the domain and finite at its ends.</li></ul></div></dd></div><div class="option-card"><dt><code>:reverse</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:reverse true}}}</code></div><div class="option-text">Whether the attributes run in reverse order.<ul><li><code>false</code> – In order.</li><li><code>true</code> – Reversed.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -358,23 +403,8 @@ the range reversed, size by area.
 :::
 
 
-`:transform` places values along the gradient by `:sqrt`, `:log`, `:sq`, `:exp` or a function of the value; the
-function must be monotonic over the domain (the colour bar inverts it numerically) and finite at its ends. The
-values 1 to 20 under each (`:exp` - the values 0.1 to 2, the exponential of 20 dwarfs everything):
-
-
-::: {.sourceClojure}
-```clojure
-(def ramp (for [i (range 1 21)] {:i i :tenth (* 0.1 i) :row "value"}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>i</th><th>tenth</th><th>row</th></tr></thead><tbody><tr><td>1</td><td>0.1</td><td>value</td></tr><tr><td>2</td><td>0.2</td><td>value</td></tr><tr><td>3</td><td>0.30000000000000004</td><td>value</td></tr><tr><td>4</td><td>0.4</td><td>value</td></tr><tr><td>5</td><td>0.5</td><td>value</td></tr><tr><td>6</td><td>0.6000000000000001</td><td>value</td></tr><tr><td>7</td><td>0.7000000000000001</td><td>value</td></tr><tr><td>8</td><td>0.8</td><td>value</td></tr><tr><td>9</td><td>0.9</td><td>value</td></tr><tr><td>10</td><td>1.0</td><td>value</td></tr><tr><td>11</td><td>1.1</td><td>value</td></tr><tr><td>12</td><td>1.2000000000000002</td><td>value</td></tr><tr><td>13</td><td>1.3</td><td>value</td></tr><tr><td>14</td><td>1.4000000000000001</td><td>value</td></tr><tr><td>15</td><td>1.5</td><td>value</td></tr><tr><td>16</td><td>1.6</td><td>value</td></tr><tr><td>17</td><td>1.7000000000000002</td><td>value</td></tr><tr><td>18</td><td>1.8</td><td>value</td></tr><tr><td>19</td><td>1.9000000000000001</td><td>value</td></tr><tr><td>20</td><td>2.0</td><td>value</td></tr></tbody></table></div>
-```
-
+The colour bar inverts a `:transform` function numerically. The plots below colour the values 1 to 20 under each
+transform (`:exp` the values 0.1 to 2, since the exponential of 20 dwarfs everything):
 
 
 ::: {.sourceClojure}
@@ -397,42 +427,16 @@ values 1 to 20 under each (`:exp` - the values 0.1 to 2, the exponential of 20 d
 :::
 
 
-`:area true` grows a size scale's marks by area, not diameter - the right one reads as proportional:
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image (plot/arrange (for [area [false true]]
-                                   {:data ramp
-                                    :mapping {:x :i :y :row :size :i}
-                                    :charts [(chart/scatter)]
-                                    :scales {:size {:range [2 26] :area area :legend false}}
-                                    :labels {:title (str ":area " area) :y nil}})
-                                 {:columns 2})
-                   {:width 900 :height 200})
-```
-:::
-
-
-::: {.clay-image}
-![](reference.aesthetics_legends_files/image7.png)
-:::
-
-
 
 ## Bins
 
-A `:binned` colour scale cuts numbers into classes and draws a key per class. `:bins` takes a count of equal
-bins, the breaks themselves, a binning method (`:sturges`, `:sqrt`, `:rice`, `:doane`, `:scott` ...) or quantile
-bins:
+This option sets the classes of a `:binned` scale, which draws a colour-bar block or a legend key per class. The
+plots below bin life expectancy four ways:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>a fastmath bin-estimation method keyword or a vector of at least 2 increasing finite numbers or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>5 equal bins</td><td>binned :color / :size: a bin count, breaks, a bin method or quantile bins</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: Five equal-width classes.</span></dt><dd><div class="option-example"><code>{:scales {:color {:kind :binned, :bins 3}}}</code></div><div class="option-text">The classes of a binned colour or size scale.<ul><li><code>:sturges</code> – <code>ceil(log2(n)) + 1</code> bins; suits roughly normal samples but gives too few bins for large ones.</li><li><code>:sqrt</code> – <code>ceil(sqrt(n))</code> bins.</li><li><code>:rice</code> – <code>ceil(2 * cbrt(n))</code> bins.</li><li><code>:doane</code> – Sturges' rule corrected for skewed samples.</li><li><code>:scott</code> – Bins of width <code>3.5 * sd / cbrt(n)</code>, <code>sd</code> the standard deviation; suits roughly normal samples.</li><li><code>:freedman-diaconis</code> – Bins of width <code>2 * IQR / cbrt(n)</code>, <code>IQR</code> the interquartile range; robust to outliers.</li><li class="option-other">Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error. <code>:terrell-scott</code>, <code>:cross-validation</code>, <code>:shimazaki-shinomoto</code></li><li><a href="reference.types.html#breaks">breaks</a> – The class edges.</li><li><a href="reference.types.html#quantile-bins">quantile bins</a> – Classes holding equal shares of the values.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – That many equal-width classes over the domain.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -453,13 +457,13 @@ bins:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image8.png)
+![](reference.aesthetics_legends_files/image7.png)
 :::
 
 
-A `:binned` size scale takes the same `:bins`: one size per class - class `i` of `n` at `(i + 1) / n` of `:range`
-(in area with `:area`), so the largest class gets the range's maximum and the first one stays visible with
-`:range [0 m]` - and a legend entry per class labelled by its breaks:
+A `:binned` size scale takes the same `:bins` and draws a legend entry per class, labelled by its breaks. Class `i`
+of `n` gets `(i + 1) / n` of the `:range` (of its area with `:area`), so the largest class gets the range's maximum
+and the first stays visible with `:range [0 m]`:
 
 
 ::: {.sourceClojure}
@@ -476,26 +480,21 @@ A `:binned` size scale takes the same `:bins`: one size per class - class `i` of
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image9.png)
+![](reference.aesthetics_legends_files/image8.png)
 :::
 
 
 
 ## Legend
 
-One legend per mapped aesthetic, titled by the mapped column's name: `:title` renames it, `:formatter` writes its
-labels, `:ticks` picks the entries of a numeric scale (`:integer-ticks` keeps counted ones at whole numbers),
-`:legend false` hides it (the plot's `:legend false` hides
-them all). Aesthetics mapped to the same column with equal levels share one legend. Legends sit right of the
-panels; their sizes and frame are in the theme `:legend` section (Theme chapter).
+These options set the scale's legend. Aesthetics mapped to the same column with equal levels share one legend; the
+plot's `:legend false` hides all of them. Legends sit right of the panels; the [theme](reference.theme.html#legend)
+sets their sizes and box. The plot below renames the size legend and picks its entries:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:formatter</td><td>a function</td><td></td><td>legend labels, a function of the level or value</td></tr><tr><td>:ticks</td><td>sequential of a finite number or a java.time value or a positive integer or nil</td><td></td><td>linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)</td></tr><tr><td>:integer-ticks</td><td>true or false</td><td>false</td><td>linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector or :midpoint tick is drawn as given)</td></tr><tr><td>:title</td><td>a string, plot/math or plot/runs or nil</td><td>the mapped column's name</td><td>legend title, a string or a plot/math or plot/runs value (nil - none)</td></tr><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>show the scale's legend</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:formatter</code><span class="option-default">Default: The levels or values as text.</span></dt><dd><div class="option-example"><code>{:scales {:color {:formatter (fn [v] (str v "!"))}}}</code></div><div class="option-text">A function of the level or value that returns its legend label.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks</code><span class="option-default">Default: About five: the theme's <code>[:legend :bar-ticks]</code> for a colour bar, five for a size legend.</span></dt><dd><div class="option-example"><code>{:scales {:color {:ticks 2}}}</code></div><div class="option-text">The legend entries or colour bar ticks of a linear size or colour scale.<ul><li><span>sequence of (finite number or date or time)</span> – These values (dates for a colour scale over dates).</li><li><a href="reference.types.html#positive-integer">positive integer</a> – About this many.</li></ul></div></dd></div><div class="option-card"><dt><code>:integer-ticks</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:integer-ticks true}}}</code></div><div class="option-text">Whether counted legend entries or colour bar ticks of a linear size or colour scale fall only on whole numbers; an explicit <code>:ticks</code> vector or a <code>:midpoint</code> tick is drawn as given.<ul><li><code>false</code> – Any counted values.</li><li><code>true</code> – Whole numbers only.</li></ul></div></dd></div><div class="option-card"><dt><code>:title</code><span class="option-default">Default: The name of a keyword accessor; none for a function.</span></dt><dd><div class="option-example"><code>{:scales {:color {:title "level"}}}</code></div><div class="option-text">The legend title; <code>nil</code> draws none.<ul><li><span>string</span> – This text.</li><li><span>formula value</span> – A <code>plot/math</code> or <code>plot/runs</code> value: text with formulas.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:legend false}}}</code></div><div class="option-text">Whether the scale draws its legend.<ul><li><code>true</code> – Drawn.</li><li><code>false</code> – Hidden.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -514,7 +513,7 @@ panels; their sizes and frame are in the theme `:legend` section (Theme chapter)
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image10.png)
+![](reference.aesthetics_legends_files/image9.png)
 :::
 
 
@@ -534,29 +533,13 @@ A colour bar takes `:ticks` and `:formatter` too:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image11.png)
+![](reference.aesthetics_legends_files/image10.png)
 :::
 
 
-Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
-
-
-::: {.sourceClojure}
-```clojure
-(def mtcars (nu/dataset :mtcars))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Toyota Corona</td><td>21.5</td><td>4</td><td>120.1</td><td>97</td><td>3.7</td><td>2.465</td><td>20.01</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Dodge Challenger</td><td>15.5</td><td>8</td><td>318</td><td>150</td><td>2.76</td><td>3.52</td><td>16.87</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>AMC Javelin</td><td>15.2</td><td>8</td><td>304</td><td>150</td><td>3.15</td><td>3.435</td><td>17.3</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Camaro Z28</td><td>13.3</td><td>8</td><td>350</td><td>245</td><td>3.73</td><td>3.84</td><td>15.41</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Pontiac Firebird</td><td>19.2</td><td>8</td><td>400</td><td>175</td><td>3.08</td><td>3.845</td><td>17.05</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Fiat X1-9</td><td>27.3</td><td>4</td><td>79</td><td>66</td><td>4.08</td><td>1.935</td><td>18.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Porsche 914-2</td><td>26</td><td>4</td><td>120.3</td><td>91</td><td>4.43</td><td>2.14</td><td>16.7</td><td>0</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Lotus Europa</td><td>30.4</td><td>4</td><td>95.1</td><td>113</td><td>3.77</td><td>1.513</td><td>16.9</td><td>1</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Ford Pantera L</td><td>15.8</td><td>8</td><td>351</td><td>264</td><td>4.22</td><td>3.17</td><td>14.5</td><td>0</td><td>1</td><td>5</td><td>4</td></tr><tr><td>Ferrari Dino</td><td>19.7</td><td>6</td><td>145</td><td>175</td><td>3.62</td><td>2.77</td><td>15.5</td><td>0</td><td>1</td><td>5</td><td>6</td></tr><tr><td>Maserati Bora</td><td>15</td><td>8</td><td>301</td><td>335</td><td>3.54</td><td>3.57</td><td>14.6</td><td>0</td><td>1</td><td>5</td><td>8</td></tr><tr><td>Volvo 142E</td><td>21.4</td><td>4</td><td>121</td><td>109</td><td>4.11</td><td>2.78</td><td>18.6</td><td>1</td><td>1</td><td>4</td><td>2</td></tr></tbody></table></div>
-```
-
-
-Whole-number data over a short range - here 3 to 5 gears (size) and the 0 / 1 engine shape `vs` (colour) - gets
-fractional counted entries (left); `:integer-ticks true` keeps only whole ones, on a size legend and a colour bar
-alike (right):
+Counted entries of whole-number data over a short range fall on fractions (left): here 3 to 5 gears (size) and the
+0 / 1 engine shape `vs` (colour). `:integer-ticks true` keeps only whole ones, on a size legend and a colour bar alike
+(right):
 
 
 ::: {.sourceClojure}
@@ -578,27 +561,24 @@ alike (right):
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image12.png)
+![](reference.aesthetics_legends_files/image11.png)
 :::
 
 
 
 ## Shape
 
-Point shapes: characters - filled and outlined circles, squares, triangles, strokes, plus and cross - or shape
-maps (an SVG path, a text, an SVG file, an image).
+This option sets the point shapes: characters - filled and outlined circles, squares, triangles, strokes, plus and
+cross - or shape maps (an SVG path, a text, an SVG file, an image).
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range</td><td>map of any value to a shape character or shape map or sequential of a shape character or shape map (at least 1)</td><td>theme :palette</td><td>attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range</code><span class="option-default">Default: The theme's <code>:palette</code> entry of the dimension; <code>:gradient</code> for a linear or binned colour scale.</span></dt><dd><div class="option-example"><code>{:scales {:shape {:range [\s \A \V]}}}</code></div><div class="option-text">The point shapes the levels map to.<ul><li><span>map of any value to point shape</span> – A level -> shape map, for an ordinal scale.</li><li><span>sequence of point shapes</span> – These shapes, one per level in order, repeated past their count.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-Every built-in shape (`describe/attribute-values` lists the built-in shapes, dashes, patterns and cells; an
-`:identity` scale draws the data's shapes):
+The plot below draws every built-in shape (`describe/attribute-values` lists them with the built-in dashes,
+patterns and cells); an `:identity` scale reads the shapes from the data:
 
 
 ::: {.sourceClojure}
@@ -628,26 +608,11 @@ Every built-in shape (`describe/attribute-values` lists the built-in shapes, das
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image13.png)
+![](reference.aesthetics_legends_files/image12.png)
 :::
 
 
-A shape range of characters and shape maps:
-
-
-::: {.sourceClojure}
-```clojure
-(def groups (for [[gi g] (map-indexed vector ["a" "b" "c"]) i (range 8)]
-              {:g g :x i :y (+ (* 3 gi) (mod (* i 7) 3))}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>x</th><th>y</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>0</td></tr><tr><td>a</td><td>1</td><td>1</td></tr><tr><td>a</td><td>2</td><td>2</td></tr><tr><td>a</td><td>3</td><td>0</td></tr><tr><td>a</td><td>4</td><td>1</td></tr><tr><td>a</td><td>5</td><td>2</td></tr><tr><td>a</td><td>6</td><td>0</td></tr><tr><td>a</td><td>7</td><td>1</td></tr><tr><td>b</td><td>0</td><td>3</td></tr><tr><td>b</td><td>1</td><td>4</td></tr><tr><td>b</td><td>2</td><td>5</td></tr><tr><td>b</td><td>3</td><td>3</td></tr><tr><td>b</td><td>4</td><td>4</td></tr><tr><td>b</td><td>5</td><td>5</td></tr><tr><td>b</td><td>6</td><td>3</td></tr><tr><td>b</td><td>7</td><td>4</td></tr><tr><td>c</td><td>0</td><td>6</td></tr><tr><td>c</td><td>1</td><td>7</td></tr><tr><td>c</td><td>2</td><td>8</td></tr><tr><td>c</td><td>3</td><td>6</td></tr><tr><td>c</td><td>4</td><td>7</td></tr><tr><td>c</td><td>5</td><td>8</td></tr><tr><td>c</td><td>6</td><td>6</td></tr><tr><td>c</td><td>7</td><td>7</td></tr></tbody></table></div>
-```
-
+The plot below takes a shape range of characters and shape maps:
 
 
 ::: {.sourceClojure}
@@ -662,22 +627,19 @@ A shape range of characters and shape maps:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image14.png)
+![](reference.aesthetics_legends_files/image13.png)
 :::
 
 
 
 ## Size
 
-Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
+This option sets the sizes. The plot below grows population bubbles by area from 4 to 50 pixels:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range</td><td>map of any value to a non-negative number or [min max], non-negative numbers, min <= max</td><td>theme :palette</td><td>attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range</code><span class="option-default">Default: The theme's <code>:palette</code> entry of the dimension; <code>:gradient</code> for a linear or binned colour scale.</span></dt><dd><div class="option-example"><code>{:scales {:size {:range [1 20]}}}</code></div><div class="option-text">The sizes in pixels the domain maps to.<ul><li><span>map of any value to non-negative number</span> – A level -> size map, for an ordinal scale.</li><li><a href="reference.types.html#size-range">size range</a> – The smallest and the largest size.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -694,6 +656,36 @@ Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
 
 
 ::: {.clay-image}
+![](reference.aesthetics_legends_files/image14.png)
+:::
+
+
+This option sets how a size scale's marks grow:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:area</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:size {:area true}}}</code></div><div class="option-text">Whether a size scale grows the mark's area, not its diameter, linearly with the value.<ul><li><code>false</code> – By diameter.</li><li><code>true</code> – By area.</li></ul></div></dd></div></dl>
+```
+
+
+The left plot grows sizes by diameter, the right one by area; only the right one reads as proportional:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [area [false true]]
+                                   {:data ramp
+                                    :mapping {:x :i :y :row :size :i}
+                                    :charts [(chart/scatter)]
+                                    :scales {:size {:range [2 26] :area area :legend false}}
+                                    :labels {:title (str ":area " area) :y nil}})
+                                 {:columns 2})
+                   {:width 900 :height 200})
+```
+:::
+
+
+::: {.clay-image}
 ![](reference.aesthetics_legends_files/image15.png)
 :::
 
@@ -701,19 +693,16 @@ Sizes `[min max]` in pixels for numbers (a level map or a list for levels).
 
 ## Dash
 
-Line dashes: a named style or a dash array - lengths in pixels of a dash, a gap, a dash, ... repeated along the
-line.
+This option sets the line dashes: named styles or dash arrays, the lengths in pixels of a dash, a gap, a dash ...
+repeated along the line.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range</td><td>map of any value to :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or sequential of :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers (at least 1)</td><td>theme :palette</td><td>attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range</code><span class="option-default">Default: The theme's <code>:palette</code> entry of the dimension; <code>:gradient</code> for a linear or binned colour scale.</span></dt><dd><div class="option-example"><code>{:scales {:dash {:range [:solid :dotted]}}}</code></div><div class="option-text">The dash styles the levels map to.<ul><li><span>map of any value to dash</span> – A level -> dash map, for an ordinal scale.</li><li><span>sequence of dashes</span> – These dashes, one per level in order, repeated past their count.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-Every named style, and two dash arrays (an `:identity` scale draws the data's dashes; the names are a
+The plot below draws every named style and two dash arrays (an `:identity` scale draws the data's dashes; the names are a
 [text](reference.charts_annotations.html#text-labels) chart anchored right of its point and moved left by `:offset`):
 
 
@@ -753,7 +742,7 @@ Every named style, and two dash arrays (an `:identity` scale draws the data's da
 :::
 
 
-A dash range by group:
+The plot below takes a dash range by group:
 
 
 ::: {.sourceClojure}
@@ -775,19 +764,16 @@ A dash range by group:
 
 ## Pattern
 
-Fill patterns of areas and bars: a named pattern or your own as a pattern map - lines or crosses
+This option sets the fill patterns of areas and bars: named patterns or pattern maps - lines or crosses
 `{:kind :lines :angle a :spacing s :width w}` (`a` 0, 45, 90 or 135) or dots `{:kind :dots :spacing s :size d}`.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range</td><td>map of any value to a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map or sequential of a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map (at least 1)</td><td>theme :palette</td><td>attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range</code><span class="option-default">Default: The theme's <code>:palette</code> entry of the dimension; <code>:gradient</code> for a linear or binned colour scale.</span></dt><dd><div class="option-example"><code>{:scales {:pattern {:range [:dots :cross]}}}</code></div><div class="option-text">The fill patterns the levels map to.<ul><li><span>map of any value to fill pattern</span> – A level -> pattern map, for an ordinal scale.</li><li><span>sequence of fill patterns</span> – These patterns, one per level in order, repeated past their count.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-Every named pattern and two pattern maps (white bars outlined in black, the pattern in black -
+The plot below fills bars with every named pattern and two pattern maps (white bars outlined in black, the pattern in black -
 [Fill patterns](reference.shared_options.html#fill-patterns)):
 
 

@@ -107,8 +107,8 @@
   'notebook-utils/option-cards)
 
 (def ^:private table-heads
-  "Calls showing option rows: options tables, option cards and mapping lists."
-  #{options-table option-cards 'notebook-utils/mapping-list})
+  "Calls showing option rows: options tables, option cards and mapping lists (a chart's, the plot's)."
+  #{options-table option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
 
 (defn- table-call?
   "Tests whether `form` is a call showing option rows (see [[table-heads]])."
@@ -216,11 +216,12 @@
           {} (table-calls)))
 
 (deftest aesthetic-scale-tables-test
-  (testing "the colour scale spec: every section; the other dimensions: their :range (the rest is the colour's)"
+  (testing "the colour scale spec: every section but the size-only one; size: its :range and :size; the other dimensions: their :range (the rest is the colour's)"
     (let [shown (dim-sections)]
       (is (= (set aesthetic/dims) (set (keys shown))))
-      (is (= (set (keep :section (describe/options (aesthetic/scale-spec-schema :color)))) (shown :color)))
-      (doseq [dim (remove #{:color} aesthetic/dims)]
+      (is (= (disj (set (keep :section (describe/options (aesthetic/scale-spec-schema :color)))) :size) (shown :color)))
+      (is (= #{:range :size} (shown :size)))
+      (doseq [dim (remove #{:color :size} aesthetic/dims)]
         (is (= #{:range} (shown dim)) dim)))))
 
 (defn- aesthetic-rows-form?
@@ -306,7 +307,7 @@
   "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs,
   data tables, option tables and shared group lists."
   #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table
-    'notebook-utils/shared-groups options-table option-cards 'notebook-utils/mapping-list})
+    'notebook-utils/shared-groups options-table option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown, also a data table of a

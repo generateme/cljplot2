@@ -373,12 +373,13 @@
 (defn- example-call
   "The example of option `row` of `rows` as code `(call {...})`: its options map (`cljplot2.describe/example-options`,
   nested paths as nested maps, with the options it needs); `call` a symbol (`chart/smooth`) or a list of the function
-  and the arguments before the options (`(plot/network edges)`) - or `:theme`: theme rows, the example a plot key
-  `{:theme {...}}`; `nil` without an example."
+  and the arguments before the options (`(plot/network edges)`) - or a vector, the path of the rows' map in a plot (`[:theme]`,
+  `[:scales :x]`, `[:coord]`; `[]` - plot keys): the example printed as a plot map, e.g. `{:scales {:x {:kind :log}}}`;
+  `nil` without an example."
   [call rows row]
   (when-let [options (describe/example-options rows row)]
-    (if (= :theme call)
-      (printed {:theme options})
+    (if (vector? call)
+      (printed (if (seq call) (assoc-in {} call options) options))
       (str "(" (str/join " " (if (seq? call) call [call])) " " (printed options) ")"))))
 
 (defn- option-card
@@ -398,7 +399,8 @@
   "Option cards of `rows` (from `cljplot2.describe/options`, the chart's or function's own), its code hidden: per
   option a boxed card - a header (the option and its default), an example call of `call` (a symbol, e.g.
   `chart/smooth`, or a list of a builder or function and its arguments before the options, e.g.
-  `(plot/network edges)`; `:theme` for theme rows - the example as the plot key `{:theme {...}}`), then its description, a bullet per value or form with its meaning and the values without one on
+  `(plot/network edges)`; a vector - the rows' path in a plot, e.g. `[:theme]` or `[:scales :x]`, the example printed as a
+  plot map), then its description, a bullet per value or form with its meaning and the values without one on
   one line (styles in `clay.edn`). With `section`
   only the rows of that slice (see [[options-table]]).
   Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."
@@ -426,17 +428,32 @@
                                     (concat (extra row) [" – "] (rich-text description)))))
                        rows)])))
 
+(defn- mapping-box
+  "The Mapping box of mapping `rows` (only those of `section` when given) under a hint naming who reads the row values,
+  `reader-phrase` (with the verb: `the chart reads`), its code hidden: each key, `required` when needed, and its description. Throws `ex-info {:key :rows}` for no
+  rows (none in the section)."
+  [reader-phrase rows section]
+  (let [shown (cond->> rows section (filter #(= section (:section %))))]
+    (when (empty? shown)
+      (throw (ex-info "A mapping list needs rows." {:key :rows :value rows :section section})))
+    (key-box "Mapping" [[:span {:class "mapping-hint"} (str " – the row values " reader-phrase ", under ") [:code ":mapping"]]] shown
+             (fn [{:keys [required]}] (when required [" " [:span {:class "required"} "required"]])))))
+
 (defn mapping-list
   "The mapping keys of a chart in a titled box, its code hidden: each key, `required` when the chart needs it, and its
   description. `rows` - `cljplot2.describe/mapping` of the chart; `section` (optional) - only the rows of that
   `:cljplot2/section`. Throws `ex-info {:key :rows}` for no rows (none in the section)."
   ([rows] (mapping-list rows nil))
-  ([rows section]
-   (let [shown (cond->> rows section (filter #(= section (:section %))))]
-     (when (empty? shown)
-       (throw (ex-info "A mapping list needs rows." {:key :rows :value rows :section section})))
-     (key-box "Mapping" [[:span {:class "mapping-hint"} " – the row values the chart reads, under " [:code ":mapping"]]] shown
-              (fn [{:keys [required]}] (when required [" " [:span {:class "required"} "required"]]))))))
+  ([rows section] (mapping-box "the chart reads" rows section)))
+
+(defn plot-mapping-list
+  "The plot's mapping keys of one section in a titled box, its code hidden (as [[mapping-list]], the values read by
+  charts). `rows` - `cljplot2.describe/options` of the mapping schema; `section` - a `:cljplot2/section` of it. Throws
+  `ex-info {:key :rows}` for a section without rows."
+  [rows section]
+  (when (nil? section)
+    (throw (ex-info "A plot mapping list needs a section." {:key :section :value section})))
+  (mapping-box "charts read" rows section))
 
 (defn- keyed-items
   "Hiccup list items of `entries` - key -> meaning: a keyword key as code, a string key (a column the options name) as

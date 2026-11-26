@@ -36,6 +36,7 @@ format:
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .shared ul { margin: 0; padding-left: 1.25rem; }
         .shared code { overflow-wrap: anywhere; }
+        p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -127,7 +128,7 @@ The rows, how their values map to dimensions, and the charts drawing them (Data 
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td></td><td>rows (a sequence of maps) or columns (a map of sequences) the charts read</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>accessors of the dimensions the charts read (keywords or functions), merged under each chart's</td></tr><tr><td>:charts</td><td>vector of a chart value (see cljplot2.chart) or nil</td><td></td><td>the charts, drawn in order</td></tr><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>None: each chart brings its own `:data`.</td><td>The rows or columns the charts read; a chart's own `:data` wins over it.</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>accessors of the dimensions the charts read (keywords or functions), merged under each chart's</td></tr><tr><td>:charts</td><td>vector of a chart value (see cljplot2.chart) or nil</td><td></td><td>the charts, drawn in order</td></tr><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr></tbody></table>
 ```
 
 :::
@@ -240,7 +241,7 @@ Cartesian (optionally flipped or with equal units) or polar (Scales chapter).
 ::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:aspect</td><td>one of :iso or nil</td><td></td><td>:iso - equal pixels per data unit on x and y (linear scales)</td></tr><tr><td>:flip</td><td>true or false or nil</td><td>false</td><td>draw the :x scale vertically and :y horizontally</td></tr><tr><td>:coord</td><td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td><td>cartesian</td><td>coordinate system: cartesian or polar</td></tr></tbody></table>
+<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:aspect</td><td>one of :iso or nil</td><td>Free: the panel takes the space it gets.</td><td>The ratio of the panel's axes in data units.</td></tr><tr><td>:flip</td><td>true or false or nil</td><td>false</td><td>Whether the `:x` scale is drawn vertically and the `:y` scale horizontally; scales, labels and theme keys keep their names.</td></tr><tr><td>:coord</td><td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td><td>Cartesian.</td><td>The coordinate system the panels map the position scales to.</td></tr></tbody></table>
 ```
 
 :::
@@ -486,7 +487,7 @@ cells. A row is a plain map; `:section` names its table slice:
 ::: {.printedClojure}
 ```clojure
 {:description
- "rows (a sequence of maps) or columns (a map of sequences) the charts read",
+ "The rows or columns the charts read; a chart's own `:data` wins over it.",
  :path [:data],
  :key :data,
  :fragment nil,
@@ -494,8 +495,9 @@ cells. A row is a plain map; `:section` names its table slice:
  :section :content,
  :type
  "a sequence of rows (maps) or a map of columns (sequences) or nil",
- :default-doc nil,
+ :default-doc "None: each chart brings its own `:data`.",
  :values [],
+ :example [{:x 1, :y 2} {:x 2, :y 3} {:x 3, :y 1}],
  :other-values nil,
  :required false,
  :forms [{:form :cljplot2.data.rows/data, :type "data", :meaning nil}]}

@@ -29,23 +29,32 @@
 
 (def polar-schema
   "Schema of a polar plot `:coord` (see the namespace doc)."
-  [:map {:closed true :cljplot2/type-doc "a polar coord {:kind :polar :start :direction :span :inner :arcs}"}
-   [:kind {:description "polar coordinates: the horizontal scale maps to angles, the vertical one to radii"} [:= :polar]]
-   (schema/optional :start {:description "angle of the horizontal scale's range start, degrees (0 - 12 o'clock)" :default 0.0}
+  [:map {:closed true :cljplot2/type-doc "a polar coord {:kind :polar :start :direction :span :inner :arcs}" :cljplot2/type-name "polar coord"}
+   [:kind {:description "The kind of coordinates; a plot without `:coord` is cartesian."
+           :cljplot2/value-meanings {:polar "The `:x` scale maps to angles, the `:y` scale to radii (`:flip` swaps them)."}}
+    [:= :polar]]
+   (schema/optional :start {:description "The angle in degrees where the `:x` scale's range starts; 0 is 12 o'clock." :default 0.0
+                            :cljplot2/example 90 :cljplot2/example-context {:kind :polar}}
                     schema/finite)
-   (schema/optional :direction {:description "direction of growing angles" :default :clockwise}
+   (schema/optional :direction {:description "The direction in which angles grow." :default :clockwise
+                                :cljplot2/example-context {:kind :polar}
+                                :cljplot2/value-meanings {:clockwise "Clockwise." :counter-clockwise "Counter-clockwise."}}
                     [:enum :clockwise :counter-clockwise])
-   (schema/optional :span {:description "degrees covered (e.g. 180 for a half circle)" :default 360.0}
+   (schema/optional :span {:description "The degrees the circle covers, e.g. 180 for a half circle." :default 360.0
+                           :cljplot2/example 180 :cljplot2/example-context {:kind :polar}}
                     [:and schema/finite [:> 0] [:<= 360]])
-   (schema/optional :inner {:description "inner radius as a fraction of the outer one (a hole for donuts)" :default 0.0}
+   (schema/optional :inner {:description "The inner radius as a fraction of the outer one: a hole, as in a donut." :default 0.0
+                            :cljplot2/example 0.3 :cljplot2/example-context {:kind :polar}}
                     [:and schema/finite [:>= 0] [:< 1]])
-   (schema/nilable :arcs {:description "data lines between points follow the circle instead of chords" :default false}
+   (schema/nilable :arcs {:description "Whether data lines between points follow the circle instead of straight chords." :default false
+                          :cljplot2/example-context {:kind :polar}
+                          :cljplot2/value-meanings {true "Arcs along the circle." false "Straight chords."}}
                    schema/bool)])
 
 (def coord-schema
   "Schema of the plot `:coord`: cartesian (the default) or [[polar-schema]]."
   [:multi {:dispatch :kind :cljplot2/type-doc "{:kind :cartesian} or a polar coord {:kind :polar ...}"}
-   [:cartesian [:map {:closed true} [:kind {:description "cartesian coordinates (the default)"} [:= :cartesian]]]]
+   [:cartesian [:map {:closed true :cljplot2/type-name "`{:kind :cartesian}`"} [:kind {:description "Cartesian coordinates, the default."} [:= :cartesian]]]]
    [:polar polar-schema]])
 
 (defn polar?

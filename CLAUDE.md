@@ -292,9 +292,14 @@ the theme: banned names, and one type family per name across all owners). One na
   Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
   `test-util/migrated-builders`, data functions in `test-util/migrated-functions`, shared groups in
   `test-util/migrated-groups`, top-level theme keys in `test-util/migrated-theme-keys` (all but `:chart` - the Theme
-  chapter's Chart section links the chart pages) - the switches; theme cards are `nu/option-cards :theme
-  (describe/theme-rows k)` (the rows under `k`, without its own row; each example printed as a plot key `{:theme
-  {...}}`, drawn on `option-cards-test/theme-fixtures` plots - text roles on the chart or builder drawing them); a
+  chapter's Chart section links the chart pages), plot-level schemas in `test-util/migrated-schemas` (name -> the
+  migrated key paths; their entries nested elsewhere - the plot's `:mapping`, `pairs`' - recognised by their
+  properties, `test-util/migrated-entry-props`) - the switches; cards of a plot map take its plot path as the call
+  (`nu/option-cards [:theme] (describe/theme-rows k)`, `[:scales :x]`, `[:scales :color]`, `[:coord]`, `[]` - plot
+  keys, picked with `describe/rows-at`; the example printed as a plot map, e.g. `{:scales {:x {:kind :log}}}`), drawn
+  on `option-cards-test` fixtures (`theme-fixtures` - text roles on the chart or builder drawing them;
+  `schema-fixtures` - each example at the cards' plot path, the rows shown those at migrated paths unless filtered); `describe/theme-rows
+  k` gives the rows under `k`, without its own row; the plot's mapping keys show as `nu/plot-mapping-list` boxes; a
   group's cards on Shared options print its representative's call
   (`chart/line`, `'(plot/network edges)`) and `option-cards-test` checks them through it (`group-fixtures`); a group a
   data function owns (`:owner` in `describe/fragments`) is documented in that function's section, Shared options

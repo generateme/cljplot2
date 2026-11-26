@@ -36,6 +36,7 @@ format:
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .shared ul { margin: 0; padding-left: 1.25rem; }
         .shared code { overflow-wrap: anywhere; }
+        p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -52,9 +53,11 @@ code-block-background: true
 
 # Scales, axes and coordinates
 
-Position scales map `:x` and `:y` data to the panel; their kind follows the data (numbers, levels, dates) unless
-set. Each position scale draws an axis and grid lines. A plot is cartesian unless `:coord` is polar; `:flip`
-swaps the directions and `:aspect :iso` keeps data units square.
+Every mapped dimension goes through a scale: the position scales `:x` and `:y` place marks on the panel, the
+aesthetic scales style them ([Aesthetics and legends](reference.aesthetics_legends.html)). This chapter covers the
+position scales, set under the plot's `:scales` key (`{:scales {:x {...} :y {...}}}`), and the coordinates, set by
+the plot keys `:coord`, `:flip` and `:aspect`. A position scale's kind follows the data (numbers, levels, dates)
+unless set, and each one draws an axis and grid lines.
 
 
 ::: {.sourceClojure}
@@ -64,6 +67,7 @@ swaps the directions and `:aspect :iso` keeps data units square.
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.pipeline :as pipeline]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as position]
             [cljplot2.schema :as schema]
@@ -72,6 +76,8 @@ swaps the directions and `:aspect :iso` keeps data units square.
 ```
 :::
 
+
+The table below holds the Gapminder countries of 2007; the partial domain and the ticks plots draw them:
 
 Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-viz example dataset `4_ThreeNum` (Yan Holtz; Gapminder via the R gapminder package); licence: MIT (data_to_viz repository).
 
@@ -89,6 +95,8 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 ```
 
 
+The table below counts the countries per continent; the bar plots draw it:
+
 
 ::: {.sourceClojure}
 ```clojure
@@ -103,22 +111,7 @@ Data: Gapminder 2007: life expectancy, population and GDP per capita, data-to-vi
 ```
 
 
-
-## Kind and domain
-
-The scale kind (see Scale kinds below) and the data range it covers: the charts' data extent unless `:domain`
-is given - `[lo hi]` for continuous kinds, the levels in order for `:bands` - padded (`:expand`) and extended to
-nice tick values (`:nice`). `:type :categorical` makes numbers levels (left: cylinder counts as three bands);
-right: fixed domains, x without padding.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind</td><td>one of :bands :datetime :interpolated :linear :log :pow :radial :symlog</td><td>from the data: :linear for numbers, :bands for levels, :datetime for java.time values</td><td>scale kind: :linear, :log, :pow, :symlog, :radial, :interpolated, :datetime or :bands</td></tr><tr><td>:type</td><td>one of :categorical :numeric</td><td></td><td>declare numbers or dates categorical (one band per value) or force a numeric scale</td></tr><tr><td>:domain</td><td>sequential of any value (at least 1) or nil</td><td>the charts' data extent</td><td>explicit domain: [lo hi] for continuous kinds (nil at an end - the data's, e.g. [0 nil]), the levels in order for :bands</td></tr><tr><td>:nice</td><td>true or false or a finite number, a non-negative number or nil</td><td>true (false for :interpolated)</td><td>extend a continuous domain to nice tick values (a number - the most it may grow, a fraction of the span)</td></tr><tr><td>:expand</td><td>[lo hi], non-negative numbers</td><td>the charts' padding</td><td>padding [lo hi] of a continuous domain, fractions of the span (wins over the charts')</td></tr></tbody></table>
-```
-
-:::
-
+The table below holds the mtcars cars; the domain and axis sections and two scale kinds draw them:
 
 Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -133,6 +126,49 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SL</td><td>17.3</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.73</td><td>17.6</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Merc 450SLC</td><td>15.2</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>3.78</td><td>18</td><td>0</td><td>0</td><td>3</td><td>3</td></tr><tr><td>Cadillac Fleetwood</td><td>10.4</td><td>8</td><td>472</td><td>205</td><td>2.93</td><td>5.25</td><td>17.98</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Lincoln Continental</td><td>10.4</td><td>8</td><td>460</td><td>215</td><td>3</td><td>5.424</td><td>17.82</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Chrysler Imperial</td><td>14.7</td><td>8</td><td>440</td><td>230</td><td>3.23</td><td>5.345</td><td>17.42</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Fiat 128</td><td>32.4</td><td>4</td><td>78.7</td><td>66</td><td>4.08</td><td>2.2</td><td>19.47</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Honda Civic</td><td>30.4</td><td>4</td><td>75.7</td><td>52</td><td>4.93</td><td>1.615</td><td>18.52</td><td>1</td><td>1</td><td>4</td><td>2</td></tr><tr><td>Toyota Corolla</td><td>33.9</td><td>4</td><td>71.1</td><td>65</td><td>4.22</td><td>1.835</td><td>19.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Toyota Corona</td><td>21.5</td><td>4</td><td>120.1</td><td>97</td><td>3.7</td><td>2.465</td><td>20.01</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Dodge Challenger</td><td>15.5</td><td>8</td><td>318</td><td>150</td><td>2.76</td><td>3.52</td><td>16.87</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>AMC Javelin</td><td>15.2</td><td>8</td><td>304</td><td>150</td><td>3.15</td><td>3.435</td><td>17.3</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Camaro Z28</td><td>13.3</td><td>8</td><td>350</td><td>245</td><td>3.73</td><td>3.84</td><td>15.41</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Pontiac Firebird</td><td>19.2</td><td>8</td><td>400</td><td>175</td><td>3.08</td><td>3.845</td><td>17.05</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Fiat X1-9</td><td>27.3</td><td>4</td><td>79</td><td>66</td><td>4.08</td><td>1.935</td><td>18.9</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Porsche 914-2</td><td>26</td><td>4</td><td>120.3</td><td>91</td><td>4.43</td><td>2.14</td><td>16.7</td><td>0</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Lotus Europa</td><td>30.4</td><td>4</td><td>95.1</td><td>113</td><td>3.77</td><td>1.513</td><td>16.9</td><td>1</td><td>1</td><td>5</td><td>2</td></tr><tr><td>Ford Pantera L</td><td>15.8</td><td>8</td><td>351</td><td>264</td><td>4.22</td><td>3.17</td><td>14.5</td><td>0</td><td>1</td><td>5</td><td>4</td></tr><tr><td>Ferrari Dino</td><td>19.7</td><td>6</td><td>145</td><td>175</td><td>3.62</td><td>2.77</td><td>15.5</td><td>0</td><td>1</td><td>5</td><td>6</td></tr><tr><td>Maserati Bora</td><td>15</td><td>8</td><td>301</td><td>335</td><td>3.54</td><td>3.57</td><td>14.6</td><td>0</td><td>1</td><td>5</td><td>8</td></tr><tr><td>Volvo 142E</td><td>21.4</td><td>4</td><td>121</td><td>109</td><td>4.11</td><td>2.78</td><td>18.6</td><td>1</td><td>1</td><td>4</td><td>2</td></tr></tbody></table></div>
+```
+
+
+The tables below hold a made-up spiral and points on an ellipse; the coordinates section draws them:
+
+
+::: {.sourceClojure}
+```clojure
+(def spiral (for [t (range 0 13)] {:t t :r (+ 1 t)}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>r</th></tr></thead><tbody><tr><td>0</td><td>1</td></tr><tr><td>1</td><td>2</td></tr><tr><td>2</td><td>3</td></tr><tr><td>3</td><td>4</td></tr><tr><td>4</td><td>5</td></tr><tr><td>5</td><td>6</td></tr><tr><td>6</td><td>7</td></tr><tr><td>7</td><td>8</td></tr><tr><td>8</td><td>9</td></tr><tr><td>9</td><td>10</td></tr><tr><td>10</td><td>11</td></tr><tr><td>11</td><td>12</td></tr><tr><td>12</td><td>13</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>1.0</td><td>0.0</td></tr><tr><td>0.9950307753654014</td><td>0.049783923297908324</td></tr><tr><td>0.9801724878485438</td><td>0.09907307159969878</td></tr><tr><td>0.9555728057861408</td><td>0.14737758720545208</td></tr><tr><td>0.9214762118704076</td><td>0.19421739813734734</td></tr><tr><td>0.8782215733702285</td><td>0.2391269893106591</td></tr><tr><td>0.8262387743159949</td><td>0.281660029031811</td></tr><tr><td>0.766044443118978</td><td>0.3213938048432696</td></tr><tr><td>0.6982368180860729</td><td>0.35793342462985916</td></tr><tr><td>0.6234898018587336</td><td>0.3909157412340149</td></tr><tr><td>0.5425462638657594</td><td>0.4200129615753857</td></tr><tr><td>0.4562106573531631</td><td>0.4449359044057343</td></tr><tr><td>0.3653410243663952</td><td>0.46543687432210207</td></tr><tr><td>0.27084046814300516</td><td>0.481312123475006</td></tr><tr><td>0.17364817766693041</td><td>0.492403876506104</td></tr><tr><td>0.07473009358642439</td><td>0.49860189859059006</td></tr><tr><td>-0.02493069173807269</td><td>0.4998445910004081</td></tr><tr><td>-0.12434370464748494</td><td>0.49611960330008603</td></tr><tr><td>-0.22252093395631434</td><td>0.4874639560909118</td></tr><tr><td>-0.3184866502516843</td><td>0.4739636730835659</td></tr><tr><td>-0.4112871031306114</td><td>0.4557529261558366</td></tr><tr><td>-0.4999999999999998</td><td>0.43301270189221935</td></tr><tr><td>-0.5837436722347896</td><td>0.4059690028579283</td></tr><tr><td>-0.6616858375968592</td><td>0.3748906014838672</td></tr><tr><td>-0.7330518718298261</td><td>0.34008636888545984</td></tr><tr><td>-0.7971325072229222</td><td>0.30190220516273886</td></tr><tr><td>-0.8532908816321556</td><td>0.26071760168974906</td></tr><tr><td>-0.900968867902419</td><td>0.21694186955877912</td></tr><tr><td>-0.9396926207859083</td><td>0.17101007166283444</td></tr><tr><td>-0.9690772862290778</td><td>0.12337869884514692</td></tr><tr><td>-0.9888308262251285</td><td>0.07452113308808736</td></tr><tr><td>-0.9987569212189223</td><td>0.02492294283034874</td></tr><tr><td>-0.9987569212189223</td><td>-0.024922942830348398</td></tr><tr><td>-0.9888308262251285</td><td>-0.07452113308808724</td></tr><tr><td>-0.9690772862290781</td><td>-0.12337869884514659</td></tr><tr><td>-0.9396926207859084</td><td>-0.17101007166283433</td></tr><tr><td>-0.9009688679024191</td><td>-0.216941869558779</td></tr><tr><td>-0.8532908816321557</td><td>-0.26071760168974895</td></tr><tr><td>-0.7971325072229226</td><td>-0.3019022051627386</td></tr><tr><td>-0.7330518718298262</td><td>-0.34008636888545973</td></tr><tr><td>-0.6616858375968597</td><td>-0.374890601483867</td></tr><tr><td>-0.5837436722347898</td><td>-0.40596900285792825</td></tr><tr><td>-0.5000000000000004</td><td>-0.4330127018922192</td></tr><tr><td>-0.4112871031306116</td><td>-0.45575292615583657</td></tr><tr><td>-0.318486650251685</td><td>-0.4739636730835658</td></tr><tr><td>-0.2225209339563146</td><td>-0.4874639560909118</td></tr><tr><td>-0.12434370464748584</td><td>-0.496119603300086</td></tr><tr><td>-0.024930691738073156</td><td>-0.4998445910004081</td></tr><tr><td>0.07473009358642348</td><td>-0.4986018985905901</td></tr><tr><td>0.17364817766692997</td><td>-0.49240387650610407</td></tr><tr><td>0.2708404681430043</td><td>-0.4813121234750062</td></tr><tr><td>0.36534102436639454</td><td>-0.46543687432210223</td></tr><tr><td>0.45621065735316285</td><td>-0.44493590440573433</td></tr><tr><td>0.5425462638657597</td><td>-0.42001296157538565</td></tr><tr><td>0.6234898018587334</td><td>-0.39091574123401496</td></tr><tr><td>0.698236818086073</td><td>-0.35793342462985916</td></tr><tr><td>0.7660444431189778</td><td>-0.3213938048432698</td></tr><tr><td>0.8262387743159949</td><td>-0.281660029031811</td></tr><tr><td>0.8782215733702283</td><td>-0.2391269893106593</td></tr><tr><td>0.9214762118704076</td><td>-0.19421739813734737</td></tr><tr><td>0.9555728057861406</td><td>-0.14737758720545235</td></tr><tr><td>0.9801724878485438</td><td>-0.09907307159969886</td></tr><tr><td>0.9950307753654013</td><td>-0.04978392329790864</td></tr><tr><td>1.0</td><td>-1.2246467991473532E-16</td></tr></tbody></table></div>
+```
+
+
+
+## Kind and domain
+
+These options set the scale kind (Scale kinds below) and the data range it covers. The scale extends the domain to
+nice tick values (`:nice`), then pads it (the charts' padding, or `:expand`). The plots below read cylinder counts
+as three bands (left) and fix both domains, x without padding (right):
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:kind</code><span class="option-default">Default: From the data: <code>:linear</code> for numbers, <code>:bands</code> for levels, <code>:datetime</code> for <code>java.time</code> values.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :log}}}</code></div><div class="option-text">The scale kind: how data values map to positions along the axis.<ul><li><code>:bands</code> – Levels, one band each.</li><li><code>:datetime</code> – <code>java.time</code> values on a time axis.</li><li><code>:interpolated</code> – The domain values pinned to <code>:stops</code> of the panel, interpolated between them.</li><li><code>:linear</code> – Numbers, evenly spaced.</li><li><code>:log</code> – Positive numbers by their logarithm.</li><li><code>:pow</code> – Numbers by a power, the <code>:exponent</code>.</li><li><code>:radial</code> – Radii whose circle areas grow linearly with the values, for polar plots.</li><li><code>:symlog</code> – Numbers of both signs over many magnitudes, by a logarithm symmetric around 0.</li></ul></div></dd></div><div class="option-card"><dt><code>:type</code><span class="option-default">Default: The data's kind.</span></dt><dd><div class="option-example"><code>{:scales {:x {:domain [1 4 7 10], :type :categorical}}}</code></div><div class="option-text">Declares how the scale reads its values.<ul><li><code>:categorical</code> – As levels, one band per value; numbers need a <code>:domain</code> unless the charts give their levels (strip charts do).</li><li><code>:numeric</code> – As numbers, the data's default; it rejects <code>:kind :bands</code> and a <code>levels/categorical</code> marker.</li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The charts' data extent.</span></dt><dd><div class="option-example"><code>{:scales {:x {:domain [0 20]}}}</code></div><div class="option-text">The data range the scale covers: <code>[lo hi]</code> for continuous kinds (<code>nil</code> at an end takes the data's, e.g. <code>[0 nil]</code>), the levels in order for <code>:bands</code>.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:nice</code><span class="option-default">Default: <code>true</code> (<code>false</code> for <code>:interpolated</code>).</span></dt><dd><div class="option-example"><code>{:scales {:x {:domain [1.3 9.7], :nice false}}}</code></div><div class="option-text">Whether a continuous domain grows to nice tick values.<ul><li><code>true</code> – It grows to nice tick values, by at most a tenth of its span.</li><li><code>false</code> – It stays as computed.</li><li><span>finite number, non-negative number</span> – It grows by at most this fraction of its span.</li></ul></div></dd></div><div class="option-card"><dt><code>:expand</code><span class="option-default">Default: The charts' padding.</span></dt><dd><div class="option-example"><code>{:scales {:x {:expand [0 0]}}}</code></div><div class="option-text">The room added at the ends of a continuous domain, fractions of its span; it wins over the charts' padding.<ul><li><a href="reference.types.html#padding">padding</a></li></ul></div></dd></div></dl>
 ```
 
 
@@ -158,10 +194,9 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 :::
 
 
-A partial domain fixes one end and takes the other from the data, as if there were no domain: `[0 nil]` starts
-the axis at zero (padded and made nice as any explicit domain), `[nil hi]` fixes the top; `[nil nil]` is no domain.
-Continuous kinds only (not `:interpolated`); the data must reach past the fixed end. Left: the data's range;
-right: life expectancy from zero.
+A partial domain such as `[0 nil]` fixes one end; the charts' padding and nice rounding still apply at the other.
+Only continuous kinds other than `:interpolated` take one, and the data must reach past the fixed end. The left
+plot covers the data's range; the right one starts life expectancy at zero:
 
 
 ::: {.sourceClojure}
@@ -183,8 +218,8 @@ right: life expectancy from zero.
 :::
 
 
-Which kind a plot's scales get - from the data and what the charts compute - is in the built plot's
-`:scale-specs`: here a bar chart's levels on x, a histogram's bins and counts:
+The built plot's `:scale-specs` hold the kind each scale gets from the data and the charts' statistics. Below, a
+bar chart puts levels on x and a histogram puts bins and counts on its axes:
 
 
 ::: {.sourceClojure}
@@ -208,17 +243,14 @@ Which kind a plot's scales get - from the data and what the charts compute - is 
 
 ## Ticks and labels
 
-Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date
-pattern, `:power` for powers of ten), minor ticks and the tick algorithm. Minor ticks get grid lines only when
-the theme draws them (`[:panel :grid :minor]`, `:none` by default) - turned on here:
+These options set where ticks go and how their labels read. Minor ticks get grid lines only when the theme draws
+them (`[:panel :grid :minor]`, `:none` by default). The plot below writes powers of ten on a log x axis with minor
+ticks and their grid lines, and gives y its tick values and a formatter:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:ticks</td><td>sequential of any value or a positive integer or nil</td><td>a count from the panel size and theme :tick-spacing</td><td>a tick count hint, or the tick values themselves</td></tr><tr><td>:formatter</td><td>string or one of :power :power-math or a function</td><td>the charts' suggested format, else plain numbers, levels or dates</td><td>tick label text: a function of the value, a java.time pattern (:datetime), or :power / :power-math (:log; a power in superscript digits / typeset)</td></tr><tr><td>:minor-ticks</td><td>a positive integer or nil</td><td></td><td>unlabelled ticks between two major ticks (continuous numeric kinds)</td></tr><tr><td>:ticks-method</td><td>one of :default :pretty</td><td>:pretty for :datetime, else :default</td><td>tick algorithm of continuous kinds: :default (d3) or :pretty (R pretty())</td></tr><tr><td>:ticks-params</td><td>map</td><td></td><td>tick algorithm parameters: {:min-n n}, calendar ticks {:unit u :step s}</td></tr><tr><td>:ticks-params :min-n</td><td>integer, >= 0</td><td></td><td>the fewest ticks (clamped to the tick count)</td></tr><tr><td>:ticks-params :unit</td><td>one of :days :hours :minutes :months :seconds :weeks :years</td><td></td><td>calendar tick unit (:datetime with :pretty ticks)</td></tr><tr><td>:ticks-params :step</td><td>a positive integer</td><td>1</td><td>a calendar tick every :step units</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:ticks</code><span class="option-default">Default: A count from the panel size and the theme's <code>:tick-spacing</code>; a bands scale ticks every band.</span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks [2 5 8]}}}</code></div><div class="option-text">Where the ticks go: a count the scale aims for, or the tick values.<ul><li><span>sequence of any values</span> – These tick values.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – About this many ticks.</li></ul></div></dd></div><div class="option-card"><dt><code>:formatter</code><span class="option-default">Default: The charts' suggested format, else plain numbers, levels or dates.</span></dt><dd><div class="option-example"><code>{:scales {:x {:formatter (fn [v] (str v " u"))}}}</code></div><div class="option-text">The text of the tick labels.<ul><li><code>:power</code> – For <code>:log</code>: powers of the base, the exponent in superscript digits.</li><li><code>:power-math</code> – For <code>:log</code>: powers of the base typeset as formulas.</li><li><span>string</span> – For <code>:datetime</code>: a <code>java.time</code> pattern, e.g. <code>MMM yyyy</code>.</li><li><a href="reference.types.html#function">function</a> – A function of the tick value that returns its label.</li></ul></div></dd></div><div class="option-card"><dt><code>:minor-ticks</code><span class="option-default">Default: No minor ticks.</span></dt><dd><div class="option-example"><code>{:scales {:x {:minor-ticks 4}}}</code></div><div class="option-text">The number of unlabelled ticks between two major ticks, on continuous numeric kinds.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks-method</code><span class="option-default">Default: <code>:pretty</code> for <code>:datetime</code>, else <code>:default</code>.</span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks 5, :domain [0 13], :ticks-method :pretty}}}</code></div><div class="option-text">The tick algorithm of continuous kinds.<ul><li><code>:default</code> – d3's ticks.</li><li><code>:pretty</code> – R's <code>pretty()</code> ticks.</li></ul></div></dd></div><div class="option-card"><dt><code>:ticks-params</code></dt><dd><div class="option-text">Parameters of the tick algorithm: the fewest ticks and calendar ticks.</div></dd></div><div class="option-card"><dt><code>:ticks-params :min-n</code><span class="option-default">Default: The algorithm's own.</span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks-method :pretty, :ticks 8, :domain [0 13], :ticks-params {:min-n 8}}}}</code></div><div class="option-text">The fewest ticks the algorithm gives, at most the tick count.<ul><li><span>integer at least 0</span></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks-params :unit</code><span class="option-default">Default: Chosen from the domain's span.</span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks-method :pretty, :ticks-params {:unit :months}}}}</code></div><div class="option-text">The calendar unit of <code>:datetime</code> ticks with <code>:ticks-method :pretty</code>.<ul><li class="option-other">A tick at every <code>:step</code> of this unit. <code>:days</code>, <code>:hours</code>, <code>:minutes</code>, <code>:months</code>, <code>:seconds</code>, <code>:weeks</code>, <code>:years</code></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks-params :step</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks-method :pretty, :ticks-params {:unit :months, :step 3}}}}</code></div><div class="option-text">A calendar tick every this many <code>:unit</code>s.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -243,15 +275,13 @@ the theme draws them (`[:panel :grid :minor]`, `:none` by default) - turned on h
 
 ## Order and direction
 
-The order of bands - by a function of each level's rows, optionally descending - and the axis direction.
+These options order the bands and set the axis direction. The plots below order the continents by their count,
+largest first (left), and reverse the y axis (right):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order-by</td><td>a function or nil</td><td></td><td>bands ordered by a function of each level's rows (not with :domain)</td></tr><tr><td>:descending</td><td>true or false or nil</td><td>false</td><td>reverse the :order-by order (needs :order-by)</td></tr><tr><td>:reverse</td><td>true or false or nil</td><td>false</td><td>the axis runs the other way (the final domain reversed)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:order-by</code><span class="option-default">Default: The levels in the order they first appear in the data; numbers, dates and intervals sorted.</span></dt><dd><div class="option-example"><code>{:scales {:x {:order-by (fn [rows] (reduce + (map :y rows)))}}}</code></div><div class="option-text">Orders the bands by a function of each level's rows, smallest first; it can't be combined with <code>:domain</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:descending</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:x {:order-by (fn [rows] (reduce + (map :y rows))), :descending true}}}</code></div><div class="option-text">Whether <code>:order-by</code> puts the largest result first.<ul><li><code>false</code> – Smallest first.</li><li><code>true</code> – Largest first.</li></ul></div></dd></div><div class="option-card"><dt><code>:reverse</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:x {:reverse true}}}</code></div><div class="option-text">Whether the axis runs the other way: the final domain reversed.<ul><li><code>false</code> – In domain order.</li><li><code>true</code> – Reversed.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -281,18 +311,14 @@ The order of bands - by a function of each level's rows, optionally descending -
 
 ## Axis
 
-What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
-domain for its ticks, and whether tick labels overlapping a drawn one are dropped (`:drop`, the default for
-computed ticks) or all drawn (`:keep`, the default for an explicit `:ticks` vector; builders naming data items on
-an axis, such as dendrogram leaves, set it).
+These options set what the scale's axis draws. Builders naming data items on an axis, such as dendrogram leaves,
+set `:overlapping-labels :keep`. The plots below draw the x axis without grid lines and y grid lines without an
+axis (left), and y ticks of a display domain (right):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis-domain</td><td>[a finite number, a finite number] or nil</td><td></td><td>display only: axis and grid show the ticks of this linear domain over the panel</td></tr><tr><td>:overlapping-labels</td><td>one of :drop :keep</td><td>:keep with an explicit :ticks vector (the values asked for), else :drop</td><td>tick labels overlapping a drawn one: :drop (not drawn) or :keep (all drawn - axes naming data items)</td></tr><tr><td>:axis</td><td>true or false or one of :grid :no-grid</td><td>true</td><td>true - axis and grid, false - neither, :grid - grid lines only, :no-grid - axis only</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:axis-domain</code><span class="option-default">Default: The scale's own ticks.</span></dt><dd><div class="option-example"><code>{:scales {:x {:axis-domain [0 1]}}}</code></div><div class="option-text">A linear domain whose ticks the axis and grid lines show over the panel, for display only.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:overlapping-labels</code><span class="option-default">Default: <code>:keep</code> with an explicit <code>:ticks</code> vector (the values asked for), else <code>:drop</code>.</span></dt><dd><div class="option-example"><code>{:scales {:x {:ticks 30, :overlapping-labels :keep}}}</code></div><div class="option-text">What the axis does with a tick label overlapping one drawn before it.<ul><li><code>:drop</code> – It skips the label.</li><li><code>:keep</code> – It draws every label, e.g. on axes naming data items.</li></ul></div></dd></div><div class="option-card"><dt><code>:axis</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:scales {:x {:axis false}}}</code></div><div class="option-text">What the scale draws: its axis, its grid lines, both or neither.<ul><li><code>true</code> – The axis and the grid lines.</li><li><code>false</code> – Neither.</li><li><code>:grid</code> – The grid lines only.</li><li><code>:no-grid</code> – The axis only.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -322,16 +348,13 @@ an axis, such as dendrogram leaves, set it).
 
 ## wadogo attributes
 
-Options passed to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind; each kind below lists the
-ones it reads.
+cljplot2 passes these options to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind; each kind below
+lists the ones it reads. The plot below widens the space between and around the bands:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:clamp</td><td>any value</td><td></td><td>wadogo: clamp values outside the domain to its ends</td></tr><tr><td>:unknown</td><td>any value</td><td></td><td>wadogo: the value returned for values outside a bands domain</td></tr><tr><td>:round</td><td>any value</td><td></td><td>wadogo: round band starts and widths to whole pixels</td></tr><tr><td>:base</td><td>any value</td><td></td><td>wadogo: logarithm base of a :log scale (ticks and nice only)</td></tr><tr><td>:exponent</td><td>any value</td><td></td><td>wadogo: exponent of a :pow scale</td></tr><tr><td>:padding-in</td><td>any value</td><td></td><td>wadogo: space between bands, a fraction of the step</td></tr><tr><td>:padding-out</td><td>any value</td><td></td><td>wadogo: space before the first and after the last band, a fraction of the step</td></tr><tr><td>:align-outer</td><td>any value</td><td></td><td>wadogo: how the outer band space is split, 0 - all after the last band, 1 - all before the first</td></tr><tr><td>:align</td><td>any value</td><td></td><td>wadogo: position of a point inside its band, 0 - band start, 1 - band end</td></tr><tr><td>:interpolator-params</td><td>any value</td><td></td><td>wadogo: parameters of the :interpolated scale's :interpolator</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:clamp</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:domain [2 5], :clamp true}}}</code></div><div class="option-text">Whether wadogo clamps values outside the domain to its ends.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:unknown</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-text">The position wadogo gives a value outside a bands domain.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:round</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:round true}}}</code></div><div class="option-text">Whether wadogo rounds mapped positions, and band starts and widths, to whole pixels.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:base</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :log, :base 2}}}</code></div><div class="option-text">The logarithm base of a <code>:log</code> scale; it changes the ticks and the nice domain.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:exponent</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :pow, :exponent 2}}}</code></div><div class="option-text">The exponent of a <code>:pow</code> scale.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:padding-in</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:padding-in 0.5}}}</code></div><div class="option-text">The space between bands, a fraction of the step.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:padding-out</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:padding-out 1.0}}}</code></div><div class="option-text">The space before the first and after the last band, a fraction of the step.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:align-outer</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:padding-out 2.0, :align-outer 0.0}}}</code></div><div class="option-text">How the outer band space is split: 0 puts it all after the last band, 1 all before the first.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:align</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:align 0.0}}}</code></div><div class="option-text">Where a point sits inside its band: 0 at the band's start, 1 at its end.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:interpolator-params</code><span class="option-default">Default: The wadogo scale's default.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :interpolated, :domain [1 2 3 4 5 6 7 8 9 10], :interpolator :loess, :interpolator-params [{:bandwidth 0.9}]}}}</code></div><div class="option-text">Extra arguments an <code>:interpolated</code> scale's <code>:interpolator</code> takes after the points, e.g. its options map.<ul><li><span>any value</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -356,7 +379,7 @@ ones it reads.
 
 Each kind below is described by wadogo (`wadogo.scale/kind-info`). cljplot2 sets a kind's `:domain` (the data
 extent or the spec's `:domain`), its `:range` (the panel's pixels), ticks and tick format itself - through the
-options above; the remaining attributes of a kind are the "wadogo:" options.
+options above; the remaining attributes of a kind are the options under wadogo attributes.
 
 
 ### Linear
@@ -397,7 +420,7 @@ options above; the remaining attributes of a kind are the "wadogo:" options.
 
 ### Log
 
-Positive values only; `:base` changes the tick values (here powers of two).
+The scale takes positive values only; `:base` sets the tick values (here powers of two).
 
 `:log` kind: logarithmic mapping of a positive or negative numerical domain to a continuous numerical range (d3 `scaleLog`).
 
@@ -466,7 +489,8 @@ Positive values only; `:base` changes the tick values (here powers of two).
 
 ### Symlog
 
-For data of both signs over many magnitudes. The constant `:C` isn't passed through (wadogo's default 1.0).
+For data of both signs over many magnitudes. cljplot2 doesn't pass the constant `:C`, so wadogo uses its default
+1.0.
 
 `:symlog` kind: bi-symmetric logarithmic mapping of a continuous numerical domain (any sign, zero included) to a continuous numerical range (d3 `scaleSymlog`).
 
@@ -502,7 +526,7 @@ For data of both signs over many magnitudes. The constant `:C` isn't passed thro
 
 ### Bands
 
-Levels; the default kind for strings and keywords.
+Bands is the default kind for strings and keywords.
 
 `:bands` kind: discrete values mapped to evenly distributed bands (intervals) of a continuous numerical range (d3 `scaleBand`).
 
@@ -549,7 +573,7 @@ Levels; the default kind for strings and keywords.
 
 ### Datetime
 
-`java.time` values; `:formatter` takes a date pattern.
+The plot below formats dates with a pattern:
 
 `:datetime` kind: a datetime domain mapped linearly to a continuous numerical range (d3 `scaleUtc`).
 
@@ -587,16 +611,13 @@ Levels; the default kind for strings and keywords.
 
 ### Interpolated
 
-A piecewise mapping of the domain values onto evenly spaced (or given) `:stops` of the panel, through an
-`:interpolator`:
+The scale maps the domain values piecewise onto evenly spaced or given `:stops` of the panel through an
+`:interpolator`; these options set both:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stops</td><td>sequential of a finite number (at least 2)</td><td>evenly spaced</td><td>panel fractions the :interpolated domain values map to (increasing, or decreasing - reversed)</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f)</td><td>:linear</td><td>interpolation between the :stops of an :interpolated scale (only there)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:stops</code><span class="option-default">Default: Evenly spaced.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :interpolated, :domain [1 3 5 7], :stops [0 0.6 0.8 1]}}}</code></div><div class="option-text">The panel fractions the <code>:interpolated</code> domain values map to, one per value: increasing, or decreasing for a reversed axis.<ul><li><span>sequence of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:interpolator</code><span class="option-default">Default: <code>:linear</code>.</span></dt><dd><div class="option-example"><code>{:scales {:x {:kind :interpolated, :domain [1 3 5 7], :stops [0 0.6 0.8 1], :interpolator :cubic}}}</code></div><div class="option-text">How an <code>:interpolated</code> scale places values between its <code>:stops</code>.<ul><li><a href="reference.types.html#interpolator">interpolator</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 `:interpolated` kind: piecewise mapping through `(domain, range)` pairs with an interpolation method.
@@ -617,7 +638,7 @@ A piecewise mapping of the domain values onto evenly spaced (or given) `:stops` 
 
   Ticks and `nice` use the first and last domain value; `nice` replaces only these two.
 
-The interpolators - fastmath 1D interpolation methods (or a function):
+The `:interpolator` takes a fastmath 1D interpolation method or a function:
 
 
 ::: {.sourceClojure}
@@ -681,7 +702,7 @@ of the axis - 40 to 60 is stretched, 1 to 40 and 60 to 100 are squeezed:
 
 ### Radial
 
-Radii of areas proportional to the values - for polar charts whose bar areas should read as values.
+The plot below draws polar bars whose areas read as values:
 
 `:radial` kind: linear mapping of a continuous numerical domain to the squared range, so that the range values are radii of areas proportional to the domain values (d3 `scaleRadial`).
 
@@ -715,39 +736,15 @@ Radii of areas proportional to the values - for polar charts whose bar areas sho
 
 ## Coordinates
 
-`:flip true` draws `:x` vertically; scales, labels and theme keys keep their names. `:aspect :iso` gives both
-linear axes the same pixels per data unit (the panel shrinks to fit). Polar coordinates map the horizontal scale
-to angles and the vertical one to radii.
+These plot keys set the coordinate system. They sit at the top of the plot map, beside `:scales`:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kind (required)</td><td>:polar</td><td></td><td>polar coordinates: the horizontal scale maps to angles, the vertical one to radii</td></tr><tr><td>:start</td><td>a finite number</td><td>0.0</td><td>angle of the horizontal scale's range start, degrees (0 - 12 o'clock)</td></tr><tr><td>:direction</td><td>one of :clockwise :counter-clockwise</td><td>:clockwise</td><td>direction of growing angles</td></tr><tr><td>:span</td><td>a finite number, > 0, <= 360</td><td>360.0</td><td>degrees covered (e.g. 180 for a half circle)</td></tr><tr><td>:inner</td><td>a finite number, >= 0, < 1</td><td>0.0</td><td>inner radius as a fraction of the outer one (a hole for donuts)</td></tr><tr><td>:arcs</td><td>true or false or nil</td><td>false</td><td>data lines between points follow the circle instead of chords</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:flip</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:flip true}</code></div><div class="option-text">Whether the <code>:x</code> scale is drawn vertically and the <code>:y</code> scale horizontally; scales, labels and theme keys keep their names.<ul><li><code>false</code> – <code>:x</code> horizontal, <code>:y</code> vertical.</li><li><code>true</code> – Flipped.</li></ul></div></dd></div><div class="option-card"><dt><code>:coord</code><span class="option-default">Default: Cartesian.</span></dt><dd><div class="option-example"><code>{:coord {:kind :polar}}</code></div><div class="option-text">The coordinate system the panels map the position scales to.<ul><li><span><code>{:kind :cartesian}</code></span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li><li><span>polar coord</span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-Polar coordinates work with these charts:
-
-
-::: {.sourceClojure}
-```clojure
-(sort (for [[kind constructor] (describe/chart-constructors)
-            :when (contains? (:coords (constructor)) :polar)]
-        kind))
-```
-:::
-
-
-
-::: {.printedClojure}
-```clojure
-(:bar :line :parallel :partition :rect :rule :scatter :segment :text)
-
-```
-:::
-
+The plots below flip a bar chart (left) and lay bars over 270 degrees of a ring with a hole (right):
 
 
 ::: {.sourceClojure}
@@ -775,22 +772,37 @@ Polar coordinates work with these charts:
 :::
 
 
-In polar coordinates `:flip true` swaps the roles - the vertical scale on angles, the horizontal on radii
-(left); `:arcs true` makes data lines between points follow the circle instead of chords (right):
+A polar `:coord` takes these keys beside its `:kind :polar`:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:kind</code></dt><dd><div class="option-example"><code>{:coord {:kind :polar}}</code></div><div class="option-text">The kind of coordinates; a plot without <code>:coord</code> is cartesian.<ul><li><code>:polar</code> – The <code>:x</code> scale maps to angles, the <code>:y</code> scale to radii (<code>:flip</code> swaps them).</li></ul></div></dd></div><div class="option-card"><dt><code>:start</code><span class="option-default">Default: <code>0.0</code></span></dt><dd><div class="option-example"><code>{:coord {:kind :polar, :start 90}}</code></div><div class="option-text">The angle in degrees where the <code>:x</code> scale's range starts; 0 is 12 o'clock.<ul><li><a href="reference.types.html#finite-number">finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:direction</code><span class="option-default">Default: <code>:clockwise</code></span></dt><dd><div class="option-example"><code>{:coord {:kind :polar, :direction :counter-clockwise}}</code></div><div class="option-text">The direction in which angles grow.<ul><li><code>:clockwise</code> – Clockwise.</li><li><code>:counter-clockwise</code> – Counter-clockwise.</li></ul></div></dd></div><div class="option-card"><dt><code>:span</code><span class="option-default">Default: <code>360.0</code></span></dt><dd><div class="option-example"><code>{:coord {:kind :polar, :span 180}}</code></div><div class="option-text">The degrees the circle covers, e.g. 180 for a half circle.<ul><li><span>finite number above 0 and at most 360</span></li></ul></div></dd></div><div class="option-card"><dt><code>:inner</code><span class="option-default">Default: <code>0.0</code></span></dt><dd><div class="option-example"><code>{:coord {:kind :polar, :inner 0.3}}</code></div><div class="option-text">The inner radius as a fraction of the outer one: a hole, as in a donut.<ul><li><span>finite number at least 0 and below 1</span></li></ul></div></dd></div><div class="option-card"><dt><code>:arcs</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:coord {:kind :polar, :arcs true}}</code></div><div class="option-text">Whether data lines between points follow the circle instead of straight chords.<ul><li><code>false</code> – Straight chords.</li><li><code>true</code> – Arcs along the circle.</li></ul></div></dd></div></dl>
+```
+
+
+Polar coordinates work with these charts:
 
 
 ::: {.sourceClojure}
 ```clojure
-(def spiral (for [t (range 0 13)] {:t t :r (+ 1 t)}))
+(sort (for [[kind constructor] (describe/chart-constructors)
+            :when (contains? (:coords (constructor)) :polar)]
+        kind))
 ```
 :::
 
 
 
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>t</th><th>r</th></tr></thead><tbody><tr><td>0</td><td>1</td></tr><tr><td>1</td><td>2</td></tr><tr><td>2</td><td>3</td></tr><tr><td>3</td><td>4</td></tr><tr><td>4</td><td>5</td></tr><tr><td>5</td><td>6</td></tr><tr><td>6</td><td>7</td></tr><tr><td>7</td><td>8</td></tr><tr><td>8</td><td>9</td></tr><tr><td>9</td><td>10</td></tr><tr><td>10</td><td>11</td></tr><tr><td>11</td><td>12</td></tr><tr><td>12</td><td>13</td></tr></tbody></table></div>
-```
+::: {.printedClojure}
+```clojure
+(:bar :line :parallel :partition :rect :rule :scatter :segment :text)
 
+```
+:::
+
+
+In polar coordinates `:flip true` swaps the roles - the `:y` scale on angles, the `:x` scale on radii (left);
+`:arcs true` makes data lines between points follow the circle instead of chords (right):
 
 
 ::: {.sourceClojure}
@@ -818,22 +830,19 @@ In polar coordinates `:flip true` swaps the roles - the vertical scale on angles
 :::
 
 
-`:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
-points joined in data order, [line](reference.charts_points_lines.html#line-charts) `:order :data`):
 
+## Aspect
 
-::: {.sourceClojure}
-```clojure
-(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
-```
-:::
-
+This plot key fixes the ratio of the panel's axes in data units:
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th></tr></thead><tbody><tr><td>1.0</td><td>0.0</td></tr><tr><td>0.9950307753654014</td><td>0.049783923297908324</td></tr><tr><td>0.9801724878485438</td><td>0.09907307159969878</td></tr><tr><td>0.9555728057861408</td><td>0.14737758720545208</td></tr><tr><td>0.9214762118704076</td><td>0.19421739813734734</td></tr><tr><td>0.8782215733702285</td><td>0.2391269893106591</td></tr><tr><td>0.8262387743159949</td><td>0.281660029031811</td></tr><tr><td>0.766044443118978</td><td>0.3213938048432696</td></tr><tr><td>0.6982368180860729</td><td>0.35793342462985916</td></tr><tr><td>0.6234898018587336</td><td>0.3909157412340149</td></tr><tr><td>0.5425462638657594</td><td>0.4200129615753857</td></tr><tr><td>0.4562106573531631</td><td>0.4449359044057343</td></tr><tr><td>0.3653410243663952</td><td>0.46543687432210207</td></tr><tr><td>0.27084046814300516</td><td>0.481312123475006</td></tr><tr><td>0.17364817766693041</td><td>0.492403876506104</td></tr><tr><td>0.07473009358642439</td><td>0.49860189859059006</td></tr><tr><td>-0.02493069173807269</td><td>0.4998445910004081</td></tr><tr><td>-0.12434370464748494</td><td>0.49611960330008603</td></tr><tr><td>-0.22252093395631434</td><td>0.4874639560909118</td></tr><tr><td>-0.3184866502516843</td><td>0.4739636730835659</td></tr><tr><td>-0.4112871031306114</td><td>0.4557529261558366</td></tr><tr><td>-0.4999999999999998</td><td>0.43301270189221935</td></tr><tr><td>-0.5837436722347896</td><td>0.4059690028579283</td></tr><tr><td>-0.6616858375968592</td><td>0.3748906014838672</td></tr><tr><td>-0.7330518718298261</td><td>0.34008636888545984</td></tr><tr><td>-0.7971325072229222</td><td>0.30190220516273886</td></tr><tr><td>-0.8532908816321556</td><td>0.26071760168974906</td></tr><tr><td>-0.900968867902419</td><td>0.21694186955877912</td></tr><tr><td>-0.9396926207859083</td><td>0.17101007166283444</td></tr><tr><td>-0.9690772862290778</td><td>0.12337869884514692</td></tr><tr><td>-0.9888308262251285</td><td>0.07452113308808736</td></tr><tr><td>-0.9987569212189223</td><td>0.02492294283034874</td></tr><tr><td>-0.9987569212189223</td><td>-0.024922942830348398</td></tr><tr><td>-0.9888308262251285</td><td>-0.07452113308808724</td></tr><tr><td>-0.9690772862290781</td><td>-0.12337869884514659</td></tr><tr><td>-0.9396926207859084</td><td>-0.17101007166283433</td></tr><tr><td>-0.9009688679024191</td><td>-0.216941869558779</td></tr><tr><td>-0.8532908816321557</td><td>-0.26071760168974895</td></tr><tr><td>-0.7971325072229226</td><td>-0.3019022051627386</td></tr><tr><td>-0.7330518718298262</td><td>-0.34008636888545973</td></tr><tr><td>-0.6616858375968597</td><td>-0.374890601483867</td></tr><tr><td>-0.5837436722347898</td><td>-0.40596900285792825</td></tr><tr><td>-0.5000000000000004</td><td>-0.4330127018922192</td></tr><tr><td>-0.4112871031306116</td><td>-0.45575292615583657</td></tr><tr><td>-0.318486650251685</td><td>-0.4739636730835658</td></tr><tr><td>-0.2225209339563146</td><td>-0.4874639560909118</td></tr><tr><td>-0.12434370464748584</td><td>-0.496119603300086</td></tr><tr><td>-0.024930691738073156</td><td>-0.4998445910004081</td></tr><tr><td>0.07473009358642348</td><td>-0.4986018985905901</td></tr><tr><td>0.17364817766692997</td><td>-0.49240387650610407</td></tr><tr><td>0.2708404681430043</td><td>-0.4813121234750062</td></tr><tr><td>0.36534102436639454</td><td>-0.46543687432210223</td></tr><tr><td>0.45621065735316285</td><td>-0.44493590440573433</td></tr><tr><td>0.5425462638657597</td><td>-0.42001296157538565</td></tr><tr><td>0.6234898018587334</td><td>-0.39091574123401496</td></tr><tr><td>0.698236818086073</td><td>-0.35793342462985916</td></tr><tr><td>0.7660444431189778</td><td>-0.3213938048432698</td></tr><tr><td>0.8262387743159949</td><td>-0.281660029031811</td></tr><tr><td>0.8782215733702283</td><td>-0.2391269893106593</td></tr><tr><td>0.9214762118704076</td><td>-0.19421739813734737</td></tr><tr><td>0.9555728057861406</td><td>-0.14737758720545235</td></tr><tr><td>0.9801724878485438</td><td>-0.09907307159969886</td></tr><tr><td>0.9950307753654013</td><td>-0.04978392329790864</td></tr><tr><td>1.0</td><td>-1.2246467991473532E-16</td></tr></tbody></table></div>
+<dl class="options"><div class="option-card"><dt><code>:aspect</code><span class="option-default">Default: Free: the panel takes the space it gets.</span></dt><dd><div class="option-example"><code>{:aspect :iso}</code></div><div class="option-text">The ratio of the panel's axes in data units.<ul><li><code>:iso</code> – Equal pixels per data unit on both linear axes; the panel shrinks to fit.</li></ul></div></dd></div></dl>
 ```
 
+
+In the plot below `:aspect :iso` keeps an ellipse twice as wide as high (the line joins the points in data order,
+[line](reference.charts_points_lines.html#line-charts) `:order :data`):
 
 
 ::: {.sourceClojure}

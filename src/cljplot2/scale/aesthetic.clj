@@ -198,12 +198,19 @@
   [p]
   (and (keyword? p) (nil? (palette-colors p)) (try (fn? (c/gradient p)) (catch Exception _ false))))
 
-(def ^:private color-range
-  "Schema of a colour range: a function of `t`, a palette or gradient name, or colours."
+(def color-range
+  "Schema of a colour range given by name or colours: a palette or gradient name, or a non-empty sequence of colours (a colour scale's `:range`)."
+  (schema/named-type ::color-range #(or (some? (palette-colors %)) (gradient-name? %))
+                     "should be a palette or gradient name, or a non-empty sequence of colors"
+                     {:cljplot2/type-doc "a palette or gradient name, or a non-empty sequence of colours"
+                      :cljplot2/type-name "colour range"
+                      :cljplot2/type-meaning "Colours for a colour scale: a clojure2d palette name such as `:tableau-10`, a gradient name such as `:viridis/viridis`, or a non-empty sequence of solid colours such as `[:white :darkred]`."}))
+
+(def ^:private color-range-or-function
+  "Schema of a colour scale's plain range: a function of `t` (a gradient) or a [[color-range]]."
   [:multi {:dispatch fn?}
    [true schema/function]
-   [false (schema/named-type ::color-range #(or (some? (palette-colors %)) (gradient-name? %))
-                             "should be a palette or gradient name, or a non-empty sequence of colors")]])
+   [false color-range]])
 
 (defn- level-map
   "Gives the schema of a level map `:range`.
@@ -226,7 +233,7 @@
   Returns the schema of a level map (ordinal scales, see [[level-map]]) or the dimension's plain range (colours, shapes, a size range, dashes, patterns)."
   [k]
   (let [plain (case k
-                :color color-range
+                :color color-range-or-function
                 :shape shapes
                 :size size-range
                 :dash dashes
@@ -238,6 +245,23 @@
                     :dash schema/dash
                     :pattern schema/pattern)]
     [:multi {:dispatch map?} [true (level-map attribute)] [false plain]]))
+
+(def ^:private range-props
+  "Dimension -> the card properties of its scale spec's `:range` (description, form meanings, example)."
+  (let [level-map (fn [attributes] (str "A level -> " attributes " map, for an ordinal scale."))
+        listed (fn [attributes] (str "These " attributes ", one per level in order, repeated past their count."))]
+    {:color {:description "The colours the domain maps to." :cljplot2/example [:gold :darkred]
+             :cljplot2/form-meanings {:map-of (level-map "colour")
+                                      ::schema/function "A function of `t` from 0 to 1 that returns a colour: a gradient."
+                                      ::color-range "One colour per level, or a gradient through the colours for numbers."}}
+     :shape {:description "The point shapes the levels map to." :cljplot2/example [\s \A \V]
+             :cljplot2/form-meanings {:map-of (level-map "shape") :sequential (listed "shapes")}}
+     :size {:description "The sizes in pixels the domain maps to." :cljplot2/example [1 20]
+            :cljplot2/form-meanings {:map-of (level-map "size") ::size-range "The smallest and the largest size."}}
+     :dash {:description "The dash styles the levels map to." :cljplot2/example [:solid :dotted]
+            :cljplot2/form-meanings {:map-of (level-map "dash") :sequential (listed "dashes")}}
+     :pattern {:description "The fill patterns the levels map to." :cljplot2/example [:dots :cross]
+               :cljplot2/form-meanings {:map-of (level-map "pattern") :sequential (listed "patterns")}}}))
 
 (def palette-schema
   "Theme `:palette` (aesthetic defaults)."
@@ -426,37 +450,64 @@
   [k]
   (apply schema/with-rules
          [:map {:closed true :cljplot2/type-doc "an aesthetic scale spec"}
-          (schema/optional :kind {:cljplot2/section :levels :description "scale kind: :ordinal (levels), :linear (a gradient or size range), :binned (:color or :size by bins) or :identity (values are the attributes)"
-                                  :cljplot2/default-doc ":linear for numeric :color / :size data, else :ordinal"}
+          (schema/optional :kind {:cljplot2/section :levels :description "The scale kind: how the domain maps to attributes."
+                                  :cljplot2/default-doc "`:linear` for numbers on `:color` or `:size`, dates on `:color` or a domain of two numbers; else `:ordinal`." :cljplot2/example :binned
+                                  :cljplot2/value-meanings {:ordinal "Levels, one attribute each, in `:domain` order."
+                                                            :linear "Numbers along a gradient (`:color`) or a size range (`:size`)."
+                                                            :binned "Numbers cut into classes, an attribute each (`:color`, `:size`)."
+                                                            :identity "The data's values are the attributes."}}
                            (into [:enum] (sort kinds)))
-          (schema/optional :type {:cljplot2/section :levels :description "declare numbers or dates categorical (ordinal levels) or force a numeric scale"}
+          (schema/optional :type {:cljplot2/section :levels :description "Declares how the scale reads numbers or dates, overriding the data's kind."
+                                  :cljplot2/default-doc "The data's kind." :cljplot2/example :categorical
+                                  :cljplot2/value-meanings {:categorical "As levels: an ordinal scale." :numeric "As numbers: a linear scale."}}
                            [:enum :categorical :numeric])
-          (schema/nilable :domain {:cljplot2/section :levels :description "ordinal: the levels in order; linear / binned: [lo hi] (nil at an end - the data's, e.g. [0 nil])"
-                                   :cljplot2/default-doc "the data's levels (sorted) or [min max]"}
+          (schema/nilable :domain {:cljplot2/section :levels :description "The values the scale maps: the levels in order (ordinal), or `[lo hi]` (linear, binned; `nil` at an end takes the data's, e.g. `[0 nil]`)."
+                                   :cljplot2/default-doc "The data's levels, sorted, or `[min max]`." :cljplot2/example [0 10]}
                           [:sequential any?])
-          (schema/optional :range {:cljplot2/section :range :description "attributes the domain maps to: palette, gradient, shapes, sizes [min max], dashes or patterns, or a level map"
-                                   :cljplot2/default-doc "theme :palette"}
+          (schema/optional :range (merge {:cljplot2/section :range :cljplot2/default-doc "The theme's `:palette` entry of the dimension; `:gradient` for a linear or binned colour scale."} (range-props k))
                            (range-schema k))
-          (schema/optional :spread {:cljplot2/section :range-mapping :description "ordinal :color: the range resampled to one colour per level (meant for a sequential :range - a categorical palette resamples into blends)" :default false}
+          (schema/optional :spread {:cljplot2/section :range-mapping :description "Whether an ordinal colour scale spreads its levels over the whole `:range`, for a sequential range; with a categorical palette the levels get blends of its colours." :default false
+                                    :cljplot2/example-context {:range [:gold :darkred]}
+                                    :cljplot2/value-meanings {true "One colour per level, spread over the range." false "The range's colours in order."}}
                            schema/bool)
-          (schema/optional :midpoint {:cljplot2/section :range-mapping :description "linear / binned :color: the value at the gradient's middle (a diverging scale)"}
+          (schema/optional :midpoint {:cljplot2/section :range-mapping :description "The value a linear or binned colour scale puts at the gradient's middle, making it diverging."
+                                      :cljplot2/default-doc "None: the gradient spans the domain evenly." :cljplot2/example 1.0}
                            schema/finite)
-          (schema/optional :transform {:cljplot2/section :range-mapping :description "linear :color: values placed along the gradient by their square root, logarithm, square, exponential or a monotonic function"}
+          (schema/optional :transform {:cljplot2/section :range-mapping :description "How a linear colour scale places values along its gradient."
+                                       :cljplot2/default-doc "None: evenly." :cljplot2/example :sq
+                                       :cljplot2/value-meanings {:sqrt "By their square root." :log "By their logarithm." :sq "By their square." :exp "By their exponential."}
+                                       :cljplot2/form-meanings {::schema/function "By a function of the value, monotonic over the domain and finite at its ends."}}
                            [:or (into [:enum] (sort transform-names)) schema/function])
-          (schema/optional :reverse {:cljplot2/section :range-mapping :description "the attributes in reverse order" :default false} schema/bool)
-          (schema/optional :area {:cljplot2/section :range-mapping :description ":size: the mark's area, not its size, grows linearly with the value" :default false}
+          (schema/optional :reverse {:cljplot2/section :range-mapping :description "Whether the attributes run in reverse order." :default false
+                                     :cljplot2/value-meanings {true "Reversed." false "In order."}}
                            schema/bool)
-          (schema/optional :bins {:cljplot2/section :bins :description "binned :color / :size: a bin count, breaks, a bin method or quantile bins"
-                                  :cljplot2/default-doc "5 equal bins"}
+          (schema/optional :area {:cljplot2/section :size :description "Whether a size scale grows the mark's area, not its diameter, linearly with the value." :default false
+                                  :cljplot2/value-meanings {true "By area." false "By diameter."}}
+                           schema/bool)
+          (schema/optional :bins {:cljplot2/section :bins :description "The classes of a binned colour or size scale."
+                                  :cljplot2/default-doc "Five equal-width classes." :cljplot2/example 3 :cljplot2/example-context {:kind :binned}
+                                  :cljplot2/other-values "Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error."
+                                  :cljplot2/form-meanings {::schema/pos-int "That many equal-width classes over the domain."
+                                                           ::levels/breaks "The class edges."
+                                                           ::levels/quantile-bins "Classes holding equal shares of the values."}}
                            levels/bins)
-          (schema/optional :formatter {:cljplot2/section :legend :description "legend labels, a function of the level or value"} schema/function)
-          (schema/nilable :ticks {:cljplot2/section :legend :description "linear :size / :color: the legend entries or colour bar ticks - a count or the values (dates for a :color scale over dates)"}
+          (schema/optional :formatter {:cljplot2/section :legend :description "A function of the level or value that returns its legend label."
+                                       :cljplot2/default-doc "The levels or values as text." :cljplot2/example '(fn [v] (str v "!"))}
+                           schema/function)
+          (schema/nilable :ticks {:cljplot2/section :legend :description "The legend entries or colour bar ticks of a linear size or colour scale."
+                                  :cljplot2/default-doc "About five: the theme's `[:legend :bar-ticks]` for a colour bar, five for a size legend." :cljplot2/example 2
+                                  :cljplot2/form-meanings {:sequential "These values (dates for a colour scale over dates)." ::schema/pos-int "About this many."}}
                           [:multi {:dispatch sequential?} [true [:sequential [:or schema/finite schema/temporal]]] [false schema/pos-int]])
-          (schema/optional :integer-ticks {:cljplot2/section :legend :description "linear :size / :color: counted legend entries or colour bar ticks only at whole numbers (an explicit :ticks vector or :midpoint tick is drawn as given)" :default false}
+          (schema/optional :integer-ticks {:cljplot2/section :legend :description "Whether counted legend entries or colour bar ticks of a linear size or colour scale fall only on whole numbers; an explicit `:ticks` vector or a `:midpoint` tick is drawn as given." :default false
+                                           :cljplot2/value-meanings {true "Whole numbers only." false "Any counted values."}}
                            schema/bool)
-          (schema/nilable :title {:cljplot2/section :legend :description "legend title, a string or a plot/math or plot/runs value (nil - none)" :cljplot2/default-doc "the mapped column's name"}
+          (schema/nilable :title {:cljplot2/section :legend :description "The legend title; `nil` draws none." :cljplot2/default-doc "The name of a keyword accessor; none for a function."
+                                  :cljplot2/example "level"
+                                  :cljplot2/form-meanings {:string "This text." :fn "A `plot/math` or `plot/runs` value: text with formulas."}}
                           text/label-text-schema)
-          (schema/nilable :legend {:cljplot2/section :legend :description "show the scale's legend" :default true} schema/bool)]
+          (schema/nilable :legend {:cljplot2/section :legend :description "Whether the scale draws its legend." :default true
+                                   :cljplot2/value-meanings {true "Drawn." false "Hidden."}}
+                          schema/bool)]
          [#(domain-problem k %) [:domain]]
          (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
 

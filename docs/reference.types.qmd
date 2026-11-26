@@ -36,6 +36,7 @@ format:
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .shared ul { margin: 0; padding-left: 1.25rem; }
         .shared code { overflow-wrap: anywhere; }
+        p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -95,6 +96,10 @@ The bin edges: a vector of at least 2 increasing finite numbers, e.g. `[0 10 20 
 ## colour
 
 A solid colour, or `:none`.
+
+## colour range
+
+Colours for a colour scale: a clojure2d palette name such as `:tableau-10`, a gradient name such as `:viridis/viridis`, or a non-empty sequence of solid colours such as `[:white :darkred]`.
 
 ## colour vision deficiency
 

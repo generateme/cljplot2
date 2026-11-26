@@ -33,30 +33,30 @@
 (def ^:private mapping-key-docs
   "Plot-level meaning of each mapping key (each chart's mapping rows say how it reads them) and its section of the
   mapping table: `:position`, `:interval`, `:ohlc`, `:aesthetic`, `:groups-and-order`, `:facet`, `:value`."
-  {:x {:section :position :description "x position (or the values of a strip chart with levels on y)"}
-   :y {:section :position :description "y position (or the levels of a strip chart)"}
-   :z {:section :position :description "third coordinate of 3D charts"}
-   :ymin {:section :interval :description "lower end of an interval (ribbons, error bars)"}
-   :ymax {:section :interval :description "upper end of an interval"}
-   :xend {:section :interval :description "x of a segment's end"}
-   :yend {:section :interval :description "y of a segment's end"}
-   :open {:section :ohlc :description "opening value (candlesticks)"}
-   :high {:section :ohlc :description "highest value (candlesticks)"}
-   :low {:section :ohlc :description "lowest value (candlesticks)"}
-   :close {:section :ohlc :description "closing value (candlesticks)"}
-   :color {:section :aesthetic :description "colour aesthetic: groups, or values on a colour scale"}
-   :shape {:section :aesthetic :description "point shape aesthetic"}
-   :size {:section :aesthetic :description "size aesthetic"}
-   :dash {:section :aesthetic :description "line dash aesthetic"}
-   :pattern {:section :aesthetic :description "fill pattern aesthetic"}
-   :group {:section :groups-and-order :description "groups without a visual aesthetic"}
-   :facet {:section :facet :description "wrap facets: one panel per value"}
-   :facet-col {:section :facet :description "grid facets: one column per value"}
-   :facet-row {:section :facet :description "grid facets: one row per value"}
-   :order {:section :groups-and-order :description "drawing order of points"}
-   :value {:section :value :description "a value: cell values, weights, sizes of hierarchy leaves"}
-   :set {:section :value :description "set name of a membership row (Venn)"}
-   :item {:section :value :description "item of a membership row (Venn)"}})
+  {:x {:section :position :description "The x position, or the values of a strip chart with its levels on y."}
+   :y {:section :position :description "The y position, or the values of a strip chart with its levels on x."}
+   :z {:section :position :description "The third coordinate of 3D charts."}
+   :ymin {:section :interval :description "The lower end of an interval (ribbons, error bars)."}
+   :ymax {:section :interval :description "The upper end of an interval."}
+   :xend {:section :interval :description "The x of a segment's end."}
+   :yend {:section :interval :description "The y of a segment's end."}
+   :open {:section :ohlc :description "The opening value of a period (candlesticks)."}
+   :high {:section :ohlc :description "The highest value of a period (candlesticks)."}
+   :low {:section :ohlc :description "The lowest value of a period (candlesticks)."}
+   :close {:section :ohlc :description "The closing value of a period (candlesticks)."}
+   :color {:section :aesthetic :description "The colour: levels group the rows, numbers and dates sit on a gradient."}
+   :shape {:section :aesthetic :description "The point shape; its levels group the rows."}
+   :size {:section :aesthetic :description "The mark size: levels group the rows, numbers sit on a size range."}
+   :dash {:section :aesthetic :description "The line dash; its levels group the rows."}
+   :pattern {:section :aesthetic :description "The fill pattern; its levels group the rows."}
+   :group {:section :groups-and-order :description "Groups of rows drawn as separate marks in one style, e.g. a line per group."}
+   :facet {:section :facet :description "A panel per value, wrapped into rows (wrap facets)."}
+   :facet-col {:section :facet :description "A grid column of panels per value."}
+   :facet-row {:section :facet :description "A grid row of panels per value."}
+   :order {:section :groups-and-order :description "The order the scatter chart draws its points in, lowest value first, so higher values lie on top."}
+   :value {:section :value :description "A value the chart reads: a cell's value, a weight, a hierarchy leaf's size."}
+   :set {:section :value :description "The set name of a membership row (Venn diagrams)."}
+   :item {:section :value :description "The item of a membership row (Venn diagrams)."}})
 
 (def mapping-schema
   "Schema of a plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in [[mapping-keys]], `:hierarchy` a non-empty vector of accessors. `:fill` is rejected (not an aesthetic, see the density / histogram `:fill` options). Open: user charts may read other keys."
@@ -65,7 +65,7 @@
                    (let [{:keys [section description]} (mapping-key-docs k)]
                      (schema/nilable k {:description description :cljplot2/section section} schema/accessor))))
             mapping-keys)
-      (conj (schema/nilable :hierarchy {:description "levels of a hierarchy, root first (treemap, partition, pack)"
+      (conj (schema/nilable :hierarchy {:description "The levels of a hierarchy, root first (treemap, partition, pack)."
                                         :cljplot2/section :value}
                             [:vector {:min 1} schema/accessor])
             ;; no :fill aesthetic: a mapped :fill would be silently ignored

@@ -256,6 +256,12 @@
       (is (= [] (describe/rows-under rows [:legend])))
       (is (= [] (describe/rows-under rows [:no-such-key])))
       (is (= rows (describe/rows-under rows []))))
+    (testing "rows at paths: those rows only, in the rows' order, not their nested rows"
+      (is (= [[:flip] [:coord]] (map :path (describe/rows-at rows #{[:coord] [:flip]}))))
+      (is (= [[:groups]] (map :path (describe/rows-at rows #{[:groups]})))))
+    (testing "boundary: no paths, an unknown path - no rows"
+      (is (= [] (describe/rows-at rows #{})))
+      (is (= [] (describe/rows-at rows #{[:no-such-key]}))))
     (testing "container rows: maps holding options, not the options"
       (is (describe/container-row? (row rows :facets)))
       (is (not (describe/container-row? (row rows :legend))))

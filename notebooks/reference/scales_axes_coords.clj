@@ -1,19 +1,24 @@
 ;; # Scales, axes and coordinates
 
-;; Position scales map `:x` and `:y` data to the panel; their kind follows the data (numbers, levels, dates) unless
-;; set. Each position scale draws an axis and grid lines. A plot is cartesian unless `:coord` is polar; `:flip`
-;; swaps the directions and `:aspect :iso` keeps data units square.
+;; Every mapped dimension goes through a scale: the position scales `:x` and `:y` place marks on the panel, the
+;; aesthetic scales style them ([Aesthetics and legends](reference.aesthetics_legends.html)). This chapter covers the
+;; position scales, set under the plot's `:scales` key (`{:scales {:x {...} :y {...}}}`), and the coordinates, set by
+;; the plot keys `:coord`, `:flip` and `:aspect`. A position scale's kind follows the data (numbers, levels, dates)
+;; unless set, and each one draws an axis and grid lines.
 
 (ns reference.scales-axes-coords
   (:require [fastmath.core :as m]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.pipeline :as pipeline]
             [cljplot2.scale.coord :as coord]
             [cljplot2.scale.position :as position]
             [cljplot2.schema :as schema]
             [notebook-utils :as nu])
   (:import [java.time LocalDate]))
+
+;; The table below holds the Gapminder countries of 2007; the partial domain and the ticks plots draw them:
 
 (nu/source-note {:dataset :gapminder-2007})
 
@@ -21,24 +26,37 @@
 
 (nu/data-table gapminder)
 
+;; The table below counts the countries per continent; the bar plots draw it:
+
 (def counts (for [[continent rs] (group-by :continent gapminder)] {:continent continent :n (count rs)}))
 
 (nu/data-table counts)
 
-;; ## Kind and domain
-
-;; The scale kind (see Scale kinds below) and the data range it covers: the charts' data extent unless `:domain`
-;; is given - `[lo hi]` for continuous kinds, the levels in order for `:bands` - padded (`:expand`) and extended to
-;; nice tick values (`:nice`). `:type :categorical` makes numbers levels (left: cylinder counts as three bands);
-;; right: fixed domains, x without padding.
-
-(nu/options-table (describe/options position/scale-spec-schema) :kind-domain)
+;; The table below holds the mtcars cars; the domain and axis sections and two scale kinds draw them:
 
 (nu/source-note {:dataset :mtcars})
 
 (def mtcars (nu/dataset :mtcars))
 
 (nu/data-table mtcars)
+
+;; The tables below hold a made-up spiral and points on an ellipse; the coordinates section draws them:
+
+(def spiral (for [t (range 0 13)] {:t t :r (+ 1 t)}))
+
+(nu/data-table spiral)
+
+(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
+
+(nu/data-table ellipse)
+
+;; ## Kind and domain
+
+;; These options set the scale kind (Scale kinds below) and the data range it covers. The scale extends the domain to
+;; nice tick values (`:nice`), then pads it (the charts' padding, or `:expand`). The plots below read cylinder counts
+;; as three bands (left) and fix both domains, x without padding (right):
+
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :kind-domain)
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :cyl :y :mpg}
@@ -51,10 +69,9 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-;; A partial domain fixes one end and takes the other from the data, as if there were no domain: `[0 nil]` starts
-;; the axis at zero (padded and made nice as any explicit domain), `[nil hi]` fixes the top; `[nil nil]` is no domain.
-;; Continuous kinds only (not `:interpolated`); the data must reach past the fixed end. Left: the data's range;
-;; right: life expectancy from zero.
+;; A partial domain such as `[0 nil]` fixes one end; the charts' padding and nice rounding still apply at the other.
+;; Only continuous kinds other than `:interpolated` take one, and the data must reach past the fixed end. The left
+;; plot covers the data's range; the right one starts life expectancy at zero:
 
 (plot/render-image (plot/arrange (for [[title y-scale] [["the data's range" {}] [":domain [0 nil]" {:domain [0 nil]}]]]
                                    {:data gapminder
@@ -65,8 +82,8 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-;; Which kind a plot's scales get - from the data and what the charts compute - is in the built plot's
-;; `:scale-specs`: here a bar chart's levels on x, a histogram's bins and counts:
+;; The built plot's `:scale-specs` hold the kind each scale gets from the data and the charts' statistics. Below, a
+;; bar chart puts levels on x and a histogram puts bins and counts on its axes:
 
 (into {} (for [[title p] {"bar" {:data mtcars :mapping {:x #(str (:cyl %) " cyl") :y :mpg} :charts [(chart/bar)]}
                           "histogram" {:data mtcars :mapping {:x :mpg} :charts [(chart/histogram)]}}]
@@ -74,11 +91,11 @@
 
 ;; ## Ticks and labels
 
-;; Where ticks go and how they read: a tick count hint or the tick values, a formatter (a function, a date
-;; pattern, `:power` for powers of ten), minor ticks and the tick algorithm. Minor ticks get grid lines only when
-;; the theme draws them (`[:panel :grid :minor]`, `:none` by default) - turned on here:
+;; These options set where ticks go and how their labels read. Minor ticks get grid lines only when the theme draws
+;; them (`[:panel :grid :minor]`, `:none` by default). The plot below writes powers of ten on a log x axis with minor
+;; ticks and their grid lines, and gives y its tick values and a formatter:
 
-(nu/options-table (describe/options position/scale-spec-schema) :ticks)
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :ticks)
 
 (plot/render-image {:data gapminder
                     :mapping {:x :gdp-per-cap :y :life-exp}
@@ -90,9 +107,10 @@
 
 ;; ## Order and direction
 
-;; The order of bands - by a function of each level's rows, optionally descending - and the axis direction.
+;; These options order the bands and set the axis direction. The plots below order the continents by their count,
+;; largest first (left), and reverse the y axis (right):
 
-(nu/options-table (describe/options position/scale-spec-schema) :order)
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :order)
 
 (plot/render-image (plot/arrange [{:data counts
                                    :mapping {:x :continent :y :n}
@@ -109,12 +127,11 @@
 
 ;; ## Axis
 
-;; What the axis draws (`:grid` - grid lines only, `:no-grid` - the axis only, `false` - nothing), a display-only
-;; domain for its ticks, and whether tick labels overlapping a drawn one are dropped (`:drop`, the default for
-;; computed ticks) or all drawn (`:keep`, the default for an explicit `:ticks` vector; builders naming data items on
-;; an axis, such as dendrogram leaves, set it).
+;; These options set what the scale's axis draws. Builders naming data items on an axis, such as dendrogram leaves,
+;; set `:overlapping-labels :keep`. The plots below draw the x axis without grid lines and y grid lines without an
+;; axis (left), and y ticks of a display domain (right):
 
-(nu/options-table (describe/options position/scale-spec-schema) :axis)
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :axis)
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :wt :y :mpg}
@@ -131,10 +148,10 @@
 
 ;; ## wadogo attributes
 
-;; Options passed to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind; each kind below lists the
-;; ones it reads.
+;; cljplot2 passes these options to the [wadogo](https://github.com/scicloj/wadogo) scale of the kind; each kind below
+;; lists the ones it reads. The plot below widens the space between and around the bands:
 
-(nu/options-table (describe/options position/scale-spec-schema) :wadogo)
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :wadogo)
 
 (plot/render-image {:data counts
                     :mapping {:x :continent :y :n}
@@ -146,7 +163,7 @@
 
 ;; Each kind below is described by wadogo (`wadogo.scale/kind-info`). cljplot2 sets a kind's `:domain` (the data
 ;; extent or the spec's `:domain`), its `:range` (the panel's pixels), ticks and tick format itself - through the
-;; options above; the remaining attributes of a kind are the "wadogo:" options.
+;; options above; the remaining attributes of a kind are the options under wadogo attributes.
 
 ;; ### Linear
 
@@ -159,7 +176,7 @@
 
 ;; ### Log
 
-;; Positive values only; `:base` changes the tick values (here powers of two).
+;; The scale takes positive values only; `:base` sets the tick values (here powers of two).
 
 (nu/scale-kind-doc :log)
 
@@ -181,7 +198,8 @@
 
 ;; ### Symlog
 
-;; For data of both signs over many magnitudes. The constant `:C` isn't passed through (wadogo's default 1.0).
+;; For data of both signs over many magnitudes. cljplot2 doesn't pass the constant `:C`, so wadogo uses its default
+;; 1.0.
 
 (nu/scale-kind-doc :symlog)
 
@@ -193,7 +211,7 @@
 
 ;; ### Bands
 
-;; Levels; the default kind for strings and keywords.
+;; Bands is the default kind for strings and keywords.
 
 (nu/scale-kind-doc :bands)
 
@@ -205,7 +223,7 @@
 
 ;; ### Datetime
 
-;; `java.time` values; `:formatter` takes a date pattern.
+;; The plot below formats dates with a pattern:
 
 (nu/scale-kind-doc :datetime)
 
@@ -218,14 +236,14 @@
 
 ;; ### Interpolated
 
-;; A piecewise mapping of the domain values onto evenly spaced (or given) `:stops` of the panel, through an
-;; `:interpolator`:
+;; The scale maps the domain values piecewise onto evenly spaced or given `:stops` of the panel through an
+;; `:interpolator`; these options set both:
 
-(nu/options-table (describe/options position/scale-spec-schema) :interpolated)
+(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema) :interpolated)
 
 (nu/scale-kind-doc :interpolated)
 
-;; The interpolators - fastmath 1D interpolation methods (or a function):
+;; The `:interpolator` takes a fastmath 1D interpolation method or a function:
 
 (sort schema/interpolation-methods)
 
@@ -240,7 +258,7 @@
 
 ;; ### Radial
 
-;; Radii of areas proportional to the values - for polar charts whose bar areas should read as values.
+;; The plot below draws polar bars whose areas read as values:
 
 (nu/scale-kind-doc :radial)
 
@@ -254,17 +272,11 @@
 
 ;; ## Coordinates
 
-;; `:flip true` draws `:x` vertically; scales, labels and theme keys keep their names. `:aspect :iso` gives both
-;; linear axes the same pixels per data unit (the panel shrinks to fit). Polar coordinates map the horizontal scale
-;; to angles and the vertical one to radii.
+;; These plot keys set the coordinate system. They sit at the top of the plot map, beside `:scales`:
 
-(nu/options-table (describe/options coord/polar-schema))
+(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:flip] [:coord]}))
 
-;; Polar coordinates work with these charts:
-
-(sort (for [[kind constructor] (describe/chart-constructors)
-            :when (contains? (:coords (constructor)) :polar)]
-        kind))
+;; The plots below flip a bar chart (left) and lay bars over 270 degrees of a ring with a hole (right):
 
 (plot/render-image (plot/arrange [{:data counts
                                    :mapping {:x :continent :y :n}
@@ -281,12 +293,18 @@
                                  {:columns 2})
                    {:width 900 :height 400})
 
-;; In polar coordinates `:flip true` swaps the roles - the vertical scale on angles, the horizontal on radii
-;; (left); `:arcs true` makes data lines between points follow the circle instead of chords (right):
+;; A polar `:coord` takes these keys beside its `:kind :polar`:
 
-(def spiral (for [t (range 0 13)] {:t t :r (+ 1 t)}))
+(nu/option-cards [:coord] (describe/options coord/polar-schema))
 
-(nu/data-table spiral)
+;; Polar coordinates work with these charts:
+
+(sort (for [[kind constructor] (describe/chart-constructors)
+            :when (contains? (:coords (constructor)) :polar)]
+        kind))
+
+;; In polar coordinates `:flip true` swaps the roles - the `:y` scale on angles, the `:x` scale on radii (left);
+;; `:arcs true` makes data lines between points follow the circle instead of chords (right):
 
 (plot/render-image (plot/arrange [{:data counts
                                    :mapping {:x :continent :y :n :color :continent}
@@ -303,12 +321,14 @@
                                  {:columns 2})
                    {:width 900 :height 420})
 
-;; `:aspect :iso` - the same pixels per data unit on both axes, so an ellipse twice as wide as high looks it (the
-;; points joined in data order, [line](reference.charts_points_lines.html#line-charts) `:order :data`):
+;; ## Aspect
 
-(def ellipse (for [t (m/slice-range 0 m/TWO_PI 64)] {:x (m/cos t) :y (m/* 0.5 (m/sin t))}))
+;; This plot key fixes the ratio of the panel's axes in data units:
 
-(nu/data-table ellipse)
+(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:aspect]}))
+
+;; In the plot below `:aspect :iso` keeps an ellipse twice as wide as high (the line joins the points in data order,
+;; [line](reference.charts_points_lines.html#line-charts) `:order :data`):
 
 (plot/render-image {:data ellipse
                     :mapping {:x :x :y :y}

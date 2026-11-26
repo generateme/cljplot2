@@ -1,8 +1,7 @@
 ;; # Data and mapping
 
 ;; Plot data is a sequence of maps (rows) or a map of equal-length sequences (columns). A mapping says which value
-;; of a row each dimension reads: a keyword or a function of the row. The plot's mapping is merged under each
-;; chart's own, and a chart reads only the keys it uses - its page lists them (`(describe/mapping (chart/bar))`).
+;; of a row each dimension reads. The plot's mapping is merged under each chart's own, and a chart reads only the keys it uses - its page lists them (`(describe/mapping (chart/bar))`).
 ;; The mapping is open: a chart of your own may read other keys.
 
 (ns reference.data-mapping
@@ -15,16 +14,80 @@
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
 
-;; ## Data: rows or columns
-
-;; Columns become rows; both forms give the same plot. A chart may bring its own `:data` (and `:mapping`) - the
-;; Common options group every chart takes:
-
-(nu/options-table (describe/fragment-rows :common))
+;; The table below holds a made-up wave as two columns; the first section draws it:
 
 (def columns {:t (range 20) :v (map #(m/sin (m/* 0.4 %)) (range 20))})
 
 (nu/data-table columns)
+
+;; The table below holds the iris flowers; the position, aesthetic and facet sections draw them:
+
+(nu/source-note {:dataset :iris})
+
+(def iris (nu/dataset :iris))
+
+(nu/data-table iris)
+
+;; The table below holds made-up yearly visitor counts, the years as `java.time.Year` values; the position section
+;; draws them as levels:
+
+(def yearly (for [y (range 2015 2023)] {:year (java.time.Year/of y) :visitors (+ 40 (* 7 (mod (* y 5) 9)))}))
+
+(nu/data-table yearly)
+
+;; The table below holds a made-up curve with a band around it; the interval section draws it:
+
+(def band (for [t (range 0 21)] {:t t :v (* 0.1 t t) :lo (- (* 0.1 t t) 3) :hi (+ (* 0.1 t t) 3)}))
+
+(nu/data-table band)
+
+;; The table below holds made-up daily prices; the price section draws them:
+
+(def prices (reductions (fn [{:keys [close]} d]
+                          (let [open close
+                                close (+ open (- (mod (* d 37) 11) 5.0))]
+                            {:day d :open open :close close
+                             :high (+ (max open close) (mod d 3)) :low (- (min open close) (mod d 4))}))
+                        {:day 0 :open 100.0 :close 100.0 :high 101.0 :low 99.0}
+                        (range 1 25)))
+
+(nu/data-table prices)
+
+;; The tables below hold four made-up walks, one without a number, and overlapping points of four sizes; the group
+;; and order section draws them:
+
+(def walks (for [w (range 4) t (range 12)] {:walk (when (pos? w) w) :t t :v (+ w (* t 0.3 (inc w)) (mod (* t w) 3))}))
+
+(nu/data-table walks)
+
+(def overlapping (for [i (range 24)] {:x (* 0.2 i) :y (* 0.2 i) :s (- 3 (mod i 4))}))
+
+(nu/data-table overlapping)
+
+;; The tables below hold a made-up budget of departments and teams and made-up set memberships; the last section
+;; draws them:
+
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
+             {:dept "sport" :team "football" :cost 20}])
+
+(nu/data-table budget)
+
+(def members (for [[set items] {"reads" ["ann" "bob" "cid" "dan"] "writes" ["bob" "dan" "eve"]}
+                   item items]
+               {:set set :item item}))
+
+(nu/data-table members)
+
+;; ## Data: rows or columns
+
+;; The plot's `:data` holds the rows the charts read. Columns become rows, so both forms draw the same plot. A chart
+;; may bring its own `:data` and `:mapping`, the [Common options](reference.shared_options.html#common-options) every
+;; chart takes:
+
+(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:data]}))
+
+;; The plot below draws the wave's columns and two points from the scatter chart's own rows:
 
 (plot/render-image {:data columns
                     :mapping {:x :t :y :v}
@@ -34,17 +97,11 @@
 
 ;; ## Position
 
-;; The coordinates of a mark. Every mapping key takes an accessor: a keyword (the row's value under it), a
-;; function of the row (computing the value - here y is a ratio of two columns), or a categorical marker of either,
-;; `(levels/categorical acc)`, which reads numbers or dates as levels (below).
+;; These keys place a mark. Every mapping key takes an accessor: a keyword (the row's value under it), a function of
+;; the row that computes the value, or either wrapped in `(levels/categorical acc)`, which reads numbers or dates as
+;; levels. The plot below computes y as a ratio of two columns:
 
-(nu/options-table (describe/options rows/mapping-schema) :position)
-
-(nu/source-note {:dataset :iris})
-
-(def iris (nu/dataset :iris))
-
-(nu/data-table iris)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :position)
 
 (plot/render-image {:data iris
                     :mapping {:x :petal-length
@@ -53,8 +110,8 @@
                     :labels {:y "petal width / length"}}
                    {:width 500 :height 300})
 
-;; The categorical marker: petal lengths rounded to whole numbers, read as numbers (left - a continuous axis) and
-;; as levels (right - one band each):
+;; The plots below round petal lengths to whole numbers and read them as numbers (left, a continuous axis) and as
+;; levels (right, one band each):
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x #(m/round (:petal-length %)) :y :sepal-length}
@@ -66,11 +123,8 @@
                                  {:columns 2})
                    {:width 800 :height 300})
 
-;; Dates as levels: one bar per year, labelled by the year (unmarked, `Year` values would be dates on a time axis):
-
-(def yearly (for [y (range 2015 2023)] {:year (java.time.Year/of y) :visitors (+ 40 (* 7 (mod (* y 5) 9)))}))
-
-(nu/data-table yearly)
+;; The plot below reads dates as levels: one bar per year, labelled by the year. Without `levels/categorical` the
+;; `Year` values would sit on a time axis:
 
 (plot/render-image {:data yearly
                     :mapping {:x (levels/categorical :year) :y :visitors}
@@ -79,15 +133,12 @@
 
 ;; ## Intervals and segments
 
-;; The other end of a mark spanning two values: a band from `:ymin` to `:ymax` (ribbons, error bars), a segment
-;; to `:xend` / `:yend`. Below, every fifth point drops a segment to a literal end, the
-;; [segment](reference.charts_points_lines.html#line-segments) option `:yend 0`.
+;; These keys give the other end of a mark spanning two values: a band from `:ymin` to `:ymax`, a segment to `:xend`
+;; and `:yend`. The plot below draws a band from `:lo` to `:hi` around the curve and, from every fifth point, a
+;; segment down to 0 - a constant end set by the [segment](reference.charts_points_lines.html#line-segments) option
+;; `:yend 0`, not a mapping:
 
-(nu/options-table (describe/options rows/mapping-schema) :interval)
-
-(def band (for [t (range 0 21)] {:t t :v (* 0.1 t t) :lo (- (* 0.1 t t) 3) :hi (+ (* 0.1 t t) 3)}))
-
-(nu/data-table band)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :interval)
 
 (plot/render-image {:data band
                     :mapping {:x :t :y :v :ymin :lo :ymax :hi}
@@ -100,19 +151,9 @@
 
 ;; ## Prices
 
-;; Opening, highest, lowest and closing values of a period - the candlestick chart.
+;; These keys give the four prices of a period, which the candlestick chart draws:
 
-(nu/options-table (describe/options rows/mapping-schema) :ohlc)
-
-(def prices (reductions (fn [{:keys [close]} d]
-                          (let [open close
-                                close (+ open (- (mod (* d 37) 11) 5.0))]
-                            {:day d :open open :close close
-                             :high (+ (max open close) (mod d 3)) :low (- (min open close) (mod d 4))}))
-                        {:day 0 :open 100.0 :close 100.0 :high 101.0 :low 99.0}
-                        (range 1 25)))
-
-(nu/data-table prices)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :ohlc)
 
 (plot/render-image {:data prices
                     :mapping {:x :day :open :open :high :high :low :low :close :close}
@@ -121,10 +162,11 @@
 
 ;; ## Aesthetics
 
-;; Values styling marks: colour, shape, size, dash, fill pattern - each through its scale and legend (Aesthetics
-;; and legends chapter).
+;; These keys style marks by their values, each through its scale and legend
+;; ([Aesthetics and legends](reference.aesthetics_legends.html)). The plot below maps colour and shape to the species
+;; and size to the petal width:
 
-(nu/options-table (describe/options rows/mapping-schema) :aesthetic)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :aesthetic)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :color :species :shape :species :size :petal-width}
@@ -133,26 +175,19 @@
 
 ;; ## Groups and order
 
-;; `:group` splits rows into groups without styling them - charts drawing one mark per group (lines, areas,
-;; densities ...) draw each separately; any aesthetic groups too. `:order` sets the drawing order of points.
+;; These keys group rows and order points. Charts that draw one mark per group (lines, areas, densities ...) draw
+;; each group separately; an aesthetic mapped to levels groups the rows too. The plot below draws a line per walk:
 
-(nu/options-table (describe/options rows/mapping-schema) :groups-and-order)
-
-(def walks (for [w (range 4) t (range 12)] {:walk (when (pos? w) w) :t t :v (+ w (* t 0.3 (inc w)) (mod (* t w) 3))}))
-
-(nu/data-table walks)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :groups-and-order)
 
 (plot/render-image {:data walks
                     :mapping {:x :t :y :v :group :walk}
                     :charts [(chart/line {:color [70 70 70]})]}
                    {:width 450 :height 280})
 
-;; `:order`: overlapping points listed largest first - in data order the small ones are drawn last, on top (left);
-;; ordered by size (ascending, `:descending false`, the default) the large ones come last and cover them (right):
-
-(def overlapping (for [i (range 24)] {:x (* 0.2 i) :y (* 0.2 i) :s (- 3 (mod i 4))}))
-
-(nu/data-table overlapping)
+;; The points below repeat a run from largest to smallest. In data order each run's small ones are drawn last, on top
+;; (left); ordered by size (ascending, the scatter option `:descending false`, the default) the large ones come last
+;; and cover them (right):
 
 (plot/render-image (plot/arrange [{:data overlapping
                                    :mapping {:x :x :y :y :size :s :color :s}
@@ -169,10 +204,10 @@
                                  {:columns 2})
                    {:width 900 :height 350})
 
-;; A `nil` group value forms its own NA level - the bottom line above is the walk without a number. The plot's
-;; `:groups {:na false}` drops such rows instead:
+;; The plot's `:groups` key sets what happens to rows whose group value is `nil`; the bottom line of the walks above is
+;; the walk without a number. The plot below drops such rows:
 
-(nu/options-table (describe/rows-under (describe/options pipeline/plot-schema) [:groups]))
+(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:groups]))
 
 (plot/render-image {:data walks
                     :mapping {:x :t :y :v :group :walk}
@@ -182,17 +217,17 @@
 
 ;; ## Facets
 
-;; Values splitting the plot into panels: a wrap of panels (`:facet`) or a grid of columns and rows (Facets
-;; chapter).
+;; These keys split the plot into panels: a wrap of panels or a grid of columns and rows
+;; ([Facets and arrange](reference.facets_arrange.html)). The plot below draws a panel per species:
 
-(nu/options-table (describe/options rows/mapping-schema) :facet)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :facet)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :facet :species}
                     :charts [(chart/scatter)]}
                    {:width 700 :height 280})
 
-;; A grid: species as columns, wide and narrow sepals as rows:
+;; The plot below draws a grid: species as columns, wide and narrow sepals as rows:
 
 (plot/render-image {:data iris
                     :mapping {:x :petal-length :y :petal-width :facet-col :species
@@ -202,22 +237,10 @@
 
 ;; ## Values, sets and hierarchies
 
-;; Keys of particular charts: `:value` (cell values, weights, leaf sizes), `:hierarchy` (the levels of a tree,
-;; outer first) and `:set` / `:item` (set membership of Venn diagrams).
+;; These keys belong to particular charts. The plot below draws the budget as a treemap and the memberships as a Venn
+;; diagram:
 
-(nu/options-table (describe/options rows/mapping-schema) :value)
-
-(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
-             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
-             {:dept "sport" :team "football" :cost 20}])
-
-(nu/data-table budget)
-
-(def members (for [[set items] {"reads" ["ann" "bob" "cid" "dan"] "writes" ["bob" "dan" "eve"]}
-                   item items]
-               {:set set :item item}))
-
-(nu/data-table members)
+(nu/plot-mapping-list (describe/options rows/mapping-schema) :value)
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}

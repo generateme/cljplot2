@@ -136,6 +136,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .shared ul { margin: 0; padding-left: 1.25rem; }
 .shared code { overflow-wrap: anywhere; }
+p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
 
 
@@ -606,8 +607,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:data</td>
 <td>a sequence of rows (maps) or a map of columns (sequences) or nil</td>
-<td></td>
-<td>rows (a sequence of maps) or columns (a map of sequences) the charts read</td>
+<td>None: each chart brings its own `:data`.</td>
+<td>The rows or columns the charts read; a chart's own `:data` wins over it.</td>
 </tr>
 <tr class="even">
 <td>:mapping</td>
@@ -755,20 +756,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:aspect</td>
 <td>one of :iso or nil</td>
-<td></td>
-<td>:iso - equal pixels per data unit on x and y (linear scales)</td>
+<td>Free: the panel takes the space it gets.</td>
+<td>The ratio of the panel's axes in data units.</td>
 </tr>
 <tr class="even">
 <td>:flip</td>
 <td>true or false or nil</td>
 <td>false</td>
-<td>draw the :x scale vertically and :y horizontally</td>
+<td>Whether the `:x` scale is drawn vertically and the `:y` scale horizontally; scales, labels and theme keys keep their names.</td>
 </tr>
 <tr class="odd">
 <td>:coord</td>
 <td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td>
-<td>cartesian</td>
-<td>coordinate system: cartesian or polar</td>
+<td>Cartesian.</td>
+<td>The coordinate system the panels map the position scales to.</td>
 </tr>
 </tbody>
 </table>
@@ -1030,7 +1031,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="printedClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>{<span class="at">:description</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a> <span class="st">"rows (a sequence of maps) or columns (a map of sequences) the charts read"</span>,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a> <span class="st">"The rows or columns the charts read; a chart's own `:data` wins over it."</span>,</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a> <span class="at">:path</span> [<span class="at">:data</span>],</span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a> <span class="at">:key</span> <span class="at">:data</span>,</span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a> <span class="at">:fragment</span> <span class="va">nil</span>,</span>
@@ -1038,11 +1039,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a> <span class="at">:section</span> <span class="at">:content</span>,</span>
 <span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a> <span class="at">:type</span></span>
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a> <span class="st">"a sequence of rows (maps) or a map of columns (sequences) or nil"</span>,</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a> <span class="at">:default-doc</span> <span class="va">nil</span>,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a> <span class="at">:default-doc</span> <span class="st">"None: each chart brings its own `:data`."</span>,</span>
 <span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a> <span class="at">:values</span> [],</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a> <span class="at">:other-values</span> <span class="va">nil</span>,</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:required</span> <span class="va">false</span>,</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:forms</span> [{<span class="at">:form</span> <span class="at">:cljplot2.data.rows/data</span>, <span class="at">:type</span> <span class="st">"data"</span>, <span class="at">:meaning</span> <span class="va">nil</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a> <span class="at">:example</span> [{<span class="at">:x</span> <span class="dv">1</span>, <span class="at">:y</span> <span class="dv">2</span>} {<span class="at">:x</span> <span class="dv">2</span>, <span class="at">:y</span> <span class="dv">3</span>} {<span class="at">:x</span> <span class="dv">3</span>, <span class="at">:y</span> <span class="dv">1</span>}],</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:other-values</span> <span class="va">nil</span>,</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:required</span> <span class="va">false</span>,</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a> <span class="at">:forms</span> [{<span class="at">:form</span> <span class="at">:cljplot2.data.rows/data</span>, <span class="at">:type</span> <span class="st">"data"</span>, <span class="at">:meaning</span> <span class="va">nil</span>}]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/intro.clj</small></small></pre></div>
