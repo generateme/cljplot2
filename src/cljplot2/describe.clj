@@ -38,6 +38,8 @@
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
             [cljplot2.data.kde :as kde]
+            [cljplot2.data.levels :as levels]
+            [cljplot2.data.probability :as probability]
             [cljplot2.data.rows :as rows]
             [cljplot2.data.space3d :as space]
             [cljplot2.data.strip :as strip]
@@ -56,7 +58,6 @@
             ;; namespaces of the user-facing functions (`:cljplot2/api`), so [[api-vars]] finds them all
             [cljplot2.data.contour]
             [cljplot2.data.graph :as graph]
-            [cljplot2.data.levels]
             [cljplot2.data.series :as series]
             [cljplot2.data.sets]
             [cljplot2.data.shingle]
@@ -73,7 +74,8 @@
    :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
    :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
    :pairwise "Statistic cells" :box "Box plots" :violin "Violin plots" :extent "Error bars" :stripplot "Strip plots"
-   :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots"})
+   :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots" :histogram "Histograms" :density "Density curves"
+   :ecdf "Empirical CDFs" :qq "Q-Q plots" :pp "P-P plots"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -188,7 +190,7 @@
       := (pr-str (first ch))
       (:> :>= :< :<=) (str (name t) " " (first ch))
       :or (str/join " or " (map type-text ch))
-      :multi (str/join " or " (map (fn [[_ _ c]] (type-text c)) ch))
+      :multi (str/join " or " (keep (fn [[_ _ c]] (when-not (schema/forbidden? c) (type-text c))) ch))
       :and (str/join ", " (keep #(when-not (= :fn (malli/type (malli/schema %))) (type-text %)) ch))
       (:tuple :cat) (str "[" (str/join ", " (map type-text ch)) "]")
       :? (str "optional " (type-text (first ch)))
@@ -230,7 +232,8 @@
          (into {} (map (fn [s] [(malli/type s) s]))
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
-                kde/kernel-schema kde/bandwidth-rule-schema])))
+                kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
+                probability/distribution-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."
@@ -309,9 +312,12 @@
                      (str "[" (str/join ", " (map form-text children)) "]"))
       (= :map-of t) (str "map of " (form-text (first children)) " to " (form-text (second children)))
       (= :enum t) (str/join " or " (map #(str "`" (pr-str %) "`") children))
+      (and (#{:int :double} t) (or (:min (malli/properties compiled)) (:max (malli/properties compiled))))
+      (let [{lo :min hi :max} (malli/properties compiled)]
+        (str (builtin-texts t) " " (str/join " and " (cond-> [] lo (conj (str "at least " lo)) hi (conj (str "at most " hi))))))
       (= :and t) (or (bounded-text children) (str/join ", " (map form-text children)))
       (= :or t) (str/join " or " (map form-text children))
-      (= :multi t) (str/join " or " (map (comp form-text last) children))
+      (= :multi t) (str/join " or " (keep (fn [c] (when-not (schema/forbidden? (last c)) (form-text (last c)))) children))
       (= :fn t) (type-text compiled)
       :else (type-text compiled))))
 
@@ -345,7 +351,7 @@
     (cond
       (= :maybe t) (alternatives (first children))
       (= :or t) (apply merge-with into {:values [] :forms []} (map alternatives children))
-      (= :multi t) (apply merge-with into {:values [] :forms []} (map (comp alternatives last) children))
+      (= :multi t) (apply merge-with into {:values [] :forms []} (keep (fn [c] (when-not (schema/forbidden? (last c)) (alternatives (last c)))) children))
       (= :enum t) {:values (mapv (fn [v] [v (:cljplot2/value-meanings (malli/properties s))]) children) :forms []}
       (= := t) {:values [[(first children) nil]] :forms []}
       (contains? boolean-types t) {:values [[true nil] [false nil]] :forms []}

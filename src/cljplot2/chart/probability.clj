@@ -57,7 +57,7 @@
 
 (def ^:private style-entries
   "Map entries of a probability plot's style (theme `[:chart :qq]` / `[:chart :pp]`): the scatter point style and the reference line width; also its options."
-  (conj common/point-style-entries (schema/optional :line-width {:description "reference line width in pixels"} schema/non-neg)))
+  (conj common/point-style-entries (schema/optional :line-width {:description "The width of the reference line in pixels." :cljplot2/example 4} schema/non-neg)))
 
 (defn- distribution-entry
   "Gives the map entry of a distribution side option.
@@ -65,12 +65,12 @@
   Parameters:
 
   - `k` (keyword): the option, `:x-distribution` or `:y-distribution`.
-  - `side` (string): the side's name in the description.
+  - `side` (string): the side's name in the description, in backticks as code, e.g. `` `:x` ``.
 
   Returns a nilable entry of [[cljplot2.data.probability/distribution-schema]] in section `:distributions`."
   [k side]
-  (schema/nilable k {:cljplot2/section :distributions :description (str "the " side " side as a distribution instead of data: a fastmath distribution, [:name] or [:name params]"
-                                       " (wins over the plot's mapping of " side ")")}
+  (schema/nilable k {:cljplot2/section :distributions :description (str "A distribution that takes the place of the " side " data; it wins over the plot's mapping of " side ".")
+                     :cljplot2/default-doc (str "The mapped " side " values.") :cljplot2/example (if (= k :x-distribution) [:exponential] [:t {:degrees-of-freedom 3}])}
                   probability/distribution-schema))
 
 (defn- options-schema
@@ -80,55 +80,62 @@
 
   - `line-values` (vector of keywords): the `:line` values besides `false`.
   - `line-props` (map): the documenting properties of `:line`.
+  - `kind-docs` (map): the kind's texts - `:n-points` (what the `:n` points are), `:distributions-context` (the options an example of two distributions needs).
   - `extra` (sequence): further map entries of the kind (P-P `:domain`).
 
   Returns the closed map schema."
-  [line-values line-props extra]
+  [line-values line-props {:keys [n-points distributions-context]} extra]
   (-> [:map {:closed true}]
       (into (schema/in-section :style style-entries))
       (into data/common-options)
       (into theme/theme-style-entries)
-      (conj (distribution-entry :x-distribution ":x")
-            (distribution-entry :y-distribution ":y")
+      (conj (distribution-entry :x-distribution "`:x`")
+            (distribution-entry :y-distribution "`:y`")
             (schema/optional :line (assoc line-props :cljplot2/section :distributions) (into [:enum false] line-values))
-            (schema/optional :n {:cljplot2/section :distributions :description "both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)"
-                                      :cljplot2/default-doc "100; an error with a data side"}
+            (schema/optional :n {:cljplot2/section :distributions :description (str "The number of " n-points " when both sides are distributions; the chart rejects it with a data side.")
+                                 :cljplot2/default-doc (str "`" default-n "`.") :cljplot2/example 10 :cljplot2/example-context distributions-context}
                              [:int {:min 2}])
-            (schema/nilable :label {:cljplot2/section :distributions :description "both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})"
-                                    :cljplot2/default-doc "\"<y name> vs <x name>\"; an error with a data side"}
+            (schema/nilable :label {:cljplot2/section :distributions :description "The label of the chart's points when both sides are distributions; the chart's own mapping of `:label`, e.g. `{:color :label}`, styles the points by it. The chart rejects it with a data side."
+                                    :cljplot2/default-doc "`\"<y name> vs <x name>\"`." :cljplot2/example "t(3)"
+                                    :cljplot2/form-meanings {:string "The label text." :keyword "A keyword, kept as the label value."}
+                                    :cljplot2/example-context (assoc distributions-context :mapping {:color :label})}
                             [:or :string :keyword])
-            (schema/optional :padding {:cljplot2/section :distributions :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                       :cljplot2/default-doc "{:x [0.05 0.05] :y [0.05 0.05]}"}
+            (schema/optional :padding {:cljplot2/section :distributions :description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:x [0 0]}
+                                       :cljplot2/default-doc "`0.05` on every side."}
                              data/position-padding))
       (into extra)))
 
 (def ^:private mapping-schema
   "Mapping schema of both probability plots."
   [:map
-   (schema/nilable :x {:description "data of the x side (unless :x-distribution is given)"} schema/accessor)
-   (schema/nilable :y {:description "data of the y side (unless :y-distribution is given)"} schema/accessor)
-   (schema/nilable :color {:description "groups, each with its own point and line colour"} schema/accessor)
-   (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
-   (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
-   (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])
+   (schema/nilable :x {:description "The data of the x side, unless `:x-distribution` is given."} schema/accessor)
+   (schema/nilable :y {:description "The data of the y side, unless `:y-distribution` is given."} schema/accessor)
+   (schema/nilable :color {:description "Splits the rows into groups, each with its own point and line colour."} schema/accessor)
+   (schema/nilable :shape {:description "Splits the rows into groups, each with its own point shape."} schema/accessor)
+   (schema/nilable :size {:description "Splits the rows into groups, each with its own point size."} schema/accessor)
+   (schema/nilable :group {:description "Splits the rows into groups that look the same, each with its own reference line."} schema/accessor)])
 
 (def qq-schemas
   "Schemas of the Q-Q chart: `:style` (theme `[:chart :qq]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (options-schema [:quartiles] {:description "reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)"
-                                          :default :quartiles}
+   :options (options-schema [:quartiles] {:description "The reference line, one per group." :default :quartiles
+                                          :cljplot2/value-meanings {:quartiles "Through the first and the third quartile pairs, as R's `qqline`." false "No line."}}
+                            {:n-points "plotting positions"
+                             :distributions-context {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}]}}
                             [])
    :mapping mapping-schema})
 
 (def pp-schemas
   "Schemas of the P-P chart: `:style` (theme `[:chart :pp]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
-   :options (options-schema [:identity] {:description "reference line, one per group: :identity (y = x) or false (none)"
-                                         :default :identity}
-                            [(schema/optional :domain {:cljplot2/section :distributions :description "both sides distributions only (then required): [lo hi] of the values the CDFs are evaluated at"}
-                                              (schema/with-rules [:tuple schema/finite schema/finite]
-                                                [#(when-not (m/< (double (first %)) (double (second %)))
-                                                    "should be [lo hi] with lo < hi")]))])
+   :options (options-schema [:identity] {:description "The reference line, one per group." :default :identity
+                                         :cljplot2/value-meanings {:identity "The line y = x." false "No line."}}
+                            {:n-points "values over `:domain` at which the chart compares the CDFs"
+                             :distributions-context {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}] :domain [-4 4]}}
+                            [(schema/optional :domain {:cljplot2/section :distributions :description "The interval over which the chart evaluates both CDFs when both sides are distributions; the chart rejects it with a data side."
+                                                       :cljplot2/default-doc "None: required when both sides are distributions." :cljplot2/example [-2 2]
+                                                       :cljplot2/example-context {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 3}]}}
+                                              schema/finite-interval)])
    :mapping mapping-schema})
 
 (def ^:private distribution-keys

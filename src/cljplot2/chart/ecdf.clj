@@ -27,14 +27,14 @@
                 (into polyline/style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "{:x [0.05 0.05] :y [0.05 0.05]}"}
+                (conj (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:y [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on every side."}
                                        data/position-padding)))
    :mapping [:map
-             [:x {:description "values whose empirical distribution is drawn (data units)"} schema/accessor]
-             (schema/nilable :color {:description "groups, each a step line in its own colour"} schema/accessor)
-             (schema/nilable :dash {:description "groups, each a step line with its own dash style"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own step line"} schema/accessor)]})
+             [:x {:description "The values whose empirical distribution the chart draws."} schema/accessor]
+             (schema/nilable :color {:description "Splits the rows into groups, each step line in its own colour."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows into groups, each step line with its own dash style."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own step line."} schema/accessor)]})
 
 (defn steps
   "Gives the step-line vertices of the empirical cumulative distribution of a sample.

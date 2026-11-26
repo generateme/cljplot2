@@ -39,7 +39,12 @@
     (is (thrown? IllegalArgumentException (built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:nope]})]})))
     (is (contains? (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution (fn [p] p)})]}))
                    [:charts 0 :options :x-distribution]))
-    (is (seq (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal 1]})]})))))
+    (is (seq (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution [:normal 1]})]}))))
+    (testing "the one distribution type: an empty vector, a string name, a list or extra items fail at build"
+      (doseq [spec [[] ["normal"] '(:normal) [:normal {} {}] :normal]]
+        (is (contains? (error-ins #(built {:data sample :mapping {:y :a} :charts [(chart/qq {:x-distribution spec})]}))
+                       [:charts 0 :options :x-distribution])
+            (pr-str spec)))))
   (testing "1.1.3 (R2) a distribution wins over the plot's mapping of its side; the chart's own mapping of it throws"
     (let [{:keys [x y]} (first (groups-of {:data sample :mapping {:x :a :y :b} :charts [(chart/qq {:x-distribution [:normal]})]}))]
       (is (= (vec (sort (map :b sample))) y))
@@ -156,7 +161,12 @@
   (testing "1.3.2 two distributions need :domain; :points values over it"
     (is (= :domain (:key (error #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal]})]})))))
     (is (= 11 (count (:x (first (groups-of {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal {:mu 1}] :domain [-3 3] :n 11})]}))))))
-    (is (seq (error-ins #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal] :domain [3 -3]})]})))))
+    (is (seq (error-ins #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal] :domain [3 -3]})]}))))
+    (testing ":domain is an interval: equal ends, an infinite end or a list fail at build"
+      (doseq [d [[1 1] [0 ##Inf] '(-3 3) [0]]]
+        (is (contains? (error-ins #(built {:charts [(chart/pp {:x-distribution [:normal] :y-distribution [:normal] :domain d})]}))
+                       [:charts 0 :options :domain])
+            (pr-str d)))))
   (testing "1.3.3 / 1.3.4 identity line by default, :line false; extents [0 1]"
     (let [s (stats-of {:data sample :mapping {:x :a :y :b} :charts [(chart/pp)]} 0)]
       (is (= [1.0 0.0] (:line (first (:groups (:panel (:data s)))))))

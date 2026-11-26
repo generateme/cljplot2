@@ -73,9 +73,17 @@ A pair `[h v]`: `h` is `:left`, `:center` or `:right` and `v` is `:top`, `:middl
 
 A rule that picks the bandwidth from the sample: a fastmath selector, e.g. `:nrd0` (R's default) or `:sj` (Sheather-Jones).
 
+## bin rule
+
+A rule that picks the number of equal-width bins from the sample: a fastmath method, e.g. `:sturges` or `:freedman-diaconis`.
+
 ## boolean
 
 Either `true` or `false`.
+
+## breaks
+
+The bin edges: a vector of at least 2 increasing finite numbers, e.g. `[0 10 20 50]`. Values outside them fall in no bin.
 
 ## colour
 
@@ -100,6 +108,10 @@ A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time
 ## density kernel
 
 The shape a density estimate puts at each value: a fastmath kernel name, e.g. `:gaussian` or `:epanechnikov`.
+
+## distribution
+
+A fastmath distribution: a distribution object, or its name with optional parameters, e.g. `[:normal {:mu 0 :sd 1}]` or `[:exponential]`.
 
 ## fill pattern
 
@@ -184,6 +196,10 @@ A whole number from 1 up, e.g. `200`.
 ## positive number
 
 A number greater than zero, e.g. `0.5`.
+
+## quantile bins
+
+Bins with edges at quantiles of the values: `{:quantiles q :estimation e}`, e.g. `{:quantiles 4}`. `q` is a count of equal-share bins or a vector of increasing inner probabilities strictly between 0 and 1; `e` is a fastmath quantile estimation strategy (default `:legacy`).
 
 ## quantile range
 

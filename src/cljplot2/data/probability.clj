@@ -11,21 +11,27 @@
   * P-P ([[probability-pairs]]): the two sides' CDFs at common values - the empirical CDF of a data side (the share
     of values `<=` v), `cdf` of a distribution side
 
-  Functions: [[distribution]], [[distribution-name]] - a distribution side; [[quantile-pairs]], [[probability-pairs]] - the points; [[quartile-line]] - the reference line; [[plotting-positions]], [[interpolated]], [[pooled-values]], [[grid]] - helpers."
+  Functions: [[distribution-schema]] - the option type of a distribution side; [[distribution]], [[distribution-name]] - a distribution side; [[quantile-pairs]], [[probability-pairs]] - the points; [[quartile-line]] - the reference line; [[plotting-positions]], [[interpolated]], [[pooled-values]], [[grid]] - helpers."
   (:require [fastmath.core :as m]
             [fastmath.random :as r]
             [fastmath.stats :as stats]
+            [malli.core :as malli]
             [cljplot2.schema :as schema])
   (:import [fastmath.java Array]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(def ^:private distribution-spec?
+  "Tests whether a value is a distribution spec `[:name]` or `[:name params]` (a keyword, then an optional map)."
+  (malli/validator [:and vector? [:cat :keyword [:? :map]]]))
+
 (def distribution-schema
-  "A distribution: a fastmath distribution object, `[:name]` or `[:name params]`."
-  [:or
-   (schema/named-type ::distribution r/distribution? "should be a fastmath distribution, [:name] or [:name params]")
-   [:and vector? [:cat :keyword [:? :map]]]])
+  "Schema of a distribution: a fastmath distribution object, `[:name]` or `[:name params]` (names and parameters are checked by `fastmath.random/distribution` when the distribution is made)."
+  (schema/named-type ::distribution #(or (r/distribution? %) (distribution-spec? %)) "should be a fastmath distribution, [:name] or [:name params]"
+                     {:cljplot2/type-name "distribution"
+                      :cljplot2/type-meaning "A fastmath distribution: a distribution object, or its name with optional parameters, e.g. `[:normal {:mu 0 :sd 1}]` or `[:exponential]`."
+                      :cljplot2/type-doc "a fastmath distribution, [:name] or [:name params]"}))
 
 (defn distribution
   "Gives the fastmath distribution of a distribution spec.

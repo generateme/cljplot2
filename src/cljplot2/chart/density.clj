@@ -57,11 +57,19 @@
 (def ^:private style-entries
   "Map entries of the density style (theme `[:chart :density]`), also its options."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :style :description "area under the curve: a colour, :color (the curve's colour, its own alpha times :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set"}
+              (schema/optional :fill {:cljplot2/section :style :description "Fills the area under each curve."
+                                      :cljplot2/value-meanings {:color "The curve's colour, faded by `:alpha`."
+                                                                :none "No area; stacked curves and ridgelines still fill with the curve's colour, faded by `:alpha`."}}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :style :description "factor of the curve colour's alpha filling areas in the curve's colour"} schema/fraction)
-              (schema/optional :zero-line-color {:cljplot2/section :style :description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
-              (schema/optional :zero-line-width {:cljplot2/section :style :description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg))
+              (schema/optional :alpha {:cljplot2/section :style :description "How opaque the areas are with `:fill :color`, and in stacked curves and ridgelines without a fill colour; it multiplies the curve colour's alpha."
+                                       :cljplot2/example 0.2 :cljplot2/example-context {:fill :color}}
+                               schema/fraction)
+              (schema/optional :zero-line-color {:cljplot2/section :style :description "The colour of the 0 line drawn over mirrored curves; ridgelines draw no 0 line."
+                                                 :cljplot2/value-meanings {:none "No line."} :cljplot2/example-context {:position :mirror}}
+                               schema/color)
+              (schema/optional :zero-line-width {:cljplot2/section :style :description "The width of the 0 line over mirrored curves, in pixels; ridgelines draw no 0 line."
+                                                 :cljplot2/example 4 :cljplot2/example-context {:position :mirror}}
+                               schema/non-neg))
         draw/pattern-style-entries))
 
 (def ^:private positions
@@ -80,42 +88,59 @@
                  (into style-entries)
                  (into data/common-options)
                  (into theme/theme-style-entries)
-                 (conj (schema/optional :kernel {:cljplot2/section :estimate :description "fastmath KDE kernel" :default :gaussian} kde/kernel-schema)
-                       (schema/optional :bandwidth {:cljplot2/section :estimate :description "kernel bandwidth in data units, or a fastmath bandwidth selector"
-                                                    :default :nrd0}
+                 (conj (schema/optional :kernel {:cljplot2/section :estimate :description "The kernel of the density estimate." :default :gaussian
+                                                 :cljplot2/other-values "Other fastmath kernels."}
+                                        kde/kernel-schema)
+                       (schema/optional :bandwidth {:cljplot2/section :estimate :description "The bandwidth of the density estimate: how far each value's kernel spreads."
+                                                    :default :nrd0
+                                                    :cljplot2/other-values "Other fastmath selectors: rule-of-thumb, plug-in and cross-validation variants."
+                                                    :cljplot2/form-meanings {::schema/finite-pos "A bandwidth in data units, e.g. `0.3`; in log10 units with `:stat-space :scale` on a `:log` axis."}
+                                                    :cljplot2/example 0.2}
                                         [:or schema/finite-pos kde/bandwidth-rule-schema])
-                       (schema/nilable :n {:cljplot2/section :estimate :description "number of evaluation points of each curve" :default 512} [:and :int [:>= 2]])
-                       (schema/nilable :cut {:cljplot2/section :estimate :description "how many bandwidths the curve extends past the extreme values on each side"
-                                             :default 3}
+                       (schema/nilable :n {:cljplot2/section :estimate :description "The number of points at which the chart evaluates each curve." :default 512 :cljplot2/example 6} [:and :int [:>= 2]])
+                       (schema/nilable :cut {:cljplot2/section :estimate :description "How far each curve reaches past its values' range, in bandwidths; `0` stops at the range."
+                                             :default 3 :cljplot2/example 0}
                                        schema/non-neg)
-                       (schema/optional :position {:cljplot2/section :position :description "grouped curves: :overlay, :stack, :normalize (stacked, summing to 1), streamgraphs :silhouette and :wiggle, or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror"
-                                                   :default :overlay}
+                       (schema/optional :position {:cljplot2/section :position :description "How groups combine. Ridgelines take `:overlay` or `:mirror`."
+                                                   :default :overlay
+                                                   :cljplot2/value-meanings {:overlay "Each curve on its own." :stack "Stacked on top of each other, areas filled."
+                                                                             :normalize "Stacked as shares: at each x the groups sum to 1." :silhouette "A streamgraph centred on y = 0."
+                                                                             :wiggle "A streamgraph whose layers slope as little as possible." :mirror "Two groups, the second drawn downward from 0."}}
                                         (into [:enum] (sort positions)))
-                       (schema/nilable :symmetric {:cljplot2/section :position :description "with :position :mirror, tie both halves to one y range [-M M], M the tallest curve over all panels"
-                                                   :default false}
+                       (schema/nilable :symmetric {:cljplot2/section :position :description "Whether mirrored halves share one y range `[-M M]`, `M` the tallest curve of either group over all panels."
+                                                   :default false
+                                                   :cljplot2/value-meanings {true "One range, so the halves compare by height." false "Each half reaches its own tallest curve."}
+                                                   :cljplot2/example-context {:position :mirror}}
                                        schema/bool)
-                       (schema/nilable :zero-line {:cljplot2/section :position :description "with :position :mirror, draw the y = 0 line over the curves"
-                                                   :default true}
+                       (schema/nilable :zero-line {:cljplot2/section :position :description "Draws the 0 line over mirrored curves; ridgelines draw none."
+                                                   :default true :cljplot2/value-meanings {true "Draws the line." false "Draws no line."}
+                                                   :cljplot2/example-context {:position :mirror}}
                                        schema/bool)
-                       (schema/optional :fill-gradient {:cljplot2/section :style :description "ridgelines only: fill colour along :fill-gradient-axis, a clojure2d gradient (preset keyword, colour list or function of t in [0 1]) (wins over :fill)"}
+                       (schema/optional :fill-gradient {:cljplot2/section :style :description "A gradient that colours the ridgelines' areas instead of `:fill`; a density without ridgelines rejects it."
+                                                        :cljplot2/default-doc "No gradient; `:fill` colours the areas." :cljplot2/example :mpl/viridis
+                                                        :cljplot2/example-context {:mapping {:y :level}}}
                                         polyline/fill-gradient-schema)
-                       (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "axis of the :fill-gradient: :x (over the x scale's domain) or :y (from each ridge's baseline to the top of the tallest curve)"
-                                                             :cljplot2/default-doc ":x; only with ridgelines and :fill-gradient"}
+                       (schema/optional :fill-gradient-axis {:cljplot2/section :style :description "The axis the gradient runs along; it needs `:fill-gradient`."
+                                                             :cljplot2/value-meanings {:x "Colours change with x, over the x scale's domain." :y "Colours change from each ridge's baseline to the top of the tallest curve."}
+                                                             :cljplot2/default-doc "`:x`." :cljplot2/example :y
+                                                             :cljplot2/example-context {:fill-gradient :mpl/viridis :mapping {:y :level}}}
                                         [:enum :x :y])
-                       (first (schema/in-section :estimate [(common/stat-space-option :data "space the density is estimated in: :data (data units) or :scale (the x scale's coordinates - log10 on a :log axis, values it can't place dropped; a numeric :bandwidth in those units)")]))
-                       (schema/optional :padding {:cljplot2/section :position :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                  :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (curves stand on the panel's bottom edge); y [0.05 0.05] with :mirror, :silhouette and :wiggle"}
+                       (first (schema/in-section :estimate [(common/stat-space-option :data "The space the density is estimated in."
+                                                                                      {:cljplot2/value-meanings {:data "Data units, whatever the axes."
+                                                                                                                 :scale "The x axis's coordinates: on a `:log` axis the chart estimates the density of the log10 values, per log10 unit, and leaves out zeros and negatives."}})]))
+                       (schema/optional :padding {:cljplot2/section :position :description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:y [0 0]}
+                                                  :cljplot2/default-doc "`0.05` on x; y `[0 0.05]`, so the curves stand on the panel's bottom edge; y `0.05` on both ends with `:mirror`, `:silhouette` and `:wiggle`; ridgelines take only the x padding."}
                                         data/position-padding))
                  (into strip/ridge-options))
              common/fill-gradient-rule)
    :mapping [:map
-             [:x {:description "values whose density is estimated (data units)"} schema/accessor]
-             (schema/nilable :y {:description "ridgeline levels: categorical or on a :bands scale, one curve per level (a numeric :y otherwise is ignored)"}
+             [:x {:description "The values whose density the chart estimates."} schema/accessor]
+             (schema/nilable :y {:description "The ridgeline levels: the chart draws one curve per categorical level, or per level of a `:bands` scale, and ignores a numeric `:y` on any other scale."}
                              schema/accessor)
-             (schema/nilable :color {:description "groups, each a curve in its own colour"} schema/accessor)
-             (schema/nilable :dash {:description "groups, each a curve with its own dash style"} schema/accessor)
-             (schema/nilable :pattern {:description "groups, each area with its own fill pattern"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own curve"} schema/accessor)]})
+             (schema/nilable :color {:description "Splits the rows into groups, each curve in its own colour."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows into groups, each curve with its own dash style."} schema/accessor)
+             (schema/nilable :pattern {:description "Splits the rows into groups, each area with its own fill pattern."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own curve."} schema/accessor)]})
 
 (def ^{:const true :private true :tag 'long} default-points
   "Evaluation points of each curve when `:n` isn't given."

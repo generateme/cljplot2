@@ -1327,7 +1327,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="printedClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>[<span class="fl">0.8201259656375093</span> <span class="fl">0.8099231406653097</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The pairs drawn by hand - points and the quartile line (a <a href="reference.charts_annotations.html#reference-lines">rule</a> by <code>:slope</code> and <code>:intercept</code>) - match the <a href="reference.charts_one_variable.html#qq">qq</a> chart; the skewed sample bends away from the line at both ends:</p>
+<p>The pairs drawn by hand - points and the quartile line (a <a href="reference.charts_annotations.html#reference-lines">rule</a> by <code>:slope</code> and <code>:intercept</code>) - match the <a href="reference.charts_one_variable.html#q-q-plots">qq</a> chart; the skewed sample bends away from the line at both ends:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">let</span> [[slope intercept] (probability/quartile-line normal-side {<span class="at">:values</span> sample})]</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                     (plot/arrange [{<span class="at">:data</span> qq-pairs</span>
@@ -1973,7 +1973,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a> <span class="at">:uniform</span></span>
 <span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a> <span class="at">:wigner</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Four of them with the same <code>:bandwidth</code> (<a href="reference.charts_one_variable.html#density">density</a>) - the curves differ in smoothness: the gaussian is the smoothest here, the uniform kernel’s box shape makes its curve ragged:</p>
+<p>Four of them with the same <code>:bandwidth</code> (<a href="reference.charts_one_variable.html#density-curves">density</a>) - the curves differ in smoothness: the gaussian is the smoothest here, the uniform kernel’s box shape makes its curve ragged:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span>}</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/density {<span class="at">:kernel</span> <span class="at">:gaussian</span> <span class="at">:bandwidth</span> <span class="fl">0.4</span>})]</span>
@@ -4734,7 +4734,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="recipes" class="level2" data-number="31.8">
 <h2 data-number="31.8" class="anchored" data-anchor-id="recipes"><span class="header-section-number">31.8</span> Recipes</h2>
 <p>Short compositions of the pieces documented in this part.</p>
-<p>A reference curve over a histogram: the <a href="reference.charts_one_variable.html#histogram">histogram</a> on the density scale (<code>:y :density</code>) and the normal density with the data’s mean and standard deviation as a <a href="reference.charts_annotations.html#function-curves">function</a> chart:</p>
+<p>A reference curve over a histogram: the <a href="reference.charts_one_variable.html#histograms">histogram</a> on the density scale (<code>:y :density</code>) and the normal density with the data’s mean and standard deviation as a <a href="reference.charts_annotations.html#function-curves">function</a> chart:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">let</span> [xs (<span class="kw">map</span> <span class="at">:waiting</span> faithful)</span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>                         normal (r/distribution <span class="at">:normal</span> {<span class="at">:mu</span> (stats/mean xs) <span class="at">:sd</span> (stats/stddev xs)})]</span>

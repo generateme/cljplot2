@@ -6,7 +6,7 @@
   option. `test-util/migrated` is the one switch: the chart kinds whose pages show option cards."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.test :refer [deftest testing is]]
+            [clojure.test :refer [deftest testing is are]]
             [clojure.walk :as walk]
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
@@ -14,6 +14,7 @@
             [fastmath.stats :as stats]
             [malli.core :as malli]
             [cljplot2.chart :as chart]
+            [cljplot2.data.levels :as levels]
             [cljplot2.chart.extent :as extent-chart]
             [cljplot2.data.pairwise :as pairwise]
             [cljplot2.describe :as describe]
@@ -184,7 +185,18 @@
     (is (= "set of (`:x` or `:y`)" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:set [:enum :x :y]]]]))))))))
   (testing "bounds read as words; an :and keeps its predicate (by its message), never drops it"
     (is (= "integer at least 2" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:and :int [:>= 2]]]])))))))
-    (is (= "integer, odd" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:and :int [:fn {:error/message "should be odd"} odd?]]]]))))))))
+    (is (= "integer, odd" (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} [:and :int [:fn {:error/message "should be odd"} odd?]]]])))))))
+    (testing "boundary: :min / :max properties of :int and :double read as the comparator bounds; none - the bare type"
+      (are [s text] (= text (:type (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} s]]))))))
+        [:int {:min 2}] "integer at least 2"
+        [:int {:max 5}] "integer at most 5"
+        [:double {:min 0 :max 1}] "number at least 0 and at most 1"
+        [:int {:min 0}] "integer at least 0"
+        :int "integer")))
+  (testing "a forbidden :multi branch (a form the option rejects) is no card form; a value-set branch gives values"
+    (let [bins-row (first (filter #(= [:bins] (:path %)) (describe/options (chart/histogram))))]
+      (is (= ["breaks" "positive integer"] (map :type (:forms bins-row))))
+      (is (= levels/bin-rules (map :value (:values bins-row))))))
   (testing "boundary: the validation-text guard"
     (is (every? validation-text? ["a finite number" "pair of (integer)s" "vector of `:x`s" "keyword or nil"]))
     (is (not-any? validation-text? ["vector of open fractions" "map of `:x` or `:y` to padding" "number above 0 and below 90"]))))
@@ -257,11 +269,19 @@
   (for [l ["a" "b"] i (range (if (= l "a") 12 7))]
     {:l l :v (m/+ (m/* 0.4 i) (m/sin (m/* 2.3 i)) (if (= l "a") 0.0 2.0) (if (m/== i 11) 6.0 0.0))}))
 
+(def ^:private one-sample
+  "Rows of one numeric sample in two groups (`:g`) and two ridgeline levels (`:level`), 15 and 10 skewed values, plus a
+  row without a value - the fixture of the distribution of one variable charts."
+  (conj (vec (for [g ["a" "b"] i (range (if (= g "a") 15 10))]
+               {:g g :level (if (even? i) "p" "q") :v (m/+ (m/* 0.05 i i) (m/sin (m/* 1.9 i)) (if (= g "a") 0.0 1.5))}))
+        {:g "a" :level "p" :v nil}))
+
 (def ^:private example-fixtures
   "Kind -> a small plot (`:data`, `:mapping`, `:scales`, and `:options` under every example, e.g. a seeded `:rng`) on
   which every option example of the kind changes the picture:
   unsorted x, two groups, a missing y, up and down candles, bars of two groups below 0, two bullets, two related
-  variables (statistic cells), two levels of spread values with an outlier (distribution per level); annotation charts draw from their examples' options, on
+  variables (statistic cells), two levels of spread values with an outlier (distribution per level), one sample in two groups
+  with a missing value (distribution of one variable; Q-Q and P-P of the sample against itself); annotation charts draw from their examples' options, on
   fixed scales where an example adds no extent (rule, text, function)."
   (let [xs [3 1 4 2 6 5 8 7]
         rows (for [g ["a" "b"] [i x] (map-indexed vector xs)]
@@ -294,6 +314,11 @@
      :beeswarm {:data per-level :mapping {:x :v :y :l}}
      :dotplot {:data per-level :mapping {:x :v :y :l}}
      :rug {:data per-level :mapping {:x :v :y :l}}
+     :histogram {:data one-sample :mapping {:x :v :group :g}}
+     :density {:data one-sample :mapping {:x :v :group :g}}
+     :ecdf {:data one-sample :mapping {:x :v}}
+     :qq {:data one-sample :mapping {:x :v :y :v}}
+     :pp {:data one-sample :mapping {:x :v :y :v}}
      :correlation {:data correlated :mapping {:x :x :y :y}}
      :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 
@@ -314,7 +339,9 @@
   change in the fixture, or the example needs a plot the fixture isn't."
   {[:smooth [:stat-space]] "acts only on a :log axis, a plot scale"
    [:scatter [:descending]] "acts only where points of different colours overlap"
-   [:bar [:label-leader]] "its example (:outer labels) throws outside a polar plot, a plot :coord"})
+   [:bar [:label-leader]] "its example (:outer labels) throws outside a polar plot, a plot :coord"
+   [:histogram [:stat-space]] "acts only on a :log axis, a plot scale"
+   [:density [:stat-space]] "acts only on a :log axis, a plot scale"})
 
 (def ^:private needed-to-draw
   "`[kind path]` -> why the chart draws nothing without the option: its example has no picture to compare with, so it
@@ -326,7 +353,8 @@
    [:image [:f]] "the chart's one required option"
    [:function [:f]] "a function chart needs :f or :parametric" [:function [:parametric]] "a function chart needs :f or :parametric"
    [:function [:t]] ":parametric needs :t"
-   [:box [:stat]] "its example's own data holds statistics, not values: :tukey has nothing to compute"})
+   [:box [:stat]] "its example's own data holds statistics, not values: :tukey has nothing to compute"
+   [:pp [:domain]] "two distribution sides need :domain"})
 
 (defn- drawable?
   "Tests whether a fixture plot draws: its chart's options valid and the plot rendering without an error.

@@ -350,8 +350,9 @@ the theme: banned names, and one type family per name across all owners). One na
   derived example shows it); a named type gives
   `:cljplot2/type-name`, `:cljplot2/type-meaning` and, for a predicate over values, `:cljplot2/value-set` /
   `:cljplot2/other-types` (value and form meanings shared by its entries); card forms read as short type text
-  (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y`, a vector of
-  them `vector of Xs or Ys`; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart: sentences, a
+  (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y` (a `schema/forbidden` branch - a form rejected with its own message,
+  e.g. histogram quantile bins - is none), a vector of them `vector of Xs or Ys`; `:int` / `:double` bounds as words
+  (`integer at least 2`); a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart: sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -

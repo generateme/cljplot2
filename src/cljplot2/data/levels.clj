@@ -11,7 +11,7 @@
 
   Helpers shared with charts and scales: [[bin-index]], [[break-labels]], [[distinct-digits]], [[order-by-score]], [[order-by-rows]].
 
-  Option schemas: [[bin-options]], [[order-levels-options]], [[rank-rows-options]]; scale-spec rules [[order-by-rules]]; [[bins]] - the bins of a column."
+  Option schemas: [[bin-options]], [[order-levels-options]], [[rank-rows-options]]; scale-spec rules [[order-by-rules]]; [[bins]] - the bins of a column ([[histogram-bins]] - a histogram's), of the named types [[bin-rule-schema]] (over [[bin-rules]]), [[breaks-schema]] and [[quantile-bins]]."
   (:require [fastmath.core :as m]
             [malli.core :as malli]
             [fastmath.stats :as stats]
@@ -27,10 +27,44 @@
 
 ;; breaks
 
-(def ^:private breaks-schema
-  "Schema of explicit breaks: at least 2 increasing finite numbers."
-  (schema/with-rules [:vector {:min 2} schema/finite]
-    [#(when-not (apply < %) "breaks should be increasing")]))
+(def bin-rules
+  "The fastmath bin-estimation methods (`fastmath.stats/estimate-bins`), in fastmath's order."
+  [:sturges :sqrt :rice :terrell-scott :doane :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto])
+
+(def bin-rule-schema
+  "Schema of a bin rule: a fastmath bin-estimation method keyword (see [[bin-rules]])."
+  (schema/named-type ::bin-rule (set bin-rules) (str "should be a fastmath bin-estimation method: " (apply str (interpose " " bin-rules)))
+                     {:cljplot2/type-name "bin rule"
+                      :cljplot2/type-meaning "A rule that picks the number of equal-width bins from the sample: a fastmath method, e.g. `:sturges` or `:freedman-diaconis`."
+                      :cljplot2/type-doc "a fastmath bin-estimation method keyword"
+                      :cljplot2/value-set bin-rules
+                      :cljplot2/value-meanings {:sturges "`ceil(log2(n)) + 1` bins; suits roughly normal samples but gives too few bins for large ones."
+                                                :sqrt "`ceil(sqrt(n))` bins."
+                                                :rice "`ceil(2 * cbrt(n))` bins."
+                                                :doane "Sturges' rule corrected for skewed samples."
+                                                :scott "Bins of width `3.5 * sd / cbrt(n)`, `sd` the standard deviation; suits roughly normal samples."
+                                                :freedman-diaconis "Bins of width `2 * IQR / cbrt(n)`, `IQR` the interquartile range; robust to outliers."}}))
+
+(defn- breaks-problem
+  "Gives the problem of explicit breaks, if any.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns the error message for a value that isn't a vector of at least 2 increasing finite numbers; `nil` for valid breaks."
+  [v]
+  (cond
+    (not (and (vector? v) (every? schema/finite? v))) "should be a vector of finite numbers"
+    (m/< (count v) 2) "should be at least 2 breaks"
+    (not (apply m/< v)) "should be increasing breaks"))
+
+(def breaks-schema
+  "Schema of explicit breaks: a vector of at least 2 increasing finite numbers."
+  (schema/named-type ::breaks (comp nil? breaks-problem) breaks-problem
+                     {:cljplot2/type-name "breaks" :cljplot2/type-plural "breaks"
+                      :cljplot2/type-meaning "The bin edges: a vector of at least 2 increasing finite numbers, e.g. `[0 10 20 50]`. Values outside them fall in no bin."
+                      :cljplot2/type-doc "a vector of at least 2 increasing finite numbers"}))
 
 (def ^:private estimation-strategies
   "Quantile estimation strategies of fastmath."
@@ -47,20 +81,38 @@
    [:quantiles [:multi {:dispatch vector?} [true probabilities-schema] [false schema/pos-int]]]
    (schema/optional :estimation (into [:enum] (sort estimation-strategies)))])
 
-(def ^:private quantile-bins
-  "Schema of quantile bins reporting one error at the `:bins` key (not inside the map)."
-  (schema/named-type ::quantile-bins (malli/validator quantiles-schema)
-                     (str "should be quantile bins {:quantiles q :estimation e}: q a positive count or a vector of "
-                          "increasing probabilities strictly between 0 and 1, e one of " (vec (sort estimation-strategies)))))
+(def quantile-bins
+  "Schema of quantile bins `{:quantiles q :estimation e}`, reporting one error at the `:bins` key (not inside the map)."
+  (let [message (str "should be quantile bins {:quantiles q :estimation e}: q a positive count or a vector of "
+                     "increasing probabilities strictly between 0 and 1, e one of " (vec (sort estimation-strategies)))]
+    (schema/named-type ::quantile-bins (malli/validator quantiles-schema) message
+                       {:cljplot2/type-doc (subs message (count "should be "))
+                        :cljplot2/type-name "quantile bins" :cljplot2/type-plural "quantile bins"
+                        :cljplot2/type-meaning (str "Bins with edges at quantiles of the values: `{:quantiles q :estimation e}`, e.g. `{:quantiles 4}`. `q` is a count of equal-share bins "
+                                                    "or a vector of increasing inner probabilities strictly between 0 and 1; `e` is a fastmath quantile estimation strategy (default `:legacy`).")})))
+
+(defn- bins-dispatch
+  "Gives the form of a `:bins` value, the `:multi` branch that checks it.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns `:method` for a keyword, `:breaks` for a sequence (a list fails there with the breaks message), `:quantiles` for a map, else `:count`."
+  [v]
+  (cond (keyword? v) :method (sequential? v) :breaks (map? v) :quantiles :else :count))
 
 (def bins
-  "Schema of `:bins`: a fastmath bin-estimation method keyword (`:sturges`, `:sqrt`, `:rice`, `:doane`, `:scott`,
-  `:freedman-diaconis`), a positive integer (equal-width bins over the data range), a vector of at least 2
-  increasing breaks, or quantile bins `{:quantiles q :estimation e}` - `q` a count of equal-probability bins or a
-  vector of increasing inner probabilities (strictly between 0 and 1), `e` a fastmath quantile estimation strategy
-  (`:legacy` - default, `:r1` ... `:r9`)."
-  [:multi {:dispatch #(cond (keyword? %) :method (vector? %) :breaks (map? %) :quantiles :else :count)}
-   [:method keyword?] [:breaks breaks-schema] [:quantiles quantile-bins] [:count schema/pos-int]])
+  "Schema of `:bins`: a bin rule (see [[bin-rule-schema]]), a positive integer (equal-width bins over the data range), explicit breaks (see [[breaks-schema]]), or quantile bins (see [[quantile-bins]])."
+  [:multi {:dispatch bins-dispatch}
+   [:method bin-rule-schema] [:breaks breaks-schema] [:quantiles quantile-bins] [:count schema/pos-int]])
+
+(def histogram-bins
+  "Schema of `:bins` without quantile bins (a histogram's): a bin rule, a positive integer or explicit breaks, see [[bins]]; quantile bins are rejected with their own message."
+  [:multi {:dispatch bins-dispatch}
+   [:method bin-rule-schema] [:breaks breaks-schema]
+   [:quantiles (schema/forbidden "quantile bins aren't supported by histograms (give a breaks vector)")]
+   [:count schema/pos-int]])
 
 (defn- quantile-breaks
   "Computes breaks at quantiles of values.
@@ -100,7 +152,7 @@
 
   Returns a vector of breaks: explicit breaks as they are, else `nil` for no values; a single distinct value gets one bin of width 1 centred on it; quantile bins merge tied breaks (fewer bins).
 
-  Throws `ex-info {:key :bins}` for an unknown method or invalid quantile bins."
+  Throws `ex-info {:key :bins}` for an unknown method (only reached by a direct call: option schemas check the method, see [[bin-rule-schema]]) or invalid quantile bins."
   [values bin-spec]
   (when (map? bin-spec) (schema/explain! [[quantile-bins bin-spec [:bins]]]))
   (cond

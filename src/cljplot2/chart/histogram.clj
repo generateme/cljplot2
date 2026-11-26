@@ -80,13 +80,20 @@
   "Map entries of the histogram style (theme `[:chart :histogram]`), also its options."
   (into (schema/in-section
          :style
-         [(schema/optional :color {:description "bar fill colour (a mapped :color wins)"} schema/solid-color)
-          (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-          (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-          (schema/optional :alpha {:description "fill opacity of grouped bars with :position :overlay (other bars are opaque)"}
+         [(schema/optional :color {:description "The fill colour of the bars; a mapped `:color` wins." :cljplot2/example :darkorange} schema/solid-color)
+          (schema/optional :stroke-color {:description "The outline colour of the bars."
+                                          :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No outline."} :cljplot2/example :black}
+                           draw/stroke-color)
+          (schema/optional :stroke-width {:description "The outline width in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)
+          (schema/optional :alpha {:description "The opacity of the fill with `:position :overlay` when the plot holds two or more groups, so overlapping bars show through; a single group stays opaque."
+                                   :cljplot2/example 0.2}
                            schema/fraction)
-          (schema/optional :zero-line-color {:description "colour of the y = 0 line drawn with :position :mirror"} schema/color)
-          (schema/optional :zero-line-width {:description "width in pixels of the y = 0 line drawn with :position :mirror"} schema/non-neg)])
+          (schema/optional :zero-line-color {:description "The colour of the 0 line drawn over mirrored bars; ridgelines draw no 0 line."
+                                             :cljplot2/value-meanings {:none "No line."} :cljplot2/example-context {:position :mirror}}
+                           schema/color)
+          (schema/optional :zero-line-width {:description "The width of the 0 line over mirrored bars, in pixels; ridgelines draw no 0 line."
+                                             :cljplot2/example 4 :cljplot2/example-context {:position :mirror}}
+                           schema/non-neg)])
         draw/pattern-style-entries))
 
 (defn- invalid-option-problem
@@ -121,45 +128,60 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :bins {:cljplot2/section :bins :description (str "bins (per panel under free or sliced facet x scales): an estimation method (:sturges :sqrt :rice :doane :scott "
-                                                                       ":freedman-diaconis), a bin count or increasing breaks (shared, values outside dropped)")
-                                                :default :sturges}
-                                        [:and levels/bins [:fn {:error/message "quantile bins aren't supported by histograms (give a breaks vector)"} (complement map?)]])
-                      (schema/optional :y {:cljplot2/section :bins :description "bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)"
-                                           :default :percent}
+                (conj (schema/optional :bins {:cljplot2/section :bins :description "How the chart cuts the x values into bins. Panels share the bins, except under a free or sliced facet x scale: there the panels sharing an x scale (a wrap panel, a grid column or row) get bins over their own values."
+                                              :default :sturges :cljplot2/example 20
+                                              :cljplot2/other-values "Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error."
+                                              :cljplot2/form-meanings {::schema/pos-int "That many equal-width bins over the values' range."
+                                                                       ::levels/breaks "The bin edges, shared by every panel; the chart drops values outside them."}}
+                                        levels/histogram-bins)
+                      (schema/optional :y {:cljplot2/section :bins :description "What a bar's height measures. Shares are of the values in the bins, the panel's or the group's when grouped; with `:invalid :show` the invalid rows count too."
+                                           :default :percent
+                                           :cljplot2/value-meanings {:percent "The bin's share in percent."
+                                                                     :count "The number of values in the bin."
+                                                                     :pmf "The bin's share as a fraction; the bars sum to 1."
+                                                                     :density "The share divided by the bin width; the bars have area 1."
+                                                                     :cumulative "The count of the bin and of every bin before it."}}
                                        (into [:enum :cumulative] (keys measure/titles)))
-                      (schema/optional :position {:cljplot2/section :position :description (str "grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, "
-                                                                      "the second downward); ridgelines: :overlay or :mirror")
-                                                  :default :overlay}
+                      (schema/optional :position {:cljplot2/section :position :description "How groups share the bins. Ridgelines take `:overlay` or `:mirror`."
+                                                  :default :overlay
+                                                  :cljplot2/value-meanings {:overlay "On top of each other, see-through by `:alpha`." :dodge "Side by side within each bin."
+                                                                            :stack "End to end, in group order." :normalize "End to end, each bin summing to 1."
+                                                                            :mirror "Two groups, the second drawn downward from 0."}}
                                        (into [:enum] (sort position/positions)))
-                      (schema/nilable :symmetric {:cljplot2/section :position :description "with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels"
-                                                  :default false}
+                      (schema/nilable :symmetric {:cljplot2/section :position :description "Whether mirrored halves share one y range `[-M M]`, `M` the tallest bar of either group over all panels."
+                                                  :default false
+                                                  :cljplot2/value-meanings {true "One range, so the halves compare by height." false "Each half reaches its own tallest bar."}
+                                                  :cljplot2/example-context {:position :mirror}}
                                       schema/bool)
-                      (schema/nilable :zero-line {:cljplot2/section :position :description "with :position :mirror, draw the y = 0 line over the bars"
-                                                  :default true}
+                      (schema/nilable :zero-line {:cljplot2/section :position :description "Draws the 0 line over mirrored bars; ridgelines draw none."
+                                                  :default true :cljplot2/value-meanings {true "Draws the line." false "Draws no line."}
+                                                  :cljplot2/example-context {:position :mirror}}
                                       schema/bool)
-                      (schema/optional :padding {:cljplot2/section :position :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror"}
+                      (schema/optional :padding {:cljplot2/section :position :description "Room around the data on x and y, as fractions of the data span." :cljplot2/example {:y [0 0]}
+                                                 :cljplot2/default-doc "`0.05` on x; y `[0 0.05]`, so the bars stand on the panel's bottom edge; y `0.05` on both ends with `:position :mirror`; ridgelines take only the x padding."}
                                        data/position-padding)
-                      (first (schema/in-section :bins [(common/stat-space-option :data "space the bins are made in: :data (data units) or :scale (the x scale's coordinates - equal-width log10 bins on a :log axis, values it can't place dropped; :density per transformed unit)")]))
+                      (first (schema/in-section :bins [(common/stat-space-option :data "The space the bins are made in. Explicit breaks stay in data units."
+                                                                                 {:cljplot2/value-meanings {:data "Data units, whatever the axes."
+                                                                                                            :scale "The x axis's coordinates: on a `:log` axis the chart makes equal-width log10 bins and leaves out zeros and negatives; `:density` is per log10 unit."}})]))
                       draw/corner-radius-option
                       draw/corner-radius-end-option)
-                (conj (schema/nilable :invalid {:cljplot2/section :invalid :description (str "rows with a missing, NaN, non-numeric or unplaceable x: :drop (counted in :dropped) "
-                                                                       "or :show (a bar of their count in a band beside the x axis's start)")
-                                                :default :drop}
+                (conj (schema/nilable :invalid {:cljplot2/section :invalid :description "What the chart does with rows whose x is missing, NaN or not a number, or which `:stat-space :scale` can't place. `:show` doesn't work with `:y :density` or `:y :cumulative`."
+                                                :default :drop
+                                                :cljplot2/value-meanings {:drop "Leaves them out and counts them as dropped."
+                                                                          :show "Draws them as a bar in a band beside the x axis's start, measured by `:y` like the bins."}}
                                       [:enum :drop :show])
-                      (schema/nilable :invalid-label {:cljplot2/section :invalid :description "label of the band of invalid values (needs :invalid :show)"
-                                                      :cljplot2/default-doc "\"NA\""}
+                      (schema/nilable :invalid-label {:cljplot2/section :invalid :description "The label of the band of invalid values; it needs `:invalid :show`."
+                                                      :cljplot2/default-doc "`\"NA\"`." :cljplot2/example "missing" :cljplot2/example-context {:invalid :show}}
                                       :string))
                 (into strip/ridge-options)
                 (schema/with-rules [invalid-option-problem [:invalid]] [invalid-label-problem [:invalid-label]]))
    :mapping [:map
-             [:x {:description "values to bin (data units)"} schema/accessor]
-             (schema/nilable :y {:description "ridgeline levels: categorical or on a :bands scale, one histogram per level (a numeric :y otherwise is ignored)"}
+             [:x {:description "The values to bin."} schema/accessor]
+             (schema/nilable :y {:description "The ridgeline levels: the chart draws one histogram per categorical level, or per level of a `:bands` scale, and ignores a numeric `:y` on any other scale."}
                              schema/accessor)
-             (schema/nilable :color {:description "groups, each with its own bar fill colour"} schema/accessor)
-             (schema/nilable :pattern {:description "groups, each with its own fill pattern"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
+             (schema/nilable :color {:description "Splits the rows into groups, each with its own fill colour."} schema/accessor)
+             (schema/nilable :pattern {:description "Splits the rows into groups, each with its own fill pattern."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, overlaid, dodged, stacked or mirrored as other groups."} schema/accessor)]})
 
 (defn- bin-counts
   "Counts values per bin.

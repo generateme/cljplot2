@@ -49,9 +49,9 @@ code-block-background: true
 
 # Distribution of one variable
 
-Charts of how one variable's values are spread: binned counts (`histogram`), a kernel density (`density`) and
-the empirical distribution function (`ecdf`). `qq` and `pp` compare two distributions by quantiles or
-probabilities.
+These charts draw how the values of one variable are spread: binned counts (`histogram`), a kernel density
+(`density`) and the empirical distribution function (`ecdf`). Use them to see the shape of a distribution; `qq` and
+`pp` compare two distributions by quantiles or by probabilities.
 
 
 ::: {.sourceClojure}
@@ -115,6 +115,25 @@ Random log-normal values (seeded) - skewed in data units, even on a log axis:
 ```
 
 
+Seeded samples, normal and t with 3 degrees of freedom - for the Q-Q and P-P plots:
+
+
+::: {.sourceClojure}
+```clojure
+(def samples (let [g (r/rng :mersenne 11)
+                   t3 (r/distribution :t {:degrees-of-freedom 3 :rng g})]
+               (vec (concat (for [_ (range 200)] {:v (r/grandom g) :sample "normal"})
+                            (for [_ (range 200)] {:v (r/sample t3) :sample "t(3)"})))))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>v</th><th>sample</th></tr></thead><tbody><tr><td>-1.9354135624386053</td><td>normal</td></tr><tr><td>-0.9842798332756787</td><td>normal</td></tr><tr><td>0.7692425297241978</td><td>normal</td></tr><tr><td>0.47520762766422164</td><td>normal</td></tr><tr><td>-0.07460401433466404</td><td>normal</td></tr><tr><td>0.386576340050147</td><td>normal</td></tr><tr><td>0.5740037801583956</td><td>normal</td></tr><tr><td>0.6304795444116987</td><td>normal</td></tr><tr><td>0.8658518672112061</td><td>normal</td></tr><tr><td>-0.6587155372039402</td><td>normal</td></tr><tr><td>1.1977369488812335</td><td>normal</td></tr><tr><td>1.3496814267379298</td><td>normal</td></tr><tr><td>0.33415045817805766</td><td>normal</td></tr><tr><td>-0.09540563325605536</td><td>normal</td></tr><tr><td>0.4202488095487268</td><td>normal</td></tr><tr><td>1.2157194832517149</td><td>normal</td></tr><tr><td>-0.06003547257265243</td><td>normal</td></tr><tr><td>0.31875404416652725</td><td>normal</td></tr><tr><td>-1.2696556154795149</td><td>normal</td></tr><tr><td>0.22783203772564486</td><td>normal</td></tr><tr><td>0.7252478683121171</td><td>normal</td></tr><tr><td>-0.6244515436177719</td><td>normal</td></tr><tr><td>-0.5975761062902751</td><td>normal</td></tr><tr><td>-0.3623485346184586</td><td>normal</td></tr><tr><td>-0.31550127476485473</td><td>normal</td></tr><tr><td>1.9095980213212904</td><td>normal</td></tr><tr><td>0.41098996078625705</td><td>normal</td></tr><tr><td>-0.8061841406740187</td><td>normal</td></tr><tr><td>2.1071608232867507</td><td>normal</td></tr><tr><td>-0.7256677343646285</td><td>normal</td></tr><tr><td>1.6865979632494321</td><td>normal</td></tr><tr><td>-2.1551951631319257</td><td>normal</td></tr><tr><td>-0.8129352068886067</td><td>normal</td></tr><tr><td>-0.06082656934917857</td><td>normal</td></tr><tr><td>-1.3525320628523652</td><td>normal</td></tr><tr><td>0.22749695176256018</td><td>normal</td></tr><tr><td>2.00040094394776</td><td>normal</td></tr><tr><td>0.8023225700821351</td><td>normal</td></tr><tr><td>-0.7187867660832096</td><td>normal</td></tr><tr><td>-1.3666058217681498</td><td>normal</td></tr><tr><td>1.1569046470792448</td><td>normal</td></tr><tr><td>-0.35688823167648287</td><td>normal</td></tr><tr><td>0.8400673754079033</td><td>normal</td></tr><tr><td>0.3079360059649594</td><td>normal</td></tr><tr><td>-0.6085750438713416</td><td>normal</td></tr><tr><td>-0.54198387035825</td><td>normal</td></tr><tr><td>3.0378337780508096</td><td>normal</td></tr><tr><td>0.1224340917841133</td><td>normal</td></tr><tr><td>-0.438621351500724</td><td>normal</td></tr><tr><td>0.3338767636927164</td><td>normal</td></tr><tr><td>-2.65714989483138</td><td>normal</td></tr><tr><td>-2.1546086692916107</td><td>normal</td></tr><tr><td>-0.12521182140433756</td><td>normal</td></tr><tr><td>0.5655133775234155</td><td>normal</td></tr><tr><td>-1.2286343497814154</td><td>normal</td></tr><tr><td>-1.6875138589081766</td><td>normal</td></tr><tr><td>-1.3000745391077166</td><td>normal</td></tr><tr><td>0.47600748113197855</td><td>normal</td></tr><tr><td>-1.3952400596571857</td><td>normal</td></tr><tr><td>1.222893544881492</td><td>normal</td></tr><tr><td>-1.564668551993953</td><td>normal</td></tr><tr><td>0.38596082112326074</td><td>normal</td></tr><tr><td>0.3026726977215286</td><td>normal</td></tr><tr><td>2.6917350088128495</td><td>normal</td></tr><tr><td>0.47346375499232296</td><td>normal</td></tr><tr><td>0.9564010031630503</td><td>normal</td></tr><tr><td>-0.28400848879695406</td><td>normal</td></tr><tr><td>0.12087876478748225</td><td>normal</td></tr><tr><td>-0.39749999013144105</td><td>normal</td></tr><tr><td>-1.0528216283209995</td><td>normal</td></tr><tr><td>0.21158371484421143</td><td>normal</td></tr><tr><td>-0.9837375530978842</td><td>normal</td></tr><tr><td>1.6831486569359688</td><td>normal</td></tr><tr><td>-0.473300154181772</td><td>normal</td></tr><tr><td>1.1796989962144864</td><td>normal</td></tr><tr><td>1.1764595433604714</td><td>normal</td></tr><tr><td>0.4810565023449482</td><td>normal</td></tr><tr><td>0.23256596526418555</td><td>normal</td></tr><tr><td>-0.8687361114901867</td><td>normal</td></tr><tr><td>-0.6054534100157256</td><td>normal</td></tr><tr><td>0.3447467365944367</td><td>normal</td></tr><tr><td>0.5529152521718022</td><td>normal</td></tr><tr><td>1.5715512150048214</td><td>normal</td></tr><tr><td>-0.08980591289398993</td><td>normal</td></tr><tr><td>-0.0868956668739789</td><td>normal</td></tr><tr><td>0.8117764588472456</td><td>normal</td></tr><tr><td>-0.41100479532618145</td><td>normal</td></tr><tr><td>0.338499013268407</td><td>normal</td></tr><tr><td>0.5543343363973507</td><td>normal</td></tr><tr><td>0.2077980844271687</td><td>normal</td></tr><tr><td>-2.102473149613918</td><td>normal</td></tr><tr><td>-0.2928182390683161</td><td>normal</td></tr><tr><td>-1.2108365699643666</td><td>normal</td></tr><tr><td>0.37019209556872373</td><td>normal</td></tr><tr><td>-0.2040663562304196</td><td>normal</td></tr><tr><td>-1.7148007169486439</td><td>normal</td></tr><tr><td>1.0931052827177286</td><td>normal</td></tr><tr><td>-0.6679527482299739</td><td>normal</td></tr><tr><td>0.8004514534901619</td><td>normal</td></tr><tr><td>0.23659189951770057</td><td>normal</td></tr><tr><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
 Two species only - for the charts drawing two groups against each other:
 
 
@@ -132,18 +151,22 @@ Two species only - for the charts drawing two groups against each other:
 
 
 
-## histogram
+## Histograms
 
-Bars counting the values falling into each bin; groups overlay, dodge, stack or mirror, and a categorical `:y`
-gives one histogram per level (ridgelines).
+`chart/histogram` cuts the x values into bins and draws a bar per bin, its height the bin's count or share. Use it
+to see the shape of a distribution at a glance. Groups overlay, dodge, stack or mirror, and a categorical `:y`
+draws one histogram per level (ridgelines).
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>values to bin (data units)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>ridgeline levels: categorical or on a :bands scale, one histogram per level (a numeric :y otherwise is ignored)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own bar fill colour</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own fill pattern</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li><li><a href="reference.shared_options.html#ridgelines">Ridgelines</a> – <code>:overlap</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The values to bin.</li><li><code>:y</code> – The ridgeline levels: the chart draws one histogram per categorical level, or per level of a <code>:bands</code> scale, and ignores a numeric <code>:y</code> on any other scale.</li><li><code>:color</code> – Splits the rows into groups, each with its own fill colour.</li><li><code>:pattern</code> – Splits the rows into groups, each with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, overlaid, dodged, stacked or mirrored as other groups.</li></ul></div>
+```
 
 
 
@@ -166,15 +189,13 @@ gives one histogram per level (ridgelines).
 
 ### Bins
 
-The bins (a method, a count or breaks), what a bar's height measures and the space the bins are made in:
+These options set the bins, what a bar's height measures and the space the bins are made in. The first panels
+below use 30 bins of counts, explicit breaks measured as `:density` and two mirrored groups:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>keyword or vector of a finite number (at least 2) or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>bins (per panel under free or sliced facet x scales): an estimation method (:sturges :sqrt :rice :doane :scott :freedman-diaconis), a bin count or increasing breaks (shared, values outside dropped)</td></tr><tr><td>:y</td><td>one of :cumulative :percent :count :pmf :density</td><td>:percent</td><td>bar height: :percent (of the panel's or group's total), :count, :pmf (shares summing to 1), :density (area 1) or :cumulative (count of the bin and every bin before it)</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:data</td><td>space the bins are made in: :data (data units) or :scale (the x scale's coordinates - equal-width log10 bins on a :log axis, values it can't place dropped; :density per transformed unit)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: <code>:sturges</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:bins 20})</code></div><div class="option-text">How the chart cuts the x values into bins. Panels share the bins, except under a free or sliced facet x scale: there the panels sharing an x scale (a wrap panel, a grid column or row) get bins over their own values.<ul><li><code>:sturges</code> – <code>ceil(log2(n)) + 1</code> bins; suits roughly normal samples but gives too few bins for large ones.</li><li><code>:sqrt</code> – <code>ceil(sqrt(n))</code> bins.</li><li><code>:rice</code> – <code>ceil(2 * cbrt(n))</code> bins.</li><li><code>:doane</code> – Sturges' rule corrected for skewed samples.</li><li><code>:scott</code> – Bins of width <code>3.5 * sd / cbrt(n)</code>, <code>sd</code> the standard deviation; suits roughly normal samples.</li><li><code>:freedman-diaconis</code> – Bins of width <code>2 * IQR / cbrt(n)</code>, <code>IQR</code> the interquartile range; robust to outliers.</li><li class="option-other">Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error. <code>:terrell-scott</code>, <code>:cross-validation</code>, <code>:shimazaki-shinomoto</code></li><li><a href="reference.types.html#breaks">breaks</a> – The bin edges, shared by every panel; the chart drops values outside them.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – That many equal-width bins over the values' range.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: <code>:percent</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:y :cumulative})</code></div><div class="option-text">What a bar's height measures. Shares are of the values in the bins, the panel's or the group's when grouped; with <code>:invalid :show</code> the invalid rows count too.<ul><li><code>:percent</code> – The bin's share in percent.</li><li><code>:cumulative</code> – The count of the bin and of every bin before it.</li><li><code>:count</code> – The number of values in the bin.</li><li><code>:pmf</code> – The bin's share as a fraction; the bars sum to 1.</li><li><code>:density</code> – The share divided by the bin width; the bars have area 1.</li></ul></div></dd></div><div class="option-card"><dt><code>:stat-space</code><span class="option-default">Default: <code>:data</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:stat-space :scale})</code></div><div class="option-text">The space the bins are made in. Explicit breaks stay in data units.<ul><li><code>:data</code> – Data units, whatever the axes.</li><li><code>:scale</code> – The x axis's coordinates: on a <code>:log</code> axis the chart makes equal-width log10 bins and leaves out zeros and negatives; <code>:density</code> is per log10 unit.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -206,8 +227,8 @@ The bins (a method, a count or breaks), what a bar's height measures and the spa
 :::
 
 
-What a bar's height measures - the same bins as shares summing to 1 (`:pmf`, the default `:percent` scaled to
-100), and the running count (`:cumulative`):
+The next panels measure the same bins as shares summing to 1 (`:pmf`, the default `:percent` divided by 100) and
+as a running count (`:cumulative`):
 
 
 ::: {.sourceClojure}
@@ -231,10 +252,9 @@ What a bar's height measures - the same bins as shares summing to 1 (`:pmf`, the
 :::
 
 
-On a log axis bins of equal width in data units crowd into the last decades; `:stat-space :scale` makes them in
-the axis's log10 coordinates - equal-width on screen, `:density` per log10 unit (values a log axis can't place, 0
-and negatives, are dropped and counted). In either space the values are numbers: histogram and density take no
-dates.
+On a log axis, bins of equal width in data units crowd into the last decades. `:stat-space :scale` makes the bins
+in the axis's log10 coordinates instead, so they are equally wide on screen. In either space the values must be
+numbers: the chart takes no dates.
 
 
 ::: {.sourceClojure}
@@ -260,9 +280,9 @@ dates.
 :::
 
 
-Bins are shared by every facet panel, so panels compare bar by bar. Under a free (or sliced) facet x scale each
-panel gets bins over its own range instead - a count of bins (here 8) or a method applies per panel, so the bars
-fill each panel's own axis; explicit breaks stay shared. Margin histograms follow their panel's scale the same way.
+Facet panels share the bins, so they compare bar by bar. Under a free or sliced facet x scale, the chart bins the
+panels sharing an x scale over their own range instead (each panel of a wrap layout, a column or row of a grid): a
+bin count (here 8) or a rule applies per panel, while explicit breaks stay shared. Margin histograms follow their panel's scale the same way.
 
 
 ::: {.sourceClojure}
@@ -285,20 +305,16 @@ fill each panel's own axis; explicit breaks stay shared. Margin histograms follo
 
 ### Invalid values
 
-Rows whose x is missing, NaN or not a number (or a value the stat space can't place) are dropped and counted;
-`:invalid :show` draws their count as a bar in a band beside the x axis's start, outside the axis line, on the
-same y scale, in the chart's own fill (or the mapped one), labelled by `:invalid-label` (which needs `:invalid
-:show`). Shares (`:percent`, `:pmf`) are then of all rows, the invalid ones included; groups stack or dodge in the
-band as in the bins, every facet panel has its own band and a flipped plot puts it under the panel. Only the main
-charts of a generated grid draw a band: `:invalid :show` in a margin chart or a `:custom-grid` plot is an error.
+These options draw the rows whose x is missing or not a number, which the chart drops by default, in a band beside
+the x axis. With `:invalid :show`, shares (`:percent`, `:pmf`) count all rows, the invalid ones included. Groups
+stack or dodge in the band as in the bins, and every facet panel has its own band. A margin chart or a
+`:custom-grid` plot has no band, so `:invalid :show` there is an error. The panels below show every fifth value
+missing, then stack two groups in a flipped plot with their own label:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:invalid</td><td>one of :drop :show or nil</td><td>:drop</td><td>rows with a missing, NaN, non-numeric or unplaceable x: :drop (counted in :dropped) or :show (a bar of their count in a band beside the x axis's start)</td></tr><tr><td>:invalid-label</td><td>string or nil</td><td>"NA"</td><td>label of the band of invalid values (needs :invalid :show)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:invalid</code><span class="option-default">Default: <code>:drop</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:invalid :show})</code></div><div class="option-text">What the chart does with rows whose x is missing, NaN or not a number, or which <code>:stat-space :scale</code> can't place. <code>:show</code> doesn't work with <code>:y :density</code> or <code>:y :cumulative</code>.<ul><li><code>:drop</code> – Leaves them out and counts them as dropped.</li><li><code>:show</code> – Draws them as a bar in a band beside the x axis's start, measured by <code>:y</code> like the bins.</li></ul></div></dd></div><div class="option-card"><dt><code>:invalid-label</code><span class="option-default">Default: <code>"NA"</code>.</span></dt><dd><div class="option-example"><code>(chart/histogram {:invalid :show, :invalid-label "missing"})</code></div><div class="option-text">The label of the band of invalid values; it needs <code>:invalid :show</code>.<ul><li><span>string</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -342,19 +358,15 @@ charts of a generated grid draw a band: `:invalid :show` in a margin chart or a 
 
 ### Position
 
-How groups combine and the zero line and y range of mirrored groups:
+These options set how groups share the bins, the 0 line and y range of mirrored groups, and the padding. The
+first panels below overlay the species translucently, dodge them, stack them and stack them to 1 - the share of
+each species in every bin:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:position</td><td>one of :dodge :mirror :normalize :overlay :stack</td><td>:overlay</td><td>grouped bars: :overlay (translucent), :dodge, :stack, :normalize (stacked to 1) or :mirror (two groups, the second downward); ridgelines: :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest bar over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the bars</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (bars stand on the panel's bottom edge); y [0.05 0.05] with :position :mirror</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:position</code><span class="option-default">Default: <code>:overlay</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:position :dodge})</code></div><div class="option-text">How groups share the bins. Ridgelines take <code>:overlay</code> or <code>:mirror</code>.<ul><li><code>:overlay</code> – On top of each other, see-through by <code>:alpha</code>.</li><li><code>:dodge</code> – Side by side within each bin.</li><li><code>:mirror</code> – Two groups, the second drawn downward from 0.</li><li><code>:normalize</code> – End to end, each bin summing to 1.</li><li><code>:stack</code> – End to end, in group order.</li></ul></div></dd></div><div class="option-card"><dt><code>:symmetric</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:position :mirror, :symmetric true})</code></div><div class="option-text">Whether mirrored halves share one y range <code>[-M M]</code>, <code>M</code> the tallest bar of either group over all panels.<ul><li><code>false</code> – Each half reaches its own tallest bar.</li><li><code>true</code> – One range, so the halves compare by height.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/histogram {:position :mirror, :zero-line false})</code></div><div class="option-text">Draws the 0 line over mirrored bars; ridgelines draw none.<ul><li><code>true</code> – Draws the line.</li><li><code>false</code> – Draws no line.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on x; y <code>[0 0.05]</code>, so the bars stand on the panel's bottom edge; y <code>0.05</code> on both ends with <code>:position :mirror</code>; ridgelines take only the x padding.</span></dt><dd><div class="option-example"><code>(chart/histogram {:padding {:y [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-How groups share the bins: translucent over each other (`:alpha` of `:overlay`), side by side, stacked, or
-stacked to 1 - the share of each species in every bin:
 
 
 ::: {.sourceClojure}
@@ -390,8 +402,8 @@ stacked to 1 - the share of each species in every bin:
 :::
 
 
-Mirrored groups: halves tied to one y range [-M M] (`:symmetric`) or each fitted to its own tallest bar, the zero
-line off; thick outlines and no padding above the bars:
+The next panels mirror two species on one y range `[-M M]` (`:symmetric`) and on their own ranges without the 0
+line; the last one draws thick outlines and no padding above the bars:
 
 
 ::: {.sourceClojure}
@@ -425,15 +437,13 @@ line off; thick outlines and no padding above the bars:
 
 ### Style
 
-The bar fill, outline and translucency, and the zero line of mirrored groups:
+These options set the bar fill, outline and opacity, and the 0 line of mirrored groups. The panels below set a fill
+without outlines, then translucent groups with wider outlines:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[0 114 178]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of grouped bars with :position :overlay (other bars are opaque)</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:color :darkorange})</code></div><div class="option-text">The fill colour of the bars; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:stroke-color :black})</code></div><div class="option-text">The outline colour of the bars.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:stroke-width 3})</code></div><div class="option-text">The outline width in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:alpha 0.2})</code></div><div class="option-text">The opacity of the fill with <code>:position :overlay</code> when the plot holds two or more groups, so overlapping bars show through; a single group stays opaque.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:position :mirror, :zero-line-color :none})</code></div><div class="option-text">The colour of the 0 line drawn over mirrored bars; ridgelines draw no 0 line.<ul><li><code>:none</code> – No line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/histogram {:position :mirror, :zero-line-width 4})</code></div><div class="option-text">The width of the 0 line over mirrored bars, in pixels; ridgelines draw no 0 line.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -460,24 +470,22 @@ The bar fill, outline and translucency, and the zero line of mirrored groups:
 
 
 
+## Density curves
+
+`chart/density` estimates the density of the x values with a kernel and draws it as a curve, optionally filled.
+Use it for a smooth picture of a distribution that doesn't hang on bin edges. Groups overlay, stack or mirror, and
+a categorical `:y` draws ridgelines.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li><li><a href="reference.shared_options.html#ridgelines">Ridgelines</a> – <code>:overlap</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#ridgelines">Ridgelines</a> – <code>:overlap</code></li></ul></div>
 ```
 
 
 
-## density
-
-A kernel density estimate per group drawn as a curve, optionally filled; groups overlay, stack or mirror, and a
-categorical `:y` gives ridgelines.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>values whose density is estimated (data units)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>ridgeline levels: categorical or on a :bands scale, one curve per level (a numeric :y otherwise is ignored)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a curve in its own colour</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a curve with its own dash style</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each area with its own fill pattern</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own curve</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The values whose density the chart estimates.</li><li><code>:y</code> – The ridgeline levels: the chart draws one curve per categorical level, or per level of a <code>:bands</code> scale, and ignores a numeric <code>:y</code> on any other scale.</li><li><code>:color</code> – Splits the rows into groups, each curve in its own colour.</li><li><code>:dash</code> – Splits the rows into groups, each curve with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each area with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own curve.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -500,15 +508,14 @@ categorical `:y` gives ridgelines.
 
 ### Style
 
-The area under a curve, its opacity, a gradient fill of ridgelines and the zero line of mirrored curves:
+These options fill the area under each curve, set its opacity, colour ridgelines with a gradient and style the 0
+line of mirrored curves. The first panels below fill the species' curves, colour ridgelines along x and draw a red
+0 line:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>area under the curve: a colour, :color (the curve's colour, its own alpha times :alpha) or :none; stacked positions and ridgelines fill with the curve's colour unless set</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>factor of the curve colour's alpha filling areas in the curve's colour</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the y = 0 line drawn with :position :mirror</td></tr><tr><td>:fill-gradient</td><td>a clojure2d gradient: a preset keyword, a colour list or a function</td><td></td><td>ridgelines only: fill colour along :fill-gradient-axis, a clojure2d gradient (preset keyword, colour list or function of t in [0 1]) (wins over :fill)</td></tr><tr><td>:fill-gradient-axis</td><td>one of :x :y</td><td>:x; only with ridgelines and :fill-gradient</td><td>axis of the :fill-gradient: :x (over the x scale's domain) or :y (from each ridge's baseline to the top of the tallest curve)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/density {:fill :color})</code></div><div class="option-text">Fills the area under each curve.<ul><li><code>:none</code> – No area; stacked curves and ridgelines still fill with the curve's colour, faded by <code>:alpha</code>.</li><li><code>:color</code> – The curve's colour, faded by <code>:alpha</code>.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/density {:fill :color, :alpha 0.2})</code></div><div class="option-text">How opaque the areas are with <code>:fill :color</code>, and in stacked curves and ridgelines without a fill colour; it multiplies the curve colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/density {:position :mirror, :zero-line-color :none})</code></div><div class="option-text">The colour of the 0 line drawn over mirrored curves; ridgelines draw no 0 line.<ul><li><code>:none</code> – No line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/density {:position :mirror, :zero-line-width 4})</code></div><div class="option-text">The width of the 0 line over mirrored curves, in pixels; ridgelines draw no 0 line.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient</code><span class="option-default">Default: No gradient; <code>:fill</code> colours the areas.</span></dt><dd><div class="option-example"><code>(chart/density {:mapping {:y :level}, :fill-gradient :mpl/viridis})</code></div><div class="option-text">A gradient that colours the ridgelines' areas instead of <code>:fill</code>; a density without ridgelines rejects it.<ul><li><a href="reference.types.html#gradient">gradient</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-gradient-axis</code><span class="option-default">Default: <code>:x</code>.</span></dt><dd><div class="option-example"><code>(chart/density {:fill-gradient :mpl/viridis, :mapping {:y :level}, :fill-gradient-axis :y})</code></div><div class="option-text">The axis the gradient runs along; it needs <code>:fill-gradient</code>.<ul><li><code>:x</code> – Colours change with x, over the x scale's domain.</li><li><code>:y</code> – Colours change from each ridge's baseline to the top of the tallest curve.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -541,7 +548,8 @@ The area under a curve, its opacity, a gradient fill of ridgelines and the zero 
 :::
 
 
-The ridgelines' gradient along x (over the x domain) or along y (from each ridge's baseline up):
+The next panels run the ridgelines' gradient along x over the x domain, then along y from each ridge's baseline
+up:
 
 
 ::: {.sourceClojure}
@@ -570,16 +578,14 @@ The ridgelines' gradient along x (over the x domain) or along y (from each ridge
 
 ### Estimate
 
-The kernel, its bandwidth (in data units or a selector), the number of evaluation points and how far a curve
-reaches past the data:
+These options set the estimate: the kernel, its bandwidth, the number of evaluation points, how far a curve reaches
+past the data and the space of the estimate. The first panels below compare the default with a narrow bandwidth
+and a uniform kernel cut at the data:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:kernel</td><td>a fastmath KDE kernel keyword</td><td>:gaussian</td><td>fastmath KDE kernel</td></tr><tr><td>:bandwidth</td><td>a positive finite number or a fastmath bandwidth selector keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>512</td><td>number of evaluation points of each curve</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>3</td><td>how many bandwidths the curve extends past the extreme values on each side</td></tr><tr><td>:stat-space</td><td>one of :data :scale or nil</td><td>:data</td><td>space the density is estimated in: :data (data units) or :scale (the x scale's coordinates - log10 on a :log axis, values it can't place dropped; a numeric :bandwidth in those units)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:kernel</code><span class="option-default">Default: <code>:gaussian</code></span></dt><dd><div class="option-example"><code>(chart/density {:kernel :epanechnikov})</code></div><div class="option-text">The kernel of the density estimate.<ul><li><code>:gaussian</code> – The normal curve; smooth, with long tails.</li><li><code>:epanechnikov</code> – A parabola, the most efficient kernel in theory.</li><li><code>:triangular</code> – A triangle.</li><li><code>:uniform</code> – A flat step: a moving count.</li><li class="option-other">Other fastmath kernels. <code>:cauchy</code>, <code>:cosine</code>, <code>:laplace</code>, <code>:logistic</code>, <code>:quartic</code>, <code>:sigmoid</code>, <code>:silverman</code>, <code>:tricube</code>, <code>:triweight</code>, <code>:wigner</code></li></ul></div></dd></div><div class="option-card"><dt><code>:bandwidth</code><span class="option-default">Default: <code>:nrd0</code></span></dt><dd><div class="option-example"><code>(chart/density {:bandwidth 0.2})</code></div><div class="option-text">The bandwidth of the density estimate: how far each value's kernel spreads.<ul><li><code>:nrd0</code> – Silverman's rule of thumb, R's default.</li><li><code>:nrd</code> – Scott's rule of thumb, wider than <code>:nrd0</code>.</li><li><code>:sj</code> – Sheather and Jones' plug-in selector, good for multimodal data.</li><li class="option-other">Other fastmath selectors: rule-of-thumb, plug-in and cross-validation variants. <code>:nrd-adjust</code>, <code>:sj-dpi</code>, <code>:lscv</code>, <code>:lcv</code>, <code>:rlcv</code></li><li><a href="reference.types.html#positive-finite-number">positive finite number</a> – A bandwidth in data units, e.g. <code>0.3</code>; in log10 units with <code>:stat-space :scale</code> on a <code>:log</code> axis.</li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>512</code></span></dt><dd><div class="option-example"><code>(chart/density {:n 6})</code></div><div class="option-text">The number of points at which the chart evaluates each curve.<ul><li><span>integer at least 2</span></li></ul></div></dd></div><div class="option-card"><dt><code>:cut</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>(chart/density {:cut 0})</code></div><div class="option-text">How far each curve reaches past its values' range, in bandwidths; <code>0</code> stops at the range.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stat-space</code><span class="option-default">Default: <code>:data</code></span></dt><dd><div class="option-example"><code>(chart/density {:stat-space :scale})</code></div><div class="option-text">The space the density is estimated in.<ul><li><code>:data</code> – Data units, whatever the axes.</li><li><code>:scale</code> – The x axis's coordinates: on a <code>:log</code> axis the chart estimates the density of the log10 values, per log10 unit, and leaves out zeros and negatives.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -608,8 +614,8 @@ reaches past the data:
 :::
 
 
-A bandwidth selector instead of a number, few evaluation points (the curve drawn through 8 points), and a curve
-reaching 1 bandwidth past the data (3 by default):
+The next panels pick the bandwidth with a selector, evaluate the curve at only 8 points and stop it 1 bandwidth
+past the data (3 by default):
 
 
 ::: {.sourceClojure}
@@ -637,9 +643,9 @@ reaching 1 bandwidth past the data (3 by default):
 :::
 
 
-Skewed values: estimated in data units (the default) the curve is lopsided and its tail passes 0 - a log axis
-can't show it; `:stat-space :scale` estimates the density of the log10 values on a log axis (per log10 unit, a
-numeric `:bandwidth` in log10 units) and draws it back on the axis:
+For skewed values, the curve estimated in data units (the default) is lopsided and its tail passes 0, which a log
+axis can't show. `:stat-space :scale` estimates the density of the log10 values on a log axis and draws it back
+on the axis:
 
 
 ::: {.sourceClojure}
@@ -667,16 +673,13 @@ numeric `:bandwidth` in log10 units) and draws it back on the axis:
 
 ### Position
 
-How groups combine (the Layering and position chapter shows the streamgraphs), a common y range of the mirrored
-halves and the padding:
+These options set how groups combine, the 0 line and y range of mirrored halves, and the padding. The first panels
+below stack the species, mirror two of them and tie the mirrored halves to one range:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:position</td><td>one of :mirror :normalize :overlay :silhouette :stack :wiggle</td><td>:overlay</td><td>grouped curves: :overlay, :stack, :normalize (stacked, summing to 1), streamgraphs :silhouette and :wiggle, or :mirror (two groups, the second drawn downward); ridgelines take :overlay or :mirror</td></tr><tr><td>:symmetric</td><td>true or false or nil</td><td>false</td><td>with :position :mirror, tie both halves to one y range [-M M], M the tallest curve over all panels</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>with :position :mirror, draw the y = 0 line over the curves</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0 0.05]} (curves stand on the panel's bottom edge); y [0.05 0.05] with :mirror, :silhouette and :wiggle</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:position</code><span class="option-default">Default: <code>:overlay</code></span></dt><dd><div class="option-example"><code>(chart/density {:position :mirror})</code></div><div class="option-text">How groups combine. Ridgelines take <code>:overlay</code> or <code>:mirror</code>.<ul><li><code>:overlay</code> – Each curve on its own.</li><li><code>:mirror</code> – Two groups, the second drawn downward from 0.</li><li><code>:normalize</code> – Stacked as shares: at each x the groups sum to 1.</li><li><code>:silhouette</code> – A streamgraph centred on y = 0.</li><li><code>:stack</code> – Stacked on top of each other, areas filled.</li><li><code>:wiggle</code> – A streamgraph whose layers slope as little as possible.</li></ul></div></dd></div><div class="option-card"><dt><code>:symmetric</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/density {:position :mirror, :symmetric true})</code></div><div class="option-text">Whether mirrored halves share one y range <code>[-M M]</code>, <code>M</code> the tallest curve of either group over all panels.<ul><li><code>false</code> – Each half reaches its own tallest curve.</li><li><code>true</code> – One range, so the halves compare by height.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/density {:position :mirror, :zero-line false})</code></div><div class="option-text">Draws the 0 line over mirrored curves; ridgelines draw none.<ul><li><code>true</code> – Draws the line.</li><li><code>false</code> – Draws no line.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on x; y <code>[0 0.05]</code>, so the curves stand on the panel's bottom edge; y <code>0.05</code> on both ends with <code>:mirror</code>, <code>:silhouette</code> and <code>:wiggle</code>; ridgelines take only the x padding.</span></dt><dd><div class="option-example"><code>(chart/density {:padding {:y [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -707,8 +710,8 @@ halves and the padding:
 :::
 
 
-Stacked to 1 (each species' share of the density at every x), the streamgraphs, and a mirrored pair without the
-zero line and with no padding:
+The next panels stack the curves to 1 (each species' share of the density at every x), draw the two streamgraphs
+and mirror a pair without the 0 line or padding:
 
 
 ::: {.sourceClojure}
@@ -746,23 +749,21 @@ zero line and with no padding:
 
 
 
+## Empirical CDFs
+
+`chart/ecdf` draws a step line per group: the share of values at or below each x. Use it to read medians and
+percentiles off a distribution, or to compare groups without choosing bins or a bandwidth.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#ridgelines">Ridgelines</a> – <code>:overlap</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## ecdf
-
-A step line per group: the share of values at or below each x.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>values whose empirical distribution is drawn (data units)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a step line in its own colour</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a step line with its own dash style</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own step line</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The values whose empirical distribution the chart draws.</li><li><code>:color</code> – Splits the rows into groups, each step line in its own colour.</li><li><code>:dash</code> – Splits the rows into groups, each step line with its own dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own step line.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -782,15 +783,12 @@ A step line per group: the share of values at or below each x.
 :::
 
 
-Its only own option is the padding - here none on y, so the steps start and end at the panel's edges:
+This option sets the padding. The example below has none on y, so the steps start and end at the panel's edges:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/ecdf {:padding {:y [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -811,40 +809,21 @@ Its only own option is the padding - here none on y, so the steps start and end 
 
 
 
+## Q-Q plots
+
+`chart/qq` draws the quantiles of one side against the other's: two data columns, or data against a theoretical
+distribution. Use it to check whether a sample follows a distribution: points on the reference line mean the same
+shape.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## qq
-
-Quantiles of one side against the other's: two data columns, or data against a theoretical distribution. Points
-on the reference line mean the same shape of distribution.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>data of the x side (unless :x-distribution is given)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>data of the y side (unless :y-distribution is given)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point and line colour</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def samples (let [g (r/rng :mersenne 11)
-                   t3 (r/distribution :t {:degrees-of-freedom 3 :rng g})]
-               (vec (concat (for [_ (range 200)] {:v (r/grandom g) :sample "normal"})
-                            (for [_ (range 200)] {:v (r/sample t3) :sample "t(3)"})))))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>v</th><th>sample</th></tr></thead><tbody><tr><td>-1.9354135624386053</td><td>normal</td></tr><tr><td>-0.9842798332756787</td><td>normal</td></tr><tr><td>0.7692425297241978</td><td>normal</td></tr><tr><td>0.47520762766422164</td><td>normal</td></tr><tr><td>-0.07460401433466404</td><td>normal</td></tr><tr><td>0.386576340050147</td><td>normal</td></tr><tr><td>0.5740037801583956</td><td>normal</td></tr><tr><td>0.6304795444116987</td><td>normal</td></tr><tr><td>0.8658518672112061</td><td>normal</td></tr><tr><td>-0.6587155372039402</td><td>normal</td></tr><tr><td>1.1977369488812335</td><td>normal</td></tr><tr><td>1.3496814267379298</td><td>normal</td></tr><tr><td>0.33415045817805766</td><td>normal</td></tr><tr><td>-0.09540563325605536</td><td>normal</td></tr><tr><td>0.4202488095487268</td><td>normal</td></tr><tr><td>1.2157194832517149</td><td>normal</td></tr><tr><td>-0.06003547257265243</td><td>normal</td></tr><tr><td>0.31875404416652725</td><td>normal</td></tr><tr><td>-1.2696556154795149</td><td>normal</td></tr><tr><td>0.22783203772564486</td><td>normal</td></tr><tr><td>0.7252478683121171</td><td>normal</td></tr><tr><td>-0.6244515436177719</td><td>normal</td></tr><tr><td>-0.5975761062902751</td><td>normal</td></tr><tr><td>-0.3623485346184586</td><td>normal</td></tr><tr><td>-0.31550127476485473</td><td>normal</td></tr><tr><td>1.9095980213212904</td><td>normal</td></tr><tr><td>0.41098996078625705</td><td>normal</td></tr><tr><td>-0.8061841406740187</td><td>normal</td></tr><tr><td>2.1071608232867507</td><td>normal</td></tr><tr><td>-0.7256677343646285</td><td>normal</td></tr><tr><td>1.6865979632494321</td><td>normal</td></tr><tr><td>-2.1551951631319257</td><td>normal</td></tr><tr><td>-0.8129352068886067</td><td>normal</td></tr><tr><td>-0.06082656934917857</td><td>normal</td></tr><tr><td>-1.3525320628523652</td><td>normal</td></tr><tr><td>0.22749695176256018</td><td>normal</td></tr><tr><td>2.00040094394776</td><td>normal</td></tr><tr><td>0.8023225700821351</td><td>normal</td></tr><tr><td>-0.7187867660832096</td><td>normal</td></tr><tr><td>-1.3666058217681498</td><td>normal</td></tr><tr><td>1.1569046470792448</td><td>normal</td></tr><tr><td>-0.35688823167648287</td><td>normal</td></tr><tr><td>0.8400673754079033</td><td>normal</td></tr><tr><td>0.3079360059649594</td><td>normal</td></tr><tr><td>-0.6085750438713416</td><td>normal</td></tr><tr><td>-0.54198387035825</td><td>normal</td></tr><tr><td>3.0378337780508096</td><td>normal</td></tr><tr><td>0.1224340917841133</td><td>normal</td></tr><tr><td>-0.438621351500724</td><td>normal</td></tr><tr><td>0.3338767636927164</td><td>normal</td></tr><tr><td>-2.65714989483138</td><td>normal</td></tr><tr><td>-2.1546086692916107</td><td>normal</td></tr><tr><td>-0.12521182140433756</td><td>normal</td></tr><tr><td>0.5655133775234155</td><td>normal</td></tr><tr><td>-1.2286343497814154</td><td>normal</td></tr><tr><td>-1.6875138589081766</td><td>normal</td></tr><tr><td>-1.3000745391077166</td><td>normal</td></tr><tr><td>0.47600748113197855</td><td>normal</td></tr><tr><td>-1.3952400596571857</td><td>normal</td></tr><tr><td>1.222893544881492</td><td>normal</td></tr><tr><td>-1.564668551993953</td><td>normal</td></tr><tr><td>0.38596082112326074</td><td>normal</td></tr><tr><td>0.3026726977215286</td><td>normal</td></tr><tr><td>2.6917350088128495</td><td>normal</td></tr><tr><td>0.47346375499232296</td><td>normal</td></tr><tr><td>0.9564010031630503</td><td>normal</td></tr><tr><td>-0.28400848879695406</td><td>normal</td></tr><tr><td>0.12087876478748225</td><td>normal</td></tr><tr><td>-0.39749999013144105</td><td>normal</td></tr><tr><td>-1.0528216283209995</td><td>normal</td></tr><tr><td>0.21158371484421143</td><td>normal</td></tr><tr><td>-0.9837375530978842</td><td>normal</td></tr><tr><td>1.6831486569359688</td><td>normal</td></tr><tr><td>-0.473300154181772</td><td>normal</td></tr><tr><td>1.1796989962144864</td><td>normal</td></tr><tr><td>1.1764595433604714</td><td>normal</td></tr><tr><td>0.4810565023449482</td><td>normal</td></tr><tr><td>0.23256596526418555</td><td>normal</td></tr><tr><td>-0.8687361114901867</td><td>normal</td></tr><tr><td>-0.6054534100157256</td><td>normal</td></tr><tr><td>0.3447467365944367</td><td>normal</td></tr><tr><td>0.5529152521718022</td><td>normal</td></tr><tr><td>1.5715512150048214</td><td>normal</td></tr><tr><td>-0.08980591289398993</td><td>normal</td></tr><tr><td>-0.0868956668739789</td><td>normal</td></tr><tr><td>0.8117764588472456</td><td>normal</td></tr><tr><td>-0.41100479532618145</td><td>normal</td></tr><tr><td>0.338499013268407</td><td>normal</td></tr><tr><td>0.5543343363973507</td><td>normal</td></tr><tr><td>0.2077980844271687</td><td>normal</td></tr><tr><td>-2.102473149613918</td><td>normal</td></tr><tr><td>-0.2928182390683161</td><td>normal</td></tr><tr><td>-1.2108365699643666</td><td>normal</td></tr><tr><td>0.37019209556872373</td><td>normal</td></tr><tr><td>-0.2040663562304196</td><td>normal</td></tr><tr><td>-1.7148007169486439</td><td>normal</td></tr><tr><td>1.0931052827177286</td><td>normal</td></tr><tr><td>-0.6679527482299739</td><td>normal</td></tr><tr><td>0.8004514534901619</td><td>normal</td></tr><tr><td>0.23659189951770057</td><td>normal</td></tr><tr><td>…</td><td>…</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The data of the x side, unless <code>:x-distribution</code> is given.</li><li><code>:y</code> – The data of the y side, unless <code>:y-distribution</code> is given.</li><li><code>:color</code> – Splits the rows into groups, each with its own point and line colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own point shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own point size.</li><li><code>:group</code> – Splits the rows into groups that look the same, each with its own reference line.</li></ul></div>
 ```
 
 
@@ -868,15 +847,13 @@ on the reference line mean the same shape of distribution.
 
 ### Style
 
-The point style (`:alpha` - the points' opacity, not the line's) and the reference line's width:
+These options style the points and set the reference line's width. The example below draws translucent outlined
+squares and a thick line:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 180]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point and its legend key; the outline keeps its own.</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:size 10})</code></div><div class="option-text">The point size in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 180]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:color :steelblue})</code></div><div class="option-text">The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: The colours' own alpha.</span></dt><dd><div class="option-example"><code>(chart/qq {:alpha 0.5})</code></div><div class="option-text">The opacity of every point and its legend key; the outline keeps its own.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/qq {:line-width 4})</code></div><div class="option-text">The width of the reference line in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -900,17 +877,14 @@ The point style (`:alpha` - the points' opacity, not the line's) and the referen
 
 ### Distributions
 
-Either side may be a distribution instead of data; with both sides distributions the chart draws `:n`
-quantile pairs labelled by `:label`. The reference line through the quartiles may be turned off, and the padding
-set (none on the right):
+These options turn either side into a distribution and set the reference line and the padding; with two
+distributions they also set the number of points and the label. The left panel below draws two pairs of distributions, the right one a sample against
+a uniform distribution without the line or padding:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :quartiles</td><td>:quartiles</td><td>reference line, one per group: :quartiles (through the first and third quartile pairs, R qqline) or false (none)</td></tr><tr><td>:n</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:x-distribution</code><span class="option-default">Default: The mapped <code>:x</code> values.</span></dt><dd><div class="option-example"><code>(chart/qq {:x-distribution [:exponential]})</code></div><div class="option-text">A distribution that takes the place of the <code>:x</code> data; it wins over the plot's mapping of <code>:x</code>.<ul><li><a href="reference.types.html#distribution">distribution</a></li></ul></div></dd></div><div class="option-card"><dt><code>:y-distribution</code><span class="option-default">Default: The mapped <code>:y</code> values.</span></dt><dd><div class="option-example"><code>(chart/qq {:y-distribution [:t {:degrees-of-freedom 3}]})</code></div><div class="option-text">A distribution that takes the place of the <code>:y</code> data; it wins over the plot's mapping of <code>:y</code>.<ul><li><a href="reference.types.html#distribution">distribution</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line</code><span class="option-default">Default: <code>:quartiles</code></span></dt><dd><div class="option-example"><code>(chart/qq {:line false})</code></div><div class="option-text">The reference line, one per group.<ul><li><code>:quartiles</code> – Through the first and the third quartile pairs, as R's <code>qqline</code>.</li><li><code>false</code> – No line.</li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>100</code>.</span></dt><dd><div class="option-example"><code>(chart/qq {:x-distribution [:normal], :y-distribution [:t {:degrees-of-freedom 3}], :n 10})</code></div><div class="option-text">The number of plotting positions when both sides are distributions; the chart rejects it with a data side.<ul><li><span>integer at least 2</span></li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: <code>"<y name> vs <x name>"</code>.</span></dt><dd><div class="option-example"><code>(chart/qq {:x-distribution [:normal], :y-distribution [:t {:degrees-of-freedom 3}], :mapping {:color :label}, :label "t(3)"})</code></div><div class="option-text">The label of the chart's points when both sides are distributions; the chart's own mapping of <code>:label</code>, e.g. <code>{:color :label}</code>, styles the points by it. The chart rejects it with a data side.<ul><li><span>string</span> – The label text.</li><li><span>keyword</span> – A keyword, kept as the label value.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/qq {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -938,24 +912,22 @@ set (none on the right):
 
 
 
+## P-P plots
+
+`chart/pp` draws probabilities against probabilities: one side's empirical or theoretical CDF against the other
+side's at the same values. Use it to compare distributions near their centres, where a Q-Q plot crowds its points;
+points on y = x mean the same distribution.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## pp
-
-Probabilities against probabilities: each value's empirical (or theoretical) CDF on one side against the other
-side's at the same value; points on y = x mean the same distribution.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>data of the x side (unless :x-distribution is given)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>data of the y side (unless :y-distribution is given)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point and line colour</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The data of the x side, unless <code>:x-distribution</code> is given.</li><li><code>:y</code> – The data of the y side, unless <code>:y-distribution</code> is given.</li><li><code>:color</code> – Splits the rows into groups, each with its own point and line colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own point shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own point size.</li><li><code>:group</code> – Splits the rows into groups that look the same, each with its own reference line.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -978,15 +950,13 @@ side's at the same value; points on y = x mean the same distribution.
 
 ### Style
 
-The point style and the reference line's width:
+These options style the points and set the reference line's width. The example below draws translucent outlined
+circles and a thick line:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 180]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point and its legend key; the outline keeps its own.</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>reference line width in pixels</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:size 10})</code></div><div class="option-text">The point size in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 180]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:color :steelblue})</code></div><div class="option-text">The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: The colours' own alpha.</span></dt><dd><div class="option-example"><code>(chart/pp {:alpha 0.5})</code></div><div class="option-text">The opacity of every point and its legend key; the outline keeps its own.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pp {:line-width 4})</code></div><div class="option-text">The width of the reference line in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -1010,16 +980,14 @@ The point style and the reference line's width:
 
 ### Distributions
 
-Either side may be a distribution; with both sides distributions the chart evaluates both CDFs at `:n`
-values over `:domain` (required then); the right panel has no line and wide padding:
+These options turn either side into a distribution and set the reference line and the padding; with two
+distributions they also set the number of points, the domain and the label. The left panel below compares two pairs of distributions over `[-5 5]`, the
+right one a sample against a fitted normal without the line and with wide padding:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :x side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :x)</td></tr><tr><td>:y-distribution</td><td>a fastmath distribution, [:name] or [:name params] or vector, [keyword, optional map] or nil</td><td></td><td>the :y side as a distribution instead of data: a fastmath distribution, [:name] or [:name params] (wins over the plot's mapping of :y)</td></tr><tr><td>:line</td><td>one of false :identity</td><td>:identity</td><td>reference line, one per group: :identity (y = x) or false (none)</td></tr><tr><td>:n</td><td>integer (at least 2)</td><td>100; an error with a data side</td><td>both sides distributions only: the number of points (Q-Q plotting positions, P-P values over :domain)</td></tr><tr><td>:label</td><td>string or keyword or nil</td><td>"<y name> vs <x name>"; an error with a data side</td><td>both sides distributions only: the label of the chart's one row {:label l}, styled by the chart's own mapping of :label (e.g. {:color :label})</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>{:x [0.05 0.05] :y [0.05 0.05]}</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr><tr><td>:domain</td><td>[a finite number, a finite number]</td><td></td><td>both sides distributions only (then required): [lo hi] of the values the CDFs are evaluated at</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:x-distribution</code><span class="option-default">Default: The mapped <code>:x</code> values.</span></dt><dd><div class="option-example"><code>(chart/pp {:x-distribution [:exponential]})</code></div><div class="option-text">A distribution that takes the place of the <code>:x</code> data; it wins over the plot's mapping of <code>:x</code>.<ul><li><a href="reference.types.html#distribution">distribution</a></li></ul></div></dd></div><div class="option-card"><dt><code>:y-distribution</code><span class="option-default">Default: The mapped <code>:y</code> values.</span></dt><dd><div class="option-example"><code>(chart/pp {:y-distribution [:t {:degrees-of-freedom 3}]})</code></div><div class="option-text">A distribution that takes the place of the <code>:y</code> data; it wins over the plot's mapping of <code>:y</code>.<ul><li><a href="reference.types.html#distribution">distribution</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line</code><span class="option-default">Default: <code>:identity</code></span></dt><dd><div class="option-example"><code>(chart/pp {:line false})</code></div><div class="option-text">The reference line, one per group.<ul><li><code>:identity</code> – The line y = x.</li><li><code>false</code> – No line.</li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>100</code>.</span></dt><dd><div class="option-example"><code>(chart/pp {:x-distribution [:normal], :y-distribution [:t {:degrees-of-freedom 3}], :domain [-4 4], :n 10})</code></div><div class="option-text">The number of values over <code>:domain</code> at which the chart compares the CDFs when both sides are distributions; the chart rejects it with a data side.<ul><li><span>integer at least 2</span></li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: <code>"<y name> vs <x name>"</code>.</span></dt><dd><div class="option-example"><code>(chart/pp {:x-distribution [:normal], :y-distribution [:t {:degrees-of-freedom 3}], :domain [-4 4], :mapping {:color :label}, :label "t(3)"})</code></div><div class="option-text">The label of the chart's points when both sides are distributions; the chart's own mapping of <code>:label</code>, e.g. <code>{:color :label}</code>, styles the points by it. The chart rejects it with a data side.<ul><li><span>string</span> – The label text.</li><li><span>keyword</span> – A keyword, kept as the label value.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/pp {:padding {:x [0 0]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: None: required when both sides are distributions.</span></dt><dd><div class="option-example"><code>(chart/pp {:x-distribution [:normal], :y-distribution [:t {:degrees-of-freedom 3}], :domain [-2 2]})</code></div><div class="option-text">The interval over which the chart evaluates both CDFs when both sides are distributions; the chart rejects it with a data side.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -1044,12 +1012,6 @@ values over `:domain` (required then); the right panel has no line and wide padd
 ::: {.clay-image}
 ![](reference.charts_one_variable_files/image24.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
-```
 
 
 

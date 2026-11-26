@@ -55,7 +55,7 @@
 (probability/quartile-line normal-side {:values sample})
 
 ;; The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#reference-lines) by
-;; `:slope` and `:intercept`) - match the [qq](reference.charts_one_variable.html#qq) chart; the skewed sample
+;; `:slope` and `:intercept`) - match the [qq](reference.charts_one_variable.html#q-q-plots) chart; the skewed sample
 ;; bends away from the line at both ends:
 
 (plot/render-image (let [[slope intercept] (probability/quartile-line normal-side {:values sample})]
@@ -122,7 +122,7 @@
 
 (sort (:kde kernel/kernel-list))
 
-;; Four of them with the same `:bandwidth` ([density](reference.charts_one_variable.html#density)) - the
+;; Four of them with the same `:bandwidth` ([density](reference.charts_one_variable.html#density-curves)) - the
 ;; curves differ in smoothness: the gaussian is the smoothest here, the uniform kernel's box shape makes its curve
 ;; ragged:
 
@@ -305,7 +305,7 @@
 
 ;; Short compositions of the pieces documented in this part.
 
-;; A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histogram) on the
+;; A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histograms) on the
 ;; density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
 ;; [function](reference.charts_annotations.html#function-curves) chart:
 

@@ -1,6 +1,7 @@
 (ns cljplot2.stat-chart-test
   "Step 8: groups within panels, histogram, density, line, ECDF, polylines, suggested axis titles."
   (:require [clojure.test :refer [deftest testing is are]]
+            [clojure.string :as str]
             [cljplot2.test-util :refer [error-data error error-ins]]
             [clojure2d.core :as c2d]
             [cljplot2.scale.aesthetic :as aesthetic]
@@ -82,10 +83,16 @@
   (is (= 5 (dec (count (levels/breaks (mapv double (range 1 11)) :sturges)))) "sturges on 10 values")
   (are [bins] (= [:charts 0 :options :bins]
                  (take 4 (:in (error #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x} :charts [(chart/histogram {:bins bins})]})))))
-    0 -2 "x" [1] [2 1] [1 1] [0 ##NaN] [0 1.5 1.5])
-  (is (= {:key :bins :value :nope}
-         (error #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x} :charts [(chart/histogram {:bins :nope})]})))
-      "unknown fastmath method, found when estimating"))
+    0 -2 "x" [1] [2 1] [1 1] [0 ##NaN] [0 1.5 1.5] '(0 1 2) :nope {:quantiles 4})
+  (testing "messages: an unknown method lists the rules, breaks name their problem, quantile bins the histogram's limit"
+    (are [bins text] (str/includes? (:message (first (:errors (error-data #(build {:data [{:x 0.0} {:x 1.0}] :mapping {:x :x}
+                                                                                   :charts [(chart/histogram {:bins bins})]})))))
+                                    text)
+      :nope ":shimazaki-shinomoto" [1] "at least 2" [2 1] "increasing" [0 ##Inf] "finite numbers" '(0 5 30) "a vector"
+      {:quantiles 4} "quantile bins aren't supported"))
+  (testing "every fastmath bin rule estimates a bin count"
+    (doseq [rule levels/bin-rules]
+      (is (m/<= 2 (count (levels/breaks (mapv double (range 1 41)) rule))) (str rule)))))
 
 (deftest histogram-test
   (let [chem (vec (for [i (range 300)] {:x (double (mod (* i 37) 100)) :s (mod i 3)}))]
