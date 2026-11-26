@@ -36,6 +36,8 @@
 ;; `chart/scatter` draws a point per row at its x and y. Use it to show how two variables relate. Colour, shape, size
 ;; and drawing order can come from the data.
 
+(nu/shared-groups (describe/options (chart/scatter)))
+
 (nu/mapping-list (describe/mapping (chart/scatter)))
 
 (plot/render-image {:data mtcars
@@ -86,13 +88,13 @@
                     :labels {:title ":alpha 0.45" :x "weight [1000 lbs]" :y "miles per gallon"}}
                    {:width 600 :height 380})
 
-(nu/shared-groups (describe/options (chart/scatter)))
-
 ;; ## Line charts
 
 ;; `chart/line` joins each group's points into a line, ordered by x. Use it for values that change along x, such as
 ;; a time series; it can also fill the area below, stack groups, or vary colour and width along its length. (The
 ;; dataset's dates are text: the mapping parses them.)
+
+(nu/shared-groups (describe/options (chart/line)))
 
 (nu/mapping-list (describe/mapping (chart/line)))
 
@@ -215,12 +217,12 @@
                                  {:columns 2})
                    {:width 800 :height 300})
 
-(nu/shared-groups (describe/options (chart/line)))
-
 ;; ## Line segments
 
 ;; `chart/segment` draws a straight line per row from (x, y) to (xend, yend). Use it for arrows, links between two
 ;; points or lollipop stems; the ends can be mapped or fixed for all rows.
+
+(nu/shared-groups (describe/options (chart/segment)))
 
 (nu/mapping-list (describe/mapping (chart/segment)))
 
@@ -263,12 +265,12 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-(nu/shared-groups (describe/options (chart/segment)))
-
 ;; ## Polygons
 
 ;; `chart/polygon` fills one shape per group, its rows the vertices in data order. Use it for regions, outlines or
 ;; any custom shape.
+
+(nu/shared-groups (describe/options (chart/polygon)))
 
 (nu/mapping-list (describe/mapping (chart/polygon)))
 
@@ -299,12 +301,12 @@
                     :charts [(chart/polygon {:color [120 160 90] :stroke-color :black :padding {:x [0 0] :y [0 0]}})]}
                    {:width 500 :height 260})
 
-(nu/shared-groups (describe/options (chart/polygon)))
-
 ;; ## Bands
 
 ;; `chart/ribbon` fills a band per group between a lower and an upper bound at each x. Use it for an interval, a
 ;; range of values or an envelope around a line.
+
+(nu/shared-groups (describe/options (chart/ribbon)))
 
 (nu/mapping-list (describe/mapping (chart/ribbon)))
 
@@ -352,13 +354,13 @@
                                  {:columns 2})
                    {:width 800 :height 300})
 
-(nu/shared-groups (describe/options (chart/ribbon)))
-
 ;; ## Candlestick charts
 
 ;; `chart/candlestick` draws a candle per row: a wick from low to high and a body from open to close, coloured by
 ;; whether the price rose or fell. Use it for prices over time. The dates here are text, so each trading day gets its
 ;; own slot, with no weekend gaps.
+
+(nu/shared-groups (describe/options (chart/candlestick)))
 
 (nu/mapping-list (describe/mapping (chart/candlestick)))
 
@@ -393,4 +395,3 @@
                     :labels {:title ":up-pattern :dots, :padding {:y [0.3 0.3]}"}}
                    {:width 700 :height 340})
 
-(nu/shared-groups (describe/options (chart/candlestick)))

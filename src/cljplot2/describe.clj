@@ -28,6 +28,8 @@
             [fastmath.grid :as grid]
             [malli.core :as malli]
             [cljplot2.chart]
+            [cljplot2.chart.function :as function-chart]
+            [cljplot2.chart.text :as text-chart]
             [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
             [cljplot2.graphics.cells :as cell-draw]
@@ -67,7 +69,8 @@
 (def concepts
   "Section titles of the reference part: chart kind, builder or function -> the concept its section is named after (the heading `## title`; the first sentence names the function). Kinds without an entry keep the kind's name (pages not yet rewritten)."
   {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
-   :candlestick "Candlestick charts" :smooth "Smoothing"})
+   :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
+   :image "Images" :function "Function curves"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -219,9 +222,11 @@
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
 (def documented-types
-  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position). Option cards link a form of these types to its explanation."
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range). Option cards link a form of these types to its explanation."
   (merge schema/named-types
-         (into {} (map (fn [s] [(malli/type s) s])) [rng/schema polyline/fill-gradient-schema annotation/position])))
+         (into {} (map (fn [s] [(malli/type s) s]))
+               [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
+                function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."
@@ -249,7 +254,7 @@
   (and (re-matches #"[a-z][a-z\- ]*" text) (not (re-find #" (or|of) " text))))
 
 (defn- item-text
-  "Gives the text of the items of a collection form: the plural of a named type's name (its `:cljplot2/type-plural` when given) or of a plain noun phrase, else the item's text in parentheses.
+  "Gives the text of the items of a collection form: the plural of a named type's name (its `:cljplot2/type-plural` when given) or of a plain noun phrase, the plurals of an `:or` of such phrases (`positions or panel positions`), else the item's text in parentheses.
 
   Parameters:
 
@@ -257,10 +262,12 @@
   [s]
   (let [compiled (malli/schema s)
         own-plural (:cljplot2/type-plural (malli/type-properties compiled))
-        text (form-text compiled)]
+        text (form-text compiled)
+        choices (when (= :or (malli/type compiled)) (map form-text (malli/children compiled)))]
     (cond
       own-plural own-plural
       (simple-text? text) (plural text)
+      (and choices (every? simple-text? choices)) (str/join " or " (map plural choices))
       :else (str "(" text ")"))))
 
 (defn- bounded-text
@@ -278,7 +285,7 @@
            (str/join " and " (map #(str (bound-words (malli/type %)) " " (first (malli/children %))) bounds))))))
 
 (defn- form-text
-  "Gives the short type text of a form on an option card: a named type's `:cljplot2/type-name`, composites spelled with their children's short texts (`vector of open fractions`, `pair of non-negative numbers`, `set of (`:x` or `:y`)`, `map of `:x` or `:y` to padding`, `integer at least 2`; an `:and` keeps every part, a predicate by its error message), enum values as code; else [[type-text]] (an option card test then asks for a type name).
+  "Gives the short type text of a form on an option card: a named type's `:cljplot2/type-name` (or a schema's own, e.g. a mapping's), composites spelled with their children's short texts (`vector of open fractions`, `pair of non-negative numbers`, `set of (`:x` or `:y`)`, `map of `:x` or `:y` to padding`, `integer at least 2`; an `:and` keeps every part, a predicate by its error message; alternatives joined by `or`), enum values as code; else [[type-text]] (an option card test then asks for a type name).
 
   Parameters:
 
@@ -289,6 +296,7 @@
         children (malli/children compiled)]
     (cond
       (:cljplot2/type-name (malli/type-properties compiled)) (:cljplot2/type-name (malli/type-properties compiled))
+      (:cljplot2/type-name (malli/properties compiled)) (:cljplot2/type-name (malli/properties compiled))
       (= :maybe t) (form-text (first children))
       (contains? boolean-types t) "boolean"
       (#{:vector :sequential :set} t) (str (if (= :sequential t) "sequence" (name t)) " of " (item-text (first children)))
@@ -298,6 +306,8 @@
       (= :map-of t) (str "map of " (form-text (first children)) " to " (form-text (second children)))
       (= :enum t) (str/join " or " (map #(str "`" (pr-str %) "`") children))
       (= :and t) (or (bounded-text children) (str/join ", " (map form-text children)))
+      (= :or t) (str/join " or " (map form-text children))
+      (= :multi t) (str/join " or " (map (comp form-text last) children))
       (= :fn t) (type-text compiled)
       :else (type-text compiled))))
 
@@ -316,7 +326,7 @@
 (defn- alternatives
   "Gives the values and forms an entry schema accepts, `nil` left out.
 
-  The top-level alternatives of `:maybe` and `:or` are taken apart: `:enum` and `:=` give literal values, a boolean type `true` and `false`, a named type with `:cljplot2/value-set` / `:cljplot2/other-types` its values and the forms of those types; anything else is one form (see [[form-of]]).
+  The top-level alternatives of `:maybe`, `:or` and `:multi` (each branch) are taken apart: `:enum` and `:=` give literal values, a boolean type `true` and `false`, a named type with `:cljplot2/value-set` / `:cljplot2/other-types` its values (a vector in its order, a set sorted) and the forms of those types; anything else is one form (see [[form-of]]).
 
   Parameters:
 
@@ -331,11 +341,12 @@
     (cond
       (= :maybe t) (alternatives (first children))
       (= :or t) (apply merge-with into {:values [] :forms []} (map alternatives children))
+      (= :multi t) (apply merge-with into {:values [] :forms []} (map (comp alternatives last) children))
       (= :enum t) {:values (mapv (fn [v] [v (:cljplot2/value-meanings (malli/properties s))]) children) :forms []}
       (= := t) {:values [[(first children) nil]] :forms []}
       (contains? boolean-types t) {:values [[true nil] [false nil]] :forms []}
       (or (:cljplot2/value-set tp) (:cljplot2/other-types tp))
-      {:values (mapv (fn [v] [v (:cljplot2/value-meanings tp)]) (sort-by str (:cljplot2/value-set tp)))
+      {:values (mapv (fn [v] [v (:cljplot2/value-meanings tp)]) (let [vs (:cljplot2/value-set tp)] (if (sequential? vs) vs (sort-by str vs))))
        :forms (mapv (fn [k]
                       (assoc (form-of (or (get documented-types k)
                                           (throw (ex-info (str "Not a documented type: " k) {:key :cljplot2/other-types :value k}))))
@@ -351,7 +362,7 @@
   - `props` (map): the entry's properties - `:cljplot2/value-meanings` (value meanings, winning over the schema's; a `nil` key adds `nil` as a value), `:cljplot2/form-meanings`, `:cljplot2/other-values`.
   - `s`: the entry's malli schema.
 
-  Returns `{:values [{:value v :meaning m} ...] :forms [{:form k :type text :meaning m} ...] :other-values text}` - each value once, in schema order (`nil` first when documented), with the first meaning any part of the schema gives it; meanings `nil` when absent."
+  Returns `{:values [{:value v :meaning m} ...] :forms [{:form k :type text :meaning m} ...] :other-values text}` - each value and each form once, in schema order (`nil` first when documented), a value with the first meaning any part of the schema gives it; meanings `nil` when absent."
   [props s]
   (let [{:keys [values forms]} (alternatives s)
         own (:cljplot2/value-meanings props)
@@ -360,7 +371,7 @@
                    by-value (group-by :value entries)]
                (mapv (fn [v] (let [same (by-value v)] (or (first (filter :meaning same)) (first same))))
                      (distinct (map :value entries))))
-     :forms (mapv #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %) (:meaning %))) forms)
+     :forms (into [] (comp (distinct) (map #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %) (:meaning %))))) forms)
      :other-values (:cljplot2/other-values props)}))
 
 (defn example

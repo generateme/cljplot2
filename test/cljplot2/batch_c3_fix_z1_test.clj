@@ -216,6 +216,6 @@
       (is (= (pixels (path-plot {})) (pixels (path-plot {:path-position nil}))))
       (is (= (pixels (text-plot one {:overlapping-labels :repel}))
              (pixels (text-plot one {:overlapping-labels :repel :repel-distance nil :label-leader nil})))))
-    (testing "the :overlapping-labels description names :repel"
+    (testing "the :overlapping-labels card explains :repel"
       (let [row (first (filter #(= [:overlapping-labels] (:path %)) (describe/options (chart/text))))]
-        (is (re-find #":repel" (str (:description row))))))))
+        (is (string? (:meaning (first (filter #(= :repel (:value %)) (:values row))))))))))

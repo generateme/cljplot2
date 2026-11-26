@@ -51,25 +51,33 @@
                        (into data/common-options)
                        (into theme/theme-style-entries)
                        (into annotation/options)
-                       (conj (schema/nilable :x {:description "literal x position(s) of lines along the y direction: a position or a vector of them (wins over the mapping)"}
+                       (conj (schema/nilable :x {:description "Draws a line across the panel at each x position, vertical unless the plot is flipped. Literal positions replace the chart's mapping."
+                                              :cljplot2/default-doc "None; the lines come from the mapping." :cljplot2/example [2 4]
+                                              :cljplot2/form-meanings {::annotation/position "One line." :vector "A line at each position."}}
                                              (annotation/positions-schema annotation/position))
-                             (schema/nilable :y {:description "literal y position(s) of lines along the x direction: a position or a vector of them (wins over the mapping)"}
+                             (schema/nilable :y {:description "Draws a line across the panel at each y position, horizontal unless the plot is flipped. Literal positions replace the chart's mapping."
+                                              :cljplot2/default-doc "None; the lines come from the mapping." :cljplot2/example [2 4]
+                                              :cljplot2/form-meanings {::annotation/position "One line." :vector "A line at each position."}}
                                              (annotation/positions-schema annotation/position))
-                             (schema/nilable :slope {:description "literal slope(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :intercept; linear scales only)"}
+                             (schema/nilable :slope {:description "The slope of each sloped line y = intercept + slope · x, drawn across the panel. It needs `:intercept` and linear x and y scales."
+                                                  :cljplot2/default-doc "None; the lines come from the mapping." :cljplot2/example 0.5 :cljplot2/example-context {:intercept 1}
+                                                  :cljplot2/form-meanings {::schema/finite "One slope for every line." :vector "A slope per line, paired in order with `:intercept`."}}
                                              (annotation/positions-schema schema/finite))
-                             (schema/nilable :intercept {:description "literal intercept(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :slope)"}
+                             (schema/nilable :intercept {:description "The intercept of each sloped line y = intercept + slope · x. It needs `:slope`."
+                                                      :cljplot2/default-doc "None; the lines come from the mapping." :cljplot2/example 2 :cljplot2/example-context {:slope 0.5}
+                                                      :cljplot2/form-meanings {::schema/finite "One intercept for every line." :vector "An intercept per line, paired in order with `:slope`."}}
                                              (annotation/positions-schema schema/finite))))
                    option-rules)
    :mapping [:map
-             (schema/nilable :x {:description "x position of a line along the y direction, one per row"} schema/accessor)
-             (schema/nilable :y {:description "y position of a line along the x direction, one per row"} schema/accessor)
-             (schema/nilable :slope {:description "slope of a line y = intercept + slope * x, one per row (with :intercept)"}
+             (schema/nilable :x {:description "Draws a line across the panel at each row's x, vertical unless the plot is flipped."} schema/accessor)
+             (schema/nilable :y {:description "Draws a line across the panel at each row's y, horizontal unless the plot is flipped."} schema/accessor)
+             (schema/nilable :slope {:description "The slope of each row's sloped line; it needs a mapped `:intercept`."}
                              schema/accessor)
-             (schema/nilable :intercept {:description "intercept of a line y = intercept + slope * x, one per row (with :slope)"}
+             (schema/nilable :intercept {:description "The intercept of each row's sloped line; it needs a mapped `:slope`."}
                              schema/accessor)
-             (schema/nilable :color {:description "line colour per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :dash {:description "dash style per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
+             (schema/nilable :color {:description "Splits the rows into groups, each with its own line colour."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows into groups, each with its own dash style."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each row still its own line."} schema/accessor)]})
 
 (defn- abline-pairs
   "Pairs the slopes and intercepts of ab lines.

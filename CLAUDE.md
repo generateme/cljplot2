@@ -278,7 +278,8 @@ the theme: banned names, and one type family per name across all owners). One na
   `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
   below), its mapping table, its own
   options (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by `:cljplot2/section` when
-  over 12 rows), each followed by an example, then `nu/shared-groups` (links to the group's `###` heading there);
+  over 12 rows), each followed by an example, then `nu/shared-groups` (a Shared options box, a point per group linking to its `###`
+  heading there; on a migrated page it opens the section, right after the opening sentences);
   `chart-coverage-test`: every own top-level option set in a literal `(chart/kind {...})` map on the page and every
   value of an enum of at most 6 values given (a default counts when a call omits the option). Builder pages
   (`builders_*.clj`) likewise (own options + shared groups); data function pages (`data_*.clj`, a `;; ## ns/name`
@@ -347,12 +348,15 @@ the theme: banned names, and one type family per name across all owners). One na
   derived example shows it); a named type gives
   `:cljplot2/type-name`, `:cljplot2/type-meaning` and, for a predicate over values, `:cljplot2/value-set` /
   `:cljplot2/other-types` (value and form meanings shared by its entries); card forms read as short type text
-  (`vector of open fractions`, never validation-message text). `option-cards-test` checks a migrated chart: sentences, a
+  (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y`, a vector of
+  them `vector of Xs or Ys`; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart: sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -
-  is listed with its reason); `migrated` equals
-  the keys of `describe/concepts` and each migrated section uses cards, never an options table.
+  is listed with its reason; one the chart can't draw without - `:f`, a rule's positions - is listed in `needed-to-draw`
+  and only has to render);
+  `migrated` equals the keys of `describe/concepts` and each migrated section uses cards, never an options table, and a
+  mapping list when the chart has mapping keys.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
   `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`
   var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema

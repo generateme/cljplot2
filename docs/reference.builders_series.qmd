@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -170,7 +175,11 @@ Larger triangle points through the theme:
 :::
 
 
-Shared options: [Autocorrelation rows](reference.shared_options.html#autocorrelation-rows) (`:lags` `:level`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> – <code>:lags</code> <code>:level</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## horizon
@@ -240,7 +249,11 @@ translucent bands showing the ones beneath (right):
 :::
 
 
-Shared options: [Horizon rows](reference.shared_options.html#horizon-rows) (`:x` `:y` `:series` `:bands` `:band-height` `:interpolator` `:steps-per-gap`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#horizon-rows">Horizon rows</a> – <code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ```{=html}

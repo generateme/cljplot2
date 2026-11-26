@@ -8,6 +8,7 @@
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
             [clojure.walk :as walk]
+            [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.random :as r]
             [malli.core :as malli]
@@ -125,11 +126,19 @@
     (is (= migrated (set (keys describe/concepts)))))
   (doseq [kind migrated
           :let [section (concept-section (describe/concepts kind))]]
-    (testing (str kind ": its section shows option cards and a mapping list, no options table")
+    (testing (str kind ": its section shows option cards and - for a chart with mapping keys - a mapping list, no options table")
       (is (some? section))
       (is (str/includes? (str section) "nu/option-cards"))
-      (is (str/includes? (str section) "nu/mapping-list"))
-      (is (not (str/includes? (str section) "nu/options-table")))))
+      (is (= (empty? (describe/mapping ((get (describe/chart-constructors) kind))))
+             (not (str/includes? (str section) "nu/mapping-list"))))
+      (is (not (str/includes? (str section) "nu/options-table"))))
+    (testing (str kind ": its shared groups (when it takes any) open the section, before the mapping list and cards")
+      (let [text (str section)
+            at (fn [s] (str/index-of text s))
+            groups (seq (describe/fragment-keys (describe/options ((get (describe/chart-constructors) kind)))))]
+        (is (= (nil? groups) (nil? (at "nu/shared-groups"))))
+        (when groups
+          (is (every? #(< (at "nu/shared-groups") %) (keep at ["nu/mapping-list" "nu/option-cards"])))))))
   (testing "boundary: a section ends at the next ## heading"
     (is (nil? (concept-section "No such concept")))))
 
@@ -203,6 +212,12 @@
     (is (= [[:b]] (default-gaps [{:path [:a] :default false} {:path [:b]} {:path [:c] :required true}
                                  {:path [:d] :theme-default true :default 1}])))))
 
+(defn- evaluated
+  "`options` with each code form (a list, e.g. `(fn [x] (m/sin x))`) replaced by its value, evaluated whole in this
+  namespace."
+  [options]
+  (walk/prewalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %) options))
+
 (deftest card-rules-test
   (doseq [kind migrated
           :let [{:keys [options mapping]} (kind-rows kind)
@@ -216,7 +231,7 @@
     (testing (str kind ": every optional option has a default")
       (is (= [] (default-gaps leaves))))
     (testing (str kind ": every form names a documented type or reads as a short type text (no validation-message text)")
-      (is (= [] (vec (for [{:keys [path forms]} leaves
+      (is (= [] (vec (for [{:keys [path forms]} options
                            {:keys [form type]} forms
                            :when (or (and (qualified-keyword? form) (not (contains? describe/documented-types form)))
                                      (validation-text? type))]
@@ -226,13 +241,13 @@
     (testing (str kind ": every example is a valid option on its own (a code form evaluated first)")
       (let [options-schema (get-in ((get (describe/chart-constructors) kind)) [:schema :options])]
         (doseq [row leaves
-                :let [example (walk/postwalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %)
-                                             (describe/example-options options row))]]
+                :let [example (evaluated (describe/example-options options row))]]
           (is (malli/validate options-schema example) (str (:path row) " " example)))))))
 
 (def ^:private example-fixtures
-  "Kind -> a small plot (`:data`, `:mapping`) on which every option example of the kind changes the picture: unsorted
-  x, two groups, a missing y, up and down candles."
+  "Kind -> a small plot (`:data`, `:mapping`, `:scales`) on which every option example of the kind changes the picture:
+  unsorted x, two groups, a missing y, up and down candles; annotation charts draw from their examples' options, on
+  fixed scales where an example adds no extent (rule, text, function)."
   (let [xs [3 1 4 2 6 5 8 7]
         rows (for [g ["a" "b"] [i x] (map-indexed vector xs)]
                {:x x :y (when-not (and (= g "a") (= i 3)) (+ (* 0.5 x) (if (= g "a") 1.0 2.5) (* 0.3 (m/sin (* 3.0 x)))))
@@ -246,14 +261,20 @@
      :candlestick {:data [{:x 1 :o 2 :h 5 :l 1 :c 4} {:x 2 :o 4 :h 4.5 :l 2 :c 3} {:x 3 :o 3 :h 6 :l 2.5 :c 5.5}]
                    :mapping {:x :x :open :o :high :h :low :l :close :c}}
      :smooth {:data (remove #(nil? (:y %)) (map #(update % :x (fn [x] (if (= "a" (:g %)) x (+ x 0.5)))) rows))
-              :mapping {:x :x :y :y :color :g}}}))
+              :mapping {:x :x :y :y :color :g}}
+     :rule {:scales {:x {:domain [0 10]} :y {:domain [0 10]}}}
+     :rect {}
+     :text {:scales {:x {:domain [0 10]} :y {:domain [0 10]}}}
+     :image {}
+     :function {:scales {:x {:domain [0 6]}}}}))
 
 (defn- without-option
-  "`options` without the option at `path`: removed, or - nested in a container with a map default (the theme's) - back
-  at the container default's value, so a required key stays."
+  "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
+  (the theme's) or its example context's value, so a required key stays."
   [options rows path]
   (let [container (first (filter #(= (pop path) (:path %)) rows))
-        default (when (map? (:default container)) (get (:default container) (peek path)))]
+        default (or (when (map? (:default container)) (get (:default container) (peek path)))
+                    (get-in (:example-context container) path))]
     (cond
       (some? default) (assoc-in options path default)
       (m/one? (count path)) (dissoc options (first path))
@@ -264,18 +285,48 @@
   {[:smooth [:stat-space]] "acts only on a :log axis, a plot scale"
    [:scatter [:descending]] "acts only where points of different colours overlap"})
 
+(def ^:private needed-to-draw
+  "`[kind path]` -> why the chart draws nothing without the option: its example has no picture to compare with, so it
+  only has to render. Every other baseline must draw (see [[drawable?]])."
+  {[:rule [:x]] "literal positions or a mapping make the lines" [:rule [:y]] "literal positions or a mapping make the lines"
+   [:rule [:slope]] "a literal :intercept needs :slope" [:rule [:intercept]] "a literal :slope needs :intercept"
+   [:text [:x]] "literal labels need :x, :y and :text" [:text [:y]] "literal labels need :x, :y and :text"
+   [:text [:text]] "literal labels need :x, :y and :text"
+   [:image [:f]] "the chart's one required option"
+   [:function [:f]] "a function chart needs :f or :parametric" [:function [:parametric]] "a function chart needs :f or :parametric"
+   [:function [:t]] ":parametric needs :t"})
+
+(defn- drawable?
+  "Tests whether a fixture plot draws: its chart's options valid and the plot rendering without an error.
+
+  Parameters:
+
+  - `options-schema`: the chart's options schema.
+  - `p` (map): the fixture plot, one chart.
+  - `size` (map): render options."
+  [options-schema p size]
+  (and (malli/validate options-schema (:options (first (:charts p))))
+       (try (some? (plot/render-image p size)) (catch clojure.lang.ExceptionInfo _ false))))
+
 (deftest examples-act-test
   (doseq [kind migrated
           :let [constructor (get (describe/chart-constructors) kind)
                 rows (describe/options (constructor))
-                {:keys [data mapping]} (example-fixtures kind)
-                draw (fn [options] {:data data :mapping mapping :charts [(constructor options)]})]
+                options-schema (get-in (constructor) [:schema :options])
+                {:keys [data mapping scales]} (example-fixtures kind)
+                draw (fn [options] (cond-> {:data data :mapping mapping :charts [(constructor options)]} scales (assoc :scales scales)))]
           row (leaf-rows (describe/own-rows rows))
           :when (not (contains? inert-in-fixtures [kind (:path row)]))
-          :let [example (walk/postwalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %)
-                                       (describe/example-options rows row))]]
-    (testing (str kind " " (:path row) ": the example changes the picture - " (pr-str example))
-      (is (not (same-pixels? (draw (without-option example rows (:path row))) (draw example) {:width 320 :height 240}))))))
+          :let [example (evaluated (describe/example-options rows row))]]
+    (let [baseline (without-option example rows (:path row))
+          size {:width 320 :height 240}]
+      (if-let [reason (needed-to-draw [kind (:path row)])]
+        (testing (str kind " " (:path row) ": needed to draw (" reason "): the baseline doesn't draw, the example renders - " (pr-str example))
+          (is (not (drawable? options-schema (draw baseline) size)))
+          (is (some? (plot/render-image (draw example) size))))
+        (testing (str kind " " (:path row) ": the example changes the picture - " (pr-str example))
+          (is (drawable? options-schema (draw baseline) size))
+          (is (not (same-pixels? (draw baseline) (draw example) size))))))))
 
 ;; types and links
 

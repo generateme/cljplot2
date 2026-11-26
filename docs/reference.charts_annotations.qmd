@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -44,8 +49,9 @@ code-block-background: true
 
 # Annotations
 
-Marks you add over the data to point things out: reference lines (`rule`), intervals (`rect`), labels (`text`),
-a picture (`image`) and function curves (`function`). `rule`, `rect` and `text` can also draw one mark per row.
+These charts draw marks over the data to point things out: reference lines (`rule`), intervals (`rect`), labels
+(`text`), a picture (`image`) and function curves (`function`). `rule`, `rect` and `text` can also draw one mark per
+row.
 
 
 ::: {.sourceClojure}
@@ -96,18 +102,22 @@ Data: US economic time series, 1967-2015, R ggplot2 package `economics` (Federal
 
 
 
-## rule
+## Reference lines
 
-Straight lines across the panel: vertical at an x, horizontal at a y, or sloped y = intercept + slope · x - one
-per row of data, or at literal positions.
+`chart/rule` draws straight lines across the panel: vertical at an x, horizontal at a y, or sloped,
+y = intercept + slope · x. Use it for thresholds, means or a trend; it draws a line per row of data, or at positions
+its options give.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position of a line along the y direction, one per row</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position of a line along the x direction, one per row</td></tr><tr><td>:slope</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>slope of a line y = intercept + slope * x, one per row (with :intercept)</td></tr><tr><td>:intercept</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>intercept of a line y = intercept + slope * x, one per row (with :slope)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line colour per group (gives legend keys)</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>dash style per group (gives legend keys)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#annotation-options">Annotation options</a> – <code>:extent</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – Draws a line across the panel at each row's x, vertical unless the plot is flipped.</li><li><code>:y</code> – Draws a line across the panel at each row's y, horizontal unless the plot is flipped.</li><li><code>:slope</code> – The slope of each row's sloped line; it needs a mapped <code>:intercept</code>.</li><li><code>:intercept</code> – The intercept of each row's sloped line; it needs a mapped <code>:slope</code>.</li><li><code>:color</code> – Splits the rows into groups, each with its own line colour.</li><li><code>:dash</code> – Splits the rows into groups, each with its own dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, each row still its own line.</li></ul></div>
+```
 
 
 
@@ -142,15 +152,12 @@ per row of data, or at literal positions.
 :::
 
 
-Its options: literal positions - one or a vector of them, across x (`:x`) or along it (`:y`) - and sloped lines:
+Its options place the lines without data:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a finite number, a java.time value or a level (string / keyword) or vector of a finite number, a java.time value or a level (string / keyword) (at least 1) or nil</td><td></td><td>literal x position(s) of lines along the y direction: a position or a vector of them (wins over the mapping)</td></tr><tr><td>:y</td><td>a finite number, a java.time value or a level (string / keyword) or vector of a finite number, a java.time value or a level (string / keyword) (at least 1) or nil</td><td></td><td>literal y position(s) of lines along the x direction: a position or a vector of them (wins over the mapping)</td></tr><tr><td>:slope</td><td>a finite number or vector of a finite number (at least 1) or nil</td><td></td><td>literal slope(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :intercept; linear scales only)</td></tr><tr><td>:intercept</td><td>a finite number or vector of a finite number (at least 1) or nil</td><td></td><td>literal intercept(s) of lines y = intercept + slope * x, a number or a vector of 1 or n (needs :slope)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:x</code><span class="option-default">Default: None; the lines come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/rule {:x [2 4]})</code></div><div class="option-text">Draws a line across the panel at each x position, vertical unless the plot is flipped. Literal positions replace the chart's mapping.<ul><li><a href="reference.types.html#position">position</a> – One line.</li><li><span>vector of positions</span> – A line at each position.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: None; the lines come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/rule {:y [2 4]})</code></div><div class="option-text">Draws a line across the panel at each y position, horizontal unless the plot is flipped. Literal positions replace the chart's mapping.<ul><li><a href="reference.types.html#position">position</a> – One line.</li><li><span>vector of positions</span> – A line at each position.</li></ul></div></dd></div><div class="option-card"><dt><code>:slope</code><span class="option-default">Default: None; the lines come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/rule {:intercept 1, :slope 0.5})</code></div><div class="option-text">The slope of each sloped line y = intercept + slope · x, drawn across the panel. It needs <code>:intercept</code> and linear x and y scales.<ul><li><a href="reference.types.html#finite-number">finite number</a> – One slope for every line.</li><li><span>vector of finite numbers</span> – A slope per line, paired in order with <code>:intercept</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:intercept</code><span class="option-default">Default: None; the lines come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/rule {:slope 0.5, :intercept 2})</code></div><div class="option-text">The intercept of each sloped line y = intercept + slope · x. It needs <code>:slope</code>.<ul><li><a href="reference.types.html#finite-number">finite number</a> – One intercept for every line.</li><li><span>vector of finite numbers</span> – An intercept per line, paired in order with <code>:slope</code>.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -178,21 +185,23 @@ Its options: literal positions - one or a vector of them, across x (`:x`) or alo
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
+## Rectangles
 
-## rect
+`chart/rect` draws rectangles over x and y intervals, or a band across the panel over one of them; an open end
+(`nil`) reaches the panel's edge. Use it to shade periods, ranges or regions; list it before the charts it should
+stay behind.
 
-Rectangles spanning x and / or y intervals; an open end (`nil`) reaches the panel edge - shaded periods or
-ranges.
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x0</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x start of a rect, one per row (with :x1; nil - the panel edge)</td></tr><tr><td>:x1</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x end of a rect, one per row (with :x0; nil - the panel edge)</td></tr><tr><td>:y0</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y start of a rect, one per row (with :y1; nil - the panel edge)</td></tr><tr><td>:y1</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y end of a rect, one per row (with :y0; nil - the panel edge)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill colour per group or row (gives legend keys)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern per group (gives legend keys)</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups the rects (no visual effect)</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups the rects (no visual effect)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#annotation-options">Annotation options</a> – <code>:extent</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x0</code> – The start x of each row's rectangle, with <code>:x1</code>; a <code>nil</code> value reaches the panel's edge.</li><li><code>:x1</code> – The end x of each row's rectangle, with <code>:x0</code>; a <code>nil</code> value reaches the panel's edge.</li><li><code>:y0</code> – The start y of each row's rectangle, with <code>:y1</code>; a <code>nil</code> value reaches the panel's edge.</li><li><code>:y1</code> – The end y of each row's rectangle, with <code>:y0</code>; a <code>nil</code> value reaches the panel's edge.</li><li><code>:color</code> – Fills the rectangles: by a categorical value per group, or by any colour scale per row, e.g. identity colours for swatches.</li><li><code>:pattern</code> – Splits the rows into groups, each with its own fill pattern.</li><li><code>:shape</code> – Splits the rows into groups that look the same, as <code>:group</code> does.</li><li><code>:size</code> – Splits the rows into groups that look the same, as <code>:group</code> does.</li><li><code>:group</code> – Splits the rows into groups that look the same, each row still its own rectangle.</li></ul></div>
+```
 
 
 
@@ -231,16 +240,14 @@ ranges.
 :::
 
 
-Its options: literal intervals (here on y, with one fill colour each), the fill, its opacity and outline, and
-how much of a band a level end covers:
+Its options give literal intervals, their fill and outline, and how much of a level's band they cover. On the
+left, two y intervals with a fill colour each; on the right, one rectangle from level b to level c, with
+`:width 0.6` covering only part of each level's band:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:none</td><td>outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:fill</td><td>a clojure2d color or :none or vector of a clojure2d color or :none (at least 1)</td><td>[0 0 0 30]</td><td>fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>colours as they are</td><td>fill opacity</td></tr><tr><td>:x</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:y</td><td>[a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] or vector of [a finite number, a java.time value or a level (string / keyword) or nil, a finite number, a java.time value or a level (string / keyword) or nil] (at least 1) or nil</td><td></td><td>literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)</td></tr><tr><td>:width</td><td>a finite number, > 0, <= 1</td><td>1.0</td><td>fraction of its band step a level end covers, centred</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/rect {:x [2 6], :y [2 6], :stroke-color :darker})</code></div><div class="option-text">The outline colour of the rectangles.<ul><li><code>:none</code> – No outline.</li><li><code>:darker</code> – The fill colour, darkened; no outline without a fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/rect {:x [2 6], :y [2 6], :stroke-color :black, :stroke-width 4})</code></div><div class="option-text">The outline width in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>[0 0 0 30]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/rect {:x [[1 3] [5 7]], :y [2 6], :fill [:steelblue :orange]})</code></div><div class="option-text">The fill colour of the rectangles, or a vector of colours, one per literal interval; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li><li><span>vector of colours</span> – A colour per literal interval, paired in order; a vector of one colour fills them all.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: The colours' own alpha.</span></dt><dd><div class="option-example"><code>(chart/rect {:x [2 6], :y [2 6], :alpha 0.3})</code></div><div class="option-text">The opacity of the fill, from 0 (transparent) to 1.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:x</code><span class="option-default">Default: None; the rectangles come from the mapping, or span the whole x range when only <code>:y</code> is given.</span></dt><dd><div class="option-example"><code>(chart/rect {:y [2 6], :x [2 6]})</code></div><div class="option-text">The x interval of each rectangle; without <code>:y</code> it draws a band across the whole panel. Literal intervals replace the chart's mapping.<ul><li><span>pair of positions</span> – One interval <code>[a b]</code>; a <code>nil</code> end reaches the panel's edge, e.g. <code>[5 nil]</code>.</li><li><span>vector of (pair of positions)</span> – An interval per rectangle, paired in order with <code>:y</code> and <code>:fill</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: None; the rectangles come from the mapping, or span the whole y range when only <code>:x</code> is given.</span></dt><dd><div class="option-example"><code>(chart/rect {:x [2 6], :y [2 6]})</code></div><div class="option-text">The y interval of each rectangle; without <code>:x</code> it draws a band across the whole panel. Literal intervals replace the chart's mapping.<ul><li><span>pair of positions</span> – One interval <code>[a b]</code>; a <code>nil</code> end reaches the panel's edge, e.g. <code>[5 nil]</code>.</li><li><span>vector of (pair of positions)</span> – An interval per rectangle, paired in order with <code>:x</code> and <code>:fill</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:width</code><span class="option-default">Default: <code>1.0</code></span></dt><dd><div class="option-example"><code>(chart/rect {:x ["b" "c"], :y [2 6], :width 0.5})</code></div><div class="option-text">On a categorical axis, the fraction of a level's band that an interval ending at that level covers, centred. At <code>1</code> rectangles of neighbouring levels touch.<ul><li><span>finite number above 0 and at most 1</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -281,21 +288,24 @@ how much of a band a level end covers:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`); [Rounded corners](reference.shared_options.html#rounded-corners) (`:corner-radius`).
 
+## Text labels
 
-## text
+`chart/text` draws labels at positions: a label per row of data, with `:label` as its text, or at positions its
+options give, also at a fraction of the panel (`[:panel f]`). Use it to name points, mark values or add notes. It
+reads the plot's data but takes only the facet keys of the plot's mapping; its positions and texts come from its
+own `:mapping`.
 
-Labels at positions - from data (one per row, `:label` the text) or literal, also at a fraction of the panel
-(`[:panel f]`). As an annotation it reads the plot's data but only its own mapping (and the plot's facet keys).
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position of a label, one per row</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position of a label, one per row</td></tr><tr><td>:label</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>label text, one per row (converted with str)</td></tr><tr><td>:angle</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>label rotation in degrees, clockwise (nil or not finite - :rotation)</td></tr><tr><td>:x-span</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>room along x, a non-negative length in x units from a numeric x: a longer label shrinks to its role's :min-size (unrotated labels in an unflipped cartesian plot; nil, not finite - not fitted)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>text colour per group (gives legend keys)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (labels per group with :select)</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#text-style">Text style</a> – <code>:font</code> <code>:size</code> <code>:font-style</code> <code>:color</code> <code>:inset</code> <code>:background</code> <code>:dollar-math</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#annotation-options">Annotation options</a> – <code>:extent</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of each row's label.</li><li><code>:y</code> – The y of each row's label.</li><li><code>:label</code> – The text of each row's label; a value becomes a string. <code>$...$</code> in it and <code>plot/math</code> values draw as formulas, unless <code>:dollar-math false</code> keeps dollars as typed.</li><li><code>:angle</code> – Turns each row's label by degrees, clockwise; a <code>nil</code> or non-finite value takes <code>:rotation</code>.</li><li><code>:x-span</code> – Each label's room along x, in x units from its x: a longer label shrinks, down to its text role's <code>:min-size</code>. The chart fits only unrotated labels in an unflipped cartesian plot, and not for a <code>nil</code> span.</li><li><code>:color</code> – Splits the rows into groups, each with its own text colour.</li><li><code>:group</code> – Splits the rows into groups that look the same; <code>:select</code> keeps labels per group.</li></ul></div>
+```
 
 
 
@@ -331,16 +341,15 @@ Labels at positions - from data (one per row, `:label` the text) or literal, als
 :::
 
 
-Its options come in four parts. The labels: literal positions and texts, the text role, labels of only the last
-(or first) row per group:
 
-::: {.clay-table}
+### Labels
+
+These options give the labels' positions, texts and text role, or keep one label per group at a line's end:
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:role</td><td>keyword</td><td>:annotation</td><td>theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys</td></tr><tr><td>:x</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:y</td><td>[:panel f], f in [0 1] or a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] or vector of a finite number, a java.time value or a level (string / keyword) or [:panel f], f in [0 1] (at least 1) or nil</td><td></td><td>literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)</td></tr><tr><td>:text</td><td>any value or nil</td><td></td><td>literal label text: a value or a vector of 1 or n (converted with str; plot/math and plot/runs values kept)</td></tr><tr><td>:select</td><td>one of :last :first</td><td></td><td>end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x</td></tr><tr><td>:select-within</td><td>one of :group-and-label :group or nil</td><td>:group-and-label</td><td>what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:role</code><span class="option-default">Default: <code>:annotation</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :role :title})</code></div><div class="option-text">The theme text role the labels take their style from, e.g. a builder's role or one your theme adds; the inline style options win over it.<ul><li><span>keyword</span></li></ul></div></dd></div><div class="option-card"><dt><code>:x</code><span class="option-default">Default: None; the labels come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/text {:y 5, :text "label", :x [:panel 0.2]})</code></div><div class="option-text">The x of each literal label. Literal labels need <code>:x</code>, <code>:y</code> and <code>:text</code>, and replace the chart's mapping.<ul><li><a href="reference.types.html#panel-position">panel position</a> – A place across the panel, whatever the data.</li><li><a href="reference.types.html#position">position</a> – One x for every label.</li><li><span>vector of positions or panel positions</span> – An x per label, paired in order with <code>:y</code> and <code>:text</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: None; the labels come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :text "label", :y [:panel 0.9]})</code></div><div class="option-text">The y of each literal label. Literal labels need <code>:x</code>, <code>:y</code> and <code>:text</code>, and replace the chart's mapping.<ul><li><a href="reference.types.html#panel-position">panel position</a> – A place across the panel, whatever the data.</li><li><a href="reference.types.html#position">position</a> – One y for every label.</li><li><span>vector of positions or panel positions</span> – A y per label, paired in order with <code>:x</code> and <code>:text</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:text</code><span class="option-default">Default: None; the labels come from the mapping.</span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "peak"})</code></div><div class="option-text">The text of the literal labels: one value for all, or a vector paired in order with <code>:x</code> and <code>:y</code>. A value becomes a string; <code>$...$</code> in it and <code>plot/math</code> values draw as formulas, unless <code>:dollar-math false</code> keeps dollars as typed.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:select</code><span class="option-default">Default: A label for every row.</span></dt><dd><div class="option-example"><code>(chart/text {:data [{:x 1, :y 1, :g "a"} {:x 3, :y 2, :g "a"}], :mapping {:x :x, :y :y, :label :g}, :select :last})</code></div><div class="option-text">Keeps one label per group (see <code>:select-within</code>), for labels at the ends of lines.<ul><li><code>:last</code> – The row with the largest x.</li><li><code>:first</code> – The row with the smallest x.</li></ul></div></dd></div><div class="option-card"><dt><code>:select-within</code><span class="option-default">Default: <code>:group-and-label</code></span></dt><dd><div class="option-example"><code>(chart/text {:select :last, :data [{:x 1, :y 1, :g "a", :l "early"} {:x 3, :y 2, :g "a", :l "late"}], :mapping {:x :x, :y :y, :group :g, :label :l}, :select-within :group})</code></div><div class="option-text">What <code>:select</code> keeps one label in.<ul><li><code>:group-and-label</code> – Each group and label text.</li><li><code>:group</code> – Each group, whatever its labels.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -357,6 +366,9 @@ Its options come in four parts. The labels: literal positions and texts, the tex
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>alpha</td><td>0</td><td>2.0</td></tr><tr><td>alpha</td><td>1</td><td>3.0</td></tr><tr><td>alpha</td><td>2</td><td>4.0</td></tr><tr><td>alpha</td><td>3</td><td>5.0</td></tr><tr><td>alpha</td><td>4</td><td>6.0</td></tr><tr><td>alpha</td><td>5</td><td>7.0</td></tr><tr><td>alpha</td><td>6</td><td>8.0</td></tr><tr><td>alpha</td><td>7</td><td>9.0</td></tr><tr><td>alpha</td><td>8</td><td>10.0</td></tr><tr><td>alpha</td><td>9</td><td>11.0</td></tr><tr><td>beta</td><td>0</td><td>0.0</td></tr><tr><td>beta</td><td>1</td><td>1.6</td></tr><tr><td>beta</td><td>2</td><td>3.2</td></tr><tr><td>beta</td><td>3</td><td>4.800000000000001</td></tr><tr><td>beta</td><td>4</td><td>6.4</td></tr><tr><td>beta</td><td>5</td><td>8.0</td></tr><tr><td>beta</td><td>6</td><td>9.600000000000001</td></tr><tr><td>beta</td><td>7</td><td>11.200000000000001</td></tr><tr><td>beta</td><td>8</td><td>12.8</td></tr><tr><td>beta</td><td>9</td><td>14.4</td></tr><tr><td>gamma</td><td>0</td><td>9.0</td></tr><tr><td>gamma</td><td>1</td><td>9.4</td></tr><tr><td>gamma</td><td>2</td><td>9.8</td></tr><tr><td>gamma</td><td>3</td><td>10.2</td></tr><tr><td>gamma</td><td>4</td><td>10.6</td></tr><tr><td>gamma</td><td>5</td><td>11.0</td></tr><tr><td>gamma</td><td>6</td><td>11.4</td></tr><tr><td>gamma</td><td>7</td><td>11.8</td></tr><tr><td>gamma</td><td>8</td><td>12.2</td></tr><tr><td>gamma</td><td>9</td><td>12.6</td></tr></tbody></table></div>
 ```
 
+
+On the left, a note in the panel's top left corner and a label turned by -30 degrees; on the right, `:select :last` names each
+line at its end:
 
 
 ::: {.sourceClojure}
@@ -384,22 +396,111 @@ Its options come in four parts. The labels: literal positions and texts, the tex
 :::
 
 
-Their placement: the anchor and offset, rotation, what the anchor points into and room kept for labels past the
-data:
+Here the label changes along each line with its phase (beta's early phase is shorter): the default
+`:select-within` gives an end label per text, `:group` one per line. A `[:panel f]` position also works on an axis
+no chart maps, such as the dot plot's vertical:
 
-::: {.clay-table}
 
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:anchor</td><td>[one of :left :center :right, one of :top :middle :bottom]</td><td>[:center :middle]; with :select just past the point; polar :radial - away from the centre</td><td>point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)</td></tr><tr><td>:offset</td><td>[a finite number, a finite number]</td><td>[0 0]; with :select 5 pixels past the point</td><td>shift [dx dy] of the text in pixels, dy up</td></tr><tr><td>:rotation</td><td>a finite number or :radial</td><td>0</td><td>text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)</td></tr><tr><td>:anchor-frame</td><td>one of :box :text</td><td>:box</td><td>what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)</td></tr><tr><td>:reserve-room</td><td>true or false or :anchor</td><td>false</td><td>keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach</td></tr></tbody></table>
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group-and-label"}
+                                   :legend false}
+                                  {:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group"}
+                                   :legend false}
+                                  {:data faithful :mapping {:x :eruptions}
+                                   :charts [(chart/dotplot {:binwidth 0.1})
+                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
+                                                         :text "eruption lengths"})]
+                                   :labels {:title "[:panel f] without a y scale"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
 ```
-
 :::
 
 
-End labels of the first row per group instead (`:select :first`), and what a rotated label's `:anchor` points
-into: the rotated label's bounding box (`:box`, the default) or the text itself, turned about the anchor point
-(`:text`) - each label turned upright, anchored at its left top on the red point: the box's top left corner,
-or the start of the text's top edge:
+::: {.clay-image}
+![](reference.charts_annotations_files/image6.png)
+:::
+
+
+`:role` picks the [theme text role](reference.theme.html#text) the labels take their style from: here one the
+theme adds (`:callout`, bottom right) and a builder's (`:network-label`, small names on white boxes):
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image {:data cities
+                    :mapping {:x :lon :y :lat}
+                    :charts [(chart/scatter)
+                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
+                                          :role :network-label})
+                             (chart/text {:x [:panel 0.98] :y [:panel 0.03] :anchor [:right :bottom] :text "European cities"
+                                          :role :callout})]
+                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
+                                             :inset 2}}}
+                    :labels {:x "longitude" :y "latitude"}}
+                   {:width 550 :height 340})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image7.png)
+:::
+
+
+A text draws `$...$` as a LaTeX formula (left; [Formulas](reference.labels_text.html#formulas) has the rules), as
+every label in cljplot2 does. `:dollar-math false` keeps the dollars as typed (right); `\$` keeps one dollar
+literal in a text with formulas:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/text {:x 3.5 :y 95 :text "mean wait $\\bar{w} = 71$ min"})]
+                                   :labels {:title "formula in the text"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/text {:x 3.5 :y 95 :text "mean wait $\\bar{w} = 71$ min" :dollar-math false})]
+                                   :labels {:title ":dollar-math false"}}]
+                                 {:columns 2})
+                   {:width 900 :height 330})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_annotations_files/image8.png)
+:::
+
+
+
+### Placement
+
+These options place each label around its position: which point of its box sits there, a shift in pixels, a
+turn, and room kept past the data:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:anchor</code><span class="option-default">Default: <code>[:center :middle]</code>; with <code>:select :last</code> <code>[:left :middle]</code>, with <code>:first</code> <code>[:right :middle]</code>, past the line's end; with <code>:rotation :radial</code>, the side facing the centre.</span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :anchor [:left :bottom]})</code></div><div class="option-text">The point of each label's box placed at its position, e.g. <code>[:left :top]</code> puts the box's top left corner there.<ul><li><a href="reference.types.html#alignment">alignment</a></li></ul></div></dd></div><div class="option-card"><dt><code>:offset</code><span class="option-default">Default: <code>[0 0]</code>; with <code>:select</code>, 5 pixels past the line's end.</span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :offset [10 10]})</code></div><div class="option-text">Shifts each label by <code>[dx dy]</code> pixels, <code>dy</code> up.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:rotation</code><span class="option-default">Default: <code>0</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :rotation -30})</code></div><div class="option-text">Turns the labels; a mapped <code>:angle</code> wins.<ul><li><code>:radial</code> – In a polar plot, each label along its angle, turned to read upright; no turn in a cartesian plot.</li><li><a href="reference.types.html#finite-number">finite number</a> – Degrees, clockwise.</li></ul></div></dd></div><div class="option-card"><dt><code>:anchor-frame</code><span class="option-default">Default: <code>:box</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :rotation -45, :anchor [:left :top], :anchor-frame :text})</code></div><div class="option-text">What <code>:anchor</code> points into on a turned label.<ul><li><code>:box</code> – The bounding box of the turned label.</li><li><code>:text</code> – The text before turning; the text then turns about that point.</li></ul></div></dd></div><div class="option-card"><dt><code>:reserve-room</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text "label", :reserve-room true})</code></div><div class="option-text">Keeps room past the data for the labels, so labels at the data's edge stay inside the panel.<ul><li><code>false</code> – No room.</li><li><code>true</code> – The largest label's diagonal on every side, for labels at any angle.</li><li><code>:anchor</code> – Only where the anchored labels reach past their positions.</li></ul></div></dd></div></dl>
+```
+
+
+On the left, each line's start label ends 5 pixels before the line begins, with room kept for the
+labels (`:anchor [:right :middle]`, `:offset [-5 0]`, `:reserve-room :anchor`). In the middle and on the right, a
+label turned by -90 degrees is anchored at its left top on the red point: `:anchor-frame :box` takes the turned
+label's bounding box, `:anchor-frame :text` the start of the text's top edge:
 
 
 ::: {.sourceClojure}
@@ -444,93 +545,26 @@ or the start of the text's top edge:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image6.png)
+![](reference.charts_annotations_files/image9.png)
 :::
 
 
-`:select` keeps one label per group and label text (`:select-within :group-and-label`, the default) - a label
-that changes along a line (here its phase; beta's early phase is shorter) gives one end label per text.
-`:select-within :group` keeps one per group, whatever its label. A `[:panel f]` position also works on an axis no
-chart maps - the dot plot's vertical:
 
+### Crowding
 
-::: {.sourceClojure}
-```clojure
-(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
-                                   :charts [(chart/line)
-                                            (chart/text {:mapping {:x :t :y :v :color :g
-                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
-                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
-                                   :labels {:title ":select-within :group-and-label"}
-                                   :legend false}
-                                  {:data growth :mapping {:x :t :y :v :color :g}
-                                   :charts [(chart/line)
-                                            (chart/text {:mapping {:x :t :y :v :color :g
-                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
-                                                         :select :last :select-within :group :reserve-room :anchor})]
-                                   :labels {:title ":select-within :group"}
-                                   :legend false}
-                                  {:data faithful :mapping {:x :eruptions}
-                                   :charts [(chart/dotplot {:binwidth 0.1})
-                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
-                                                         :text "eruption lengths"})]
-                                   :labels {:title "[:panel f] without a y scale"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 320})
-```
-:::
+These options handle labels that overlap: draw them anyway, leave some out, or move them apart:
 
-
-::: {.clay-image}
-![](reference.charts_annotations_files/image7.png)
-:::
-
-
-The labels' style is a [theme text role](reference.theme.html#text), `:annotation` by default; `:role` picks
-another - a role the theme adds (here `:callout`, in the bottom right corner), or a builder's (here
-`:network-label`, small names on white boxes), the inline style keys still over it:
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image {:data cities
-                    :mapping {:x :lon :y :lat}
-                    :charts [(chart/scatter)
-                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
-                                          :role :network-label})
-                             (chart/text {:x [:panel 0.98] :y [:panel 0.03] :anchor [:right :bottom] :text "European cities"
-                                          :role :callout})]
-                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
-                                             :inset 2}}}
-                    :labels {:x "longitude" :y "latitude"}}
-                   {:width 550 :height 340})
-```
-:::
-
-
-::: {.clay-image}
-![](reference.charts_annotations_files/image8.png)
-:::
-
-
-Crowded labels - left out, moved apart, fitted to a room:
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:overlapping-labels</td><td>one of :keep :drop :repel</td><td>:keep</td><td>labels overlapping one drawn before them (groups, then rows in data order): :keep (all drawn), :drop (not drawn) or :repel (moved to a free place within :repel-distance, else not drawn)</td></tr><tr><td>:repel-distance</td><td>a positive finite number or nil</td><td>60</td><td>with :overlapping-labels :repel: the farthest a label moves from its place, pixels</td></tr><tr><td>:label-leader</td><td>true or false or nil</td><td>false</td><td>with :overlapping-labels :repel: draw a line from the point of a label moved more than 6 pixels to its box</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:overlapping-labels</code><span class="option-default">Default: <code>:keep</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text ["first" "second"], :overlapping-labels :drop})</code></div><div class="option-text">What the chart does with a label that overlaps one placed before it. It places labels group by group, each group's rows in data order, so earlier labels win.<ul><li><code>:keep</code> – Draws it anyway.</li><li><code>:drop</code> – Leaves it out.</li><li><code>:repel</code> – Moves it to the nearest free place within <code>:repel-distance</code>, else leaves it out.</li></ul></div></dd></div><div class="option-card"><dt><code>:repel-distance</code><span class="option-default">Default: <code>60</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y 5, :text ["first" "second"], :overlapping-labels :repel, :repel-distance 4})</code></div><div class="option-text">The farthest <code>:overlapping-labels :repel</code> moves a label, in pixels.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:label-leader</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/text {:x 5, :y [5 5.1], :text ["first" "second"], :anchor [:left :middle], :offset [4 0], :overlapping-labels :repel, :label-leader true})</code></div><div class="option-text">Draws a line in the label's colour from a label's point to the label when <code>:overlapping-labels :repel</code> moved it more than 6 pixels.<ul><li><code>false</code> – No lines.</li><li><code>true</code> – Draws the lines.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-`:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
-order is the priority (here the larger cities first). A mapped `:x-span` gives each label a room along x in x
-units (here up to the next city east of it at about its latitude, else the panel's edge): a longer label shrinks,
-down to its text role's `:min-size` (the `:annotation` role's 6 points by default; a role without one doesn't
-shrink): on the right the labels with room keep their size, while Vienna (next to Bratislava) and Budapest (near
-the panel's edge) are drawn smaller to fit their room. Only labels running along x are fitted - unrotated, in an unflipped cartesian plot. Builders use both for their
-node labels:
+From left to right: every label kept, labels overlapping a larger city's left out, then those labels fitted to a
+room. The rows are sorted by population, so the larger cities win. On the right a mapped `:x-span` gives each label
+room up to the next city east of it at about its latitude, else to the panel's edge: Vienna (next to Bratislava)
+and Budapest (near the edge) shrink to fit, down to the `:annotation` role's `:min-size` of 6 points (a role
+without `:min-size` doesn't shrink). Builders use both for their node labels:
 
 
 ::: {.sourceClojure}
@@ -580,20 +614,16 @@ node labels:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image9.png)
+![](reference.charts_annotations_files/image10.png)
 :::
 
 
-`:overlapping-labels :repel` moves such a label instead, in the same priority order: to the nearest free place
-within `:repel-distance` pixels (default 60) - inside the panel, off the labels placed before it and off the other
-labels' points (not other charts' marks) - and leaves out only a label with no free place there (a label larger
-than the panel stays where it is). It works in pixels on the drawn boxes, the same in flipped, polar and faceted
-plots and for rotated labels. `:label-leader true` joins a label moved more than 6 pixels to its point with a thin
-line in its colour, ending on the edge of its (turned) box; a place whose leader would cross another label, or
-whose box would cross another label's leader, isn't free - leaders never run through labels. Labels in boxes
-(`:background`, `:inset`) are repelled by their whole box - the text with its inset - and kept inside the panel
-with it (right). Here every car of `mtcars`, heaviest first; a distance of 100 pixels leaves room for the heavy cars'
-labels to move left of their points at the panel's right edge:
+`:overlapping-labels :repel` finds a free place inside the panel, off the labels placed before it and off every
+other label's point, but not off other charts' marks. It compares the drawn boxes in pixels, so it works the same in
+flipped, polar and faceted plots; a label larger than the panel stays where it is. A leader line (`:label-leader`)
+never crosses a label. A label in a box (`:background`, `:inset`) keeps its
+whole box apart and inside the panel (right). Here every car of `mtcars`, heaviest first; `:repel-distance 100`
+leaves room for the heavy cars' labels to move left of their points at the panel's right edge:
 
 Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -637,30 +667,28 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image10.png)
+![](reference.charts_annotations_files/image11.png)
 :::
 
 
-Text along a path - a label following its line:
 
-::: {.clay-table}
+### Path
+
+These options lay a label's text along a line instead of at a point:
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:along-path</td><td>true or false or nil</td><td>false</td><td>lay each label text along the polyline of its group's positions with that text (in data order), glyph by glyph</td></tr><tr><td>:path-position</td><td>a number in [0 1] or nil</td><td>0.5</td><td>with :along-path: where on the path the text sits, a fraction of its length from its first position (:anchor h - the text's start, middle or end there)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:along-path</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/text {:x [1 3 5 7 9], :y [2 4 3 5 4], :text "along a path", :along-path true})</code></div><div class="option-text">Lays each label's text along a path through its group's positions with that text, in data order. Each letter turns with the path.<ul><li><code>false</code> – Each label at its own position.</li><li><code>true</code> – Along the path.</li></ul></div></dd></div><div class="option-card"><dt><code>:path-position</code><span class="option-default">Default: <code>0.5</code></span></dt><dd><div class="option-example"><code>(chart/text {:along-path true, :x [1 3 5 7 9], :y [2 4 3 5 4], :text "along", :path-position 0.2})</code></div><div class="option-text">Where on its path a label sits, as a fraction of the path's length from its first position. <code>:anchor</code> says whether the text starts, centres or ends there.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div></dl>
 ```
 
-:::
 
-
-`:along-path true` lays each label text along the polyline of the positions of its group with that text, in data
-order, glyph by glyph turned to the path, upright: data rows of one group and label (a line's own rows - left), or
-literal positions with one text (a fitted trend line - middle; a curve - right). `:path-position` is where on the path
-(a fraction of its length; default 0.5), `:anchor` places the text there (`h`: start, centre or end) and on a side
-of the path (`v`: `:bottom` - above it, `:middle` - on it, `:top` - below it), `:offset [dx dy]` moves it along and
-up from the path in pixels. The glyphs follow one another along the path shifted to the text's baseline, so they
-keep their spacing through bends; the text reads upright by the whole path's direction (a vertical path - bottom to
-top). A `:background` (inline or the text role's) fills a band under the glyphs, `:inset` past them (right). A text
-longer than its path isn't drawn.
+The path comes from a line's own rows (left) or from literal positions with one text: a fitted trend line (middle)
+and a sine wave (right). The second value of `:anchor` picks the side of the path: `:bottom` puts the text's
+bottom on the path, so the text sits above it; `:middle` centres it on the path; `:top` hangs it below.
+`:offset [dx dy]` moves the text along the path and up from it in pixels. The letters keep their spacing through
+bends and read upright by the path's overall direction (a vertical path reads bottom to top). A `:background`,
+inline or the role's, fills a band under the letters, `:inset` past them (right); a text longer than its path isn't
+drawn.
 
 
 ::: {.sourceClojure}
@@ -699,17 +727,16 @@ longer than its path isn't drawn.
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image11.png)
+![](reference.charts_annotations_files/image12.png)
 :::
 
 
-Shared options: [Text style](reference.shared_options.html#text-style) (`:font` `:size` `:font-style` `:color` `:inset` `:background` `:dollar-math`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Annotation options](reference.shared_options.html#annotation-options) (`:extent`).
 
+## Images
 
-## image
-
-A picture drawn into the panel: a function gets the panel's scales, domains and pixel size and returns an
-image; it reads no mapping. Here a radial gradient covering the data range [-1 1] × [-1 1]:
+`chart/image` draws a picture into the panel: a function takes the panel's scales, domains and pixel size and
+returns the image. Use it for a background picture, a geographic map or a raster computed per panel; it reads no
+data. Here a radial gradient over the data range [-1 1] × [-1 1], which `:domain` sets:
 
 
 ::: {.sourceClojure}
@@ -729,20 +756,17 @@ image; it reads no mapping. Here a radial gradient covering the data range [-1 1
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image12.png)
+![](reference.charts_annotations_files/image13.png)
 :::
 
 
-Its options: the function and the data range the image covers - without `:domain` the image follows the other
-charts' domains (here a scatter's), drawn below them:
+Its options give the function and the data range the axes must show; the image always fills the panel. Without
+`:domain` the axes follow the other charts' domains, here a scatter's, which draws over the image:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:f (required)</td><td>a function</td><td></td><td>callback of {:x-scale :y-scale :x-domain :y-domain :facet :size} returning the panel's image (a BufferedImage, clojure2d canvas or pixels; nil - nothing)</td></tr><tr><td>:domain</td><td>map</td><td>the image follows the other charts' domains</td><td>the data range the image covers, added to the extents without padding or nice ends</td></tr><tr><td>:domain :x (required)</td><td>[a finite number, a finite number]</td><td></td><td>x range [lo hi] (data units)</td></tr><tr><td>:domain :y (required)</td><td>[a finite number, a finite number]</td><td></td><td>y range [lo hi] (data units)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:f</code></dt><dd><div class="option-example"><code>(chart/image {:domain {:x [0 1], :y [0 1]}, :f (fn [{[w h] :size}] (c2d/with-canvas-> (c2d/canvas w h) (c2d/set-background :lightblue)))})</code></div><div class="option-text">A function of the panel's <code>{:x-scale :y-scale :x-domain :y-domain :facet :size}</code> that returns a <code>BufferedImage</code>, a clojure2d canvas or pixels, or <code>nil</code> for nothing. The chart scales the image over the whole panel.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The axes follow the other charts' domains.</span></dt><dd><div class="option-text">The data range the axes show at least, without padding or rounding; the image still fills the whole panel.</div></dd></div><div class="option-card"><dt><code>:domain :x</code></dt><dd><div class="option-example"><code>(chart/image {:f (fn [{[w h] :size}] (c2d/with-canvas-> (c2d/canvas w h) (c2d/set-background :lightblue))), :domain {:x [0 4], :y [0 1]}})</code></div><div class="option-text">The x range the axes show at least, in data units.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain :y</code></dt><dd><div class="option-example"><code>(chart/image {:f (fn [{[w h] :size}] (c2d/with-canvas-> (c2d/canvas w h) (c2d/set-background :lightblue))), :domain {:x [0 1], :y [0 4]}})</code></div><div class="option-text">The y range the axes show at least, in data units.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -764,23 +788,27 @@ charts' domains (here a scatter's), drawn below them:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image13.png)
+![](reference.charts_annotations_files/image14.png)
 :::
 
 
 
-## function
+## Function curves
 
-Curves of functions y = f(x), or parametric [x y] = f(t), sampled at drawing; several functions are labelled and
-may be mapped to colour or dash by the chart's own mapping.
+`chart/function` draws curves of functions, y = f(x) or parametric [x y] = f(t), sampled over `:domain` (or `:t`),
+by default the panel's x range. Use it for a known curve, a model or a reference shape; the chart's own mapping can
+colour or dash several functions by their labels.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line colour per function label (e.g. :function)</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>dash style per function label</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own function</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:legend</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:color</code> – Splits the rows, one per function, into groups, each with its own colour.</li><li><code>:dash</code> – Splits the rows, one per function, into groups, each with its own dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, one row per function.</li></ul></div>
+```
 
 
 
@@ -795,23 +823,20 @@ may be mapped to colour or dash by the chart's own mapping.
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image14.png)
+![](reference.charts_annotations_files/image15.png)
 :::
 
 
 
 ### Curve
 
-The functions, their domain (or `:t` range of a parametric curve), the sampling step, the fill and the chart's own
+These options give the functions, the range they are sampled over and how densely, the fill and the chart's own
 mapping:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>a clojure2d color or :none</td><td>:none</td><td>fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row)</td><td></td><td>the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot</td></tr><tr><td>:f</td><td>a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function</td><td></td><td>y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)</td></tr><tr><td>:parametric</td><td>a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function</td><td></td><td>[x y] = f(t): functions given as for :f (this or :f)</td></tr><tr><td>:domain</td><td>[lo hi]: finite numbers lo < hi, or two different java.time values</td><td>the plot's explicit x domain, else the x scale's domain at drawing</td><td>x span [lo hi] the :f functions are sampled over: numbers or java.time values</td></tr><tr><td>:t</td><td>[lo hi]: finite numbers lo < hi, or two different java.time values</td><td></td><td>t span [lo hi] of :parametric (required there): numbers or java.time values</td></tr><tr><td>:sample-step</td><td>a positive number of pixels or {:count n}, n >= 2</td><td>1 pixel for :f, {:count 500} for :parametric</td><td>distance between samples: pixels along x or {:count n} (:parametric - only {:count n})</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :fill :lightblue})</code></div><div class="option-text">The fill of the area between the curve and y = 0, or of the shape a parametric curve closes.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No mapping: every function in the theme's style.</span></dt><dd><div class="option-example"><code>(chart/function {:f {"sin" (fn [x] (m/sin x)), "cos" (fn [x] (m/cos x))}, :mapping {:color :function}})</code></div><div class="option-text">The chart's own mapping of the functions, each a row <code>{:function label}</code>, e.g. <code>{:color :function}</code>. Of the plot's mapping only the facet keys apply.<ul><li><span>mapping</span></li></ul></div></dd></div><div class="option-card"><dt><code>:f</code><span class="option-default">Default: None; give <code>:f</code> or <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x))})</code></div><div class="option-text">The functions y = f(x) to draw.<ul><li><a href="reference.types.html#functions">functions</a></li></ul></div></dd></div><div class="option-card"><dt><code>:parametric</code><span class="option-default">Default: None; give <code>:f</code> or <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:t [0 6.3], :parametric (fn [t] [(m/cos t) (m/sin t)])})</code></div><div class="option-text">The functions [x y] = f(t) to draw, each returning a point.<ul><li><a href="reference.types.html#functions">functions</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The plot's fixed x domain, else the panel's x range.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :domain [0 3]})</code></div><div class="option-text">The x range the <code>:f</code> functions are sampled over.<ul><li><a href="reference.types.html#span">span</a></li></ul></div></dd></div><div class="option-card"><dt><code>:t</code><span class="option-default">Default: None; <code>:parametric</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/function {:parametric (fn [t] [(m/cos t) (m/sin t)]), :t [0 3.2]})</code></div><div class="option-text">The t range the <code>:parametric</code> functions are sampled over.<ul><li><a href="reference.types.html#span">span</a></li></ul></div></dd></div><div class="option-card"><dt><code>:sample-step</code><span class="option-default">Default: One pixel for <code>:f</code>, <code>{:count 500}</code> for <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :sample-step 25})</code></div><div class="option-text">How densely the functions are sampled: pixels between samples along x, or <code>{:count n}</code> samples. <code>:parametric</code> takes only a count.<ul><li><a href="reference.types.html#sample-step">sample step</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -832,22 +857,19 @@ mapping:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image15.png)
+![](reference.charts_annotations_files/image16.png)
 :::
 
 
 
 ### Gaps
 
-A `nil` or non-finite result breaks the curve, or a faint segment bridges the gap:
+These options handle a `nil` or non-finite result of a function:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bridge</td><td>map</td><td>{:alpha-factor 0.3}</td><td>style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash</td></tr><tr><td>:bridge :alpha-factor (required)</td><td>a number in [0 1]</td><td>`0.3` (theme); passing `:bridge` replaces the theme's map entirely.</td><td>The bridge's opacity, as a fraction of the line's alpha.</td></tr><tr><td>:bridge :line-width</td><td>a non-negative number</td><td>The line's width.</td><td>The bridge's line width in pixels.</td></tr><tr><td>:bridge :dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>The line's dash.</td><td>The bridge's dash style.</td></tr><tr><td>:gaps</td><td>one of :break :bridge</td><td>:break</td><td>nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:bridge</code><span class="option-default">Default: <code>{:alpha-factor 0.3}</code> (theme)</span></dt><dd><div class="option-text">The style of the segments that bridge gaps with <code>:gaps :bridge</code>.</div></dd></div><div class="option-card"><dt><code>:bridge :alpha-factor</code><span class="option-default">Default: <code>0.3</code> (theme); passing <code>:bridge</code> replaces the theme's map entirely.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (< 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.5}})</code></div><div class="option-text">The bridge's opacity, as a fraction of the line's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :line-width</code><span class="option-default">Default: The line's width.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (< 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.3, :line-width 3}})</code></div><div class="option-text">The bridge's line width in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :dash</code><span class="option-default">Default: The line's dash.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (< 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.3, :dash :dotted}})</code></div><div class="option-text">The bridge's dash style.<ul><li><a href="reference.types.html#dash">dash</a></li></ul></div></dd></div><div class="option-card"><dt><code>:gaps</code><span class="option-default">Default: <code>:break</code></span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (when-not (< 2 x 3) (m/sin x))), :gaps :bridge})</code></div><div class="option-text">How the curve handles a <code>nil</code> or non-finite result.<ul><li><code>:break</code> – Leaves empty space.</li><li><code>:bridge</code> – Joins the samples on both sides of the gap with a straight segment in the <code>:bridge</code> style.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -865,23 +887,20 @@ A `nil` or non-finite result breaks the curve, or a faint segment bridges the ga
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image16.png)
+![](reference.charts_annotations_files/image17.png)
 :::
 
 
 
 ### Extent
 
-Which samples count for the y axis: the 1% - 99% quantiles by default (a pole doesn't stretch the axis), all of
-them, or those within `:y-limits`:
+These options pick the samples that set the y axis and the room around the curve. Here `tan` has poles: the default
+quantiles keep the axis readable, all samples stretch it, `:y-limits` sets it:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:y-limits</td><td>[lo hi], finite numbers, lo < hi</td><td></td><td>[lo hi] - samples outside don't count for the y extent (the curve is only clipped)</td></tr><tr><td>:y-extent</td><td>:quantiles, :min-max, :none or {:quantiles [p q]}, 0 <= p < q <= 1</td><td>:quantiles</td><td>y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>0.05 on every side</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:y-limits</code><span class="option-default">Default: No limits: <code>:y-extent</code> picks the samples.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :y-limits [-0.5 0.5]})</code></div><div class="option-text">Only samples within these limits count for the y extent; the panel's edge clips the rest of the curve.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:y-extent</code><span class="option-default">Default: <code>:quantiles</code></span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :y-extent {:quantiles [0.2 0.8]}})</code></div><div class="option-text">Which samples set the y extent when neither <code>:y-limits</code> nor a fixed y domain does.<ul><li><code>:quantiles</code> – The samples between the 1% and 99% quantiles, so a pole doesn't stretch the axis.</li><li><code>:min-max</code> – All samples.</li><li><code>:none</code> – None; other charts or the scale set the y range.</li><li><a href="reference.types.html#quantile-range">quantile range</a> – The samples between these quantiles.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :domain [0 6], :padding {:x [0 0]}})</code></div><div class="option-text">Room around the sampled curve on x and y, as fractions of its span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -900,11 +919,11 @@ them, or those within `:y-limits`:
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image17.png)
+![](reference.charts_annotations_files/image18.png)
 :::
 
 
-The padding of the sampled span: none on x (the curve meets the panel's sides), a quarter of the span on y:
+With no padding on x the curve meets the panel's sides; a quarter of the span on y leaves room above and below:
 
 
 ::: {.sourceClojure}
@@ -917,11 +936,9 @@ The padding of the sampled span: none on x (the curve meets the panel's sides), 
 
 
 ::: {.clay-image}
-![](reference.charts_annotations_files/image18.png)
+![](reference.charts_annotations_files/image19.png)
 :::
 
-
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Common options](reference.shared_options.html#common-options) (`:legend`).
 
 
 ```{=html}

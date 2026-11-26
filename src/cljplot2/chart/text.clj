@@ -80,7 +80,7 @@
   `:select`, `:rotation`, `:anchor-frame :text`, `:overlapping-labels` but `:keep` (schema rules); a mapped `:angle` /
   `:x-span` is ignored.
 
-  Functions: [[compute]], [[draw]], [[legend]] - the chart contract."
+  Functions: [[compute]], [[draw]], [[legend]] - the chart contract; [[panel-position-schema]] - the schema of `[:panel f]`."
   (:require [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.vector :as v]
@@ -121,19 +121,21 @@
   [p]
   (and (vector? p) (m/== 2 (count p)) (= :panel (first p))))
 
-(def ^:private panel-position
+(def panel-position-schema
   "Schema of a panel position `[:panel f]`, `f` in `[0 1]` - a fraction of the panel from its low-value end."
   (schema/named-type ::panel-position #(and (panel-position? %) (number? (second %)) (m/<= 0.0 (double (second %)) 1.0))
-                     "should be [:panel f], f in [0 1]"))
+                     "should be [:panel f], f in [0 1]"
+                     {:cljplot2/type-name "panel position"
+                      :cljplot2/type-meaning "A place in the panel rather than in the data: `[:panel f]`, a fraction `f` from 0 to 1 of the way from the low-value end, e.g. `[:panel 0.5]` - the middle. It doesn't widen the axis."}))
 
 (def ^:private text-position
   "Schema of one text position: a data position or a panel position."
-  [:or annotation/position panel-position])
+  [:or annotation/position panel-position-schema])
 
 (def ^:private text-positions
   "Schema of the literal `:x` / `:y`: a position or a vector of 1 or n; a vector starting with `:panel` is always a panel position, never a vector of positions."
   [:multi {:dispatch #(and (vector? %) (= :panel (first %)))}
-   [true panel-position]
+   [true panel-position-schema]
    [false (annotation/positions-schema text-position)]])
 
 (def ^:private style-keys
@@ -158,48 +160,79 @@
                  (into (filter #(contains? (set style-keys) (first %)) theme/text-style-overrides))
                  (into data/common-options)
                  (into annotation/options)
-                 (conj (schema/optional :role {:cljplot2/section :labels :description "theme text role of the labels (a role of [:text], e.g. a builder's), the style under the inline style keys"
-                                               :default :annotation}
+                 (conj (schema/optional :role {:cljplot2/section :labels :description "The theme text role the labels take their style from, e.g. a builder's role or one your theme adds; the inline style options win over it."
+                                               :default :annotation :cljplot2/example :title :cljplot2/example-context {:x 5 :y 5 :text "label"}}
                                         keyword?)
-                       (schema/nilable :x {:cljplot2/section :labels :description "literal x position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                       (schema/nilable :x {:cljplot2/section :labels :description "The x of each literal label. Literal labels need `:x`, `:y` and `:text`, and replace the chart's mapping."
+                                              :cljplot2/default-doc "None; the labels come from the mapping."
+                                              :cljplot2/form-meanings {::panel-position "A place across the panel, whatever the data." ::annotation/position "One x for every label." :vector "An x per label, paired in order with `:y` and `:text`."}
+                                              :cljplot2/example [:panel 0.2] :cljplot2/example-context {:y 5 :text "label"}}
                                        text-positions)
-                       (schema/nilable :y {:cljplot2/section :labels :description "literal y position(s): a position, [:panel f] (fraction f of the panel, not in the extents) or a vector of 1 or n (wins over the mapping)"}
+                       (schema/nilable :y {:cljplot2/section :labels :description "The y of each literal label. Literal labels need `:x`, `:y` and `:text`, and replace the chart's mapping."
+                                              :cljplot2/default-doc "None; the labels come from the mapping."
+                                              :cljplot2/form-meanings {::panel-position "A place across the panel, whatever the data." ::annotation/position "One y for every label." :vector "A y per label, paired in order with `:x` and `:text`."}
+                                              :cljplot2/example [:panel 0.9] :cljplot2/example-context {:x 5 :text "label"}}
                                        text-positions)
-                       (schema/nilable :text {:cljplot2/section :labels :description "literal label text: a value or a vector of 1 or n (converted with str; plot/math and plot/runs values kept)"} any?)
-                       (schema/optional :anchor {:cljplot2/section :placement :description "point of the text box placed at the position, [h v] (h :left :center :right, v :top :middle :bottom)"
-                                                 :cljplot2/default-doc "[:center :middle]; with :select just past the point; polar :radial - away from the centre"}
-                                        [:tuple [:enum :left :center :right] [:enum :top :middle :bottom]])
-                       (schema/optional :offset {:cljplot2/section :placement :description "shift [dx dy] of the text in pixels, dy up"
-                                                 :cljplot2/default-doc "[0 0]; with :select 5 pixels past the point"}
+                       (schema/nilable :text {:cljplot2/section :labels :description "The text of the literal labels: one value for all, or a vector paired in order with `:x` and `:y`. A value becomes a string; `$...$` in it and `plot/math` values draw as formulas, unless `:dollar-math false` keeps dollars as typed."
+                                                 :cljplot2/default-doc "None; the labels come from the mapping." :cljplot2/example "peak" :cljplot2/example-context {:x 5 :y 5}}
+                                       any?)
+                       (schema/optional :anchor {:cljplot2/section :placement :description "The point of each label's box placed at its position, e.g. `[:left :top]` puts the box's top left corner there."
+                                                 :cljplot2/default-doc "`[:center :middle]`; with `:select :last` `[:left :middle]`, with `:first` `[:right :middle]`, past the line's end; with `:rotation :radial`, the side facing the centre."
+                                                 :cljplot2/example [:left :bottom] :cljplot2/example-context {:x 5 :y 5 :text "label"}}
+                                        schema/align)
+                       (schema/optional :offset {:cljplot2/section :placement :description "Shifts each label by `[dx dy]` pixels, `dy` up."
+                                                 :cljplot2/default-doc "`[0 0]`; with `:select`, 5 pixels past the line's end."
+                                                 :cljplot2/example [10 10] :cljplot2/example-context {:x 5 :y 5 :text "label"}}
                                         [:tuple schema/finite schema/finite])
-                       (schema/optional :rotation {:cljplot2/section :placement :description "text rotation in degrees, clockwise, or :radial (polar: along each label's angle, upright; 0 in cartesian plots) (a mapped :angle wins)"
-                                                   :default 0}
+                       (schema/optional :rotation {:cljplot2/section :placement :description "Turns the labels; a mapped `:angle` wins."
+                                                   :default 0
+                                                   :cljplot2/value-meanings {:radial "In a polar plot, each label along its angle, turned to read upright; no turn in a cartesian plot."}
+                                                   :cljplot2/form-meanings {::schema/finite "Degrees, clockwise."}
+                                                   :cljplot2/example -30 :cljplot2/example-context {:x 5 :y 5 :text "label"}}
                                         [:or schema/finite [:= :radial]])
-                       (schema/optional :select {:cljplot2/section :labels :description "end labels from data: keep per group and text only the row with the largest (:last) or smallest (:first) x"}
+                       (schema/optional :select {:cljplot2/section :labels :description "Keeps one label per group (see `:select-within`), for labels at the ends of lines."
+                                                 :cljplot2/default-doc "A label for every row."
+                                                 :cljplot2/value-meanings {:last "The row with the largest x." :first "The row with the smallest x."}
+                                                 :cljplot2/example-context {:data [{:x 1 :y 1 :g "a"} {:x 3 :y 2 :g "a"}] :mapping {:x :x :y :y :label :g}}}
                                         [:enum :last :first])
-                       (schema/nilable :select-within {:cljplot2/section :labels :description "what :select keeps one label in: :group-and-label (each group and label text) or :group (each group, whatever its label)"
-                                                        :default :group-and-label}
+                       (schema/nilable :select-within {:cljplot2/section :labels :description "What `:select` keeps one label in."
+                                                        :default :group-and-label
+                                                        :cljplot2/value-meanings {:group-and-label "Each group and label text." :group "Each group, whatever its labels."}
+                                                        :cljplot2/example-context {:select :last :data [{:x 1 :y 1 :g "a" :l "early"} {:x 3 :y 2 :g "a" :l "late"}]
+                                                                                   :mapping {:x :x :y :y :group :g :label :l}}}
                                         [:enum :group-and-label :group])
-                       (schema/optional :anchor-frame {:cljplot2/section :placement :description "what :anchor points into: :box (the rotated label's bounding box) or :text (the unrotated text, turned about that point)"
-                                                       :default :box}
+                       (schema/optional :anchor-frame {:cljplot2/section :placement :description "What `:anchor` points into on a turned label."
+                                                       :default :box
+                                                       :cljplot2/value-meanings {:box "The bounding box of the turned label." :text "The text before turning; the text then turns about that point."}
+                                                       :cljplot2/example-context {:x 5 :y 5 :text "label" :rotation -45 :anchor [:left :top]}}
                                         [:enum :box :text])
-                       (schema/optional :reserve-room {:cljplot2/section :placement :description "keep pixel room past the data for the labels: true - the largest label's diagonal on every side, :anchor - only where the anchored labels reach"
-                                                       :default false}
+                       (schema/optional :reserve-room {:cljplot2/section :placement :description "Keeps room past the data for the labels, so labels at the data's edge stay inside the panel."
+                                                       :default false
+                                                       :cljplot2/value-meanings {true "The largest label's diagonal on every side, for labels at any angle." false "No room." :anchor "Only where the anchored labels reach past their positions."}
+                                                       :cljplot2/example-context {:x 5 :y 5 :text "label"}}
                                         [:or schema/bool [:= :anchor]])
-                       (schema/optional :overlapping-labels {:cljplot2/section :crowding :description "labels overlapping one drawn before them (groups, then rows in data order): :keep (all drawn), :drop (not drawn) or :repel (moved to a free place within :repel-distance, else not drawn)"
-                                                             :default :keep}
+                       (schema/optional :overlapping-labels {:cljplot2/section :crowding :description "What the chart does with a label that overlaps one placed before it. It places labels group by group, each group's rows in data order, so earlier labels win."
+                                                             :default :keep
+                                                             :cljplot2/value-meanings {:keep "Draws it anyway." :drop "Leaves it out." :repel "Moves it to the nearest free place within `:repel-distance`, else leaves it out."}
+                                                             :cljplot2/example-context {:x 5 :y 5 :text ["first" "second"]}}
                                         [:enum :keep :drop :repel])
-                       (schema/nilable :repel-distance {:cljplot2/section :crowding :description "with :overlapping-labels :repel: the farthest a label moves from its place, pixels"
-                                                        :default 60}
+                       (schema/nilable :repel-distance {:cljplot2/section :crowding :description "The farthest `:overlapping-labels :repel` moves a label, in pixels."
+                                                        :default 60 :cljplot2/example 4 :cljplot2/example-context {:x 5 :y 5 :text ["first" "second"] :overlapping-labels :repel}}
                                        schema/finite-pos)
-                       (schema/nilable :label-leader {:cljplot2/section :crowding :description "with :overlapping-labels :repel: draw a line from the point of a label moved more than 6 pixels to its box"
-                                                      :default false}
+                       (schema/nilable :label-leader {:cljplot2/section :crowding :description "Draws a line in the label's colour from a label's point to the label when `:overlapping-labels :repel` moved it more than 6 pixels."
+                                                      :default false
+                                                      :cljplot2/value-meanings {true "Draws the lines." false "No lines."}
+                                                      :cljplot2/example-context {:x 5 :y [5 5.1] :text ["first" "second"] :anchor [:left :middle] :offset [4 0]
+                                                                                 :overlapping-labels :repel}}
                                        schema/bool)
-                       (schema/nilable :along-path {:cljplot2/section :path :description "lay each label text along the polyline of its group's positions with that text (in data order), glyph by glyph"
-                                                    :default false}
+                       (schema/nilable :along-path {:cljplot2/section :path :description "Lays each label's text along a path through its group's positions with that text, in data order. Each letter turns with the path."
+                                                    :default false
+                                                    :cljplot2/value-meanings {true "Along the path." false "Each label at its own position."}
+                                                    :cljplot2/example-context {:x [1 3 5 7 9] :y [2 4 3 5 4] :text "along a path"}}
                                        schema/bool)
-                       (schema/nilable :path-position {:cljplot2/section :path :description "with :along-path: where on the path the text sits, a fraction of its length from its first position (:anchor h - the text's start, middle or end there)"
-                                                       :default 0.5}
+                       (schema/nilable :path-position {:cljplot2/section :path :description "Where on its path a label sits, as a fraction of the path's length from its first position. `:anchor` says whether the text starts, centres or ends there."
+                                                       :default 0.5 :cljplot2/example 0.2
+                                                       :cljplot2/example-context {:along-path true :x [1 3 5 7 9] :y [2 4 3 5 4] :text "along"}}
                                        schema/fraction)))
              [(fn [{:keys [select select-within]}]
                 (when (and (= :group select-within) (nil? select))
@@ -232,14 +265,14 @@
                         ":along-path turns each glyph to the path: no :rotation")))
               [:along-path]])
    :mapping [:map
-             (schema/nilable :x {:description "x position of a label, one per row"} schema/accessor)
-             (schema/nilable :y {:description "y position of a label, one per row"} schema/accessor)
-             (schema/nilable :label {:description "label text, one per row (converted with str)"} schema/accessor)
-             (schema/nilable :angle {:description "label rotation in degrees, clockwise (nil or not finite - :rotation)"} schema/accessor)
-             (schema/nilable :x-span {:description "room along x, a non-negative length in x units from a numeric x: a longer label shrinks to its role's :min-size (unrotated labels in an unflipped cartesian plot; nil, not finite - not fitted)"}
+             (schema/nilable :x {:description "The x of each row's label."} schema/accessor)
+             (schema/nilable :y {:description "The y of each row's label."} schema/accessor)
+             (schema/nilable :label {:description "The text of each row's label; a value becomes a string. `$...$` in it and `plot/math` values draw as formulas, unless `:dollar-math false` keeps dollars as typed."} schema/accessor)
+             (schema/nilable :angle {:description "Turns each row's label by degrees, clockwise; a `nil` or non-finite value takes `:rotation`."} schema/accessor)
+             (schema/nilable :x-span {:description "Each label's room along x, in x units from its x: a longer label shrinks, down to its text role's `:min-size`. The chart fits only unrotated labels in an unflipped cartesian plot, and not for a `nil` span."}
                              schema/accessor)
-             (schema/nilable :color {:description "text colour per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic (labels per group with :select)"} schema/accessor)]})
+             (schema/nilable :color {:description "Splits the rows into groups, each with its own text colour."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same; `:select` keeps labels per group."} schema/accessor)]})
 
 (defn- one?
   "Tests whether a literal value is one item rather than a vector of items.

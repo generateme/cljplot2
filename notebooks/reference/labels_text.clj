@@ -94,7 +94,7 @@
 
 ;; The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,
 ;; `:select :last` labels the end of each group (e.g. line ends). Its full table is on the chart's page
-;; ([text](reference.charts_annotations.html#text)).
+;; ([text](reference.charts_annotations.html#text-labels)).
 
 (def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
               {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))

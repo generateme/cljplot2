@@ -1,7 +1,8 @@
 ;; # Annotations
 
-;; Marks you add over the data to point things out: reference lines (`rule`), intervals (`rect`), labels (`text`),
-;; a picture (`image`) and function curves (`function`). `rule`, `rect` and `text` can also draw one mark per row.
+;; These charts draw marks over the data to point things out: reference lines (`rule`), intervals (`rect`), labels
+;; (`text`), a picture (`image`) and function curves (`function`). `rule`, `rect` and `text` can also draw one mark per
+;; row.
 
 (ns reference.charts-annotations
   (:require [fastmath.core :as m]
@@ -25,12 +26,15 @@
 
 (nu/data-table economics)
 
-;; ## rule
+;; ## Reference lines
 
-;; Straight lines across the panel: vertical at an x, horizontal at a y, or sloped y = intercept + slope · x - one
-;; per row of data, or at literal positions.
+;; `chart/rule` draws straight lines across the panel: vertical at an x, horizontal at a y, or sloped,
+;; y = intercept + slope · x. Use it for thresholds, means or a trend; it draws a line per row of data, or at positions
+;; its options give.
 
-(nu/options-table (describe/mapping (chart/rule)))
+(nu/shared-groups (describe/options (chart/rule)))
+
+(nu/mapping-list (describe/mapping (chart/rule)))
 
 (def thresholds [{:at 55 :kind "short wait"} {:at 80 :kind "long wait"}])
 
@@ -43,9 +47,9 @@
                     :labels {:x "eruptions [min]" :y "waiting [min]"}}
                    {:width 600 :height 360})
 
-;; Its options: literal positions - one or a vector of them, across x (`:x`) or along it (`:y`) - and sloped lines:
+;; Its options place the lines without data:
 
-(nu/options-table (describe/own-rows (describe/options (chart/rule))))
+(nu/option-cards 'chart/rule (describe/own-rows (describe/options (chart/rule))))
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter) (chart/rule {:x [2 3 4] :dash :dashed})]
@@ -61,14 +65,15 @@
                                  {:columns 3})
                    {:width 1000 :height 330})
 
-(nu/shared-groups (describe/options (chart/rule)))
+;; ## Rectangles
 
-;; ## rect
+;; `chart/rect` draws rectangles over x and y intervals, or a band across the panel over one of them; an open end
+;; (`nil`) reaches the panel's edge. Use it to shade periods, ranges or regions; list it before the charts it should
+;; stay behind.
 
-;; Rectangles spanning x and / or y intervals; an open end (`nil`) reaches the panel edge - shaded periods or
-;; ranges.
+(nu/shared-groups (describe/options (chart/rect)))
 
-(nu/options-table (describe/mapping (chart/rect)))
+(nu/mapping-list (describe/mapping (chart/rect)))
 
 (def recessions [{:name "1973-75" :from (LocalDate/parse "1973-11-01") :to (LocalDate/parse "1975-03-01")}
                  {:name "1980-82" :from (LocalDate/parse "1980-01-01") :to (LocalDate/parse "1982-11-01")}
@@ -85,10 +90,11 @@
                     :labels {:y "unemployed [thousands]"}}
                    {:width 700 :height 340})
 
-;; Its options: literal intervals (here on y, with one fill colour each), the fill, its opacity and outline, and
-;; how much of a band a level end covers:
+;; Its options give literal intervals, their fill and outline, and how much of a level's band they cover. On the
+;; left, two y intervals with a fill colour each; on the right, one rectangle from level b to level c, with
+;; `:width 0.6` covering only part of each level's band:
 
-(nu/options-table (describe/own-rows (describe/options (chart/rect))))
+(nu/option-cards 'chart/rect (describe/own-rows (describe/options (chart/rect))))
 
 (def levels-data [{:k "a" :v 3} {:k "b" :v 5} {:k "c" :v 4} {:k "d" :v 6}])
 
@@ -107,14 +113,16 @@
                                  {:columns 2})
                    {:width 900 :height 330})
 
-(nu/shared-groups (describe/options (chart/rect)))
+;; ## Text labels
 
-;; ## text
+;; `chart/text` draws labels at positions: a label per row of data, with `:label` as its text, or at positions its
+;; options give, also at a fraction of the panel (`[:panel f]`). Use it to name points, mark values or add notes. It
+;; reads the plot's data but takes only the facet keys of the plot's mapping; its positions and texts come from its
+;; own `:mapping`.
 
-;; Labels at positions - from data (one per row, `:label` the text) or literal, also at a fraction of the panel
-;; (`[:panel f]`). As an annotation it reads the plot's data but only its own mapping (and the plot's facet keys).
+(nu/shared-groups (describe/options (chart/text)))
 
-(nu/options-table (describe/mapping (chart/text)))
+(nu/mapping-list (describe/mapping (chart/text)))
 
 (def cities [{:city "Oslo" :lon 10.8 :lat 59.9} {:city "Rome" :lon 12.5 :lat 41.9} {:city "Madrid" :lon -3.7 :lat 40.4}
              {:city "Paris" :lon 2.4 :lat 48.9} {:city "Warsaw" :lon 21.0 :lat 52.2}])
@@ -128,15 +136,19 @@
                     :labels {:x "longitude" :y "latitude"}}
                    {:width 550 :height 340})
 
-;; Its options come in four parts. The labels: literal positions and texts, the text role, labels of only the last
-;; (or first) row per group:
+;; ### Labels
 
-(nu/options-table (describe/own-rows (describe/options (chart/text))) :labels)
+;; These options give the labels' positions, texts and text role, or keep one label per group at a line's end:
+
+(nu/option-cards 'chart/text (describe/own-rows (describe/options (chart/text))) :labels)
 
 (def growth (for [g ["alpha" "beta" "gamma"] t (range 10)]
               {:g g :t t :v (+ (case g "alpha" 2.0 "beta" 0.0 "gamma" 9.0) (* t (case g "alpha" 1.0 "beta" 1.6 "gamma" 0.4)))}))
 
 (nu/data-table growth)
+
+;; On the left, a note in the panel's top left corner and a label turned by -30 degrees; on the right, `:select :last` names each
+;; line at its end:
 
 (plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
                                    :charts [(chart/scatter)
@@ -153,16 +165,73 @@
                                  {:columns 2})
                    {:width 900 :height 330})
 
+;; Here the label changes along each line with its phase (beta's early phase is shorter): the default
+;; `:select-within` gives an end label per text, `:group` one per line. A `[:panel f]` position also works on an axis
+;; no chart maps, such as the dot plot's vertical:
 
-;; Their placement: the anchor and offset, rotation, what the anchor points into and room kept for labels past the
-;; data:
+(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group-and-label"}
+                                   :legend false}
+                                  {:data growth :mapping {:x :t :y :v :color :g}
+                                   :charts [(chart/line)
+                                            (chart/text {:mapping {:x :t :y :v :color :g
+                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
+                                                         :select :last :select-within :group :reserve-room :anchor})]
+                                   :labels {:title ":select-within :group"}
+                                   :legend false}
+                                  {:data faithful :mapping {:x :eruptions}
+                                   :charts [(chart/dotplot {:binwidth 0.1})
+                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
+                                                         :text "eruption lengths"})]
+                                   :labels {:title "[:panel f] without a y scale"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
 
-(nu/options-table (describe/own-rows (describe/options (chart/text))) :placement)
+;; `:role` picks the [theme text role](reference.theme.html#text) the labels take their style from: here one the
+;; theme adds (`:callout`, bottom right) and a builder's (`:network-label`, small names on white boxes):
 
-;; End labels of the first row per group instead (`:select :first`), and what a rotated label's `:anchor` points
-;; into: the rotated label's bounding box (`:box`, the default) or the text itself, turned about the anchor point
-;; (`:text`) - each label turned upright, anchored at its left top on the red point: the box's top left corner,
-;; or the start of the text's top edge:
+(plot/render-image {:data cities
+                    :mapping {:x :lon :y :lat}
+                    :charts [(chart/scatter)
+                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
+                                          :role :network-label})
+                             (chart/text {:x [:panel 0.98] :y [:panel 0.03] :anchor [:right :bottom] :text "European cities"
+                                          :role :callout})]
+                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
+                                             :inset 2}}}
+                    :labels {:x "longitude" :y "latitude"}}
+                   {:width 550 :height 340})
+
+;; A text draws `$...$` as a LaTeX formula (left; [Formulas](reference.labels_text.html#formulas) has the rules), as
+;; every label in cljplot2 does. `:dollar-math false` keeps the dollars as typed (right); `\$` keeps one dollar
+;; literal in a text with formulas:
+
+(plot/render-image (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/text {:x 3.5 :y 95 :text "mean wait $\\bar{w} = 71$ min"})]
+                                   :labels {:title "formula in the text"}}
+                                  {:data faithful :mapping {:x :eruptions :y :waiting}
+                                   :charts [(chart/scatter)
+                                            (chart/text {:x 3.5 :y 95 :text "mean wait $\\bar{w} = 71$ min" :dollar-math false})]
+                                   :labels {:title ":dollar-math false"}}]
+                                 {:columns 2})
+                   {:width 900 :height 330})
+
+;; ### Placement
+
+;; These options place each label around its position: which point of its box sits there, a shift in pixels, a
+;; turn, and room kept past the data:
+
+(nu/option-cards 'chart/text (describe/own-rows (describe/options (chart/text))) :placement)
+
+;; On the left, each line's start label ends 5 pixels before the line begins, with room kept for the
+;; labels (`:anchor [:right :middle]`, `:offset [-5 0]`, `:reserve-room :anchor`). In the middle and on the right, a
+;; label turned by -90 degrees is anchored at its left top on the red point: `:anchor-frame :box` takes the turned
+;; label's bounding box, `:anchor-frame :text` the start of the text's top edge:
 
 (def anchor-points [{:x 1 :y 1 :label "frame"}])
 
@@ -190,60 +259,17 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; `:select` keeps one label per group and label text (`:select-within :group-and-label`, the default) - a label
-;; that changes along a line (here its phase; beta's early phase is shorter) gives one end label per text.
-;; `:select-within :group` keeps one per group, whatever its label. A `[:panel f]` position also works on an axis no
-;; chart maps - the dot plot's vertical:
+;; ### Crowding
 
-(plot/render-image (plot/arrange [{:data growth :mapping {:x :t :y :v :color :g}
-                                   :charts [(chart/line)
-                                            (chart/text {:mapping {:x :t :y :v :color :g
-                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
-                                                         :select :last :select-within :group-and-label :reserve-room :anchor})]
-                                   :labels {:title ":select-within :group-and-label"}
-                                   :legend false}
-                                  {:data growth :mapping {:x :t :y :v :color :g}
-                                   :charts [(chart/line)
-                                            (chart/text {:mapping {:x :t :y :v :color :g
-                                                                   :label #(str (:g %) (if (< (:t %) (if (= "beta" (:g %)) 3 5)) " early" " late"))}
-                                                         :select :last :select-within :group :reserve-room :anchor})]
-                                   :labels {:title ":select-within :group"}
-                                   :legend false}
-                                  {:data faithful :mapping {:x :eruptions}
-                                   :charts [(chart/dotplot {:binwidth 0.1})
-                                            (chart/text {:x [:panel 0.02] :y [:panel 0.95] :anchor [:left :top]
-                                                         :text "eruption lengths"})]
-                                   :labels {:title "[:panel f] without a y scale"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 320})
+;; These options handle labels that overlap: draw them anyway, leave some out, or move them apart:
 
-;; The labels' style is a [theme text role](reference.theme.html#text), `:annotation` by default; `:role` picks
-;; another - a role the theme adds (here `:callout`, in the bottom right corner), or a builder's (here
-;; `:network-label`, small names on white boxes), the inline style keys still over it:
+(nu/option-cards 'chart/text (describe/own-rows (describe/options (chart/text))) :crowding)
 
-(plot/render-image {:data cities
-                    :mapping {:x :lon :y :lat}
-                    :charts [(chart/scatter)
-                             (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :bottom] :offset [4 2]
-                                          :role :network-label})
-                             (chart/text {:x [:panel 0.98] :y [:panel 0.03] :anchor [:right :bottom] :text "European cities"
-                                          :role :callout})]
-                    :theme {:text {:callout {:font "DejaVu Sans Mono" :size 13 :font-style :bold :color [178 34 34]
-                                             :inset 2}}}
-                    :labels {:x "longitude" :y "latitude"}}
-                   {:width 550 :height 340})
-
-;; Crowded labels - left out, moved apart, fitted to a room:
-
-(nu/options-table (describe/own-rows (describe/options (chart/text))) :crowding)
-
-;; `:overlapping-labels :drop` leaves out each label overlapping one drawn before it - the rows'
-;; order is the priority (here the larger cities first). A mapped `:x-span` gives each label a room along x in x
-;; units (here up to the next city east of it at about its latitude, else the panel's edge): a longer label shrinks,
-;; down to its text role's `:min-size` (the `:annotation` role's 6 points by default; a role without one doesn't
-;; shrink): on the right the labels with room keep their size, while Vienna (next to Bratislava) and Budapest (near
-;; the panel's edge) are drawn smaller to fit their room. Only labels running along x are fitted - unrotated, in an unflipped cartesian plot. Builders use both for their
-;; node labels:
+;; From left to right: every label kept, labels overlapping a larger city's left out, then those labels fitted to a
+;; room. The rows are sorted by population, so the larger cities win. On the right a mapped `:x-span` gives each label
+;; room up to the next city east of it at about its latitude, else to the panel's edge: Vienna (next to Bratislava)
+;; and Budapest (near the edge) shrink to fit, down to the `:annotation` role's `:min-size` of 6 points (a role
+;; without `:min-size` doesn't shrink). Builders use both for their node labels:
 
 (def capitals [{:city "Paris" :lon 2.35 :lat 48.86 :pop 2.1} {:city "Berlin" :lon 13.40 :lat 52.52 :pop 3.7}
                {:city "Vienna" :lon 16.37 :lat 48.21 :pop 2.0} {:city "Budapest" :lon 19.04 :lat 47.50 :pop 1.7}
@@ -276,16 +302,12 @@
                                  {:columns 3})
                    {:width 1000 :height 330})
 
-;; `:overlapping-labels :repel` moves such a label instead, in the same priority order: to the nearest free place
-;; within `:repel-distance` pixels (default 60) - inside the panel, off the labels placed before it and off the other
-;; labels' points (not other charts' marks) - and leaves out only a label with no free place there (a label larger
-;; than the panel stays where it is). It works in pixels on the drawn boxes, the same in flipped, polar and faceted
-;; plots and for rotated labels. `:label-leader true` joins a label moved more than 6 pixels to its point with a thin
-;; line in its colour, ending on the edge of its (turned) box; a place whose leader would cross another label, or
-;; whose box would cross another label's leader, isn't free - leaders never run through labels. Labels in boxes
-;; (`:background`, `:inset`) are repelled by their whole box - the text with its inset - and kept inside the panel
-;; with it (right). Here every car of `mtcars`, heaviest first; a distance of 100 pixels leaves room for the heavy cars'
-;; labels to move left of their points at the panel's right edge:
+;; `:overlapping-labels :repel` finds a free place inside the panel, off the labels placed before it and off every
+;; other label's point, but not off other charts' marks. It compares the drawn boxes in pixels, so it works the same in
+;; flipped, polar and faceted plots; a label larger than the panel stays where it is. A leader line (`:label-leader`)
+;; never crosses a label. A label in a box (`:background`, `:inset`) keeps its
+;; whole box apart and inside the panel (right). Here every car of `mtcars`, heaviest first; `:repel-distance 100`
+;; leaves room for the heavy cars' labels to move left of their points at the panel's right edge:
 
 (nu/source-note {:dataset :mtcars})
 
@@ -312,19 +334,19 @@
                                  {:columns 3})
                    {:width 1000 :height 420})
 
-;; Text along a path - a label following its line:
+;; ### Path
 
-(nu/options-table (describe/own-rows (describe/options (chart/text))) :path)
+;; These options lay a label's text along a line instead of at a point:
 
-;; `:along-path true` lays each label text along the polyline of the positions of its group with that text, in data
-;; order, glyph by glyph turned to the path, upright: data rows of one group and label (a line's own rows - left), or
-;; literal positions with one text (a fitted trend line - middle; a curve - right). `:path-position` is where on the path
-;; (a fraction of its length; default 0.5), `:anchor` places the text there (`h`: start, centre or end) and on a side
-;; of the path (`v`: `:bottom` - above it, `:middle` - on it, `:top` - below it), `:offset [dx dy]` moves it along and
-;; up from the path in pixels. The glyphs follow one another along the path shifted to the text's baseline, so they
-;; keep their spacing through bends; the text reads upright by the whole path's direction (a vertical path - bottom to
-;; top). A `:background` (inline or the text role's) fills a band under the glyphs, `:inset` past them (right). A text
-;; longer than its path isn't drawn.
+(nu/option-cards 'chart/text (describe/own-rows (describe/options (chart/text))) :path)
+
+;; The path comes from a line's own rows (left) or from literal positions with one text: a fitted trend line (middle)
+;; and a sine wave (right). The second value of `:anchor` picks the side of the path: `:bottom` puts the text's
+;; bottom on the path, so the text sits above it; `:middle` centres it on the path; `:top` hangs it below.
+;; `:offset [dx dy]` moves the text along the path and up from it in pixels. The letters keep their spacing through
+;; bends and read upright by the path's overall direction (a vertical path reads bottom to top). A `:background`,
+;; inline or the role's, fills a band under the letters, `:inset` past them (right); a text longer than its path isn't
+;; drawn.
 
 (let [eruptions (map :eruptions faithful)
       waiting (map :waiting faithful)
@@ -356,12 +378,11 @@
                                    {:columns 3})
                      {:width 1000 :height 330}))
 
-(nu/shared-groups (describe/options (chart/text)))
+;; ## Images
 
-;; ## image
-
-;; A picture drawn into the panel: a function gets the panel's scales, domains and pixel size and returns an
-;; image; it reads no mapping. Here a radial gradient covering the data range [-1 1] × [-1 1]:
+;; `chart/image` draws a picture into the panel: a function takes the panel's scales, domains and pixel size and
+;; returns the image. Use it for a background picture, a geographic map or a raster computed per panel; it reads no
+;; data. Here a radial gradient over the data range [-1 1] × [-1 1], which `:domain` sets:
 
 (plot/render-image {:charts [(chart/image {:domain {:x [-1 1] :y [-1 1]}
                                            :f (fn [{[w h] :size}]
@@ -374,10 +395,10 @@
                                                   img))})]}
                    {:width 450 :height 350})
 
-;; Its options: the function and the data range the image covers - without `:domain` the image follows the other
-;; charts' domains (here a scatter's), drawn below them:
+;; Its options give the function and the data range the axes must show; the image always fills the panel. Without
+;; `:domain` the axes follow the other charts' domains, here a scatter's, which draws over the image:
 
-(nu/options-table (describe/own-rows (describe/options (chart/image))))
+(nu/option-cards 'chart/image (describe/own-rows (describe/options (chart/image))))
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -391,12 +412,15 @@
                              (chart/scatter)]}
                    {:width 550 :height 340})
 
-;; ## function
+;; ## Function curves
 
-;; Curves of functions y = f(x), or parametric [x y] = f(t), sampled at drawing; several functions are labelled and
-;; may be mapped to colour or dash by the chart's own mapping.
+;; `chart/function` draws curves of functions, y = f(x) or parametric [x y] = f(t), sampled over `:domain` (or `:t`),
+;; by default the panel's x range. Use it for a known curve, a model or a reference shape; the chart's own mapping can
+;; colour or dash several functions by their labels.
 
-(nu/options-table (describe/mapping (chart/function)))
+(nu/shared-groups (describe/options (chart/function)))
+
+(nu/mapping-list (describe/mapping (chart/function)))
 
 (plot/render-image {:charts [(chart/function {:f {"sin" #(m/sin %) "cos" #(m/cos %)}
                                               :domain [0 m/TWO_PI]
@@ -405,10 +429,10 @@
 
 ;; ### Curve
 
-;; The functions, their domain (or `:t` range of a parametric curve), the sampling step, the fill and the chart's own
+;; These options give the functions, the range they are sampled over and how densely, the fill and the chart's own
 ;; mapping:
 
-(nu/options-table (describe/own-rows (describe/options (chart/function))) :curve)
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :curve)
 
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(* % % 0.5) :domain [-2 2] :fill [0 114 178 60]})]
                                    :labels {:title ":f, :fill"}}
@@ -423,9 +447,9 @@
 
 ;; ### Gaps
 
-;; A `nil` or non-finite result breaks the curve, or a faint segment bridges the gap:
+;; These options handle a `nil` or non-finite result of a function:
 
-(nu/options-table (describe/own-rows (describe/options (chart/function))) :gaps)
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :gaps)
 
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/sqrt (- 1 (* % %))) :domain [-2 2]})]
                                    :labels {:title ":gaps :break (default)"}}
@@ -437,10 +461,10 @@
 
 ;; ### Extent
 
-;; Which samples count for the y axis: the 1% - 99% quantiles by default (a pole doesn't stretch the axis), all of
-;; them, or those within `:y-limits`:
+;; These options pick the samples that set the y axis and the room around the curve. Here `tan` has poles: the default
+;; quantiles keep the axis readable, all samples stretch it, `:y-limits` sets it:
 
-(nu/options-table (describe/own-rows (describe/options (chart/function))) :extent)
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :extent)
 
 (plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/tan %) :domain [0 3]})]
                                    :labels {:title ":y-extent :quantiles (default)"}}
@@ -452,10 +476,9 @@
                    {:width 1000 :height 300})
 
 
-;; The padding of the sampled span: none on x (the curve meets the panel's sides), a quarter of the span on y:
+;; With no padding on x the curve meets the panel's sides; a quarter of the span on y leaves room above and below:
 
 (plot/render-image {:charts [(chart/function {:f #(m/sin %) :domain [0 6.3] :padding {:x [0 0] :y [0.25 0.25]}})]
                     :labels {:title ":padding {:x [0 0] :y [0.25 0.25]}"}}
                    {:width 500 :height 280})
 
-(nu/shared-groups (describe/options (chart/function)))

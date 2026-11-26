@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -226,7 +231,11 @@ Thin blue branches through the theme:
 :::
 
 
-Shared options: [Dendrogram layout](reference.shared_options.html#dendrogram-layout) (`:k` `:circular` `:span`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## tree
@@ -336,7 +345,11 @@ Darker, thicker links and bold names through the theme:
 :::
 
 
-Shared options: [Node-link tree layout](reference.shared_options.html#node-link-tree-layout) (`:layout` `:links` `:circular` `:span`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## clustered-heatmap
@@ -505,7 +518,11 @@ horsepower, a continuous colour bar). `:legend-span :row` keeps the legend cell 
 :::
 
 
-Shared options: [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## bundle
@@ -625,7 +642,11 @@ Large square leaves through the theme:
 :::
 
 
-Shared options: [Edge bundling](reference.shared_options.html#edge-bundling) (`:from` `:to` `:beta`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#edge-bundling">Edge bundling</a> – <code>:from</code> <code>:to</code> <code>:beta</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## sequences
@@ -730,7 +751,11 @@ Thick white cell borders through the theme:
 :::
 
 
-Shared options: [Sequences](reference.shared_options.html#sequences) (`:sequence` `:value` `:separator` `:end`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#sequences">Sequences</a> – <code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ```{=html}

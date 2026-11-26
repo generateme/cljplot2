@@ -26,22 +26,20 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private range-schema
-  "Schema of a `:domain` range `[lo hi]`: finite numbers, `lo < hi`."
-  (schema/with-rules [:tuple schema/finite schema/finite]
-    [(fn [[^double lo ^double hi]] (when-not (m/< lo hi) "should be [lo hi] with lo < hi"))]))
-
 (def schemas
   "Schemas of the image chart: `:style` (none), `:options`, `:mapping` (merged; only facet keys)."
   {:style [:map {:closed true}]
    :options [:map {:closed true}
-             [:f {:description "callback of {:x-scale :y-scale :x-domain :y-domain :facet :size} returning the panel's image (a BufferedImage, clojure2d canvas or pixels; nil - nothing)"}
+             [:f {:description "A function of the panel's `{:x-scale :y-scale :x-domain :y-domain :facet :size}` that returns a `BufferedImage`, a clojure2d canvas or pixels, or `nil` for nothing. The chart scales the image over the whole panel."
+                  :cljplot2/example '(fn [{[w h] :size}] (c2d/with-canvas-> (c2d/canvas w h) (c2d/set-background :lightblue)))
+                  :cljplot2/example-context {:domain {:x [0 1] :y [0 1]}}}
               schema/function]
-             (schema/optional :domain {:description "the data range the image covers, added to the extents without padding or nice ends"
-                                       :cljplot2/default-doc "the image follows the other charts' domains"}
+             (schema/optional :domain {:description "The data range the axes show at least, without padding or rounding; the image still fills the whole panel."
+                                       :cljplot2/default-doc "The axes follow the other charts' domains."
+                                       :cljplot2/example-context {:f '(fn [{[w h] :size}] (c2d/with-canvas-> (c2d/canvas w h) (c2d/set-background :lightblue))) :domain {:x [0 1] :y [0 1]}}}
                               [:map {:closed true}
-                               [:x {:description "x range [lo hi] (data units)"} range-schema]
-                               [:y {:description "y range [lo hi] (data units)"} range-schema]])]
+                               [:x {:description "The x range the axes show at least, in data units." :cljplot2/example [0 4]} schema/finite-interval]
+                               [:y {:description "The y range the axes show at least, in data units." :cljplot2/example [0 4]} schema/finite-interval]])]
    :mapping [:map]})
 
 (defn compute

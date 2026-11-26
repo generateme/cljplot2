@@ -302,7 +302,7 @@
 (nu/options-table (describe/options (aesthetic/scale-spec-schema :dash)) :range)
 
 ;; Every named style, and two dash arrays (an `:identity` scale draws the data's dashes; the names are a
-;; [text](reference.charts_annotations.html#text) chart anchored right of its point and moved left by `:offset`):
+;; [text](reference.charts_annotations.html#text-labels) chart anchored right of its point and moved left by `:offset`):
 
 (def dashes (concat (for [[i d] (map-indexed vector (:dash describe/attribute-values)) x [0 10]]
                       {:i i :x x :dash d :name (str d)})

@@ -29,7 +29,8 @@
 
   Exceptions thrown by a function propagate.
 
-  Functions: [[schemas]] - the chart's schemas; [[categorical-labels]] - options with function labels as levels;
+  Functions: [[schemas]] - the chart's schemas, with the named types the book documents [[functions-schema]],
+  [[span-schema]], [[quantile-range-schema]]; [[categorical-labels]] - options with function labels as levels;
   [[compute]] - the functions and their sampled extents; [[draw]] - one panel's curves; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
@@ -74,12 +75,15 @@
   [p]
   (and (vector? p) (m/== 2 (count p)) (fn? (second p))))
 
-(def ^:private functions-schema
+(def functions-schema
   "Schema of `:f` / `:parametric`: a function, a non-empty vector of functions or of `[label function]` pairs, or a non-empty map label -> function."
   (schema/named-type ::functions
                      #(or (fn? %) (and (vector? %) (seq %) (or (every? fn? %) (every? labelled-pair? %)))
                           (and (map? %) (seq %) (every? fn? (vals %))))
-                     "should be a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function"))
+                     "should be a function, a non-empty vector of functions or of [label function] pairs, or a non-empty map label -> function"
+                     {:cljplot2/type-name "functions"
+                      :cljplot2/type-plural "functions"
+                      :cljplot2/type-meaning "One function, or several with labels: a vector of functions (labelled 0, 1, ...), a vector of `[label function]` pairs, or a map from label to function, e.g. `[[\"sin\" m/sin] [\"cos\" m/cos]]`."}))
 
 (defn- span-value?
   "Tests whether a value can end a sampled span.
@@ -92,30 +96,52 @@
   [v]
   (or (schema/finite? v) (data/temporal? v)))
 
-(def ^:private span-schema
+(def span-schema
   "Schema of `:domain` / `:t`: `[lo hi]` - finite numbers `lo < hi`, or two different `java.time` values."
   (schema/named-type ::span
                      #(and (vector? %) (m/== 2 (count %)) (every? span-value? %)
                            (or (every? number? %) (every? data/temporal? %))
                            (if (every? number? %) (m/< (double (% 0)) (double (% 1))) (not= (% 0) (% 1))))
-                     "should be [lo hi]: finite numbers lo < hi, or two different java.time values"))
+                     "should be [lo hi]: finite numbers lo < hi, or two different java.time values"
+                     {:cljplot2/type-name "span"
+                      :cljplot2/type-meaning "The range a function is sampled over, `[lo hi]`: two finite numbers with `lo` below `hi`, e.g. `[0 10]`, or two different `java.time` values."}))
+
+(defn- quantile-range?
+  "Tests whether a value is a quantile range `{:quantiles [p q]}`, `0 <= p < q <= 1`.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns a truthy value for such a map."
+  [v]
+  (and (map? v) (= [:quantiles] (keys v))
+       (let [q (:quantiles v)]
+         (and (vector? q) (m/== 2 (count q)) (every? number? q)
+              (m/<= 0.0 (double (q 0))) (m/< (double (q 0)) (double (q 1))) (m/<= (double (q 1)) 1.0)))))
+
+(def quantile-range-schema
+  "Schema of a quantile range `{:quantiles [p q]}`, `0 <= p < q <= 1` - the form of `:y-extent` other than its keywords."
+  (schema/named-type ::quantile-range quantile-range? "should be {:quantiles [p q]}, 0 <= p < q <= 1"
+                     {:cljplot2/type-name "quantile range"
+                      :cljplot2/type-meaning "Two sample quantiles `{:quantiles [p q]}`, fractions from 0 to 1 with `p` below `q`, e.g. `{:quantiles [0.05 0.95]}`."}))
 
 (def ^:private y-extent-schema
   "Schema of `:y-extent`: `:quantiles`, `:min-max`, `:none` or `{:quantiles [p q]}`, `0 <= p < q <= 1`."
   (schema/named-type ::y-extent
-                     #(or (contains? #{:quantiles :min-max :none} %)
-                          (and (map? %) (= [:quantiles] (keys %))
-                               (let [q (:quantiles %)]
-                                 (and (vector? q) (m/== 2 (count q)) (every? number? q)
-                                      (m/<= 0.0 (double (q 0))) (m/< (double (q 0)) (double (q 1))) (m/<= (double (q 1)) 1.0)))))
-                     "should be :quantiles, :min-max, :none or {:quantiles [p q]}, 0 <= p < q <= 1"))
+                     #(or (contains? #{:quantiles :min-max :none} %) (quantile-range? %))
+                     "should be :quantiles, :min-max, :none or {:quantiles [p q]}, 0 <= p < q <= 1"
+                     {:cljplot2/value-set [:quantiles :min-max :none]
+                      :cljplot2/other-types [::quantile-range]}))
 
 (def ^:private style-entries
   "Map entries of the function style: the line style, `:fill` and `:bridge`."
   (conj polyline/style-entries
-        (schema/optional :fill {:cljplot2/section :curve :description "fill colour (or :none) of the area to y = 0 (:f) or of the polygon the curve closes (:parametric)"}
+        (schema/optional :fill {:cljplot2/section :curve :description "The fill of the area between the curve and y = 0, or of the shape a parametric curve closes."
+                                 :cljplot2/value-meanings {:none "No fill."} :cljplot2/example :lightblue :cljplot2/example-context {:f '(fn [x] (m/sin x))}}
                          schema/color)
-        (schema/optional :bridge {:cljplot2/section :gaps :description "style of the segments bridging gaps with :gaps :bridge: :alpha-factor (a fraction of the line alpha), optional :line-width and :dash"}
+        (schema/optional :bridge {:cljplot2/section :gaps :description "The style of the segments that bridge gaps with `:gaps :bridge`."
+                                   :cljplot2/example-context {:gaps :bridge :f '(fn [x] (when-not (< 2 x 3) (m/sin x)))}}
                          polyline/bridge-schema)))
 
 (defn- function-option-problem
@@ -149,34 +175,53 @@
                  (into theme/theme-style-entries)
                  (into data/legend-option)
                  (conj (schema/optional :data (schema/forbidden "isn't used: a function chart samples its functions"))
-                       (schema/optional :mapping {:cljplot2/section :curve :description "the chart's own mapping of the function labels (e.g. {:color :function}); only facet keys come from the plot"}
+                       (schema/optional :mapping {:cljplot2/section :curve :description "The chart's own mapping of the functions, each a row `{:function label}`, e.g. `{:color :function}`. Of the plot's mapping only the facet keys apply."
+                                                  :cljplot2/default-doc "No mapping: every function in the theme's style." :cljplot2/example {:color :function}
+                                                  :cljplot2/example-context {:f '{"sin" (fn [x] (m/sin x)) "cos" (fn [x] (m/cos x))}}}
                                         data/mapping-schema)
-                       (schema/optional :f {:cljplot2/section :curve :description "y = f(x): a function, a vector of functions or of [label function] pairs, or a map label -> function (this or :parametric)"}
+                       (schema/optional :f {:cljplot2/section :curve :description "The functions y = f(x) to draw."
+                                            :cljplot2/default-doc "None; give `:f` or `:parametric`." :cljplot2/example '(fn [x] (m/sin x))}
                                         functions-schema)
-                       (schema/optional :parametric {:cljplot2/section :curve :description "[x y] = f(t): functions given as for :f (this or :f)"} functions-schema)
-                       (schema/optional :domain {:cljplot2/section :curve :description "x span [lo hi] the :f functions are sampled over: numbers or java.time values"
-                                                 :cljplot2/default-doc "the plot's explicit x domain, else the x scale's domain at drawing"}
+                       (schema/optional :parametric {:cljplot2/section :curve :description "The functions [x y] = f(t) to draw, each returning a point."
+                                                     :cljplot2/default-doc "None; give `:f` or `:parametric`." :cljplot2/example '(fn [t] [(m/cos t) (m/sin t)])
+                                                     :cljplot2/example-context {:t [0 6.3]}}
+                                        functions-schema)
+                       (schema/optional :domain {:cljplot2/section :curve :description "The x range the `:f` functions are sampled over."
+                                                 :cljplot2/default-doc "The plot's fixed x domain, else the panel's x range."
+                                                 :cljplot2/example [0 3] :cljplot2/example-context {:f '(fn [x] (m/sin x))}}
                                         span-schema)
-                       (schema/optional :t {:cljplot2/section :curve :description "t span [lo hi] of :parametric (required there): numbers or java.time values"} span-schema)
-                       (schema/optional :sample-step {:cljplot2/section :curve :description "distance between samples: pixels along x or {:count n} (:parametric - only {:count n})"
-                                                      :cljplot2/default-doc "1 pixel for :f, {:count 500} for :parametric"}
+                       (schema/optional :t {:cljplot2/section :curve :description "The t range the `:parametric` functions are sampled over."
+                                            :cljplot2/default-doc "None; `:parametric` needs it." :cljplot2/example [0 3.2]
+                                            :cljplot2/example-context {:parametric '(fn [t] [(m/cos t) (m/sin t)])}}
+                                        span-schema)
+                       (schema/optional :sample-step {:cljplot2/section :curve :description "How densely the functions are sampled: pixels between samples along x, or `{:count n}` samples. `:parametric` takes only a count."
+                                                      :cljplot2/default-doc "One pixel for `:f`, `{:count 500}` for `:parametric`."
+                                                      :cljplot2/example 25 :cljplot2/example-context {:f '(fn [x] (m/sin x))}}
                                         curve/sample-step-schema)
-                       (schema/optional :y-limits {:cljplot2/section :extent :description "[lo hi] - samples outside don't count for the y extent (the curve is only clipped)"}
+                       (schema/optional :y-limits {:cljplot2/section :extent :description "Only samples within these limits count for the y extent; the panel's edge clips the rest of the curve."
+                                                   :cljplot2/default-doc "No limits: `:y-extent` picks the samples." :cljplot2/example [-0.5 0.5]
+                                                   :cljplot2/example-context {:f '(fn [x] (m/sin x))}}
                                         schema/finite-interval)
-                       (schema/optional :y-extent {:cljplot2/section :extent :description "y extent of the samples without :y-limits or an explicit y domain: :quantiles (1% and 99%), {:quantiles [p q]}, :min-max or :none"
-                                                   :default :quantiles}
+                       (schema/optional :y-extent {:cljplot2/section :extent :description "Which samples set the y extent when neither `:y-limits` nor a fixed y domain does."
+                                                   :default :quantiles
+                                                   :cljplot2/value-meanings {:quantiles "The samples between the 1% and 99% quantiles, so a pole doesn't stretch the axis." :min-max "All samples." :none "None; other charts or the scale set the y range."}
+                                                   :cljplot2/form-meanings {::quantile-range "The samples between these quantiles."}
+                                                   :cljplot2/example {:quantiles [0.2 0.8]} :cljplot2/example-context {:f '(fn [x] (m/sin x))}}
                                         y-extent-schema)
-                       (schema/optional :gaps {:cljplot2/section :gaps :description "nil or non-finite results break the curve: :break (empty space) or :bridge (a straight segment in the :bridge style)"
-                                               :default :break}
+                       (schema/optional :gaps {:cljplot2/section :gaps :description "How the curve handles a `nil` or non-finite result."
+                                               :default :break
+                                               :cljplot2/value-meanings {:break "Leaves empty space." :bridge "Joins the samples on both sides of the gap with a straight segment in the `:bridge` style."}
+                                               :cljplot2/example-context {:f '(fn [x] (when-not (< 2 x 3) (m/sin x)))}}
                                         [:enum :break :bridge])
-                       (schema/optional :padding {:cljplot2/section :extent :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                  :cljplot2/default-doc "0.05 on every side"}
+                       (schema/optional :padding {:cljplot2/section :extent :description "Room around the sampled curve on x and y, as fractions of its span."
+                                                  :cljplot2/default-doc "`0.05` on every side." :cljplot2/example {:x [0 0]}
+                                                  :cljplot2/example-context {:f '(fn [x] (m/sin x)) :domain [0 6]}}
                                         data/position-padding)))
              option-rules)
    :mapping [:map
-             (schema/nilable :color {:description "line colour per function label (e.g. :function)"} schema/accessor)
-             (schema/nilable :dash {:description "dash style per function label"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own function"} schema/accessor)]})
+             (schema/nilable :color {:description "Splits the rows, one per function, into groups, each with its own colour."} schema/accessor)
+             (schema/nilable :dash {:description "Splits the rows, one per function, into groups, each with its own dash style."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, one row per function."} schema/accessor)]})
 
 (defn categorical-labels
   "Marks the function labels of a function chart's own mapping categorical.

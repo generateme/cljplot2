@@ -78,12 +78,14 @@
       (is (= "field-a-function" (anchor "Field: a function")))
       (is (= "node-link-tree-layout" (anchor "Node-link tree layout"))))
     (testing "each group linked to its Shared options section with the keys the chart takes; code hidden"
-      (let [md (nu/shared-groups (describe/options (chart/line)))
-            text (first md)]
-        (is (= :kind/md (:kindly/kind (meta md))))
-        (is (:kindly/hide-code (meta md)))
-        (is (str/includes? text "[Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`)"))
-        (is (str/includes? text "[Curves](reference.shared_options.html#curves)"))))
+      (let [box (nu/shared-groups (describe/options (chart/line)))
+            items (rest (last box))]
+        (is (= :kind/hiccup (:kindly/kind (meta box))))
+        (is (:kindly/hide-code (meta box)))
+        (is (some #{[:li [:a {:href "reference.shared_options.html#line-style"} "Line style"] " – "
+                      [:code ":color"] " " [:code ":line-width"] " " [:code ":dash"]]}
+                  items))
+        (is (some #(= [:a {:href "reference.shared_options.html#curves"} "Curves"] (second %)) items))))
     (testing "boundary: rows without groups throw {:key :rows}"
       (is (= :rows (:key (error-data #(nu/shared-groups (describe/options (chart/image)))))))
       (is (= :rows (:key (error-data #(nu/shared-groups []))))))))

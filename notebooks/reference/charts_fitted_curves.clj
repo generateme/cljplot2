@@ -22,6 +22,8 @@
 ;; `chart/smooth` fits a curve to each group's points, by default with a confidence band. Use it to show the trend
 ;; of scattered data.
 
+(nu/shared-groups (describe/options (chart/smooth)))
+
 (nu/mapping-list (describe/mapping (chart/smooth)))
 
 (plot/render-image {:data faithful
@@ -120,4 +122,3 @@
                                  {:columns 2})
                    {:width 800 :height 300})
 
-(nu/shared-groups (describe/options (chart/smooth)))

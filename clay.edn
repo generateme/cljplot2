@@ -12,7 +12,8 @@
                                     ;; data tables (`nu/data-table`, class `data-table` - `nu/data-table-class`, rename
                                     ;; both together): small type, tight cells, left-aligned, about 8 rows visible
                                     ;; (the header stays); option cards (`nu/option-cards`, class `options`) and mapping lists (`nu/mapping-list`,
-                                    ;; class `mapping`): a header line per option, wrapping on narrow screens
+                                    ;; class `mapping`): a header line per option, wrapping on narrow screens; shared groups (`nu/shared-groups`, class
+                                    ;; `shared`): a grey box of points
                                     :include-in-header
                                     {:text "<style>
 .data-table { width: fit-content; max-width: 100%; max-height: 15rem; overflow: auto; margin: 0 0 1rem 0; }
@@ -35,5 +36,10 @@
 .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .mapping ul { margin: 0; padding-left: 1.25rem; }
 .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+.shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+.shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+.shared ul { margin: 0; padding-left: 1.25rem; }
+.shared code { overflow-wrap: anywhere; }
 </style>"}}}
           :code-block-background true}}

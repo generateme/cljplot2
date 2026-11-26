@@ -44,7 +44,9 @@
   (schema/named-type ::sample-step
                      #(or (and (schema/finite? %) (m/pos? (double %)))
                           (and (map? %) (= [:count] (keys %)) (integer? (:count %)) (m/>= (long (:count %)) 2)))
-                     "should be a positive number of pixels or {:count n}, n >= 2"))
+                     "should be a positive number of pixels or {:count n}, n >= 2"
+                     {:cljplot2/type-name "sample step"
+                      :cljplot2/type-meaning "How densely a curve is sampled: a positive number of pixels between samples, e.g. `2`, or `{:count n}` - `n` samples, at least 2, e.g. `{:count 50}`."}))
 
 (def options
   "Map entries of the curve options of a line chart."

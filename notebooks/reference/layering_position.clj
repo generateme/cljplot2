@@ -25,9 +25,9 @@
 
 (nu/data-table faithful)
 
-;; The layers bottom to top: a shaded x range ([rect](reference.charts_annotations.html#rect) `:x [lo hi]`,
-;; `:fill`), the points, a smooth curve, a dashed [rule](reference.charts_annotations.html#rule) at 70 minutes and
-;; a [text](reference.charts_annotations.html#text) note at a literal position:
+;; The layers bottom to top: a shaded x range ([rect](reference.charts_annotations.html#rectangles) `:x [lo hi]`,
+;; `:fill`), the points, a smooth curve, a dashed [rule](reference.charts_annotations.html#reference-lines) at 70 minutes and
+;; a [text](reference.charts_annotations.html#text-labels) note at a literal position:
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}

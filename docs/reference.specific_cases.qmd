@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -171,7 +176,7 @@ pairs, `[slope intercept]`:
 :::
 
 
-The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#rule) by
+The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#reference-lines) by
 `:slope` and `:intercept`) - match the [qq](reference.charts_one_variable.html#qq) chart; the skewed sample
 bends away from the line at both ends:
 
@@ -838,7 +843,7 @@ odd ones):
 ```
 
 
-Both layouts drawn with the [rect](reference.charts_annotations.html#rect) chart (an annotation chart: its own data
+Both layouts drawn with the [rect](reference.charts_annotations.html#rectangles) chart (an annotation chart: its own data
 and mapping), outlined in white:
 
 
@@ -1000,7 +1005,7 @@ Short compositions of the pieces documented in this part.
 
 A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histogram) on the
 density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
-[function](reference.charts_annotations.html#function) chart:
+[function](reference.charts_annotations.html#function-curves) chart:
 
 
 ::: {.sourceClojure}
@@ -1022,9 +1027,9 @@ density scale (`:y :density`) and the normal density with the data's mean and st
 :::
 
 
-A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rect) over an x
-interval), a threshold ([rule](reference.charts_annotations.html#rule)) and a note
-([text](reference.charts_annotations.html#text)) layered over a scatter with a loess
+A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rectangles) over an x
+interval), a threshold ([rule](reference.charts_annotations.html#reference-lines)) and a note
+([text](reference.charts_annotations.html#text-labels)) layered over a scatter with a loess
 [smooth](reference.charts_fitted_curves.html#smoothing):
 
 

@@ -5,7 +5,7 @@
 ;; [R Graph Gallery](https://r-graph-gallery.com/) correlation pages and [data-to-viz](https://www.data-to-viz.com/)).
 ;;
 ;; Labels along a trend line and labels moved apart (repel) are shown with the
-;; [text](reference.charts_annotations.html#text) chart. Not here: 3D densities and interactivity; a heatmap in
+;; [text](reference.charts_annotations.html#text-labels) chart. Not here: 3D densities and interactivity; a heatmap in
 ;; clustered order with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmap)) is
 ;; in the [Flow](use_cases.flow.html) chapter.
 
@@ -108,7 +108,7 @@
 
 ;; ### Text labels in boxes
 
-;; A [text](reference.charts_annotations.html#text) chart names some cars; `:background` puts each label on a semi-transparent box, so the points it covers
+;; A [text](reference.charts_annotations.html#text-labels) chart names some cars; `:background` puts each label on a semi-transparent box, so the points it covers
 ;; stay visible and the text stays readable over them.
 
 (nu/source-note {:source "R Graph Gallery - Add text labels with ggplot2"

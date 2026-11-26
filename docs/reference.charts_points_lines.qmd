@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -116,6 +121,12 @@ Data: VIX daily open, high, low and close values, vega-datasets 3.3.1 `ohlc.json
 
 `chart/scatter` draws a point per row at its x and y. Use it to show how two variables relate. Colour, shape, size
 and drawing order can come from the data.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -219,14 +230,18 @@ Half-transparent bubbles keep the ones beneath visible; the white outline stays 
 :::
 
 
-Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
-
 
 ## Line charts
 
 `chart/line` joins each group's points into a line, ordered by x. Use it for values that change along x, such as
 a time series; it can also fill the area below, stack groups, or vary colour and width along its length. (The
 dataset's dates are text: the mapping parses them.)
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#curves">Curves</a> – <code>:interpolator</code> <code>:interpolator-params</code> <code>:curve</code> <code>:sample-step</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -485,13 +500,17 @@ These options add arrowheads, or stop each line short of its points, e.g. before
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:curve` `:sample-step`).
-
 
 ## Line segments
 
 `chart/segment` draws a straight line per row from (x, y) to (xend, yend). Use it for arrows, links between two
 points or lollipop stems; the ends can be mapped or fixed for all rows.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -585,13 +604,17 @@ lollipop stems):
 :::
 
 
-Shared options: [Line style](reference.shared_options.html#line-style) (`:color` `:line-width` `:dash`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
-
 
 ## Polygons
 
 `chart/polygon` fills one shape per group, its rows the vertices in data order. Use it for regions, outlines or
 any custom shape.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -673,13 +696,17 @@ With `:padding` 0 the shapes touch the panel's edges:
 :::
 
 
-Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
-
 
 ## Bands
 
 `chart/ribbon` fills a band per group between a lower and an upper bound at each x. Use it for an interval, a
 range of values or an envelope around a line.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#curves">Curves</a> – <code>:interpolator</code> <code>:interpolator-params</code> <code>:sample-step</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -787,14 +814,18 @@ A gradient along x; no padding on x, a third of the span on y:
 :::
 
 
-Shared options: [Fill patterns](reference.shared_options.html#fill-patterns) (`:pattern` `:pattern-color`); [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`); [Curves](reference.shared_options.html#curves) (`:interpolator` `:interpolator-params` `:sample-step`).
-
 
 ## Candlestick charts
 
 `chart/candlestick` draws a candle per row: a wick from low to high and a body from open to close, coloured by
 whether the price rose or fell. Use it for prices over time. The dates here are text, so each trading day gets its
 own slot, with no weekend gaps.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
 
 
 ```{=html}
@@ -868,8 +899,6 @@ Here a pattern marks the up candles, and `:padding` adds room above and below th
 ![](reference.charts_points_lines_files/image22.png)
 :::
 
-
-Shared options: [Common options](reference.shared_options.html#common-options) (`:data` `:mapping` `:legend`); [Named theme styles](reference.shared_options.html#named-theme-styles) (`:theme-style`).
 
 
 ```{=html}

@@ -60,7 +60,7 @@
 
 (def mapping-schema
   "Schema of a plot or chart `:mapping`: accessors (keyword or function; `nil` - not mapped) of the built-in [[mapping-keys]], `:hierarchy` a non-empty vector of accessors. `:fill` is rejected (not an aesthetic, see the density / histogram `:fill` options). Open: user charts may read other keys."
-  (-> [:map {:cljplot2/type-doc "a mapping: key -> accessor (a keyword or a function of a row)"}]
+  (-> [:map {:cljplot2/type-doc "a mapping: key -> accessor (a keyword or a function of a row)" :cljplot2/type-name "mapping"}]
       (into (map (fn [k]
                    (let [{:keys [section description]} (mapping-key-docs k)]
                      (schema/nilable k {:description description :cljplot2/section section} schema/accessor))))

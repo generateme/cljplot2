@@ -267,20 +267,22 @@
       (str/replace #"^[^\p{L}]+" "")))
 
 (defn shared-groups
-  "Markdown, its code hidden, naming the shared groups option `rows` take (`cljplot2.describe/fragment-keys`), each
-  linked to its section of the Shared options chapter, with the keys of the group the rows hold.
-  Throws `ex-info {:key :rows}` for rows without groups."
+  "The shared groups option `rows` take (`cljplot2.describe/fragment-keys`) in a titled box, its code hidden: a point per
+  group, linked to its section of the Shared options chapter, with the keys of the group the rows hold. Throws
+  `ex-info {:key :rows}` for rows without groups."
   [rows]
   (let [groups (describe/fragment-keys rows)]
     (when (empty? groups)
       (throw (ex-info "shared-groups needs rows of shared groups." {:key :rows :value rows})))
     (kindly/hide-code
-     (kind/md (str "Shared options: "
-                   (str/join "; " (for [[fragment ks] groups
-                                        :let [title (get-in describe/fragments [fragment :title])]]
-                                    (format "[%s](%s#%s) (%s)" title shared-options-page (heading-anchor title)
-                                            (str/join " " (map #(str "`" (pr-str %) "`") ks)))))
-                   ".")))))
+     (kind/hiccup [:div {:class "shared"}
+                   [:div {:class "shared-title"} "Shared options"
+                    [:span {:class "shared-hint"} " – groups of options other charts take too"]]
+                   (into [:ul]
+                         (for [[fragment ks] groups
+                               :let [title (get-in describe/fragments [fragment :title])]]
+                           (into [:li [:a {:href (str shared-options-page "#" (heading-anchor title))} title] " – "]
+                                 (interpose " " (map #(vector :code (pr-str %)) ks)))))]))))
 
 ;; option cards (reference pages rewritten for readability)
 

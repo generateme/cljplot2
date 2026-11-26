@@ -54,7 +54,7 @@
 
 (probability/quartile-line normal-side {:values sample})
 
-;; The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#rule) by
+;; The pairs drawn by hand - points and the quartile line (a [rule](reference.charts_annotations.html#reference-lines) by
 ;; `:slope` and `:intercept`) - match the [qq](reference.charts_one_variable.html#qq) chart; the skewed sample
 ;; bends away from the line at both ends:
 
@@ -248,7 +248,7 @@
 
 (nu/data-table (treemap/slice-dice shares {:x 0 :y 0 :w 100 :h 60} 0))
 
-;; Both layouts drawn with the [rect](reference.charts_annotations.html#rect) chart (an annotation chart: its own data
+;; Both layouts drawn with the [rect](reference.charts_annotations.html#rectangles) chart (an annotation chart: its own data
 ;; and mapping), outlined in white:
 
 (plot/render-image (plot/arrange (for [[title rects] [["squarify" (treemap/squarify shares {:x 0 :y 0 :w 100 :h 60})]
@@ -307,7 +307,7 @@
 
 ;; A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histogram) on the
 ;; density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
-;; [function](reference.charts_annotations.html#function) chart:
+;; [function](reference.charts_annotations.html#function-curves) chart:
 
 (plot/render-image (let [xs (map :waiting faithful)
                          normal (r/distribution :normal {:mu (stats/mean xs) :sd (stats/stddev xs)})]
@@ -318,9 +318,9 @@
                       :labels {:x "waiting [min]" :title "a normal curve fails a bimodal sample"}})
                    {:width 600 :height 320})
 
-;; A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rect) over an x
-;; interval), a threshold ([rule](reference.charts_annotations.html#rule)) and a note
-;; ([text](reference.charts_annotations.html#text)) layered over a scatter with a loess
+;; A highlighted interval with an explanation: a band ([rect](reference.charts_annotations.html#rectangles) over an x
+;; interval), a threshold ([rule](reference.charts_annotations.html#reference-lines)) and a note
+;; ([text](reference.charts_annotations.html#text-labels)) layered over a scatter with a loess
 ;; [smooth](reference.charts_fitted_curves.html#smoothing):
 
 (plot/render-image {:data faithful

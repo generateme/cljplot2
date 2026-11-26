@@ -28,6 +28,11 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
+        .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
+        .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
+        .shared ul { margin: 0; padding-left: 1.25rem; }
+        .shared code { overflow-wrap: anywhere; }
         </style>
 code-block-background: true
 
@@ -266,7 +271,11 @@ Dashed blue edges and larger labels through the theme:
 :::
 
 
-Shared options: [Graph](reference.shared_options.html#graph) (`:from` `:to` `:value` `:nodes` `:id` `:directed`); [Graph layout](reference.shared_options.html#graph-layout) (`:layout` `:iterations` `:gravity` `:rng`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#graph-layout">Graph layout</a> – <code>:layout</code> <code>:iterations</code> <code>:gravity</code> <code>:rng</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## chord
@@ -302,7 +311,11 @@ Migration between world regions (flows under 0.1 dropped), opaque ribbons and no
 :::
 
 
-Shared options: [Graph](reference.shared_options.html#graph) (`:from` `:to` `:value` `:nodes` `:id` `:directed`); [Chord layout](reference.shared_options.html#chord-layout) (`:order` `:gap-angle` `:inner-radius` `:min-value`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#chord-layout">Chord layout</a> – <code>:order</code> <code>:gap-angle</code> <code>:inner-radius</code> <code>:min-value</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## arc
@@ -413,7 +426,11 @@ Thick dark arcs through the theme:
 :::
 
 
-Shared options: [Graph](reference.shared_options.html#graph) (`:from` `:to` `:value` `:nodes` `:id` `:directed`); [Arc layout](reference.shared_options.html#arc-layout) (`:order`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#arc-layout">Arc layout</a> – <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## sankey
@@ -530,7 +547,11 @@ Grey bands outlined in white, larger names:
 :::
 
 
-Shared options: [Graph](reference.shared_options.html#graph) (`:from` `:to` `:value` `:nodes` `:id`); [Sankey layout](reference.shared_options.html#sankey-layout) (`:align` `:layer` `:node-width` `:gap` `:iterations` `:order`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code></li><li><a href="reference.shared_options.html#sankey-layout">Sankey layout</a> – <code>:align</code> <code>:layer</code> <code>:node-width</code> <code>:gap</code> <code>:iterations</code> <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ## alluvial
@@ -611,7 +632,11 @@ Dark strata with light names:
 :::
 
 
-Shared options: [Alluvial graph](reference.shared_options.html#alluvial-graph) (`:variables` `:value` `:strand-color`); [Builder options](reference.shared_options.html#builder-options) (`:title` `:scales` `:theme`).
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#alluvial-graph">Alluvial graph</a> – <code>:variables</code> <code>:value</code> <code>:strand-color</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+```
+
 
 
 ```{=html}

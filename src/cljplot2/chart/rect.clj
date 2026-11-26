@@ -44,10 +44,14 @@
 
 (def ^:private style-entries
   "Map entries of the rect style (theme `[:chart :rect]`); `:fill` as an option also takes a vector of colours."
-  (into [(schema/optional :fill {:description "rect fill colour (a mapped :color wins)"} schema/color)
-         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill; no outline without a fill)"}
+  (into [(schema/optional :fill {:description "The fill colour of the rectangles; a mapped `:color` wins." :cljplot2/value-meanings {:none "No fill."}} schema/color)
+         (schema/optional :stroke-color {:description "The outline colour of the rectangles."
+                                         :cljplot2/value-meanings {:darker "The fill colour, darkened; no outline without a fill." :none "No outline."}
+                                         :cljplot2/example-context {:x [2 6] :y [2 6]}}
                           draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)]
+         (schema/optional :stroke-width {:description "The outline width in pixels; `0` draws no outline." :cljplot2/example 4
+                                         :cljplot2/example-context {:x [2 6] :y [2 6] :stroke-color :black}}
+                          schema/non-neg)]
         draw/pattern-style-entries))
 
 (def ^:private end-schema
@@ -70,29 +74,38 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into annotation/options)
-                (conj (schema/optional :fill {:description "fill colour, or a vector of 1 or n colours paired with literal intervals (a mapped :color wins)"}
+                (conj (schema/optional :fill {:description "The fill colour of the rectangles, or a vector of colours, one per literal interval; a mapped `:color` wins."
+                                              :cljplot2/value-meanings {:none "No fill."}
+                                              :cljplot2/form-meanings {:vector "A colour per literal interval, paired in order; a vector of one colour fills them all."}
+                                              :cljplot2/example [:steelblue :orange] :cljplot2/example-context {:x [[1 3] [5 7]] :y [2 6]}}
                                        fill-option)
-                      (schema/optional :alpha {:description "fill opacity"
-                                               :cljplot2/default-doc "colours as they are"}
+                      (schema/optional :alpha {:description "The opacity of the fill, from 0 (transparent) to 1."
+                                               :cljplot2/default-doc "The colours' own alpha." :cljplot2/example 0.3 :cljplot2/example-context {:x [2 6] :y [2 6]}}
                                        schema/fraction)
-                      (schema/nilable :x {:description "literal x interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)"}
+                      (schema/nilable :x {:description "The x interval of each rectangle; without `:y` it draws a band across the whole panel. Literal intervals replace the chart's mapping."
+                                             :cljplot2/default-doc "None; the rectangles come from the mapping, or span the whole x range when only `:y` is given."
+                                             :cljplot2/form-meanings {:tuple "One interval `[a b]`; a `nil` end reaches the panel's edge, e.g. `[5 nil]`." :vector "An interval per rectangle, paired in order with `:y` and `:fill`."}
+                                             :cljplot2/example [2 6] :cljplot2/example-context {:y [2 6]}}
                                       (annotation/positions-schema interval-schema))
-                      (schema/nilable :y {:description "literal y interval(s) [a b] (an end nil - the panel edge), alone a band across the panel (wins over the mapping)"}
+                      (schema/nilable :y {:description "The y interval of each rectangle; without `:x` it draws a band across the whole panel. Literal intervals replace the chart's mapping."
+                                             :cljplot2/default-doc "None; the rectangles come from the mapping, or span the whole y range when only `:x` is given."
+                                             :cljplot2/form-meanings {:tuple "One interval `[a b]`; a `nil` end reaches the panel's edge, e.g. `[5 nil]`." :vector "An interval per rectangle, paired in order with `:x` and `:fill`."}
+                                             :cljplot2/example [2 6] :cljplot2/example-context {:x [2 6]}}
                                       (annotation/positions-schema interval-schema))
                       draw/corner-radius-option
-                      (schema/optional :width {:description "fraction of its band step a level end covers, centred"
-                                                    :default 1.0}
+                      (schema/optional :width {:description "On a categorical axis, the fraction of a level's band that an interval ending at that level covers, centred. At `1` rectangles of neighbouring levels touch."
+                                                    :default 1.0 :cljplot2/example 0.5 :cljplot2/example-context {:x ["b" "c"] :y [2 6]}}
                                        [:and schema/finite [:> 0] [:<= 1]])))
    :mapping [:map
-             (schema/nilable :x0 {:description "x start of a rect, one per row (with :x1; nil - the panel edge)"} schema/accessor)
-             (schema/nilable :x1 {:description "x end of a rect, one per row (with :x0; nil - the panel edge)"} schema/accessor)
-             (schema/nilable :y0 {:description "y start of a rect, one per row (with :y1; nil - the panel edge)"} schema/accessor)
-             (schema/nilable :y1 {:description "y end of a rect, one per row (with :y0; nil - the panel edge)"} schema/accessor)
-             (schema/nilable :color {:description "fill colour per group or row (gives legend keys)"} schema/accessor)
-             (schema/nilable :pattern {:description "fill pattern per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :shape {:description "groups the rects (no visual effect)"} schema/accessor)
-             (schema/nilable :size {:description "groups the rects (no visual effect)"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]})
+             (schema/nilable :x0 {:description "The start x of each row's rectangle, with `:x1`; a `nil` value reaches the panel's edge."} schema/accessor)
+             (schema/nilable :x1 {:description "The end x of each row's rectangle, with `:x0`; a `nil` value reaches the panel's edge."} schema/accessor)
+             (schema/nilable :y0 {:description "The start y of each row's rectangle, with `:y1`; a `nil` value reaches the panel's edge."} schema/accessor)
+             (schema/nilable :y1 {:description "The end y of each row's rectangle, with `:y0`; a `nil` value reaches the panel's edge."} schema/accessor)
+             (schema/nilable :color {:description "Fills the rectangles: by a categorical value per group, or by any colour scale per row, e.g. identity colours for swatches."} schema/accessor)
+             (schema/nilable :pattern {:description "Splits the rows into groups, each with its own fill pattern."} schema/accessor)
+             (schema/nilable :shape {:description "Splits the rows into groups that look the same, as `:group` does."} schema/accessor)
+             (schema/nilable :size {:description "Splits the rows into groups that look the same, as `:group` does."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each row still its own rectangle."} schema/accessor)]})
 
 (defn- rect-style
   "Gives the style the rects draw with.
