@@ -178,7 +178,7 @@
 ;; ## 3D frame
 
 ;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). Here a
-;; [surface](reference.charts_multivariate_3d.html#surface) of $z = \sin(xy)$ over $[-2, 2]^2$:
+;; [surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$:
 
 (nu/options-table (describe/theme-rows :frame-3d))
 

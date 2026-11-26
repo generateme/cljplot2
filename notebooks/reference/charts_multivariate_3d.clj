@@ -1,8 +1,9 @@
 ;; # Multivariate and 3D
 
-;; For more variables than two axes hold: a line per row across one axis per variable (`parallel`, a radar in polar
-;; coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). For a matrix of plots of every
-;; pair of variables see [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
+;; These charts draw more variables than two axes hold: a line per row across one axis per variable (`parallel`, a
+;; radar in polar coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). Use them to see
+;; rows across many variables at once; for a matrix of plots of every pair of variables see
+;; [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
 
 (ns reference.charts-multivariate-3d
   (:require [fastmath.core :as m]
@@ -23,12 +24,21 @@
 
 (nu/data-table quakes)
 
-;; ## parallel
+;; The lattice below holds a function's values, x, y and z per node; the surfaces use it:
 
-;; A line per row across one vertical axis per variable, each axis scaled on its own; the variables come from the
-;; `:variables` option, the mapping only groups the rows.
+(def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
+               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
 
-(nu/options-table (describe/mapping (chart/parallel)))
+(nu/data-table lattice)
+
+;; ## Parallel coordinates
+
+;; `chart/parallel` draws a line per row across one vertical axis per variable, each axis scaled on its own. Use it to
+;; compare rows over many variables. The `:variables` option names the axes; the mapping only groups the rows.
+
+(nu/shared-groups (describe/options (chart/parallel)))
+
+(nu/mapping-list (describe/mapping (chart/parallel)))
 
 (plot/render-image {:data iris
                     :mapping {:color :species}
@@ -38,11 +48,11 @@
 
 ;; ### Axes
 
-;; Which variables and in what order (a `[label accessor]` pair renames one), how each is scaled - every axis to
-;; 0..1 (`:uniminmax`), to standard scores, robustly, centred, or all on one common range - explicit limits, the
-;; axes themselves and what a missing value does:
+;; These options set the variables and their order, how each is scaled, fixed limits, the axes themselves and what a
+;; missing value does. The panels below draw labelled variables as standard scores, then all on one range with a
+;; fixed limit:
 
-(nu/options-table (describe/own-rows (describe/options (chart/parallel))) :axes)
+(nu/option-cards 'chart/parallel (describe/own-rows (describe/options (chart/parallel))) :axes)
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:color :species}
@@ -59,11 +69,10 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
-;; The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
-;; scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
-;; the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range). Every variable name is
-;; drawn, also when the names collide; long names in narrow plots turn with the theme's
-;; `[:axis :x :label-rotation]`:
+;; The next panels compare centred values (`:center`) with the robust scaling, which divides each value's distance
+;; from a centre by a spread: the median and the median absolute deviation, then the mean and a quantile spread
+;; (`:robust-spread 0.25`). The chart draws every variable name, also when names collide; the theme's
+;; `[:axis :x :label-rotation]` turns long names in narrow plots:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:color :species}
@@ -88,8 +97,8 @@
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 360})
 
-;; A missing value breaks a row's line there (`:break`) or drops the row (`:drop`); without `:axes` only the lines
-;; are drawn, here also without padding:
+;; The next panels break the lines at missing values, then drop those rows, then draw only the lines, without axes or
+;; padding:
 
 (def readings [{:id "a" :t1 3 :t2 5 :t3 4 :t4 6} {:id "b" :t1 4 :t2 nil :t3 6 :t4 5}
                {:id "c" :t1 6 :t2 4 :t3 nil :t4 3} {:id "d" :t1 5 :t2 6 :t3 5 :t4 4}])
@@ -116,10 +125,11 @@
 
 ;; ### Style
 
-;; Smooth curves between the axes, and - in polar coordinates, where the axes become spokes of a radar - a fill of
-;; each row's polygon (a value every spoke starts at, here 0 at the centre, is labelled once):
+;; These options join the axes with smooth curves and fill each row's polygon in polar coordinates, where the axes
+;; become the spokes of a radar. The panels below draw smooth curves, then a filled radar; the chart labels a value
+;; every spoke starts at (here 0 at the centre) only once:
 
-(nu/options-table (describe/own-rows (describe/options (chart/parallel))) :style)
+(nu/option-cards 'chart/parallel (describe/own-rows (describe/options (chart/parallel))) :style)
 
 (def athletes [{:name "Ann" :speed 8 :strength 5 :stamina 9 :skill 6 :reach 4}
                {:name "Bo" :speed 5 :strength 9 :stamina 6 :skill 4 :reach 8}
@@ -145,8 +155,9 @@
                                  {:columns 2 :widths [1.2 1]})
                    {:width 1000 :height 420})
 
-;; Spokes on their own ranges (the default `:uniminmax`) start at different values, their first ticks close to the
-;; centre where the spokes meet; a tick label there crossing another spoke is dropped (here 3.0 of the drat axis):
+;; Spokes on their own ranges (the default `:uniminmax`) start at different values, with their first ticks near the
+;; centre where the spokes meet. The chart drops a tick label there that crosses another spoke (below, 3.0 of the
+;; drat axis):
 
 (nu/source-note {:dataset :mtcars})
 
@@ -161,13 +172,14 @@
                     :labels {:x nil :y nil}}
                    {:width 640 :height 420})
 
-(nu/shared-groups (describe/options (chart/parallel)))
+;; ## 3D clouds
 
-;; ## cloud
+;; `chart/cloud` draws a mark per row in a 3D box at its x, y and z, seen in perspective: points, spikes, lines or
+;; bars. Use it to look at three numeric variables together; colour, size and shape may come from the data.
 
-;; Points in a 3D box at their x, y and z, seen in perspective; colour, size and shape may come from the data.
+(nu/shared-groups (describe/options (chart/cloud)))
 
-(nu/options-table (describe/mapping (chart/cloud)))
+(nu/mapping-list (describe/mapping (chart/cloud)))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
@@ -176,10 +188,10 @@
 
 ;; ### Style
 
-;; The point style used when nothing is mapped (`:alpha` - the opacity of every mark's colour, mapped or not;
-;; `:line-width` - of spikes and lines):
+;; These options style the marks; a mapped colour, size or shape wins over its option. The example below draws
+;; translucent outlined squares:
 
-(nu/options-table (describe/own-rows (describe/options (chart/cloud))) :style)
+(nu/option-cards 'chart/cloud (describe/own-rows (describe/options (chart/cloud))) :style)
 
 (plot/render-image {:data quakes
                     :mapping {:x :long :y :lat :z :depth}
@@ -190,10 +202,10 @@
 
 ;; ### Marks
 
-;; Points, spikes from a base, bars, or nothing but the side projections of the points on the far walls; with
-;; `:bins` the rows are counted on an x / y grid and the counts are the heights - a 2D histogram:
+;; These options set the marks, the side views of the rows on the far walls and a 2D histogram of the rows. The
+;; panels below draw spikes from a base, the three kinds of projection and counted bars:
 
-(nu/options-table (describe/own-rows (describe/options (chart/cloud))) :marks)
+(nu/option-cards 'chart/cloud (describe/own-rows (describe/options (chart/cloud))) :marks)
 
 (plot/render-image (plot/arrange [{:data quakes
                                    :mapping {:x :long :y :lat :z :mag}
@@ -211,9 +223,9 @@
                                  {:columns 3})
                    {:width 1000 :height 380})
 
-;; `:type :lines` joins a panel's points in data order - one line per value of the mapped `:group` (one line
-;; without it); each segment takes its first point's colour and is drawn at its own depth among the other marks.
-;; Three spirals, and profiles of a surface - a line along y for every x, coloured by height:
+;; `:type :lines` joins a panel's points in data order, a line per value of the mapped `:group`. Each segment takes
+;; its first point's colour and lies at its own depth among the other marks. The panels below draw three spirals,
+;; then profiles of a surface, a line along y for every x, coloured by height:
 
 (def spirals (for [g ["a" "b" "c"] t (range 0 12.6 0.3)
                    :let [phase (* 2.0944 (count (take-while #(not= g %) ["a" "b" "c"])))]]
@@ -237,17 +249,17 @@
                                  {:columns 2})
                    {:width 1000 :height 420})
 
-;; `:type :none` leaves only the projections - the point cloud's shadows on the three walls:
+;; With `:type :none` only the projections remain, the point cloud's shadows on the three walls:
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
                     :charts [(chart/cloud {:type :none :projections {:xy :points :xz :points :yz :points}})]}
                    {:width 600 :height 480})
 
-;; A coarser density grid with fewer levels (`:projection-grid`, `:projection-levels`); how strongly projected points
-;; and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
+;; Theme keys fade the projected points and density bands. The plot below uses a coarser density grid with fewer
+;; levels and changes both fades:
 
-(nu/options-table (describe/style-rows :cloud [:projection-alpha-factor :band-alpha-factor]))
+(nu/theme-key-list :cloud (describe/style-rows :cloud [:projection-alpha-factor :band-alpha-factor]))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
@@ -256,8 +268,8 @@
                     :theme {:chart {:cloud {:projection-alpha-factor 0.8 :band-alpha-factor 0.3}}}}
                    {:width 600 :height 480})
 
-;; The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
-;; reversed, the box and axes left out:
+;; The panels below apply the [3D frame](reference.shared_options.html#d-frame) options to the same points: they move
+;; the eye round and up, flatten the box and reverse the x axis, then leave out the box and axes:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
@@ -276,29 +288,26 @@
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 360})
 
-(nu/shared-groups (describe/options (chart/cloud)))
+;; ## 3D surfaces
 
-;; ## surface
+;; `chart/surface` draws a mesh of quads from gridded data, a function of `[x y]` over a domain, a parametric surface
+;; or the 2D density of mapped points, its heights coloured through the colour scale. Use it to see the shape of a
+;; function or density of two variables.
 
-;; A mesh of quads over a grid: gridded data (x, y, z per lattice node), a function of [x y] sampled over a domain,
-;; a parametric surface, or the 2D density of mapped points; heights coloured through the colour scale.
+(nu/shared-groups (describe/options (chart/surface)))
 
-(nu/options-table (describe/mapping (chart/surface)))
-
-(def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
-               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
-
-(nu/data-table lattice)
+(nu/mapping-list (describe/mapping (chart/surface)))
 
 (plot/render-image {:data lattice
                     :mapping {:x :x :y :y :z :z}
                     :charts [(chart/surface)]}
                    {:width 600 :height 480})
 
-;; Its options: the source (`:f` with the 3D frame's `:domain`, `:fu` over `:u` / `:v`, or `:density`), the grid
-;; size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded, in one colour:
+;; These options set the source (`:f` over the 3D frame's `:domain`, `:fu` over `:u` and `:v`, or `:density`), the
+;; grid size and the drawing: filled quads, a wireframe or both, shading and one colour. The panels below draw a
+;; function as outlined quads, a one-colour torus and a density wireframe:
 
-(nu/options-table (describe/own-rows (describe/options (chart/surface))))
+(nu/option-cards 'chart/surface (describe/own-rows (describe/options (chart/surface))))
 
 (plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/hypot x y)))
                                                             :domain {:x [-6 6] :y [-6 6]} :n 25 :style :both})]
@@ -318,8 +327,8 @@
                                  {:columns 3})
                    {:width 1000 :height 380})
 
-;; A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
-;; high), and the quad outlines' colour and width (outlines of `:style :both`):
+;; The next panels stop a density surface at the points' range (`:cut 0`), where its edges end in steep walls, then
+;; reach 3 bandwidths past them (the default), then outline the quads of `:style :both`:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :sepal-width}
@@ -338,7 +347,8 @@
                                  {:columns 3 :widths [1 1 1.25]})
                    {:width 1000 :height 360})
 
-;; The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surface: seen from another side and from above, and with y reversed:
+;; The panels below apply the [3D frame](reference.shared_options.html#d-frame) options to a surface: they view it
+;; from another side and from above, then reverse y:
 
 (plot/render-image (plot/arrange [{:data lattice
                                    :mapping {:x :x :y :y :z :z}
@@ -352,5 +362,3 @@
                                    :legend false}]
                                  {:columns 2})
                    {:width 900 :height 380})
-
-(nu/shared-groups (describe/options (chart/surface)))

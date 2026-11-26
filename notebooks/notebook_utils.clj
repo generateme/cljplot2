@@ -403,13 +403,13 @@
 
 (defn theme-key-list
   "The theme-only style keys of a chart kind in a titled box, its code hidden: each key with its default theme value
-  and its description - keys a theme sets that aren't chart options. `kind` - the chart kind; `rows` -
-  `cljplot2.describe/style-rows` of the keys. Throws `ex-info {:key :rows}` for no rows."
+  (readable: a colour as its channels) and its description - keys a theme sets that aren't chart options. `kind` -
+  the chart kind; `rows` - `cljplot2.describe/style-rows` of the keys. Throws `ex-info {:key :rows}` for no rows."
   [kind rows]
   (when (empty? rows)
     (throw (ex-info "A theme key list needs rows." {:key :rows :value rows})))
   (key-box "Theme keys" [[:span {:class "mapping-hint"} " – set under " [:code (pr-str [:theme :chart kind])] ", not options"]] rows
-           (fn [{:keys [default]}] (when (some? default) [" (default " [:code (pr-str default)] ")"]))))
+           (fn [{:keys [default]}] (when (some? default) [" (default " [:code (pr-str (readable-value default))] ")"]))))
 
 (defn type-entries
   "The Types page's sections, its code hidden: a `##` heading per documented type (`cljplot2.describe/documented-types`,

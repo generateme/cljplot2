@@ -50,14 +50,13 @@
 
 (def ^:private style-entries
   "Style entries of the contour chart (theme `[:chart :contour]`): its own `:color`, the line style without its colour, `:alpha-factor`."
-  (-> [(schema/optional :color {:description (str "one colour for every line instead of colouring by level (contour's own :color, "
-                                                  "not the line style's)")
-                                :cljplot2/default-doc (str "the theme's, for grouped lines without a mapped colour; ungrouped lines "
-                                                           "are coloured by level, lines grouped by :color take their group's colour")}
+  (-> [(schema/optional :color {:description "One colour for every line or band, instead of colouring them by level; a mapped `:color` wins."
+                                :cljplot2/default-doc "Lines coloured by level; grouped lines without a mapped colour take the theme's colour, lines grouped by `:color` their group's."
+                                :cljplot2/value-meanings {:none "Nothing drawn, unless `:color` is mapped."} :cljplot2/example :black}
                         schema/color)]
       (into (remove #(= :color (first %))) polyline/style-entries)
-      (conj (schema/optional :alpha-factor {:description "factor multiplying the colours' alpha"
-                                     :cljplot2/default-doc "the theme's; grouped filled contours take half of it"}
+      (conj (schema/optional :alpha-factor {:description "How opaque the lines or bands are: a factor on the colours' own alpha."
+                                            :cljplot2/default-doc "The theme's; grouped filled contours take half of it." :cljplot2/example 0.3}
                              schema/fraction))))
 
 (def schemas
@@ -69,25 +68,30 @@
                  (into field/source-options)
                  (into data/common-options)
                  (into theme/theme-style-entries)
-                 (conj (schema/optional :levels {:description "contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values"
-                                                 :default 10}
+                 (conj (schema/optional :levels {:description "The values at which the chart draws contours."
+                                                 :default 10 :cljplot2/example 4
+                                                 :cljplot2/form-meanings {:int "That many levels, evenly spread over the range of the sampled values, the ends left out."
+                                                                          :vector "The level values, e.g. `[0.1 0.2 0.4]`."}}
                                         [:or [:int {:min 1 :max 1000}] [:vector {:min 1} schema/finite]])
-                       (schema/optional :filled {:description "fill the region at or above each level, each band coloured by its middle value, instead of drawing lines"
-                                               :default false}
+                       (schema/optional :filled {:description "Whether the chart fills bands between levels instead of drawing lines."
+                                                 :default false
+                                                 :cljplot2/value-meanings {true "Fills the region at or above each level; coloured by level, each band takes the colour of its middle value." false "Draws lines."}}
                                         :boolean)
-                       (schema/nilable :labels {:description "line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)"
-                                                :default false}
+                       (schema/nilable :labels {:description "Writes its level on each line; filled contours reject the option."
+                                                :default false
+                                                :cljplot2/value-meanings {true "The level as a number." false "No labels."}
+                                                :cljplot2/form-meanings {::schema/function "A function of `{:level v}` that returns the text; `nil` writes none."}}
                                        [:or :boolean schema/function])))
              [#(when (and (:labels %) (:filled %)) "labels need line contours, not :filled true") [:labels]])
    :mapping [:maybe [:map
-                     (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)
-                     (schema/nilable :y {:description "y of the points (density) or of the gridded data"} schema/accessor)
-                     (schema/nilable :value {:description "the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)"}
+                     (schema/nilable :x {:description "The x of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
+                     (schema/nilable :y {:description "The y of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
+                     (schema/nilable :value {:description "The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points."}
                                      schema/accessor)
-                     (schema/nilable :color {:description "categorical groups, each its own field with lines in its colour (else the lines are coloured by level)"}
+                     (schema/nilable :color {:description "Splits the rows into categorical groups, each its own field with lines in its colour; unmapped, the lines are coloured by level."}
                                      schema/accessor)
-                     (schema/nilable :dash {:description "groups, each its own field with lines in its dash style"} schema/accessor)
-                     (schema/nilable :group {:description "groups without a visual aesthetic, each its own field"} schema/accessor)]]})
+                     (schema/nilable :dash {:description "Splits the rows into groups, each its own field with lines in its dash style."} schema/accessor)
+                     (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own field."} schema/accessor)]]})
 
 (def ^{:private true :const true :tag 'double} grouped-fill-alpha
   "Alpha factor of grouped filled contours without an `:alpha-factor` option: the groups' regions overlap."

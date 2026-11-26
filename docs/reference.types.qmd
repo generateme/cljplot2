@@ -225,6 +225,10 @@ The range a function is sampled over, `[lo hi]`: two finite numbers with `lo` be
 
 A solid colour, or `:contrast`.
 
+## variable
+
+A column of wide rows, one axis of a parallel coordinates chart: a keyword, labelled by its name, or a `[label accessor]` pair, e.g. `["petal length" :petal-length]`.
+
 
 ```{=html}
 <div style="background-color:grey;height:2px;width:100%;"></div>

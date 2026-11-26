@@ -31,7 +31,7 @@
    (schema/optional :stroke-color {:description "The colour of each point's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
    (schema/optional :stroke-width {:description "The width of the outline in pixels; `0` draws no outline." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
    (schema/optional :shape {:description "The shape of every point; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)
-   (schema/nilable :alpha {:description "The opacity of every point and its legend key; the outline keeps its own." :cljplot2/example 0.5
+   (schema/nilable :alpha {:description "The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own." :cljplot2/example 0.5
                            :cljplot2/default-doc "The colours' own alpha."}
                    schema/fraction)])
 

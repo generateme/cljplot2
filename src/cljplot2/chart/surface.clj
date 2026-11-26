@@ -54,8 +54,12 @@
 
 (def ^:private style-entries
   "Style entries of the surface (theme `[:chart :surface]`): the quad outline."
-  [(schema/optional :stroke-color {:description "quad outline colour of :style :both"} schema/color)
-   (schema/optional :stroke-width {:description "quad outline width in pixels (:style :both and :wireframe)"} schema/non-neg)])
+  [(schema/optional :stroke-color {:description "The outline colour of the quads with `:style :both`."
+                                    :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :white :cljplot2/example-context {:style :both}}
+                    schema/color)
+   (schema/optional :stroke-width {:description "The outline width of the quads in pixels, with `:style :both` or `:wireframe`."
+                                   :cljplot2/example 3 :cljplot2/example-context {:style :wireframe}}
+                    schema/non-neg)])
 
 (def ^:private range-schema
   "Schema of a parameter range `[lo hi]`."
@@ -75,23 +79,45 @@
                  (into theme/theme-style-entries)
                  (into space/frame-options)
                  (into space/shading-options)
-                 (conj (schema/optional :style {:description "mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both"
-                                                :default :surface}
+                 (conj (schema/optional :style {:description "How the chart draws the mesh."
+                                                :default :surface
+                                                :cljplot2/value-meanings {:surface "Filled quads." :wireframe "Quad outlines, each in its quad's colour; nearer quads hide the lines behind them."
+                                                                          :both "Filled quads outlined by `:stroke-color`."}}
                                         [:enum :surface :wireframe :both])
-                       (schema/optional :color {:description "one colour for all quads (no color scale)"
-                                                :cljplot2/default-doc "each quad's mean height (or c of [z c]) through the plot's color scale"}
-                                        schema/color)
-                       (schema/nilable :shade {:description "shading of filled quads by their angle to the light (Lambert; false - the colour itself, as :ambient 1)" :default true} schema/bool)
-                       (schema/optional :f {:description "source: a function of [x y] returning z or [z c], sampled over :domain :x / :y"}
+                       (schema/optional :color {:description "One colour for every quad, instead of the colour scale."
+                                                :cljplot2/default-doc "Each quad's mean height, or the `c` of `[z c]`, through the plot's colour scale."
+                                                :cljplot2/example :steelblue}
+                                        schema/solid-color)
+                       (schema/nilable :shade {:description "Whether the chart shades filled quads by their angle to the light."
+                                               :default true
+                                               :cljplot2/value-meanings {true "Lambert shading." false "The colour itself, as `:ambient 1`."}}
+                                       schema/bool)
+                       (schema/optional :f {:description "The surface as a function of `[x y]` that returns z, or `[z c]` with `c` the colour value, sampled over `:domain :x` and `:y`."
+                                            :cljplot2/default-doc "None: a gridded `:z` mapping, `:fu` or `:density` gives the surface."
+                                            :cljplot2/example '(fn [[x y]] (m/* x y)) :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}}
                                         schema/function)
-                       (schema/nilable :density {:description "source: the 2D kernel density of the mapped :x, :y" :default false} schema/bool)
-                       (schema/optional :fu {:description "source: a parametric surface, a function of [u v] returning [x y z]"} schema/function)
-                       (schema/optional :u {:description "the u range [lo hi] of :fu"} range-schema)
-                       (schema/optional :v {:description "the v range [lo hi] of :fu"} range-schema)
-                       (schema/optional :n {:description "grid points per axis of :f, :fu, :density: n or [nx ny]" :default default-n}
+                       (schema/nilable :density {:description "Whether the surface is the 2D kernel density of the mapped `:x` and `:y`."
+                                                 :default false
+                                                 :cljplot2/value-meanings {true "The density of the points." false "Another source gives the surface."}}
+                                       schema/bool)
+                       (schema/optional :fu {:description "A parametric surface: a function of `[u v]` that returns `[x y z]`, over `:u` and `:v`."
+                                             :cljplot2/default-doc "None: another source gives the surface."
+                                             :cljplot2/example '(fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u])
+                                             :cljplot2/example-context {:u [0 1] :v [0 6.28]}}
+                                        schema/function)
+                       (schema/optional :u {:description "The range `[lo hi]` of `:fu`'s u parameter." :cljplot2/default-doc "None; `:fu` needs it."
+                                            :cljplot2/example [0 0.5] :cljplot2/example-context {:fu '(fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]) :v [0 6.28]}}
+                                        range-schema)
+                       (schema/optional :v {:description "The range `[lo hi]` of `:fu`'s v parameter." :cljplot2/default-doc "None; `:fu` needs it."
+                                            :cljplot2/example [0 3.14] :cljplot2/example-context {:fu '(fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]) :u [0 1]}}
+                                        range-schema)
+                       (schema/optional :n {:description "The number of grid points per axis at which the chart samples `:f`, `:fu` or `:density`."
+                                            :default default-n :cljplot2/example 6
+                                            :cljplot2/example-context {:f '(fn [[x y]] (m/* x y)) :domain {:x [-1 1] :y [-1 1]}}
+                                            :cljplot2/form-meanings {:int "The same count on both axes." :tuple "`[nx ny]`, a count per axis."}}
                                         field/n-schema)
-                       (schema/optional :cut {:description "how many bandwidths the density domain extends past the points on each side"
-                                              :cljplot2/default-doc "3 (only with :density)"}
+                       (schema/optional :cut {:description "How far the density reaches past the points' range on each side, in bandwidths; `0` stops at the range. It needs `:density true`."
+                                              :cljplot2/default-doc "`3`." :cljplot2/example 0 :cljplot2/example-context {:density true}}
                                         schema/finite-non-neg)))
              [#(when (m/> (count (filter % [:f :fu :density])) 1) "a surface takes one source: :f, :fu or :density true") nil]
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
@@ -99,9 +125,9 @@
              [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]]
              space/distance-rule)
    :mapping [:maybe [:map
-                     (schema/nilable :x {:description "x of a lattice node (gridded) or of a point (:density)"} schema/accessor)
-                     (schema/nilable :y {:description "y of a lattice node (gridded) or of a point (:density)"} schema/accessor)
-                     (schema/nilable :z {:description "height of a lattice node (gridded source)"} schema/accessor)]]})
+                     (schema/nilable :x {:description "The x of the gridded heights, or of the points whose density the chart estimates with `:density`."} schema/accessor)
+                     (schema/nilable :y {:description "The y of the gridded heights, or of the points whose density the chart estimates with `:density`."} schema/accessor)
+                     (schema/nilable :z {:description "The height of a lattice node of gridded data."} schema/accessor)]]})
 
 (defn- source-kind
   "Gives the source of a surface chart.

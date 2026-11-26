@@ -246,7 +246,7 @@
 ;; ### Time heatmap
 
 ;; Year × month as two categorical axes, the value as a linear colour: seasonality and growth at once - a
-;; [tile](reference.charts_bins_fields.html#tile) per month (categories in data order: January to December, the
+;; [tile](reference.charts_bins_fields.html#heatmaps) per month (categories in data order: January to December, the
 ;; years upward).
 
 (nu/source-note {:source "R Graph Gallery - The hourly heatmap"

@@ -512,7 +512,7 @@
 
 ;; ## Parallel coordinates
 
-;; Each row a line across one axis per variable ([`chart/parallel`](reference.charts_multivariate_3d.html#parallel)
+;; Each row a line across one axis per variable ([`chart/parallel`](reference.charts_multivariate_3d.html#parallel-coordinates)
 ;; over `:variables`); every axis has its own scale
 ;; in the variable's units, drawn by the chart.
 

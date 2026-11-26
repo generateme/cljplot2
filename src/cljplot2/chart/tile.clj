@@ -61,17 +61,19 @@
                 (into cell-draw/style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :value-label {:description "label in each cell: true (the colour value, numbers to 2 decimals) or a function of {:value :x :y} returning the text (nil - none), drawn in black or white by the fill under it"
-                                                     :default false}
+                (conj (schema/optional :value-label {:description "Writes a label in each cell, in the `:tile-value` text role: by default black or white by the fill under it."
+                                                     :default false
+                                                     :cljplot2/value-meanings {true "The colour value; numbers to at most 2 decimals." false "No labels."}
+                                                     :cljplot2/form-meanings {::schema/function "A function of `{:value :x :y}` that returns the text; `nil` writes none."}}
                                        [:or :boolean schema/function])))
    :mapping [:map
-             [:x {:description "cell x position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)"}
+             [:x {:description "The x of each cell: categorical values give a cell per level; numbers centre cells on the values, as wide as the smallest gap between them."}
               schema/accessor]
-             [:y {:description "cell y position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)"}
+             [:y {:description "The y of each cell: categorical values give a cell per level; numbers centre cells on the values, as tall as the smallest gap between them."}
               schema/accessor]
-             [:color {:description "cell fill: numeric (a gradient and colour bar) or categorical (a palette and legend); nil - the NA colour"}
+             [:color {:description "Fills each cell: numbers through a gradient with a colour bar, categorical values through a palette with a legend; `nil` takes the NA colour."}
               schema/accessor]
-             (schema/nilable :size {:description "cell size: each cell shrinks by :cell-scale times its size over the size scale's largest"}
+             (schema/nilable :size {:description "Shrinks each cell by `:cell-scale` times its size over the size scale's largest."}
                              schema/accessor)]})
 
 (defn largest-size

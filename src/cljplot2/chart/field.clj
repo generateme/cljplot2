@@ -42,7 +42,7 @@
 
 (def ^:private style-entries
   "Style entries of the field chart (theme `[:chart :field]`)."
-  [(schema/optional :alpha-factor {:description "factor multiplying the colours' alpha"} schema/fraction)])
+  [(schema/optional :alpha-factor {:description "How opaque the raster is: a factor on the colours' own alpha." :cljplot2/example 0.4} schema/fraction)])
 
 (def ^:private transparent
   "Colour of a pixel without a value."
@@ -56,15 +56,17 @@
                 (into field/source-options)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :pixel-color {:description (str "a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over "
-                                                                     ":domain, no grid, colour scale or legend; not with :f")}
+                (conj (schema/optional :pixel-color {:description "Colours each pixel by a function of its point `[x y]` instead of a field, `nil` leaving it transparent: a raster over `:domain` (else the plot's x and y domains) with no colour scale or legend. A chart with `:f` rejects it."
+                                                     :cljplot2/default-doc "None: the field's value colours the raster through the colour scale."
+                                                     :cljplot2/example '(fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))
+                                                     :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}}
                                        schema/function)))
    :mapping [:maybe [:map
-                     (schema/nilable :x {:description "x of the points (density) or of the gridded data"} schema/accessor)
-                     (schema/nilable :y {:description "y of the points (density) or of the gridded data"} schema/accessor)
-                     (schema/nilable :value {:description "the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)"}
+                     (schema/nilable :x {:description "The x of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
+                     (schema/nilable :y {:description "The y of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
+                     (schema/nilable :value {:description "The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points."}
                                      schema/accessor)
-                     [:color {:optional true :description "must be nil (the colour is the field's value): set it so in the chart's mapping when the plot maps :color"}
+                     [:color {:optional true :description "Must be `nil`: the colour shows the field's value. Set `:color nil` in the chart's own mapping when the plot maps `:color`."}
                       :nil]]]})
 
 (defn computed-aesthetics

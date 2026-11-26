@@ -8463,7 +8463,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A grid of cells coloured by a value: rows and columns are categories (or binned numbers).</p>
 <section id="basic-heatmap-square-and-hexagon-cells" class="level3" data-number="33.2.1">
 <h3 data-number="33.2.1" class="anchored" data-anchor-id="basic-heatmap-square-and-hexagon-cells"><span class="header-section-number">33.2.1</span> Basic heatmap, square and hexagon cells</h3>
-<p>European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across columns of different units; the <a href="reference.charts_bins_fields.html#tile">tile</a> <code>:cell :pointy-hex</code> draws the same grid as a honeycomb.</p>
+<p>European countries × demographic indicators, each indicator standardized (z-score) so the colours compare across columns of different units; the <a href="reference.charts_bins_fields.html#heatmaps">tile</a> <code>:cell :pointy-hex</code> draws the same grid as a honeycomb.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> europe </span>(<span class="kw">filterv</span> #(<span class="kw">=</span> <span class="st">"Europe"</span> (<span class="at">:continent</span> <span class="va">%</span>)) countries))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -9770,7 +9770,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Where the points concentrate: counts in cells, a smooth density estimate, its contour lines.</p>
 <section id="d-histogram-and-hexbin" class="level3" data-number="33.6.1">
 <h3 data-number="33.6.1" class="anchored" data-anchor-id="d-histogram-and-hexbin"><span class="header-section-number">33.6.1</span> 2D histogram and hexbin</h3>
-<p><a href="reference.charts_bins_fields.html#bin2d"><code>chart/bin2d</code></a> counts points in cells: squares, or hexagons (the default) - regular on screen for the panel’s shape.</p>
+<p><a href="reference.charts_bins_fields.html#d-bins"><code>chart/bin2d</code></a> counts points in cells: squares, or hexagons (the default) - regular on screen for the panel’s shape.</p>
 <p>Source: R Graph Gallery - 2D density chart; data-to-viz - 2D density (<a href="https://r-graph-gallery.com/2d-density-chart.html">1</a>, <a href="https://www.data-to-viz.com/graph/density2d.html">2</a>). Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -9788,7 +9788,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="d-kernel-density-and-contours" class="level3" data-number="33.6.2">
 <h3 data-number="33.6.2" class="anchored" data-anchor-id="d-kernel-density-and-contours"><span class="header-section-number">33.6.2</span> 2D kernel density and contours</h3>
-<p><a href="reference.charts_bins_fields.html#field"><code>chart/field</code></a> estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster; <a href="reference.charts_bins_fields.html#contour"><code>chart/contour</code></a> draws its level lines, or with <code>:filled true</code> the bands between them.</p>
+<p><a href="reference.charts_bins_fields.html#raster-fields"><code>chart/field</code></a> estimates the density (Gaussian kernel, a bandwidth per axis) and draws it as a raster; <a href="reference.charts_bins_fields.html#contour-lines"><code>chart/contour</code></a> draws its level lines, or with <code>:filled true</code> the bands between them.</p>
 <p>Source: <a href="https://r-graph-gallery.com/2d-density-plot-with-ggplot2.html">R Graph Gallery - 2D density plot with ggplot2</a>. Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>

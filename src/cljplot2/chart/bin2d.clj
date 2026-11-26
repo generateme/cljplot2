@@ -48,21 +48,30 @@
                 (into cell-draw/style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :bins {:description "cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)"
-                                              :default :scott-correlated}
+                (conj (schema/optional :bins {:description "How big the cells are. The rules estimate a cell area from the points; `:binwidth` wins over this option."
+                                              :default :scott-correlated
+                                              :cljplot2/value-meanings {:scott-correlated "The normal-reference rule taking the axes' correlation into account; smaller cells than `:scott` for correlated points."
+                                                                        :scott "The normal-reference rule for uncorrelated points."
+                                                                        :freedman-diaconis "`:scott` with each standard deviation replaced by `IQR / 1.349`; robust to outliers."
+                                                                        :cross-validation "The cell size that minimises a cross-validated estimate of the error."
+                                                                        :shimazaki-shinomoto "The cell size that minimises the Shimazaki-Shinomoto cost."}
+                                              :cljplot2/form-meanings {::schema/pos-int "That many cells across the x range."}}
                                        [:or (into [:enum] cells/size-methods) schema/pos-int])
-                      (schema/optional :binwidth {:description "cell size in x data units (log10 units on a :log axis); wins over :bins"}
+                      (schema/optional :binwidth {:description "The cell size in x data units, in log10 units on a `:log` axis; it wins over `:bins`."
+                                                  :cljplot2/default-doc "None: `:bins` sizes the cells." :cljplot2/example 1}
                                        schema/finite-pos)
-                      (schema/optional :aspect {:description "height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)"
-                                               :cljplot2/default-doc "the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout"}
+                      (schema/optional :aspect {:description "The height-to-width ratio of the space the chart bins in; cells look regular when it matches the panel's."
+                                                :cljplot2/default-doc "The panel's height over its width, estimated from the plot size and facet layout; with the plot's `:aspect :iso`, the y span over the x span." :cljplot2/example 3}
                                        schema/finite-pos)
-                      (schema/optional :measure {:description "the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))"
-                                                 :default :count}
+                      (schema/optional :measure {:description "What a cell's colour shows."
+                                                 :default :count
+                                                 :cljplot2/value-meanings {:count "The number of points in the cell." :percent "The cell's share of the panel's points in percent."
+                                                                           :pmf "The cell's share of the panel's points as a fraction." :density "The share divided by the cell area, in log10 units on a `:log` axis."}}
                                        [:enum :count :percent :pmf :density])))
    :mapping [:map
-             [:x {:description "point x positions (numbers)"} schema/accessor]
-             [:y {:description "point y positions (numbers)"} schema/accessor]
-             [:color {:optional true :description "must be nil (the cell colour is the measure): set it so in the chart's mapping when the plot maps :color"}
+             [:x {:description "The x of each point, a number."} schema/accessor]
+             [:y {:description "The y of each point, a number."} schema/accessor]
+             [:color {:optional true :description "Must be `nil`: the cell colour shows `:measure`. Set `:color nil` in the chart's own mapping when the plot maps `:color`."}
               :nil]]})
 
 (defn compute

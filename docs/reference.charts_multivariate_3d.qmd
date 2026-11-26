@@ -49,9 +49,10 @@ code-block-background: true
 
 # Multivariate and 3D
 
-For more variables than two axes hold: a line per row across one axis per variable (`parallel`, a radar in polar
-coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). For a matrix of plots of every
-pair of variables see [`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
+These charts draw more variables than two axes hold: a line per row across one axis per variable (`parallel`, a
+radar in polar coordinates), points in a 3D box (`cloud`) and surfaces over a grid (`surface`). Use them to see
+rows across many variables at once; for a matrix of plots of every pair of variables see
+[`plot/pairs`](reference.facets_arrange.html#scatter-plot-matrix).
 
 
 ::: {.sourceClojure}
@@ -98,19 +99,39 @@ Data: Earthquakes off Fiji since 1964, R datasets package `quakes` (Harvard PRIM
 ```
 
 
+The lattice below holds a function's values, x, y and z per node; the surfaces use it:
 
-## parallel
 
-A line per row across one vertical axis per variable, each axis scaled on its own; the variables come from the
-`:variables` option, the mapping only groups the rows.
+::: {.sourceClojure}
+```clojure
+(def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
+               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
+```
+:::
 
-::: {.clay-table}
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line colour, grouping the rows</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>line dash style, grouping the rows</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>radar fill pattern, grouping the rows</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>-2</td><td>-2</td><td>-6.709252558050237E-4</td></tr><tr><td>-2</td><td>-1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>-1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>-1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>-1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>-0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>-0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>-0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.0</td><td>-0.03663127777746836</td></tr><tr><td>-2</td><td>0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>2.0</td><td>-6.709252558050237E-4</td></tr><tr><td>-1.75</td><td>-2</td><td>-0.001499109202825396</td></tr><tr><td>-1.75</td><td>-1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>-1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>-1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>-1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>-0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>-0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>-0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.0</td><td>-0.08184858917192822</td></tr><tr><td>-1.75</td><td>0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>2.0</td><td>-0.001499109202825396</td></tr><tr><td>-1.5</td><td>-2</td><td>-0.002895681204341564</td></tr><tr><td>-1.5</td><td>-1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>-1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>-1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>-1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>-0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>-0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>-0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.0</td><td>-0.15809883684279652</td></tr><tr><td>-1.5</td><td>0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>2.0</td><td>-0.002895681204341564</td></tr><tr><td>-1.25</td><td>-2</td><td>-0.004798958092532704</td></tr><tr><td>-1.25</td><td>-1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>-1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>-1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>-1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>-0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>-0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>-0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.0</td><td>-0.2620142339388723</td></tr><tr><td>-1.25</td><td>0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>2.0</td><td>-0.004798958092532704</td></tr><tr><td>-1.0</td><td>-2</td><td>-0.006737946999085467</td></tr><tr><td>-1.0</td><td>-1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>-1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>-1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>-1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>-0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>-0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>-0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.0</td><td>-0.36787944117144233</td></tr><tr><td>-1.0</td><td>0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>2.0</td><td>-0.006737946999085467</td></tr><tr><td>-0.75</td><td>-2</td><td>-0.007826952347080878</td></tr><tr><td>-0.75</td><td>-1.75</td><td>-0.019986823002266618</td></tr><tr><td>-0.75</td><td>-1.5</td><td>-0.04504100092148096</td></tr><tr><td>-0.75</td><td>-1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>-1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>-0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>-0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>-0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.0</td><td>-0.42733711854819223</td></tr><tr><td>-0.75</td><td>0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>1.5</td><td>-0.04504100092148096</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
 ```
 
-:::
+
+
+## Parallel coordinates
+
+`chart/parallel` draws a line per row across one vertical axis per variable, each axis scaled on its own. Use it to
+compare rows over many variables. The `:variables` option names the axes; the mapping only groups the rows.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:color</code> – Splits the rows into groups, each line in its own colour.</li><li><code>:dash</code> – Splits the rows into groups, each line with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each radar fill with its own pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same.</li></ul></div>
+```
 
 
 
@@ -133,17 +154,14 @@ A line per row across one vertical axis per variable, each axis scaled on its ow
 
 ### Axes
 
-Which variables and in what order (a `[label accessor]` pair renames one), how each is scaled - every axis to
-0..1 (`:uniminmax`), to standard scores, robustly, centred, or all on one common range - explicit limits, the
-axes themselves and what a missing value does:
+These options set the variables and their order, how each is scaled, fixed limits, the axes themselves and what a
+missing value does. The panels below draw labelled variables as standard scores, then all on one range with a
+fixed limit:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables (required)</td><td>vector of a keyword or a [label accessor] pair (a string and a keyword or function)</td><td></td><td>the variables in axis order: keywords or [label accessor] pairs (2 or more)</td></tr><tr><td>:scaling</td><td>one of :center :globalminmax :robust :std :uniminmax</td><td>:uniminmax</td><td>per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax</td></tr><tr><td>:limits</td><td>map of any value to [lo hi], finite numbers, lo < hi</td><td>each variable's finite data range</td><td>explicit variable domains {key [lo hi]}, key - the keyword or the pair's label</td></tr><tr><td>:axes</td><td>true or false or nil</td><td>true</td><td>draw each variable's axis with ticks and labels</td></tr><tr><td>:missing</td><td>one of :break :drop</td><td>:break</td><td>a missing value: :break (the line breaks there) or :drop (the row is dropped)</td></tr><tr><td>:robust-center</td><td>one of :median :mean</td><td>:median (only with :scaling :robust)</td><td>centre of :scaling :robust: :median or :mean</td></tr><tr><td>:robust-spread</td><td>one of [:biweight :gini :iqr :mad :meanad :qn :sn :stddev :tukey] or a quantile p, 0 < p < 0.5</td><td>:mad (only with :scaling :robust)</td><td>spread of :scaling :robust: a fastmath.stats/robust-stddev estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)</td></tr><tr><td>:padding</td><td>map</td><td></td><td>padding of the scaled values' span, {:y [lo hi]} fractions of the span</td></tr><tr><td>:padding :y</td><td>[lo hi], non-negative numbers</td><td>[0.05 0.05]</td><td>padding of the value axis [lo hi], fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:variables</code></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :wt :hp]})</code></div><div class="option-text">The variables, one axis each, in axis order: at least 2, their labels all different.<ul><li><span>vector of variables</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scaling</code><span class="option-default">Default: <code>:uniminmax</code></span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :scaling :center})</code></div><div class="option-text">How the chart scales each variable's values onto its axis.<ul><li><code>:uniminmax</code> – From the low to the high end of the variable's domain (its data range or <code>:limits</code>), every axis spanning 0 to 1.</li><li><code>:center</code> – Centred on the mean: <code>v - mean</code>.</li><li><code>:globalminmax</code> – The values as they are, on one common scale.</li><li><code>:robust</code> – <code>(v - centre) / spread</code>, by <code>:robust-center</code> and <code>:robust-spread</code>.</li><li><code>:std</code> – Standard scores: <code>(v - mean) / sd</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:limits</code><span class="option-default">Default: Each variable's finite data range.</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :limits {:hp [0 400]}})</code></div><div class="option-text">Fixed domains <code>[lo hi]</code> of some variables, keyed by the variable's keyword or its pair's label.<ul><li><span>map of keyword or string to interval</span></li></ul></div></dd></div><div class="option-card"><dt><code>:axes</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :axes false})</code></div><div class="option-text">Whether the chart draws each variable's axis with ticks and labels.<ul><li><code>true</code> – Draws the axes.</li><li><code>false</code> – Draws only the lines.</li></ul></div></dd></div><div class="option-card"><dt><code>:missing</code><span class="option-default">Default: <code>:break</code></span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :missing :drop})</code></div><div class="option-text">What the chart does with a missing, non-numeric or infinite value.<ul><li><code>:break</code> – Breaks the row's line there.</li><li><code>:drop</code> – Leaves the whole row out.</li></ul></div></dd></div><div class="option-card"><dt><code>:robust-center</code><span class="option-default">Default: <code>:median</code>.</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :scaling :robust, :robust-center :mean})</code></div><div class="option-text">The centre of <code>:scaling :robust</code>; it needs <code>:scaling :robust</code>.<ul><li><code>:median</code> – The variable's median.</li><li><code>:mean</code> – The variable's mean.</li></ul></div></dd></div><div class="option-card"><dt><code>:robust-spread</code><span class="option-default">Default: <code>:mad</code>.</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :scaling :robust, :robust-spread :iqr})</code></div><div class="option-text">The spread of <code>:scaling :robust</code>, a fastmath estimate of the standard deviation; it needs <code>:scaling :robust</code>.<ul><li><code>:iqr</code> – The interquartile range over 1.349.</li><li><code>:mad</code> – The median absolute deviation, R's <code>mad</code>.</li><li><code>:qn</code> – Rousseeuw and Croux's <code>Qn</code>; slow for large samples.</li><li><code>:sn</code> – Rousseeuw and Croux's <code>Sn</code>; slow for large samples.</li><li><code>:stddev</code> – The standard deviation; not robust.</li><li><code>:tukey</code> – The square root of Tukey's biweight midvariance.</li><li class="option-other">Other fastmath estimators: <code>:biweight</code> (as <code>:tukey</code>), and <code>:meanad</code> and <code>:gini</code>, which are not robust. <code>:biweight</code>, <code>:gini</code>, <code>:meanad</code></li><li><span>finite number above 0 and below 0.5</span> – The spread between the quantiles <code>p</code> and <code>1 - p</code>, scaled to a standard deviation; <code>0.25</code> is <code>:iqr</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code></dt><dd><div class="option-text">Room around the scaled values on the value axis, as fractions of their span.</div></dd></div><div class="option-card"><dt><code>:padding :y</code><span class="option-default">Default: <code>[0.05 0.05]</code></span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :padding {:y [0.3 0.3]}})</code></div><div class="option-text">The room below and above the scaled values, <code>[lo hi]</code>.<ul><li><a href="reference.types.html#padding">padding</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -172,11 +190,10 @@ axes themselves and what a missing value does:
 :::
 
 
-The scalings side by side: centred values (`:center`, original units less each variable's mean) and the robust
-scaling - values less a centre over a spread, the median over the median absolute deviation by default, here also
-the mean over a quantile spread (`:robust-spread 0.25` - the interquartile half-range). Every variable name is
-drawn, also when the names collide; long names in narrow plots turn with the theme's
-`[:axis :x :label-rotation]`:
+The next panels compare centred values (`:center`) with the robust scaling, which divides each value's distance
+from a centre by a spread: the median and the median absolute deviation, then the mean and a quantile spread
+(`:robust-spread 0.25`). The chart draws every variable name, also when names collide; the theme's
+`[:axis :x :label-rotation]` turns long names in narrow plots:
 
 
 ::: {.sourceClojure}
@@ -212,8 +229,8 @@ drawn, also when the names collide; long names in narrow plots turn with the the
 :::
 
 
-A missing value breaks a row's line there (`:break`) or drops the row (`:drop`); without `:axes` only the lines
-are drawn, here also without padding:
+The next panels break the lines at missing values, then drop those rows, then draw only the lines, without axes or
+padding:
 
 
 ::: {.sourceClojure}
@@ -262,16 +279,14 @@ are drawn, here also without padding:
 
 ### Style
 
-Smooth curves between the axes, and - in polar coordinates, where the axes become spokes of a radar - a fill of
-each row's polygon (a value every spoke starts at, here 0 at the centre, is labelled once):
+These options join the axes with smooth curves and fill each row's polygon in polar coordinates, where the axes
+become the spokes of a radar. The panels below draw smooth curves, then a filled radar; the chart labels a value
+every spoke starts at (here 0 at the centre) only once:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:fill</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>radar polygon fill (polar only): :none, :color (the line's colour, its own alpha times :alpha) or a colour</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.25</td><td>factor of the line colour's alpha filling :fill :color</td></tr><tr><td>:curve</td><td>one of :smooth</td><td>straight segments</td><td>join consecutive axes with smooth curves (:smooth)</td></tr><tr><td>:smoothness</td><td>a finite number, > 0, <= 1</td><td>1 (only with :curve :smooth)</td><td>how far the smooth bend spreads over the gap between axes, (0 1]</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :fill :color})</code></div><div class="option-text">Fills each complete row's polygon of a radar chart, in a polar plot; parallel coordinates in a cartesian plot reject a fill other than <code>:none</code>.<ul><li><code>:none</code> – No fill.</li><li><code>:color</code> – The line colour, faded by <code>:alpha</code>.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.25</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :fill :color, :alpha 0.5})</code></div><div class="option-text">How opaque the radar fill is with <code>:fill :color</code>; it multiplies the line colour's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:curve</code><span class="option-default">Default: Straight segments.</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :curve :smooth})</code></div><div class="option-text">How the line joins consecutive axes.<ul><li><code>:smooth</code> – Smooth curves that meet every axis at a right angle.</li></ul></div></dd></div><div class="option-card"><dt><code>:smoothness</code><span class="option-default">Default: <code>1</code>, the whole gap.</span></dt><dd><div class="option-example"><code>(chart/parallel {:variables [:mpg :hp :wt], :curve :smooth, :smoothness 0.3})</code></div><div class="option-text">How far a smooth bend spreads over the gap between axes; smaller values keep it near the axes. It needs <code>:curve :smooth</code>.<ul><li><span>finite number above 0 and at most 1</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -319,8 +334,9 @@ each row's polygon (a value every spoke starts at, here 0 at the centre, is labe
 :::
 
 
-Spokes on their own ranges (the default `:uniminmax`) start at different values, their first ticks close to the
-centre where the spokes meet; a tick label there crossing another spoke is dropped (here 3.0 of the drat axis):
+Spokes on their own ranges (the default `:uniminmax`) start at different values, with their first ticks near the
+centre where the spokes meet. The chart drops a tick label there that crosses another spoke (below, 3.0 of the
+drat axis):
 
 Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -357,23 +373,21 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 
+## 3D clouds
+
+`chart/cloud` draws a mark per row in a 3D box at its x, y and z, seen in perspective: points, spikes, lines or
+bars. Use it to look at three numeric variables together; colour, size and shape may come from the data.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#d-frame">3D frame</a> – <code>:view</code> <code>:aspect</code> <code>:box</code> <code>:axes</code> <code>:axis-titles</code> <code>:domain</code> <code>:reverse</code></li><li><a href="reference.shared_options.html#d-shading">3D shading</a> – <code>:ambient</code> <code>:light</code></li></ul></div>
 ```
 
 
 
-## cloud
-
-Points in a 3D box at their x, y and z, seen in perspective; colour, size and shape may come from the data.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>x coordinate: numbers or categories</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>y coordinate: numbers or categories</td></tr><tr><td>:z</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>z coordinate, numeric (not read with :bins)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point colour</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point size</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>point shape</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own line with :type :lines (not read by other types)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each row: numbers or categories.</li><li><code>:y</code> <span class="required">required</span> – The y of each row: numbers or categories.</li><li><code>:z</code> – The z of each row, a number; <code>:bins</code> doesn't read it.</li><li><code>:color</code> – Colours each mark by the mapped value.</li><li><code>:size</code> – Sizes each point by the mapped value.</li><li><code>:shape</code> – Gives each point a shape by the mapped value.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own line with <code>:type :lines</code>; other types ignore it.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -395,16 +409,13 @@ Points in a 3D box at their x, y and z, seen in perspective; colour, size and sh
 
 ### Style
 
-The point style used when nothing is mapped (`:alpha` - the opacity of every mark's colour, mapped or not;
-`:line-width` - of spikes and lines):
+These options style the marks; a mapped colour, size or shape wins over its option. The example below draws
+translucent outlined squares:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 180]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point and its legend key; the outline keeps its own.</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of spikes and lines</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:size 10})</code></div><div class="option-text">The point size in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 180]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:color :steelblue})</code></div><div class="option-text">The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Draws nothing.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:stroke-color :black, :stroke-width 2})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: The colours' own alpha.</span></dt><dd><div class="option-example"><code>(chart/cloud {:alpha 0.5})</code></div><div class="option-text">The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/cloud {:type :spikes, :line-width 3})</code></div><div class="option-text">The width of spikes and lines in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -428,16 +439,13 @@ The point style used when nothing is mapped (`:alpha` - the opacity of every mar
 
 ### Marks
 
-Points, spikes from a base, bars, or nothing but the side projections of the points on the far walls; with
-`:bins` the rows are counted on an x / y grid and the counts are the heights - a 2D histogram:
+These options set the marks, the side views of the rows on the far walls and a 2D histogram of the rows. The
+panels below draw spikes from a base, the three kinds of projection and counted bars:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:type</td><td>one of :points :spikes :lines :bars :none</td><td>:points</td><td>marks: :points, :spikes (a line from :base to each point), :lines (points joined in data order per :group), :bars (a box per row from :base to z) or :none (only :projections)</td></tr><tr><td>:base</td><td>a finite number</td><td>the low z limit (0 with :bins)</td><td>z where spikes and bars start (kept within an explicit z domain)</td></tr><tr><td>:bar-size</td><td>[a number in [0 1], a number in [0 1]]</td><td>[0.8 0.8]</td><td>bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)</td></tr><tr><td>:projections</td><td>map</td><td></td><td>side projections of the points on the far walls, per plane</td></tr><tr><td>:projections :xy</td><td>one of :points :density :contour</td><td></td><td>xy wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :xz</td><td>one of :points :density :contour</td><td></td><td>xz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projections :yz</td><td>one of :points :density :contour</td><td></td><td>yz wall: :points, :density (KDE bands) or :contour (KDE lines)</td></tr><tr><td>:projection-grid</td><td>integer (2..500)</td><td>50</td><td>grid points per axis of a :density / :contour projection</td></tr><tr><td>:projection-levels</td><td>integer (1..100)</td><td>6</td><td>levels of the :density bands / :contour lines of the projections</td></tr><tr><td>:bins</td><td>[integer (1..1000), integer (1..1000)]</td><td></td><td>a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:type</code><span class="option-default">Default: <code>:points</code></span></dt><dd><div class="option-example"><code>(chart/cloud {:type :spikes})</code></div><div class="option-text">The mark drawn for each row.<ul><li><code>:points</code> – A point.</li><li><code>:spikes</code> – A line from <code>:base</code> to the point.</li><li><code>:lines</code> – Points joined in data order, a line per <code>:group</code>.</li><li><code>:bars</code> – A box from <code>:base</code> to the row's z.</li><li><code>:none</code> – No marks; only <code>:projections</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:base</code><span class="option-default">Default: The low z limit; <code>0</code> with <code>:bins</code>.</span></dt><dd><div class="option-example"><code>(chart/cloud {:type :spikes, :base 2})</code></div><div class="option-text">The z where spikes and bars start, kept within an explicit z domain.<ul><li><a href="reference.types.html#finite-number">finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bar-size</code><span class="option-default">Default: <code>[0.8 0.8]</code></span></dt><dd><div class="option-example"><code>(chart/cloud {:type :bars, :bar-size [0.3 0.3]})</code></div><div class="option-text">The footprint <code>[fx fy]</code> of each bar, as fractions of the x and y resolution (of a cell with <code>:bins</code>).<ul><li><span>pair of fractions</span></li></ul></div></dd></div><div class="option-card"><dt><code>:projections</code></dt><dd><div class="option-text">Side views of the rows on the far walls, one entry per wall.</div></dd></div><div class="option-card"><dt><code>:projections :xy</code><span class="option-default">Default: Nothing.</span></dt><dd><div class="option-example"><code>(chart/cloud {:projections {:xy :points}})</code></div><div class="option-text">What the xy wall shows.<ul><li><code>:points</code> – The rows as points.</li><li><code>:density</code> – Bands of the rows' kernel density.</li><li><code>:contour</code> – Lines of the rows' kernel density.</li></ul></div></dd></div><div class="option-card"><dt><code>:projections :xz</code><span class="option-default">Default: Nothing.</span></dt><dd><div class="option-example"><code>(chart/cloud {:projections {:xz :points}})</code></div><div class="option-text">What the xz wall shows.<ul><li><code>:points</code> – The rows as points.</li><li><code>:density</code> – Bands of the rows' kernel density.</li><li><code>:contour</code> – Lines of the rows' kernel density.</li></ul></div></dd></div><div class="option-card"><dt><code>:projections :yz</code><span class="option-default">Default: Nothing.</span></dt><dd><div class="option-example"><code>(chart/cloud {:projections {:yz :points}})</code></div><div class="option-text">What the yz wall shows.<ul><li><code>:points</code> – The rows as points.</li><li><code>:density</code> – Bands of the rows' kernel density.</li><li><code>:contour</code> – Lines of the rows' kernel density.</li></ul></div></dd></div><div class="option-card"><dt><code>:projection-grid</code><span class="option-default">Default: <code>50</code></span></dt><dd><div class="option-example"><code>(chart/cloud {:projections {:xy :density}, :projection-grid 6})</code></div><div class="option-text">The number of grid points per axis of a <code>:density</code> or <code>:contour</code> projection.<ul><li><span>integer at least 2 and at most 500</span></li></ul></div></dd></div><div class="option-card"><dt><code>:projection-levels</code><span class="option-default">Default: <code>6</code></span></dt><dd><div class="option-example"><code>(chart/cloud {:projections {:xy :contour}, :projection-levels 2})</code></div><div class="option-text">The number of levels of <code>:density</code> bands and <code>:contour</code> lines on the walls.<ul><li><span>integer at least 1 and at most 100</span></li></ul></div></dd></div><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: None: the rows' own z.</span></dt><dd><div class="option-example"><code>(chart/cloud {:type :bars, :bins [3 3]})</code></div><div class="option-text">Makes the chart a 2D histogram: it counts the rows on an <code>[nx ny]</code> grid over x and y and draws the counts as z, with <code>:type :bars</code> or <code>:spikes</code>.<ul><li><span>pair of (integer at least 1 and at most 1000)</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -467,9 +475,9 @@ Points, spikes from a base, bars, or nothing but the side projections of the poi
 :::
 
 
-`:type :lines` joins a panel's points in data order - one line per value of the mapped `:group` (one line
-without it); each segment takes its first point's colour and is drawn at its own depth among the other marks.
-Three spirals, and profiles of a surface - a line along y for every x, coloured by height:
+`:type :lines` joins a panel's points in data order, a line per value of the mapped `:group`. Each segment takes
+its first point's colour and lies at its own depth among the other marks. The panels below draw three spirals,
+then profiles of a surface, a line along y for every x, coloured by height:
 
 
 ::: {.sourceClojure}
@@ -524,7 +532,7 @@ Three spirals, and profiles of a surface - a line along y for every x, coloured 
 :::
 
 
-`:type :none` leaves only the projections - the point cloud's shadows on the three walls:
+With `:type :none` only the projections remain, the point cloud's shadows on the three walls:
 
 
 ::: {.sourceClojure}
@@ -542,16 +550,13 @@ Three spirals, and profiles of a surface - a line along y for every x, coloured 
 :::
 
 
-A coarser density grid with fewer levels (`:projection-grid`, `:projection-levels`); how strongly projected points
-and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
+Theme keys fade the projected points and density bands. The plot below uses a coarser density grid with fewer
+levels and changes both fades:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:projection-alpha-factor</td><td>a number in [0 1]</td><td>0.35</td><td>alpha factor of projected points (their style's colour)</td></tr><tr><td>:band-alpha-factor</td><td>a number in [0 1]</td><td>0.15</td><td>alpha factor of a projected density band (the chart's colour)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :cloud]</code>, not options</span></div><ul><li><code>:projection-alpha-factor</code> (default <code>0.35</code>) – alpha factor of projected points (their style's colour)</li><li><code>:band-alpha-factor</code> (default <code>0.15</code>) – alpha factor of a projected density band (the chart's colour)</li></ul></div>
 ```
-
-:::
 
 
 
@@ -572,8 +577,8 @@ and density bands are faded is a theme key of `[:chart :cloud]`, not an option:
 :::
 
 
-The 3D frame (Shared options) on the same points: the eye moved round and up, the box flattened and the x axis
-reversed, the box and axes left out:
+The panels below apply the [3D frame](reference.shared_options.html#d-frame) options to the same points: they move
+the eye round and up, flatten the box and reverse the x axis, then leave out the box and axes:
 
 
 ::: {.sourceClojure}
@@ -604,38 +609,21 @@ reversed, the box and axes left out:
 
 
 
+## 3D surfaces
+
+`chart/surface` draws a mesh of quads from gridded data, a function of `[x y]` over a domain, a parametric surface
+or the 2D density of mapped points, its heights coloured through the colour scale. Use it to see the shape of a
+function or density of two variables.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#d-frame">3D frame</a> – <code>:view</code> <code>:aspect</code> <code>:box</code> <code>:axes</code> <code>:axis-titles</code> <code>:domain</code> <code>:reverse</code></li><li><a href="reference.shared_options.html#d-shading">3D shading</a> – <code>:ambient</code> <code>:light</code></li></ul></div>
 ```
 
 
 
-## surface
-
-A mesh of quads over a grid: gridded data (x, y, z per lattice node), a function of [x y] sampled over a domain,
-a parametric surface, or the 2D density of mapped points; heights coloured through the colour scale.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x of a lattice node (gridded) or of a point (:density)</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y of a lattice node (gridded) or of a point (:density)</td></tr><tr><td>:z</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>height of a lattice node (gridded source)</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
-               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>z</th></tr></thead><tbody><tr><td>-2</td><td>-2</td><td>-6.709252558050237E-4</td></tr><tr><td>-2</td><td>-1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>-1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>-1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>-1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>-0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>-0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>-0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.0</td><td>-0.03663127777746836</td></tr><tr><td>-2</td><td>0.25</td><td>-0.03441190085170276</td></tr><tr><td>-2</td><td>0.5</td><td>-0.028528467817998508</td></tr><tr><td>-2</td><td>0.75</td><td>-0.02087187292554901</td></tr><tr><td>-2</td><td>1.0</td><td>-0.013475893998170934</td></tr><tr><td>-2</td><td>1.25</td><td>-0.007678332948052326</td></tr><tr><td>-2</td><td>1.5</td><td>-0.0038609082724554186</td></tr><tr><td>-2</td><td>1.75</td><td>-0.0017132676603718812</td></tr><tr><td>-2</td><td>2.0</td><td>-6.709252558050237E-4</td></tr><tr><td>-1.75</td><td>-2</td><td>-0.001499109202825396</td></tr><tr><td>-1.75</td><td>-1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>-1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>-1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>-1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>-0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>-0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>-0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.0</td><td>-0.08184858917192822</td></tr><tr><td>-1.75</td><td>0.25</td><td>-0.07688963384096298</td></tr><tr><td>-1.75</td><td>0.5</td><td>-0.0637437453403874</td></tr><tr><td>-1.75</td><td>0.75</td><td>-0.04663592033862211</td></tr><tr><td>-1.75</td><td>1.0</td><td>-0.030110413245239914</td></tr><tr><td>-1.75</td><td>1.25</td><td>-0.0171563963126882</td></tr><tr><td>-1.75</td><td>1.5</td><td>-0.00862677783020384</td></tr><tr><td>-1.75</td><td>1.75</td><td>-0.0038281094568200498</td></tr><tr><td>-1.75</td><td>2.0</td><td>-0.001499109202825396</td></tr><tr><td>-1.5</td><td>-2</td><td>-0.002895681204341564</td></tr><tr><td>-1.5</td><td>-1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>-1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>-1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>-1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>-0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>-0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>-0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.0</td><td>-0.15809883684279652</td></tr><tr><td>-1.5</td><td>0.25</td><td>-0.14852011254573946</td></tr><tr><td>-1.5</td><td>0.5</td><td>-0.1231274979358482</td></tr><tr><td>-1.5</td><td>0.75</td><td>-0.09008200184296192</td></tr><tr><td>-1.5</td><td>1.0</td><td>-0.05816131174758302</td></tr><tr><td>-1.5</td><td>1.25</td><td>-0.03313931649759367</td></tr><tr><td>-1.5</td><td>1.5</td><td>-0.016663494807363458</td></tr><tr><td>-1.5</td><td>1.75</td><td>-0.007394380997317578</td></tr><tr><td>-1.5</td><td>2.0</td><td>-0.002895681204341564</td></tr><tr><td>-1.25</td><td>-2</td><td>-0.004798958092532704</td></tr><tr><td>-1.25</td><td>-1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>-1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>-1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>-1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>-0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>-0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>-0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.0</td><td>-0.2620142339388723</td></tr><tr><td>-1.25</td><td>0.25</td><td>-0.24613959400524257</td></tr><tr><td>-1.25</td><td>0.5</td><td>-0.20405689056744802</td></tr><tr><td>-1.25</td><td>0.75</td><td>-0.14929121033339954</td></tr><tr><td>-1.25</td><td>1.0</td><td>-0.0963896499603959</td></tr><tr><td>-1.25</td><td>1.25</td><td>-0.054921167029259275</td></tr><tr><td>-1.25</td><td>1.5</td><td>-0.027616097081328058</td></tr><tr><td>-1.25</td><td>1.75</td><td>-0.012254568794777284</td></tr><tr><td>-1.25</td><td>2.0</td><td>-0.004798958092532704</td></tr><tr><td>-1.0</td><td>-2</td><td>-0.006737946999085467</td></tr><tr><td>-1.0</td><td>-1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>-1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>-1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>-1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>-0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>-0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>-0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.0</td><td>-0.36787944117144233</td></tr><tr><td>-1.0</td><td>0.25</td><td>-0.3455907525769745</td></tr><tr><td>-1.0</td><td>0.5</td><td>-0.2865047968601901</td></tr><tr><td>-1.0</td><td>0.75</td><td>-0.20961138715109784</td></tr><tr><td>-1.0</td><td>1.0</td><td>-0.1353352832366127</td></tr><tr><td>-1.0</td><td>1.25</td><td>-0.07711171996831671</td></tr><tr><td>-1.0</td><td>1.5</td><td>-0.03877420783172201</td></tr><tr><td>-1.0</td><td>1.75</td><td>-0.01720595042585138</td></tr><tr><td>-1.0</td><td>2.0</td><td>-0.006737946999085467</td></tr><tr><td>-0.75</td><td>-2</td><td>-0.007826952347080878</td></tr><tr><td>-0.75</td><td>-1.75</td><td>-0.019986823002266618</td></tr><tr><td>-0.75</td><td>-1.5</td><td>-0.04504100092148096</td></tr><tr><td>-0.75</td><td>-1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>-1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>-0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>-0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>-0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.0</td><td>-0.42733711854819223</td></tr><tr><td>-0.75</td><td>0.25</td><td>-0.4014460713892427</td></tr><tr><td>-0.75</td><td>0.5</td><td>-0.3328104825608099</td></tr><tr><td>-0.75</td><td>0.75</td><td>-0.2434893505187623</td></tr><tr><td>-0.75</td><td>1.0</td><td>-0.15720854036332338</td></tr><tr><td>-0.75</td><td>1.25</td><td>-0.08957472620003973</td></tr><tr><td>-0.75</td><td>1.5</td><td>-0.04504100092148096</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:y</code> – The y of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:z</code> – The height of a lattice node of gridded data.</li></ul></div>
 ```
 
 
@@ -655,16 +643,14 @@ a parametric surface, or the 2D density of mapped points; heights coloured throu
 :::
 
 
-Its options: the source (`:f` with the 3D frame's `:domain`, `:fu` over `:u` / `:v`, or `:density`), the grid
-size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded, in one colour:
+These options set the source (`:f` over the 3D frame's `:domain`, `:fu` over `:u` and `:v`, or `:density`), the
+grid size and the drawing: filled quads, a wireframe or both, shading and one colour. The panels below draw a
+function as outlined quads, a one-colour torus and a density wireframe:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>[60 60 60]</td><td>quad outline colour of :style :both</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>0.5</td><td>quad outline width in pixels (:style :both and :wireframe)</td></tr><tr><td>:style</td><td>one of :surface :wireframe :both</td><td>:surface</td><td>mesh drawing: :surface (filled quads), :wireframe (quad outlines) or :both</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>each quad's mean height (or c of [z c]) through the plot's color scale</td><td>one colour for all quads (no color scale)</td></tr><tr><td>:shade</td><td>true or false or nil</td><td>true</td><td>shading of filled quads by their angle to the light (Lambert; false - the colour itself, as :ambient 1)</td></tr><tr><td>:f</td><td>a function</td><td></td><td>source: a function of [x y] returning z or [z c], sampled over :domain :x / :y</td></tr><tr><td>:density</td><td>true or false or nil</td><td>false</td><td>source: the 2D kernel density of the mapped :x, :y</td></tr><tr><td>:fu</td><td>a function</td><td></td><td>source: a parametric surface, a function of [u v] returning [x y z]</td></tr><tr><td>:u</td><td>[a finite number, a finite number]</td><td></td><td>the u range [lo hi] of :fu</td></tr><tr><td>:v</td><td>[a finite number, a finite number]</td><td></td><td>the v range [lo hi] of :fu</td></tr><tr><td>:n</td><td>integer (2..2000) or [integer (2..2000), integer (2..2000)]</td><td>30</td><td>grid points per axis of :f, :fu, :density: n or [nx ny]</td></tr><tr><td>:cut</td><td>a non-negative finite number</td><td>3 (only with :density)</td><td>how many bandwidths the density domain extends past the points on each side</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>[60 60 60]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :both, :stroke-color :white})</code></div><div class="option-text">The outline colour of the quads with <code>:style :both</code>.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>0.5</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe, :stroke-width 3})</code></div><div class="option-text">The outline width of the quads in pixels, with <code>:style :both</code> or <code>:wireframe</code>.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:style</code><span class="option-default">Default: <code>:surface</code></span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe})</code></div><div class="option-text">How the chart draws the mesh.<ul><li><code>:surface</code> – Filled quads.</li><li><code>:wireframe</code> – Quad outlines, each in its quad's colour; nearer quads hide the lines behind them.</li><li><code>:both</code> – Filled quads outlined by <code>:stroke-color</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: Each quad's mean height, or the <code>c</code> of <code>[z c]</code>, through the plot's colour scale.</span></dt><dd><div class="option-example"><code>(chart/surface {:color :steelblue})</code></div><div class="option-text">One colour for every quad, instead of the colour scale.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shade</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/surface {:shade false})</code></div><div class="option-text">Whether the chart shades filled quads by their angle to the light.<ul><li><code>true</code> – Lambert shading.</li><li><code>false</code> – The colour itself, as <code>:ambient 1</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:f</code><span class="option-default">Default: None: a gridded <code>:z</code> mapping, <code>:fu</code> or <code>:density</code> gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:domain {:x [-1 1], :y [-1 1]}, :f (fn [[x y]] (m/* x y))})</code></div><div class="option-text">The surface as a function of <code>[x y]</code> that returns z, or <code>[z c]</code> with <code>c</code> the colour value, sampled over <code>:domain :x</code> and <code>:y</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:density</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/surface {:density true})</code></div><div class="option-text">Whether the surface is the 2D kernel density of the mapped <code>:x</code> and <code>:y</code>.<ul><li><code>false</code> – Another source gives the surface.</li><li><code>true</code> – The density of the points.</li></ul></div></dd></div><div class="option-card"><dt><code>:fu</code><span class="option-default">Default: None: another source gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:u [0 1], :v [0 6.28], :fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u])})</code></div><div class="option-text">A parametric surface: a function of <code>[u v]</code> that returns <code>[x y z]</code>, over <code>:u</code> and <code>:v</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:u</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :v [0 6.28], :u [0 0.5]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s u parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:v</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :u [0 1], :v [0 3.14]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s v parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>30</code></span></dt><dd><div class="option-example"><code>(chart/surface {:f (fn [[x y]] (m/* x y)), :domain {:x [-1 1], :y [-1 1]}, :n 6})</code></div><div class="option-text">The number of grid points per axis at which the chart samples <code>:f</code>, <code>:fu</code> or <code>:density</code>.<ul><li><span>integer at least 2 and at most 2000</span> – The same count on both axes.</li><li><span>pair of (integer at least 2 and at most 2000)</span> – <code>[nx ny]</code>, a count per axis.</li></ul></div></dd></div><div class="option-card"><dt><code>:cut</code><span class="option-default">Default: <code>3</code>.</span></dt><dd><div class="option-example"><code>(chart/surface {:density true, :cut 0})</code></div><div class="option-text">How far the density reaches past the points' range on each side, in bandwidths; <code>0</code> stops at the range. It needs <code>:density true</code>.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -696,8 +682,8 @@ size, and the drawing - filled, wireframe (value-coloured lines) or both, shaded
 :::
 
 
-A density surface reaching past the points by `:cut` bandwidths (0 - the points' range only, the edges cut off
-high), and the quad outlines' colour and width (outlines of `:style :both`):
+The next panels stop a density surface at the points' range (`:cut 0`), where its edges end in steep walls, then
+reach 3 bandwidths past them (the default), then outline the quads of `:style :both`:
 
 
 ::: {.sourceClojure}
@@ -727,7 +713,8 @@ high), and the quad outlines' colour and width (outlines of `:style :both`):
 :::
 
 
-The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surface: seen from another side and from above, and with y reversed:
+The panels below apply the [3D frame](reference.shared_options.html#d-frame) options to a surface: they view it
+from another side and from above, then reverse y:
 
 
 ::: {.sourceClojure}
@@ -751,12 +738,6 @@ The [3D frame](reference.shared_options.html#d-frame) (Shared options) on a surf
 ::: {.clay-image}
 ![](reference.charts_multivariate_3d_files/image16.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#d-frame">3D frame</a> – <code>:view</code> <code>:aspect</code> <code>:box</code> <code>:axes</code> <code>:axis-titles</code> <code>:domain</code> <code>:reverse</code></li><li><a href="reference.shared_options.html#d-shading">3D shading</a> – <code>:ambient</code> <code>:light</code></li></ul></div>
-```
 
 
 

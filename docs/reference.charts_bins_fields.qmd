@@ -49,8 +49,9 @@ code-block-background: true
 
 # 2D bins and fields
 
-Charts that colour a plane, for dense points or a surface: a cell per row (`tile`), counts in 2D bins (`bin2d`),
-a field as a raster (`field`) or as level lines (`contour`).
+These charts colour a plane: a cell per row (`tile`), counts in 2D bins (`bin2d`), and a field as a raster
+(`field`) or as level lines (`contour`). Use them for points too dense to draw one by one, or for a value over two
+variables.
 
 
 ::: {.sourceClojure}
@@ -113,19 +114,7 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 ```
 
 
-
-## tile
-
-A cell per row at its x and y, filled by a mapped colour: numeric (a gradient) or categorical (a palette).
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>cell x position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>cell y position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)</td></tr><tr><td>:color (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>cell fill: numeric (a gradient and colour bar) or categorical (a palette and legend); nil - the NA colour</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>cell size: each cell shrinks by :cell-scale times its size over the size scale's largest</td></tr></tbody></table>
-```
-
-:::
-
+The table below holds made-up visits per hour of a working week; the heatmaps use it:
 
 
 ::: {.sourceClojure}
@@ -140,6 +129,24 @@ A cell per row at its x and y, filled by a mapped colour: numeric (a gradient) o
 
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>day</th><th>hour</th><th>visits</th></tr></thead><tbody><tr><td>Mon</td><td>8</td><td>13</td></tr><tr><td>Mon</td><td>9</td><td>16</td></tr><tr><td>Mon</td><td>10</td><td>19</td></tr><tr><td>Mon</td><td>11</td><td>22</td></tr><tr><td>Mon</td><td>12</td><td>40</td></tr><tr><td>Mon</td><td>13</td><td>43</td></tr><tr><td>Mon</td><td>14</td><td>10</td></tr><tr><td>Mon</td><td>15</td><td>13</td></tr><tr><td>Mon</td><td>16</td><td>16</td></tr><tr><td>Mon</td><td>17</td><td>19</td></tr><tr><td>Tue</td><td>8</td><td>16</td></tr><tr><td>Tue</td><td>9</td><td>22</td></tr><tr><td>Tue</td><td>10</td><td>28</td></tr><tr><td>Tue</td><td>11</td><td>13</td></tr><tr><td>Tue</td><td>12</td><td>34</td></tr><tr><td>Tue</td><td>13</td><td>40</td></tr><tr><td>Tue</td><td>14</td><td>10</td></tr><tr><td>Tue</td><td>15</td><td>16</td></tr><tr><td>Tue</td><td>16</td><td>22</td></tr><tr><td>Tue</td><td>17</td><td>28</td></tr><tr><td>Wed</td><td>8</td><td>19</td></tr><tr><td>Wed</td><td>9</td><td>28</td></tr><tr><td>Wed</td><td>10</td><td>16</td></tr><tr><td>Wed</td><td>11</td><td>25</td></tr><tr><td>Wed</td><td>12</td><td>28</td></tr><tr><td>Wed</td><td>13</td><td>37</td></tr><tr><td>Wed</td><td>14</td><td>10</td></tr><tr><td>Wed</td><td>15</td><td>19</td></tr><tr><td>Wed</td><td>16</td><td>28</td></tr><tr><td>Wed</td><td>17</td><td>16</td></tr><tr><td>Thu</td><td>8</td><td>22</td></tr><tr><td>Thu</td><td>9</td><td>13</td></tr><tr><td>Thu</td><td>10</td><td>25</td></tr><tr><td>Thu</td><td>11</td><td>16</td></tr><tr><td>Thu</td><td>12</td><td>43</td></tr><tr><td>Thu</td><td>13</td><td>34</td></tr><tr><td>Thu</td><td>14</td><td>10</td></tr><tr><td>Thu</td><td>15</td><td>22</td></tr><tr><td>Thu</td><td>16</td><td>13</td></tr><tr><td>Thu</td><td>17</td><td>25</td></tr><tr><td>Fri</td><td>8</td><td>25</td></tr><tr><td>Fri</td><td>9</td><td>19</td></tr><tr><td>Fri</td><td>10</td><td>13</td></tr><tr><td>Fri</td><td>11</td><td>28</td></tr><tr><td>Fri</td><td>12</td><td>37</td></tr><tr><td>Fri</td><td>13</td><td>31</td></tr><tr><td>Fri</td><td>14</td><td>10</td></tr><tr><td>Fri</td><td>15</td><td>25</td></tr><tr><td>Fri</td><td>16</td><td>19</td></tr><tr><td>Fri</td><td>17</td><td>13</td></tr></tbody></table></div>
+```
+
+
+
+## Heatmaps
+
+`chart/tile` draws a cell per row at its x and y, filled by the mapped colour: numbers through a gradient,
+categories through a palette. Use it for a value over two variables, e.g. a matrix or a week of hours.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+```
+
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each cell: categorical values give a cell per level; numbers centre cells on the values, as wide as the smallest gap between them.</li><li><code>:y</code> <span class="required">required</span> – The y of each cell: categorical values give a cell per level; numbers centre cells on the values, as tall as the smallest gap between them.</li><li><code>:color</code> <span class="required">required</span> – Fills each cell: numbers through a gradient with a colour bar, categorical values through a palette with a legend; <code>nil</code> takes the NA colour.</li><li><code>:size</code> – Shrinks each cell by <code>:cell-scale</code> times its size over the size scale's largest.</li></ul></div>
 ```
 
 
@@ -160,16 +167,13 @@ A cell per row at its x and y, filled by a mapped colour: numeric (a gradient) o
 :::
 
 
-Its own option writes the value in each cell (black or white by the fill, the `:tile-value` text role); the cell
-shape and outline are the [Cell style](reference.shared_options.html#cell-style) group:
+This option writes the value in each cell, in the `:tile-value` text role; the cell shape and outline are the [Cell
+style](reference.shared_options.html#cell-style) group. The panels below write the values, then a word above 30:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value-label</td><td>true or false or a function</td><td>false</td><td>label in each cell: true (the colour value, numbers to 2 decimals) or a function of {:value :x :y} returning the text (nil - none), drawn in black or white by the fill under it</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:value-label</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/tile {:value-label true})</code></div><div class="option-text">Writes a label in each cell, in the <code>:tile-value</code> text role: by default black or white by the fill under it.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The colour value; numbers to at most 2 decimals.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:value :x :y}</code> that returns the text; <code>nil</code> writes none.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -197,16 +201,13 @@ shape and outline are the [Cell style](reference.shared_options.html#cell-style)
 :::
 
 
-A mapped `:size` shrinks each cell by its value; with the colour mapped to another variable the size legend's keys
-have no colour of their own - their fill is a theme key of `[:chart :tile]`, not an option:
+A mapped `:size` shrinks each cell by its value. With the colour mapped to another variable, the size legend's keys
+have no colour of their own: a theme key fills them. The plot below fills them orange:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size-key-fill</td><td>a clojure2d color or :none</td><td>[180 180 180]</td><td>fill of a size legend key without a colour (theme only, not an option)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – fill of a size legend key without a colour (theme only, not an option)</li></ul></div>
 ```
-
-:::
 
 
 
@@ -228,23 +229,21 @@ have no colour of their own - their fill is a theme key of `[:chart :tile]`, not
 
 
 
+## 2D bins
+
+`chart/bin2d` counts points in cells, hexagons by default, and colours each cell by its count or another measure.
+Use it when points are too many to draw: the colour shows where they crowd.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## bin2d
-
-A 2D histogram: points counted in rectangular cells, the count (or another measure) as the cell colour.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>point x positions (numbers)</td></tr><tr><td>:y (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>point y positions (numbers)</td></tr><tr><td>:color</td><td>nil</td><td></td><td>must be nil (the cell colour is the measure): set it so in the chart's mapping when the plot maps :color</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point, a number.</li><li><code>:y</code> <span class="required">required</span> – The y of each point, a number.</li><li><code>:color</code> – Must be <code>nil</code>: the cell colour shows <code>:measure</code>. Set <code>:color nil</code> in the chart's own mapping when the plot maps <code>:color</code>.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -264,16 +263,13 @@ A 2D histogram: points counted in rectangular cells, the count (or another measu
 :::
 
 
-Its options: the number of cells (or a fastmath estimate), a cell width in data units, the cells' height / width
-ratio and what the colour measures:
+These options set the cell size (by a rule, a count or a width), the shape of the binning space and what the colour
+measures. The panels below use 10 cells across, a cell width in a flatter space, and percentages:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:bins</td><td>one of :scott-correlated :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto or a positive integer</td><td>:scott-correlated</td><td>cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)</td></tr><tr><td>:binwidth</td><td>a positive finite number</td><td></td><td>cell size in x data units (log10 units on a :log axis); wins over :bins</td></tr><tr><td>:aspect</td><td>a positive finite number</td><td>the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout</td><td>height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)</td></tr><tr><td>:measure</td><td>one of :count :percent :pmf :density</td><td>:count</td><td>the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: <code>:scott-correlated</code></span></dt><dd><div class="option-example"><code>(chart/bin2d {:bins :scott})</code></div><div class="option-text">How big the cells are. The rules estimate a cell area from the points; <code>:binwidth</code> wins over this option.<ul><li><code>:scott-correlated</code> – The normal-reference rule taking the axes' correlation into account; smaller cells than <code>:scott</code> for correlated points.</li><li><code>:scott</code> – The normal-reference rule for uncorrelated points.</li><li><code>:freedman-diaconis</code> – <code>:scott</code> with each standard deviation replaced by <code>IQR / 1.349</code>; robust to outliers.</li><li><code>:cross-validation</code> – The cell size that minimises a cross-validated estimate of the error.</li><li><code>:shimazaki-shinomoto</code> – The cell size that minimises the Shimazaki-Shinomoto cost.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – That many cells across the x range.</li></ul></div></dd></div><div class="option-card"><dt><code>:binwidth</code><span class="option-default">Default: None: <code>:bins</code> sizes the cells.</span></dt><dd><div class="option-example"><code>(chart/bin2d {:binwidth 1})</code></div><div class="option-text">The cell size in x data units, in log10 units on a <code>:log</code> axis; it wins over <code>:bins</code>.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:aspect</code><span class="option-default">Default: The panel's height over its width, estimated from the plot size and facet layout; with the plot's <code>:aspect :iso</code>, the y span over the x span.</span></dt><dd><div class="option-example"><code>(chart/bin2d {:aspect 3})</code></div><div class="option-text">The height-to-width ratio of the space the chart bins in; cells look regular when it matches the panel's.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:measure</code><span class="option-default">Default: <code>:count</code></span></dt><dd><div class="option-example"><code>(chart/bin2d {:measure :percent})</code></div><div class="option-text">What a cell's colour shows.<ul><li><code>:count</code> – The number of points in the cell.</li><li><code>:percent</code> – The cell's share of the panel's points in percent.</li><li><code>:pmf</code> – The cell's share of the panel's points as a fraction.</li><li><code>:density</code> – The share divided by the cell area, in log10 units on a <code>:log</code> axis.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -304,7 +300,7 @@ ratio and what the colour measures:
 :::
 
 
-The fastmath estimates of the grid (the default `:scott-correlated` above) - each picks its own cell count:
+The next panels compare the other rules (the default `:scott-correlated` is above); each picks its own cell size:
 
 
 ::: {.sourceClojure}
@@ -340,8 +336,8 @@ The fastmath estimates of the grid (the default `:scott-correlated` above) - eac
 :::
 
 
-The other measures: the share of the panel's points (`:pmf`) and the density - the count over n times the cell
-area (the legend shows the scale):
+The last panels colour by the share of the panel's points (`:pmf`) and by the density; their legends show the
+scales:
 
 
 ::: {.sourceClojure}
@@ -366,24 +362,22 @@ area (the legend shows the scale):
 
 
 
+## Raster fields
+
+`chart/field` draws a scalar field as a raster: the density of mapped points, gridded values interpolated, or a
+function of a point (the [Fields](reference.shared_options.html#fields) group). Use it to show a smooth value over
+a plane, coloured through the colour scale.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## field
-
-A raster of a scalar field: the density of mapped points, gridded `:value`s interpolated, or a function of a
-point (the [Fields](reference.shared_options.html#fields) group).
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x of the points (density) or of the gridded data</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y of the points (density) or of the gridded data</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)</td></tr><tr><td>:color</td><td>nil</td><td></td><td>must be nil (the colour is the field's value): set it so in the chart's mapping when the plot maps :color</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the points whose density the chart estimates, or of the gridded values.</li><li><code>:y</code> – The y of the points whose density the chart estimates, or of the gridded values.</li><li><code>:value</code> – The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points.</li><li><code>:color</code> – Must be <code>nil</code>: the colour shows the field's value. Set <code>:color nil</code> in the chart's own mapping when the plot maps <code>:color</code>.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -409,15 +403,13 @@ point (the [Fields](reference.shared_options.html#fields) group).
 :::
 
 
-Its options: the raster's opacity, or a colour per pixel computed by a function (no field, no colour scale):
+These options set the raster's opacity, or colour each pixel by a function instead of a field. The panels below draw
+a translucent density under the points, then a colour per point of a disc:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha-factor</td><td>a number in [0 1]</td><td>1.0</td><td>factor multiplying the colours' alpha</td></tr><tr><td>:pixel-color</td><td>a function</td><td></td><td>a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over :domain, no grid, colour scale or legend; not with :f</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/field {:alpha-factor 0.4})</code></div><div class="option-text">How opaque the raster is: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:pixel-color</code><span class="option-default">Default: None: the field's value colours the raster through the colour scale.</span></dt><dd><div class="option-example"><code>(chart/field {:domain {:x [-1 1], :y [-1 1]}, :pixel-color (fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))})</code></div><div class="option-text">Colours each pixel by a function of its point <code>[x y]</code> instead of a field, <code>nil</code> leaving it transparent: a raster over <code>:domain</code> (else the plot's x and y domains) with no colour scale or legend. A chart with <code>:f</code> rejects it.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -447,8 +439,8 @@ Its options: the raster's opacity, or a colour per pixel computed by a function 
 
 ### Field sources
 
-The [Fields](reference.shared_options.html#fields) group gives the field. A function of a point `[x y]` sampled
-over a `:domain` on a grid of `:n` points per axis (a coarse grid shows its cells):
+The [Fields](reference.shared_options.html#fields) group gives the field. The panels below sample a function of a
+point `[x y]` over a `:domain`, then on a coarse grid of 12 points per axis, which shows its cells:
 
 
 ::: {.sourceClojure}
@@ -471,7 +463,7 @@ over a `:domain` on a grid of `:n` points per axis (a coarse grid shows its cell
 :::
 
 
-Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:
+The chart interpolates gridded values between the lattice points, here of a 5 x 5 lattice:
 
 
 ::: {.sourceClojure}
@@ -515,8 +507,8 @@ Gridded values are interpolated between the lattice points - here a 5 x 5 lattic
 :::
 
 
-The density of mapped points: its kernel and bandwidth, a binned estimate (faster on many points), and how far
-the domain reaches past the points (`:cut`, in bandwidths):
+The next panels change the density estimate of mapped points: its kernel and bandwidth, a binned estimate (faster on many
+points), and how far the domain reaches past the points (`:cut`, in bandwidths):
 
 
 ::: {.sourceClojure}
@@ -548,24 +540,21 @@ the domain reaches past the points (`:cut`, in bandwidths):
 
 
 
+## Contour lines
+
+`chart/contour` draws the level lines, or filled bands, of a scalar field from the same sources as `chart/field`;
+categorical groups give a field each. Use it to read heights off a field, or to compare the densities of groups.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## contour
-
-Level lines (or filled bands) of a scalar field - the same sources as `field`; categorical groups give a field
-each.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x of the points (density) or of the gridded data</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y of the points (density) or of the gridded data</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>categorical groups, each its own field with lines in its colour (else the lines are coloured by level)</td></tr><tr><td>:dash</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each its own field with lines in its dash style</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own field</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the points whose density the chart estimates, or of the gridded values.</li><li><code>:y</code> – The y of the points whose density the chart estimates, or of the gridded values.</li><li><code>:value</code> – The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points.</li><li><code>:color</code> – Splits the rows into categorical groups, each its own field with lines in its colour; unmapped, the lines are coloured by level.</li><li><code>:dash</code> – Splits the rows into groups, each its own field with lines in its dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own field.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -591,16 +580,13 @@ each.
 :::
 
 
-Its options: the levels (a count or the values), filled bands instead of lines, labels on the lines, one line
-colour and the opacity:
+These options set the levels, filled bands instead of lines, labels on the lines, one line colour and the opacity.
+The panels below label lines at given heights, then fill 8 bands:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td><td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td></tr><tr><td>:alpha-factor</td><td>a number in [0 1]</td><td>1.0; the theme's; grouped filled contours take half of it</td><td>factor multiplying the colours' alpha</td></tr><tr><td>:levels</td><td>integer (1..1000) or vector of a finite number (at least 1)</td><td>10</td><td>contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values</td></tr><tr><td>:filled</td><td>true or false</td><td>false</td><td>fill the region at or above each level, each band coloured by its middle value, instead of drawing lines</td></tr><tr><td>:labels</td><td>true or false or a function or nil</td><td>false</td><td>line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme); Lines coloured by level; grouped lines without a mapped colour take the theme's colour, lines grouped by <code>:color</code> their group's.</span></dt><dd><div class="option-example"><code>(chart/contour {:color :black})</code></div><div class="option-text">One colour for every line or band, instead of colouring them by level; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Nothing drawn, unless <code>:color</code> is mapped.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme); The theme's; grouped filled contours take half of it.</span></dt><dd><div class="option-example"><code>(chart/contour {:alpha-factor 0.3})</code></div><div class="option-text">How opaque the lines or bands are: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:levels</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(chart/contour {:levels 4})</code></div><div class="option-text">The values at which the chart draws contours.<ul><li><span>integer at least 1 and at most 1000</span> – That many levels, evenly spread over the range of the sampled values, the ends left out.</li><li><span>vector of finite numbers</span> – The level values, e.g. <code>[0.1 0.2 0.4]</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:filled</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/contour {:filled true})</code></div><div class="option-text">Whether the chart fills bands between levels instead of drawing lines.<ul><li><code>false</code> – Draws lines.</li><li><code>true</code> – Fills the region at or above each level; coloured by level, each band takes the colour of its middle value.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/contour {:labels true})</code></div><div class="option-text">Writes its level on each line; filled contours reject the option.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The level as a number.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:level v}</code> that returns the text; <code>nil</code> writes none.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -629,8 +615,8 @@ colour and the opacity:
 
 ### Contour sources
 
-The same sources as `field`: a function over a domain (lines on a coarse grid are angular), interpolated gridded
-values and a density with its own bandwidth:
+The panels below take the sources of `chart/field`: a function over a domain (its lines angular on a coarse grid),
+interpolated gridded values and a density with its own bandwidth:
 
 
 ::: {.sourceClojure}
@@ -662,12 +648,6 @@ values and a density with its own bandwidth:
 ::: {.clay-image}
 ![](reference.charts_bins_fields_files/image14.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
-```
 
 
 

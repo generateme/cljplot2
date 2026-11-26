@@ -76,7 +76,7 @@
 
 (plot/find-palette #"tableau")
 
-;; Swatches of a few palettes, a [tile](reference.charts_bins_fields.html#tile) per colour (an `:identity` colour
+;; Swatches of a few palettes, a [tile](reference.charts_bins_fields.html#heatmaps) per colour (an `:identity` colour
 ;; scale reads the colours from the data):
 
 (def palettes (plot/find-palette #"^:(rcartocolor/(Bold|Pastel|Vivid|Prism)|tableau-10)$"))

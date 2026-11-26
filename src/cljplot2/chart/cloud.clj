@@ -86,9 +86,13 @@
   [(schema/optional :projection-alpha-factor {:description "alpha factor of projected points (their style's colour)"} schema/fraction)
    (schema/optional :band-alpha-factor {:description "alpha factor of a projected density band (the chart's colour)"} schema/fraction)])
 
+(def ^:private projection-meanings
+  "Value meanings of a wall's projection."
+  {:points "The rows as points." :density "Bands of the rows' kernel density." :contour "Lines of the rows' kernel density."})
+
 (def ^:private line-width-entries
   "Map entries (one) of the width of spikes and lines."
-  [(schema/optional :line-width {:description "width in pixels of spikes and lines"} schema/non-neg)])
+  [(schema/optional :line-width {:description "The width of spikes and lines in pixels." :cljplot2/example 3 :cljplot2/example-context {:type :spikes}} schema/non-neg)])
 
 (def schemas
   "Schemas of the cloud chart: `:style` (theme `[:chart :cloud]`), `:options`, `:mapping` (merged)."
@@ -104,44 +108,53 @@
                  (into theme/theme-style-entries)
                  (into space/frame-options)
                  (into space/shading-options)
-                 (conj (schema/optional :type {:cljplot2/section :marks :description (str "marks: :points, :spikes (a line from :base to each point), "
-                                                                 ":lines (points joined in data order per :group), "
-                                                                 ":bars (a box per row from :base to z) or :none (only :projections)")
-                                               :default :points}
+                 (conj (schema/optional :type {:cljplot2/section :marks :description "The mark drawn for each row."
+                                               :default :points
+                                               :cljplot2/value-meanings {:points "A point." :spikes "A line from `:base` to the point."
+                                                                         :lines "Points joined in data order, a line per `:group`."
+                                                                         :bars "A box from `:base` to the row's z." :none "No marks; only `:projections`."}}
                                         [:enum :points :spikes :lines :bars :none])
-                       (schema/optional :base {:cljplot2/section :marks :description "z where spikes and bars start (kept within an explicit z domain)"
-                                               :cljplot2/default-doc "the low z limit (0 with :bins)"}
+                       (schema/optional :base {:cljplot2/section :marks :description "The z where spikes and bars start, kept within an explicit z domain."
+                                               :cljplot2/default-doc "The low z limit; `0` with `:bins`." :cljplot2/example 2
+                                               :cljplot2/example-context {:type :spikes}}
                                         schema/finite)
-                       (schema/optional :bar-size {:cljplot2/section :marks :description "bar footprint [fx fy], fractions of the x / y resolution (of a cell with :bins)"
-                                                   :default [0.8 0.8]}
+                       (schema/optional :bar-size {:cljplot2/section :marks :description "The footprint `[fx fy]` of each bar, as fractions of the x and y resolution (of a cell with `:bins`)."
+                                                   :default [0.8 0.8] :cljplot2/example [0.3 0.3] :cljplot2/example-context {:type :bars}}
                                         [:tuple schema/fraction schema/fraction])
-                       (schema/optional :projections {:cljplot2/section :marks :description "side projections of the points on the far walls, per plane"}
+                       (schema/optional :projections {:cljplot2/section :marks :description "Side views of the rows on the far walls, one entry per wall."}
                                         [:map {:closed true}
-                                         (schema/optional :xy {:description "xy wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                         (schema/optional :xy {:description "What the xy wall shows." :cljplot2/default-doc "Nothing."
+                                                               :cljplot2/value-meanings projection-meanings}
                                                           projection-kinds)
-                                         (schema/optional :xz {:description "xz wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                         (schema/optional :xz {:description "What the xz wall shows." :cljplot2/default-doc "Nothing."
+                                                               :cljplot2/value-meanings projection-meanings}
                                                           projection-kinds)
-                                         (schema/optional :yz {:description "yz wall: :points, :density (KDE bands) or :contour (KDE lines)"}
+                                         (schema/optional :yz {:description "What the yz wall shows." :cljplot2/default-doc "Nothing."
+                                                               :cljplot2/value-meanings projection-meanings}
                                                           projection-kinds)])
-                       (schema/optional :projection-grid {:cljplot2/section :marks :description "grid points per axis of a :density / :contour projection"
-                                                          :default default-projection-grid}
+                       (schema/optional :projection-grid {:cljplot2/section :marks :description "The number of grid points per axis of a `:density` or `:contour` projection."
+                                                          :default default-projection-grid :cljplot2/example 6
+                                                          :cljplot2/example-context {:projections {:xy :density}}}
                                         [:int {:min 2 :max 500}])
-                       (schema/optional :projection-levels {:cljplot2/section :marks :description "levels of the :density bands / :contour lines of the projections"
-                                                            :default default-projection-levels}
+                       (schema/optional :projection-levels {:cljplot2/section :marks :description "The number of levels of `:density` bands and `:contour` lines on the walls."
+                                                            :default default-projection-levels :cljplot2/example 2
+                                                            :cljplot2/example-context {:projections {:xy :contour}}}
                                         [:int {:min 1 :max 100}])
-                       (schema/optional :bins {:cljplot2/section :marks :description "a 2D histogram: rows counted on an [nx ny] grid over x / y, counts as z"}
+                       (schema/optional :bins {:cljplot2/section :marks :description "Makes the chart a 2D histogram: it counts the rows on an `[nx ny]` grid over x and y and draws the counts as z, with `:type :bars` or `:spikes`."
+                                               :cljplot2/default-doc "None: the rows' own z." :cljplot2/example [3 3]
+                                               :cljplot2/example-context {:type :bars}}
                                         [:tuple [:int {:min 1 :max 1000}] [:int {:min 1 :max 1000}]])))
              [#(when (and (:bins %) (not (#{:bars :spikes} (:type %)))) "counts of :bins are drawn as :type :bars or :spikes") [:bins]]
              [#(when (and (:bins %) (seq (:projections %))) "side :projections show the rows, not :bins counts") [:projections]]
              space/distance-rule)
    :mapping [:map
-             [:x {:description "x coordinate: numbers or categories"} schema/accessor]
-             [:y {:description "y coordinate: numbers or categories"} schema/accessor]
-             [:z {:optional true :description "z coordinate, numeric (not read with :bins)"} schema/accessor]
-             (schema/nilable :color {:description "point colour"} schema/accessor)
-             (schema/nilable :size {:description "point size"} schema/accessor)
-             (schema/nilable :shape {:description "point shape"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic, each its own line with :type :lines (not read by other types)"}
+             [:x {:description "The x of each row: numbers or categories."} schema/accessor]
+             [:y {:description "The y of each row: numbers or categories."} schema/accessor]
+             [:z {:optional true :description "The z of each row, a number; `:bins` doesn't read it."} schema/accessor]
+             (schema/nilable :color {:description "Colours each mark by the mapped value."} schema/accessor)
+             (schema/nilable :size {:description "Sizes each point by the mapped value."} schema/accessor)
+             (schema/nilable :shape {:description "Gives each point a shape by the mapped value."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own line with `:type :lines`; other types ignore it."}
                              schema/accessor)]})
 
 (def ^:private position-dims

@@ -195,7 +195,7 @@
 
 (nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
 
-;; A standalone matrix is a [tile](reference.charts_bins_fields.html#tile) per row (`:value-label` writes the
+;; A standalone matrix is a [tile](reference.charts_bins_fields.html#heatmaps) per row (`:value-label` writes the
 ;; values), two side by side through [`plot/arrange`](reference.facets_arrange.html#arrange). Tiles order the
 ;; categories as they first appear and y grows upward, so the scales give both axes the variable order - the first
 ;; variable on top, as in `plot/pairs`: Cohen's d of every ordered pair, the diagonal included (left; a signed

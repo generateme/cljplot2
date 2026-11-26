@@ -1,7 +1,8 @@
 ;; # 2D bins and fields
 
-;; Charts that colour a plane, for dense points or a surface: a cell per row (`tile`), counts in 2D bins (`bin2d`),
-;; a field as a raster (`field`) or as level lines (`contour`).
+;; These charts colour a plane: a cell per row (`tile`), counts in 2D bins (`bin2d`), and a field as a raster
+;; (`field`) or as level lines (`contour`). Use them for points too dense to draw one by one, or for a value over two
+;; variables.
 
 (ns reference.charts-bins-fields
   (:require [fastmath.core :as m]
@@ -28,11 +29,7 @@
 
 (nu/data-table iris)
 
-;; ## tile
-
-;; A cell per row at its x and y, filled by a mapped colour: numeric (a gradient) or categorical (a palette).
-
-(nu/options-table (describe/mapping (chart/tile)))
+;; The table below holds made-up visits per hour of a working week; the heatmaps use it:
 
 (def week-hours (for [[i day] (map-indexed vector ["Mon" "Tue" "Wed" "Thu" "Fri"]) hour (range 8 18)]
                   {:day day :hour hour
@@ -40,16 +37,25 @@
 
 (nu/data-table week-hours)
 
+;; ## Heatmaps
+
+;; `chart/tile` draws a cell per row at its x and y, filled by the mapped colour: numbers through a gradient,
+;; categories through a palette. Use it for a value over two variables, e.g. a matrix or a week of hours.
+
+(nu/shared-groups (describe/options (chart/tile)))
+
+(nu/mapping-list (describe/mapping (chart/tile)))
+
 (plot/render-image {:data week-hours
                     :mapping {:x :hour :y :day :color :visits}
                     :charts [(chart/tile)]
                     :scales {:y {:reverse true}}}
                    {:width 600 :height 300})
 
-;; Its own option writes the value in each cell (black or white by the fill, the `:tile-value` text role); the cell
-;; shape and outline are the [Cell style](reference.shared_options.html#cell-style) group:
+;; This option writes the value in each cell, in the `:tile-value` text role; the cell shape and outline are the [Cell
+;; style](reference.shared_options.html#cell-style) group. The panels below write the values, then a word above 30:
 
-(nu/options-table (describe/own-rows (describe/options (chart/tile))))
+(nu/option-cards 'chart/tile (describe/own-rows (describe/options (chart/tile))))
 
 (plot/render-image (plot/arrange [{:data week-hours
                                    :mapping {:x :hour :y :day :color :visits}
@@ -65,10 +71,10 @@
                                  {:columns 2 :widths [1 1.15]})
                    {:width 1000 :height 300})
 
-;; A mapped `:size` shrinks each cell by its value; with the colour mapped to another variable the size legend's keys
-;; have no colour of their own - their fill is a theme key of `[:chart :tile]`, not an option:
+;; A mapped `:size` shrinks each cell by its value. With the colour mapped to another variable, the size legend's keys
+;; have no colour of their own: a theme key fills them. The plot below fills them orange:
 
-(nu/options-table (describe/style-rows :tile [:size-key-fill]))
+(nu/theme-key-list :tile (describe/style-rows :tile [:size-key-fill]))
 
 (plot/render-image {:data week-hours
                     :mapping {:x :hour :y :day :color :day :size :visits}
@@ -77,13 +83,14 @@
                     :theme {:chart {:tile {:size-key-fill [200 120 60]}}}}
                    {:width 600 :height 300})
 
-(nu/shared-groups (describe/options (chart/tile)))
+;; ## 2D bins
 
-;; ## bin2d
+;; `chart/bin2d` counts points in cells, hexagons by default, and colours each cell by its count or another measure.
+;; Use it when points are too many to draw: the colour shows where they crowd.
 
-;; A 2D histogram: points counted in rectangular cells, the count (or another measure) as the cell colour.
+(nu/shared-groups (describe/options (chart/bin2d)))
 
-(nu/options-table (describe/mapping (chart/bin2d)))
+(nu/mapping-list (describe/mapping (chart/bin2d)))
 
 (plot/render-image {:data faithful
                     :mapping {:x :eruptions :y :waiting}
@@ -91,10 +98,10 @@
                     :labels {:x "eruption [min]" :y "waiting [min]"}}
                    {:width 600 :height 400})
 
-;; Its options: the number of cells (or a fastmath estimate), a cell width in data units, the cells' height / width
-;; ratio and what the colour measures:
+;; These options set the cell size (by a rule, a count or a width), the shape of the binning space and what the colour
+;; measures. The panels below use 10 cells across, a cell width in a flatter space, and percentages:
 
-(nu/options-table (describe/own-rows (describe/options (chart/bin2d))))
+(nu/option-cards 'chart/bin2d (describe/own-rows (describe/options (chart/bin2d))))
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -113,7 +120,7 @@
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 320})
 
-;; The fastmath estimates of the grid (the default `:scott-correlated` above) - each picks its own cell count:
+;; The next panels compare the other rules (the default `:scott-correlated` is above); each picks its own cell size:
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -138,8 +145,8 @@
                                  {:columns 2})
                    {:width 900 :height 600})
 
-;; The other measures: the share of the panel's points (`:pmf`) and the density - the count over n times the cell
-;; area (the legend shows the scale):
+;; The last panels colour by the share of the panel's points (`:pmf`) and by the density; their legends show the
+;; scales:
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -152,14 +159,15 @@
                                  {:columns 2})
                    {:width 900 :height 340})
 
-(nu/shared-groups (describe/options (chart/bin2d)))
+;; ## Raster fields
 
-;; ## field
+;; `chart/field` draws a scalar field as a raster: the density of mapped points, gridded values interpolated, or a
+;; function of a point (the [Fields](reference.shared_options.html#fields) group). Use it to show a smooth value over
+;; a plane, coloured through the colour scale.
 
-;; A raster of a scalar field: the density of mapped points, gridded `:value`s interpolated, or a function of a
-;; point (the [Fields](reference.shared_options.html#fields) group).
+(nu/shared-groups (describe/options (chart/field)))
 
-(nu/options-table (describe/mapping (chart/field)))
+(nu/mapping-list (describe/mapping (chart/field)))
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -173,9 +181,10 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 380})
 
-;; Its options: the raster's opacity, or a colour per pixel computed by a function (no field, no colour scale):
+;; These options set the raster's opacity, or colour each pixel by a function instead of a field. The panels below draw
+;; a translucent density under the points, then a colour per point of a disc:
 
-(nu/options-table (describe/own-rows (describe/options (chart/field))))
+(nu/option-cards 'chart/field (describe/own-rows (describe/options (chart/field))))
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -192,8 +201,8 @@
 
 ;; ### Field sources
 
-;; The [Fields](reference.shared_options.html#fields) group gives the field. A function of a point `[x y]` sampled
-;; over a `:domain` on a grid of `:n` points per axis (a coarse grid shows its cells):
+;; The [Fields](reference.shared_options.html#fields) group gives the field. The panels below sample a function of a
+;; point `[x y]` over a `:domain`, then on a coarse grid of 12 points per axis, which shows its cells:
 
 (plot/render-image (plot/arrange [{:charts [(chart/field {:f (fn [[x y]] (m/sin (+ (* x x) (* y y))))
                                                           :domain {:x [-2 2] :y [-2 2]}})]
@@ -205,7 +214,7 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 900 :height 380})
 
-;; Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:
+;; The chart interpolates gridded values between the lattice points, here of a 5 x 5 lattice:
 
 (def lattice (for [x (range 5) y (range 5)] {:x x :y y :z (* (m/sin x) (m/cos (* 0.8 y)))}))
 
@@ -228,8 +237,8 @@
                                  {:columns 3 :widths [1 1 1.25]})
                    {:width 1000 :height 320})
 
-;; The density of mapped points: its kernel and bandwidth, a binned estimate (faster on many points), and how far
-;; the domain reaches past the points (`:cut`, in bandwidths):
+;; The next panels change the density estimate of mapped points: its kernel and bandwidth, a binned estimate (faster on many
+;; points), and how far the domain reaches past the points (`:cut`, in bandwidths):
 
 (plot/render-image (plot/arrange [{:data faithful
                                    :mapping {:x :eruptions :y :waiting}
@@ -249,14 +258,14 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-(nu/shared-groups (describe/options (chart/field)))
+;; ## Contour lines
 
-;; ## contour
+;; `chart/contour` draws the level lines, or filled bands, of a scalar field from the same sources as `chart/field`;
+;; categorical groups give a field each. Use it to read heights off a field, or to compare the densities of groups.
 
-;; Level lines (or filled bands) of a scalar field - the same sources as `field`; categorical groups give a field
-;; each.
+(nu/shared-groups (describe/options (chart/contour)))
 
-(nu/options-table (describe/mapping (chart/contour)))
+(nu/mapping-list (describe/mapping (chart/contour)))
 
 (plot/render-image (plot/arrange [{:data volcano
                                    :mapping {:x :column :y :row :value :height}
@@ -270,10 +279,10 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
-;; Its options: the levels (a count or the values), filled bands instead of lines, labels on the lines, one line
-;; colour and the opacity:
+;; These options set the levels, filled bands instead of lines, labels on the lines, one line colour and the opacity.
+;; The panels below label lines at given heights, then fill 8 bands:
 
-(nu/options-table (describe/own-rows (describe/options (chart/contour))))
+(nu/option-cards 'chart/contour (describe/own-rows (describe/options (chart/contour))))
 
 (plot/render-image (plot/arrange [{:data volcano
                                    :mapping {:x :column :y :row :value :height}
@@ -289,8 +298,8 @@
 
 ;; ### Contour sources
 
-;; The same sources as `field`: a function over a domain (lines on a coarse grid are angular), interpolated gridded
-;; values and a density with its own bandwidth:
+;; The panels below take the sources of `chart/field`: a function over a domain (its lines angular on a coarse grid),
+;; interpolated gridded values and a density with its own bandwidth:
 
 (plot/render-image (plot/arrange [{:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y) (* x y)))
                                                             :domain {:x [-2 2] :y [-2 2]} :labels true})]
@@ -312,5 +321,3 @@
                                    :labels {:title ":bandwidth [0.15 3] :cut 1"}}]
                                  {:columns 2 :widths [1 1.25]})
                    {:width 900 :height 640})
-
-(nu/shared-groups (describe/options (chart/contour)))

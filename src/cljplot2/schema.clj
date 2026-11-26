@@ -22,7 +22,7 @@
   Functions and vars:
 
   - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; [[named-types]] - the schema layer's documented named types; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
-  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]], [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
+  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]] ([[rule?]]), [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
   - Checking: [[errors]], [[explain!]], [[check-options!]], [[throw-errors!]], [[fail!]] (built by [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly)."
   (:refer-clojure :exclude [accessor])
   (:require [clojure.string :as str]
@@ -489,15 +489,26 @@
   - `schema`: the base schema.
   - `rules`: each `[problem path]` - `problem` a function of the value returning `nil` when valid, else the error message; `path` (may be `nil`) appended to the error's `:in`.
 
-  Returns `[:and schema rule-schemas...]`. A rule sees only values valid for `schema` (others get `schema`'s errors), so it may rely on their shape; an exception a rule throws is a bug and propagates."
+  Returns `[:and schema rule-schemas...]`, each rule a `:fn` schema marked `:cljplot2/rule` (see [[rule?]]). A rule sees only values valid for `schema` (others get `schema`'s errors), so it may rely on their shape; an exception a rule throws is a bug and propagates."
   [schema & rules]
   (let [valid? (malli/validator schema)]
     (into [:and schema]
           (map (fn [[problem path]]
                  (let [check (fn [v] (when (valid? v) (problem v)))]
-                   [:fn (cond-> {:error/fn (fn [{:keys [value]} _] (check value))} path (assoc :error/path path))
+                   [:fn (cond-> {:error/fn (fn [{:keys [value]} _] (check value)) :cljplot2/rule true} path (assoc :error/path path))
                     #(nil? (check %))])))
           rules)))
+
+(defn rule?
+  "Tests whether a schema is a rule of [[with-rules]] (a relation over the whole value, stated by its entry's description, not a type).
+
+  Parameters:
+
+  - `s`: a malli schema.
+
+  Returns true for a rule, else false."
+  [s]
+  (true? (:cljplot2/rule (malli/properties (malli/schema s)))))
 
 (defn forbidden
   "Creates a schema rejecting every value of its map entry - a key reserved for internal use or not taken.

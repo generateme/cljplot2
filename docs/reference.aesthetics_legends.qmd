@@ -222,7 +222,7 @@ or a namespace and one); `plot/palette` gives a palette's colours, `plot/gradien
 :::
 
 
-Swatches of a few palettes, a [tile](reference.charts_bins_fields.html#tile) per colour (an `:identity` colour
+Swatches of a few palettes, a [tile](reference.charts_bins_fields.html#heatmaps) per colour (an `:identity` colour
 scale reads the colours from the data):
 
 

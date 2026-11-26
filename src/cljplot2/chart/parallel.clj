@@ -54,7 +54,7 @@
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`, `:dash`) and `:group`; a line per
   row, in its group's style.
 
-  Functions: [[schemas]] - the chart's schemas; [[scalings]], [[robust-spreads]] - the scaling values; [[variable-key]], [[variable-label]] - a variable's limits key and label; [[variable-axes]] - the axes over the rows; [[compute]] - per panel the scaled lines; [[smooth-segment]] - a smooth connection between axes; [[axis-ticks]] - an axis's ticks and labels; [[draw]] - one panel; [[legend]] - the key glyph."
+  Functions: [[schemas]] - the chart's schemas; [[variable-schema]] - the option type of a variable; [[scalings]], [[robust-spreads]] - the scaling values; [[variable-key]], [[variable-label]] - a variable's limits key and label; [[variable-axes]] - the axes over the rows; [[compute]] - per panel the scaled lines; [[smooth-segment]] - a smooth connection between axes; [[axis-ticks]] - an axis's ticks and labels; [[draw]] - one panel; [[legend]] - the key glyph."
   (:require [fastmath.core :as m]
             [fastmath.stats :as stats]
             [fastmath.vector :as v]
@@ -88,10 +88,13 @@
   [v]
   (and (vector? v) (m/== 2 (count v)) (string? (first v)) (or (keyword? (second v)) (fn? (second v)))))
 
-(def ^:private variable
+(def variable-schema
   "Schema of one `:variables` entry: a keyword or a `[label accessor]` pair."
   (schema/named-type ::variable #(or (keyword? %) (labelled-variable? %))
-                     "should be a keyword or a [label accessor] pair (a string and a keyword or function)"))
+                     "should be a keyword or a [label accessor] pair (a string and a keyword or function)"
+                     {:cljplot2/type-doc "a keyword or a [label accessor] pair (a string and a keyword or function)"
+                      :cljplot2/type-name "variable"
+                      :cljplot2/type-meaning "A column of wide rows, one axis of a parallel coordinates chart: a keyword, labelled by its name, or a `[label accessor]` pair, e.g. `[\"petal length\" :petal-length]`."}))
 
 (defn- variable-key
   "Gives the key of a `:variables` entry in `:limits`.
@@ -134,7 +137,7 @@
 
 (def ^:private variables
   "Schema of `:variables`: at least two entries with different labels."
-  (schema/with-rules [:vector variable]
+  (schema/with-rules [:vector variable-schema]
     [#(when (m/< (count %) 2) "should have at least 2 variables") nil]
     [duplicate-labels nil]))
 
@@ -146,17 +149,33 @@
   "Named `:robust-spread` estimators (`fastmath.stats/robust-stddev` methods)."
   #{:mad :iqr :sn :qn :tukey :biweight :stddev :meanad :gini})
 
+(defn- robust-spread-form
+  "Gives the form of a `:robust-spread` value, the `:multi` branch that checks it.
+
+  Parameters:
+
+  - `v`: any value.
+
+  Returns `:estimator` for a keyword, `:quantile` for a finite number, else `:invalid`."
+  [v]
+  (cond (keyword? v) :estimator (schema/finite? v) :quantile :else :invalid))
+
 (def ^:private robust-spread-schema
-  "Schema of `:robust-spread`: a named estimator or a quantile in (0 0.5)."
-  (schema/named-type ::robust-spread #(or (contains? robust-spreads %) (and (schema/finite? %) (m/< 0.0 (double %) 0.5)))
-                     (str "should be one of " (pr-str (vec (sort robust-spreads))) " or a quantile p, 0 < p < 0.5")))
+  "Schema of `:robust-spread`: a named estimator or a quantile in (0 0.5); each invalid value gets one error (a keyword as a name, a number as a quantile, anything else a message naming both forms)."
+  [:multi {:dispatch robust-spread-form}
+   [:estimator (into [:enum] (sort robust-spreads))]
+   [:quantile [:and schema/finite [:> 0] [:< 0.5]]]
+   [:invalid (schema/forbidden "should be an estimator keyword or a quantile p, 0 < p < 0.5")]])
 
 (def ^:private style-entries
   "Map entries of the parallel style (theme `[:chart :parallel]`; also options): the line style, the radar fill and its alpha, the pattern."
   (into (conj polyline/style-entries
-              (schema/optional :fill {:cljplot2/section :style :description "radar polygon fill (polar only): :none, :color (the line's colour, its own alpha times :alpha) or a colour"}
+              (schema/optional :fill {:cljplot2/section :style :description "Fills each complete row's polygon of a radar chart, in a polar plot; parallel coordinates in a cartesian plot reject a fill other than `:none`."
+                                      :cljplot2/value-meanings {:color "The line colour, faded by `:alpha`." :none "No fill."}}
                                [:or [:= :color] schema/color])
-              (schema/optional :alpha {:cljplot2/section :style :description "factor of the line colour's alpha filling :fill :color"} schema/fraction))
+              (schema/optional :alpha {:cljplot2/section :style :description "How opaque the radar fill is with `:fill :color`; it multiplies the line colour's alpha."
+                                       :cljplot2/example 0.5 :cljplot2/example-context {:fill :color}}
+                               schema/fraction))
         draw/pattern-style-entries))
 
 (defn- unknown-limits
@@ -173,6 +192,21 @@
           unknown (remove ks (keys lims))]
       (when (seq unknown)
         (str ":limits keys should be variables (keywords, or pair labels), unknown: " (pr-str (vec unknown)))))))
+
+(def ^:private example-variables
+  "The `:variables` every option example of the chart needs (the option is required)."
+  {:variables [:mpg :hp :wt]})
+
+(defn- with-example-variables
+  "Gives map entries whose option examples carry `:variables`, so each card example is a complete chart.
+
+  Parameters:
+
+  - `entries` (sequence): map entries `[k props schema]`.
+
+  Returns the entries with [[example-variables]] merged under each one's `:cljplot2/example-context` (its own keys win)."
+  [entries]
+  (map (fn [[k props s]] [k (update props :cljplot2/example-context #(merge example-variables %)) s]) entries))
 
 (defn- needs
   "Makes an options rule: an option is used only when a predicate of the options holds.
@@ -192,48 +226,65 @@
   {:style (into [:map {:closed true}] style-entries)
    :options (schema/with-rules
               (-> [:map {:closed true}]
-                  (into style-entries)
+                  (into (with-example-variables style-entries))
                   (into data/common-options)
                   (into theme/theme-style-entries)
-                  (conj [:variables {:cljplot2/section :axes :description "the variables in axis order: keywords or [label accessor] pairs (2 or more)"}
+                  (into (with-example-variables
+                         [[:variables {:cljplot2/section :axes :description "The variables, one axis each, in axis order: at least 2, their labels all different."
+                                     :cljplot2/example [:mpg :wt :hp]}
                          variables]
-                        (schema/optional :scaling {:cljplot2/section :axes :description "per variable scaling: :uniminmax (0..1), :std, :robust, :center or :globalminmax"
-                                                   :default :uniminmax}
+                        (schema/optional :scaling {:cljplot2/section :axes :description "How the chart scales each variable's values onto its axis."
+                                                   :default :uniminmax
+                                                   :cljplot2/value-meanings {:uniminmax "From the low to the high end of the variable's domain (its data range or `:limits`), every axis spanning 0 to 1."
+                                                                             :std "Standard scores: `(v - mean) / sd`." :center "Centred on the mean: `v - mean`."
+                                                                             :robust "`(v - centre) / spread`, by `:robust-center` and `:robust-spread`."
+                                                                             :globalminmax "The values as they are, on one common scale."}}
                                          (into [:enum] (sort scalings)))
-                        (schema/optional :limits {:cljplot2/section :axes :description "explicit variable domains {key [lo hi]}, key - the keyword or the pair's label"
-                                                  :cljplot2/default-doc "each variable's finite data range"}
-                                         [:map-of any? schema/finite-interval])
-                        (schema/nilable :axes {:cljplot2/section :axes :description "draw each variable's axis with ticks and labels" :default true} schema/bool)
-                        (schema/optional :missing {:cljplot2/section :axes :description "a missing value: :break (the line breaks there) or :drop (the row is dropped)"
-                                                   :default :break}
+                        (schema/optional :limits {:cljplot2/section :axes :description "Fixed domains `[lo hi]` of some variables, keyed by the variable's keyword or its pair's label."
+                                                  :cljplot2/default-doc "Each variable's finite data range." :cljplot2/example {:hp [0 400]}}
+                                         [:map-of [:multi {:dispatch keyword?} [true :keyword] [false :string]] schema/finite-interval])
+                        (schema/nilable :axes {:cljplot2/section :axes :description "Whether the chart draws each variable's axis with ticks and labels."
+                                               :default true :cljplot2/value-meanings {true "Draws the axes." false "Draws only the lines."}}
+                                        schema/bool)
+                        (schema/optional :missing {:cljplot2/section :axes :description "What the chart does with a missing, non-numeric or infinite value."
+                                                   :default :break
+                                                   :cljplot2/value-meanings {:break "Breaks the row's line there." :drop "Leaves the whole row out."}}
                                          [:enum :break :drop])
-                        (schema/optional :robust-center {:cljplot2/section :axes :description "centre of :scaling :robust: :median or :mean"
-                                                         :cljplot2/default-doc ":median (only with :scaling :robust)"}
+                        (schema/optional :robust-center {:cljplot2/section :axes :description "The centre of `:scaling :robust`; it needs `:scaling :robust`."
+                                                         :cljplot2/default-doc "`:median`."
+                                                         :cljplot2/value-meanings {:median "The variable's median." :mean "The variable's mean."}
+                                                         :cljplot2/example :mean :cljplot2/example-context {:scaling :robust}}
                                          [:enum :median :mean])
-                        (schema/optional :robust-spread {:cljplot2/section :axes :description (str "spread of :scaling :robust: a fastmath.stats/robust-stddev "
-                                                                           "estimator (:mad, :iqr, :sn, :qn, ...) or a quantile p in (0 0.5)")
-                                                         :cljplot2/default-doc ":mad (only with :scaling :robust)"}
+                        (schema/optional :robust-spread {:cljplot2/section :axes :description "The spread of `:scaling :robust`, a fastmath estimate of the standard deviation; it needs `:scaling :robust`."
+                                                         :cljplot2/default-doc "`:mad`." :cljplot2/example :iqr
+                                                         :cljplot2/value-meanings {:mad "The median absolute deviation, R's `mad`." :iqr "The interquartile range over 1.349."
+                                                                                   :sn "Rousseeuw and Croux's `Sn`; slow for large samples." :qn "Rousseeuw and Croux's `Qn`; slow for large samples."
+                                                                                   :stddev "The standard deviation; not robust." :tukey "The square root of Tukey's biweight midvariance."}
+                                                         :cljplot2/other-values "Other fastmath estimators: `:biweight` (as `:tukey`), and `:meanad` and `:gini`, which are not robust."
+                                                         :cljplot2/form-meanings {:and "The spread between the quantiles `p` and `1 - p`, scaled to a standard deviation; `0.25` is `:iqr`."}
+                                                         :cljplot2/example-context {:scaling :robust}}
                                          robust-spread-schema)
-                        (schema/optional :curve {:cljplot2/section :style :description "join consecutive axes with smooth curves (:smooth)"
-                                                 :cljplot2/default-doc "straight segments"}
+                        (schema/optional :curve {:cljplot2/section :style :description "How the line joins consecutive axes."
+                                                 :cljplot2/default-doc "Straight segments."
+                                                 :cljplot2/value-meanings {:smooth "Smooth curves that meet every axis at a right angle."}}
                                          [:enum :smooth])
-                        (schema/optional :smoothness {:cljplot2/section :style :description "how far the smooth bend spreads over the gap between axes, (0 1]"
-                                                      :cljplot2/default-doc "1 (only with :curve :smooth)"}
+                        (schema/optional :smoothness {:cljplot2/section :style :description "How far a smooth bend spreads over the gap between axes; smaller values keep it near the axes. It needs `:curve :smooth`."
+                                                      :cljplot2/default-doc "`1`, the whole gap." :cljplot2/example 0.3 :cljplot2/example-context {:curve :smooth}}
                                          [:and schema/finite [:> 0] [:<= 1]])
-                        (schema/optional :padding {:cljplot2/section :axes :description "padding of the scaled values' span, {:y [lo hi]} fractions of the span"}
+                        (schema/optional :padding {:cljplot2/section :axes :description "Room around the scaled values on the value axis, as fractions of their span."}
                                          [:map {:closed true}
-                                          (schema/optional :y {:description "padding of the value axis [lo hi], fractions of the span"
+                                          (schema/optional :y {:description "The room below and above the scaled values, `[lo hi]`." :cljplot2/example [0.3 0.3]
                                                                :default [0.05 0.05]}
-                                                           schema/padding)])))
+                                                           schema/padding)])])))
               [unknown-limits [:limits]]
               (needs :robust-center #(= :robust (:scaling %)) ":robust-center needs :scaling :robust")
               (needs :robust-spread #(= :robust (:scaling %)) ":robust-spread needs :scaling :robust")
               (needs :smoothness #(= :smooth (:curve %)) ":smoothness needs :curve :smooth"))
    :mapping [:maybe [:map
-                     (schema/nilable :color {:description "line colour, grouping the rows"} schema/accessor)
-                     (schema/nilable :dash {:description "line dash style, grouping the rows"} schema/accessor)
-                     (schema/nilable :pattern {:description "radar fill pattern, grouping the rows"} schema/accessor)
-                     (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)]]})
+                     (schema/nilable :color {:description "Splits the rows into groups, each line in its own colour."} schema/accessor)
+                     (schema/nilable :dash {:description "Splits the rows into groups, each line with its own dash style."} schema/accessor)
+                     (schema/nilable :pattern {:description "Splits the rows into groups, each radar fill with its own pattern."} schema/accessor)
+                     (schema/nilable :group {:description "Splits the rows into groups that look the same."} schema/accessor)]]})
 
 ;; scaling
 

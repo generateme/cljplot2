@@ -29,6 +29,7 @@
             [malli.core :as malli]
             [cljplot2.chart]
             [cljplot2.chart.function :as function-chart]
+            [cljplot2.chart.parallel :as parallel-chart]
             [cljplot2.chart.text :as text-chart]
             [cljplot2.content.label :as label]
             [cljplot2.data.annotation :as annotation]
@@ -75,7 +76,8 @@
    :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
    :pairwise "Statistic cells" :box "Box plots" :violin "Violin plots" :extent "Error bars" :stripplot "Strip plots"
    :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots" :histogram "Histograms" :density "Density curves"
-   :ecdf "Empirical CDFs" :qq "Q-Q plots" :pp "P-P plots"})
+   :ecdf "Empirical CDFs" :qq "Q-Q plots" :pp "P-P plots" :tile "Heatmaps" :bin2d "2D bins" :field "Raster fields"
+   :contour "Contour lines" :parallel "Parallel coordinates" :cloud "3D clouds" :surface "3D surfaces"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -233,7 +235,7 @@
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
                 kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
-                probability/distribution-schema])))
+                probability/distribution-schema parallel-chart/variable-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."
@@ -260,14 +262,31 @@
   [text]
   (and (re-matches #"[a-z][a-z\- ]*" text) (not (re-find #" (or|of) " text))))
 
+(defn- without-rules
+  "Gives a schema without the rules of [[cljplot2.schema/with-rules]]: an option card reads its shape, its description states the relation.
+
+  Parameters:
+
+  - `s`: a malli schema.
+
+  Returns the one other child of an `:and` holding rules (itself without rules, for rules over rules), an `:and` of its other children (with the `:and`'s properties) when there are several, else `s` itself (compiled). `with-rules` always puts its base schema first, so an `:and` of rules only doesn't occur."
+  [s]
+  (let [compiled (malli/schema s)
+        children (when (= :and (malli/type compiled)) (malli/children compiled))
+        kept (remove schema/rule? children)]
+    (cond
+      (or (empty? children) (= (count kept) (count children))) compiled
+      (m/one? (count kept)) (without-rules (first kept))
+      :else (malli/schema (into (if-let [props (malli/properties compiled)] [:and props] [:and]) kept)))))
+
 (defn- item-text
   "Gives the text of the items of a collection form: the plural of a named type's name (its `:cljplot2/type-plural` when given) or of a plain noun phrase, the plurals of an `:or` of such phrases (`positions or panel positions`), else the item's text in parentheses.
 
   Parameters:
 
-  - `s`: the item schema."
+  - `s`: the item schema (its rules left out, see [[without-rules]])."
   [s]
-  (let [compiled (malli/schema s)
+  (let [compiled (without-rules s)
         own-plural (:cljplot2/type-plural (malli/type-properties compiled))
         text (form-text compiled)
         choices (when (= :or (malli/type compiled)) (map form-text (malli/children compiled)))]
@@ -296,9 +315,9 @@
 
   Parameters:
 
-  - `s`: a malli schema (the option table's [[type-text]] stays the validation-based text)."
+  - `s`: a malli schema (the option table's [[type-text]] stays the validation-based text); the rules of [[cljplot2.schema/with-rules]] are left out (see [[without-rules]])."
   [s]
-  (let [compiled (malli/schema s)
+  (let [compiled (without-rules s)
         t (malli/type compiled)
         children (malli/children compiled)]
     (cond
@@ -328,15 +347,15 @@
 
   - `s`: a malli schema.
 
-  Returns `{:form k :type text}` - `k` the schema's type (a named type's keyword, a malli type), `text` its [[form-text]]."
+  Returns `{:form k :type text}` - `k` the schema's type without its rules (a named type's keyword, a malli type, see [[without-rules]]), `text` its [[form-text]]."
   [s]
-  (let [compiled (malli/schema s)]
+  (let [compiled (without-rules s)]
     {:form (malli/type compiled) :type (form-text compiled)}))
 
 (defn- alternatives
   "Gives the values and forms an entry schema accepts, `nil` left out.
 
-  The top-level alternatives of `:maybe`, `:or` and `:multi` (each branch) are taken apart: `:enum` and `:=` give literal values, a boolean type `true` and `false`, a named type with `:cljplot2/value-set` / `:cljplot2/other-types` its values (a vector in its order, a set sorted) and the forms of those types; anything else is one form (see [[form-of]]).
+  The rules of [[cljplot2.schema/with-rules]] are left out (see [[without-rules]]); the top-level alternatives of `:maybe`, `:or` and `:multi` (each branch) are taken apart: `:enum` and `:=` give literal values, a boolean type `true` and `false`, a named type with `:cljplot2/value-set` / `:cljplot2/other-types` its values (a vector in its order, a set sorted) and the forms of those types; anything else is one form (see [[form-of]]).
 
   Parameters:
 
@@ -344,7 +363,7 @@
 
   Returns `{:values [[v meanings] ...] :forms [{:form :type :meaning} ...]}` - a form's meaning from its named type's `:cljplot2/form-meanings` (`nil` without); `meanings` the value meanings of the schema the value comes from (`:cljplot2/value-meanings` of an enum's or a named type's properties), or `nil`. Throws `ex-info` for an `:cljplot2/other-types` keyword that isn't in [[documented-types]]."
   [schema]
-  (let [s (malli/schema schema)
+  (let [s (without-rules schema)
         t (malli/type s)
         tp (malli/type-properties s)
         children (malli/children s)]

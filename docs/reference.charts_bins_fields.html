@@ -500,13 +500,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#tile" id="toc-tile" class="nav-link active" data-scroll-target="#tile"><span class="header-section-number">20.1</span> tile</a></li>
-  <li><a href="#bin2d" id="toc-bin2d" class="nav-link" data-scroll-target="#bin2d"><span class="header-section-number">20.2</span> bin2d</a></li>
-  <li><a href="#field" id="toc-field" class="nav-link" data-scroll-target="#field"><span class="header-section-number">20.3</span> field</a>
+  <li><a href="#heatmaps" id="toc-heatmaps" class="nav-link active" data-scroll-target="#heatmaps"><span class="header-section-number">20.1</span> Heatmaps</a></li>
+  <li><a href="#d-bins" id="toc-d-bins" class="nav-link" data-scroll-target="#d-bins"><span class="header-section-number">20.2</span> 2D bins</a></li>
+  <li><a href="#raster-fields" id="toc-raster-fields" class="nav-link" data-scroll-target="#raster-fields"><span class="header-section-number">20.3</span> Raster fields</a>
   <ul>
   <li><a href="#field-sources" id="toc-field-sources" class="nav-link" data-scroll-target="#field-sources"><span class="header-section-number">20.3.1</span> Field sources</a></li>
   </ul></li>
-  <li><a href="#contour" id="toc-contour" class="nav-link" data-scroll-target="#contour"><span class="header-section-number">20.4</span> contour</a>
+  <li><a href="#contour-lines" id="toc-contour-lines" class="nav-link" data-scroll-target="#contour-lines"><span class="header-section-number">20.4</span> Contour lines</a>
   <ul>
   <li><a href="#contour-sources" id="toc-contour-sources" class="nav-link" data-scroll-target="#contour-sources"><span class="header-section-number">20.4.1</span> Contour sources</a></li>
   </ul></li>
@@ -547,7 +547,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Charts that colour a plane, for dense points or a surface: a cell per row (<code>tile</code>), counts in 2D bins (<code>bin2d</code>), a field as a raster (<code>field</code>) or as level lines (<code>contour</code>).</p>
+<p>These charts colour a plane: a cell per row (<code>tile</code>), counts in 2D bins (<code>bin2d</code>), and a field as a raster (<code>field</code>) or as level lines (<code>contour</code>). Use them for points too dense to draw one by one, or for a value over two variables.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-bins-fields</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -2230,49 +2230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="tile" class="level2" data-number="20.1">
-<h2 data-number="20.1" class="anchored" data-anchor-id="tile"><span class="header-section-number">20.1</span> tile</h2>
-<p>A cell per row at its x and y, filled by a mapped colour: numeric (a gradient) or categorical (a palette).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>cell x position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>cell y position: categorical (a cell per level) or numeric (cells centred on the values, sized by the smallest gap)</td>
-</tr>
-<tr class="odd">
-<td>:color (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>cell fill: numeric (a gradient and colour bar) or categorical (a palette and legend); nil - the NA colour</td>
-</tr>
-<tr class="even">
-<td>:size</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>cell size: each cell shrinks by :cell-scale times its size over the size scale's largest</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds made-up visits per hour of a working week; the heatmaps use it:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> week-hours </span>(<span class="kw">for</span> [[i day] (map-indexed <span class="kw">vector</span> [<span class="st">"Mon"</span> <span class="st">"Tue"</span> <span class="st">"Wed"</span> <span class="st">"Thu"</span> <span class="st">"Fri"</span>]) hour (<span class="kw">range</span> <span class="dv">8</span> <span class="dv">18</span>)]</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                  {<span class="at">:day</span> day <span class="at">:hour</span> hour</span>
@@ -2543,6 +2501,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<section id="heatmaps" class="level2" data-number="20.1">
+<h2 data-number="20.1" class="anchored" data-anchor-id="heatmaps"><span class="header-section-number">20.1</span> Heatmaps</h2>
+<p><code>chart/tile</code> draws a cell per row at its x and y, filled by the mapped colour: numbers through a gradient, categories through a palette. Use it for a value over two variables, e.g.&nbsp;a matrix or a week of hours.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each cell: categorical values give a cell per level; numbers centre cells on the values, as wide as the smallest gap between them.</li><li><code>:y</code> <span class="required">required</span> – The y of each cell: categorical values give a cell per level; numbers centre cells on the values, as tall as the smallest gap between them.</li><li><code>:color</code> <span class="required">required</span> – Fills each cell: numbers through a gradient with a colour bar, categorical values through a palette with a legend; <code>nil</code> takes the NA colour.</li><li><code>:size</code> – Shrinks each cell by <code>:cell-scale</code> times its size over the size scale's largest.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> week-hours</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hour</span> <span class="at">:y</span> <span class="at">:day</span> <span class="at">:color</span> <span class="at">:visits</span>}</span>
@@ -2553,29 +2516,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image0.png" class="img-fluid"></p>
 </div>
-<p>Its own option writes the value in each cell (black or white by the fill, the <code>:tile-value</code> text role); the cell shape and outline are the <a href="reference.shared_options.html#cell-style">Cell style</a> group:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:value-label</td>
-<td>true or false or a function</td>
-<td>false</td>
-<td>label in each cell: true (the colour value, numbers to 2 decimals) or a function of {:value :x :y} returning the text (nil - none), drawn in black or white by the fill under it</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>This option writes the value in each cell, in the <code>:tile-value</code> text role; the cell shape and outline are the <a href="reference.shared_options.html#cell-style">Cell style</a> group. The panels below write the values, then a word above 30:</p>
+<dl class="options"><div class="option-card"><dt><code>:value-label</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/tile {:value-label true})</code></div><div class="option-text">Writes a label in each cell, in the <code>:tile-value</code> text role: by default black or white by the fill under it.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The colour value; numbers to at most 2 decimals.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:value :x :y}</code> that returns the text; <code>nil</code> writes none.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> week-hours</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hour</span> <span class="at">:y</span> <span class="at">:day</span> <span class="at">:color</span> <span class="at">:visits</span>}</span>
@@ -2594,29 +2536,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image1.png" class="img-fluid"></p>
 </div>
-<p>A mapped <code>:size</code> shrinks each cell by its value; with the colour mapped to another variable the size legend’s keys have no colour of their own - their fill is a theme key of <code>[:chart :tile]</code>, not an option:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:size-key-fill</td>
-<td>a clojure2d color or :none</td>
-<td>[180 180 180]</td>
-<td>fill of a size legend key without a colour (theme only, not an option)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>A mapped <code>:size</code> shrinks each cell by its value. With the colour mapped to another variable, the size legend’s keys have no colour of their own: a theme key fills them. The plot below fills them orange:</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – fill of a size legend key without a colour (theme only, not an option)</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> week-hours</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hour</span> <span class="at">:y</span> <span class="at">:day</span> <span class="at">:color</span> <span class="at">:day</span> <span class="at">:size</span> <span class="at">:visits</span>}</span>
@@ -2628,45 +2549,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image2.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 </section>
-<section id="bin2d" class="level2" data-number="20.2">
-<h2 data-number="20.2" class="anchored" data-anchor-id="bin2d"><span class="header-section-number">20.2</span> bin2d</h2>
-<p>A 2D histogram: points counted in rectangular cells, the count (or another measure) as the cell colour.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>point x positions (numbers)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>point y positions (numbers)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>nil</td>
-<td></td>
-<td>must be nil (the cell colour is the measure): set it so in the chart's mapping when the plot maps :color</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="d-bins" class="level2" data-number="20.2">
+<h2 data-number="20.2" class="anchored" data-anchor-id="d-bins"><span class="header-section-number">20.2</span> 2D bins</h2>
+<p><code>chart/bin2d</code> counts points in cells, hexagons by default, and colours each cell by its count or another measure. Use it when points are too many to draw: the colour shows where they crowd.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point, a number.</li><li><code>:y</code> <span class="required">required</span> – The y of each point, a number.</li><li><code>:color</code> – Must be <code>nil</code>: the cell colour shows <code>:measure</code>. Set <code>:color nil</code> in the chart's own mapping when the plot maps <code>:color</code>.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> faithful</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2677,47 +2565,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image3.png" class="img-fluid"></p>
 </div>
-<p>Its options: the number of cells (or a fastmath estimate), a cell width in data units, the cells’ height / width ratio and what the colour measures:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:bins</td>
-<td>one of :scott-correlated :scott :freedman-diaconis :cross-validation :shimazaki-shinomoto or a positive integer</td>
-<td>:scott-correlated</td>
-<td>cells across the x range (a positive integer), or a fastmath estimate-grid-size method giving a cell area (:binwidth wins)</td>
-</tr>
-<tr class="even">
-<td>:binwidth</td>
-<td>a positive finite number</td>
-<td></td>
-<td>cell size in x data units (log10 units on a :log axis); wins over :bins</td>
-</tr>
-<tr class="odd">
-<td>:aspect</td>
-<td>a positive finite number</td>
-<td>the panel's height / width (y span / x span with :aspect :iso), estimated from the plot size and facet layout</td>
-<td>height / width ratio of the normalized binning space (cells are regular in pixels when it matches the panel)</td>
-</tr>
-<tr class="even">
-<td>:measure</td>
-<td>one of :count :percent :pmf :density</td>
-<td>:count</td>
-<td>the cell colour: :count, :percent (of the panel's points), :pmf (share of the panel's points) or :density (count / (n * cell area in data units))</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the cell size (by a rule, a count or a width), the shape of the binning space and what the colour measures. The panels below use 10 cells across, a cell width in a flatter space, and percentages:</p>
+<dl class="options"><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: <code>:scott-correlated</code></span></dt><dd><div class="option-example"><code>(chart/bin2d {:bins :scott})</code></div><div class="option-text">How big the cells are. The rules estimate a cell area from the points; <code>:binwidth</code> wins over this option.<ul><li><code>:scott-correlated</code> – The normal-reference rule taking the axes' correlation into account; smaller cells than <code>:scott</code> for correlated points.</li><li><code>:scott</code> – The normal-reference rule for uncorrelated points.</li><li><code>:freedman-diaconis</code> – <code>:scott</code> with each standard deviation replaced by <code>IQR / 1.349</code>; robust to outliers.</li><li><code>:cross-validation</code> – The cell size that minimises a cross-validated estimate of the error.</li><li><code>:shimazaki-shinomoto</code> – The cell size that minimises the Shimazaki-Shinomoto cost.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – That many cells across the x range.</li></ul></div></dd></div><div class="option-card"><dt><code>:binwidth</code><span class="option-default">Default: None: <code>:bins</code> sizes the cells.</span></dt><dd><div class="option-example"><code>(chart/bin2d {:binwidth 1})</code></div><div class="option-text">The cell size in x data units, in log10 units on a <code>:log</code> axis; it wins over <code>:bins</code>.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:aspect</code><span class="option-default">Default: The panel's height over its width, estimated from the plot size and facet layout; with the plot's <code>:aspect :iso</code>, the y span over the x span.</span></dt><dd><div class="option-example"><code>(chart/bin2d {:aspect 3})</code></div><div class="option-text">The height-to-width ratio of the space the chart bins in; cells look regular when it matches the panel's.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:measure</code><span class="option-default">Default: <code>:count</code></span></dt><dd><div class="option-example"><code>(chart/bin2d {:measure :percent})</code></div><div class="option-text">What a cell's colour shows.<ul><li><code>:count</code> – The number of points in the cell.</li><li><code>:percent</code> – The cell's share of the panel's points in percent.</li><li><code>:pmf</code> – The cell's share of the panel's points as a fraction.</li><li><code>:density</code> – The share divided by the cell area, in log10 units on a <code>:log</code> axis.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2739,7 +2588,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image4.png" class="img-fluid"></p>
 </div>
-<p>The fastmath estimates of the grid (the default <code>:scott-correlated</code> above) - each picks its own cell count:</p>
+<p>The next panels compare the other rules (the default <code>:scott-correlated</code> is above); each picks its own cell size:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2767,7 +2616,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image5.png" class="img-fluid"></p>
 </div>
-<p>The other measures: the share of the panel’s points (<code>:pmf</code>) and the density - the count over n times the cell area (the legend shows the scale):</p>
+<p>The last panels colour by the share of the panel’s points (<code>:pmf</code>) and by the density; their legends show the scales:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2783,51 +2632,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image6.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#cell-style">Cell style</a> – <code>:cell</code> <code>:cell-scale</code> <code>:stroke-color</code> <code>:stroke-width</code> <code>:alpha-factor</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 </section>
-<section id="field" class="level2" data-number="20.3">
-<h2 data-number="20.3" class="anchored" data-anchor-id="field"><span class="header-section-number">20.3</span> field</h2>
-<p>A raster of a scalar field: the density of mapped points, gridded <code>:value</code>s interpolated, or a function of a point (the <a href="reference.shared_options.html#fields">Fields</a> group).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>x of the points (density) or of the gridded data</td>
-</tr>
-<tr class="even">
-<td>:y</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>y of the points (density) or of the gridded data</td>
-</tr>
-<tr class="odd">
-<td>:value</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>nil</td>
-<td></td>
-<td>must be nil (the colour is the field's value): set it so in the chart's mapping when the plot maps :color</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="raster-fields" class="level2" data-number="20.3">
+<h2 data-number="20.3" class="anchored" data-anchor-id="raster-fields"><span class="header-section-number">20.3</span> Raster fields</h2>
+<p><code>chart/field</code> draws a scalar field as a raster: the density of mapped points, gridded values interpolated, or a function of a point (the <a href="reference.shared_options.html#fields">Fields</a> group). Use it to show a smooth value over a plane, coloured through the colour scale.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the points whose density the chart estimates, or of the gridded values.</li><li><code>:y</code> – The y of the points whose density the chart estimates, or of the gridded values.</li><li><code>:value</code> – The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points.</li><li><code>:color</code> – Must be <code>nil</code>: the colour shows the field's value. Set <code>:color nil</code> in the chart's own mapping when the plot maps <code>:color</code>.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2844,35 +2654,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image7.png" class="img-fluid"></p>
 </div>
-<p>Its options: the raster’s opacity, or a colour per pixel computed by a function (no field, no colour scale):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:alpha-factor</td>
-<td>a number in [0 1]</td>
-<td>1.0</td>
-<td>factor multiplying the colours' alpha</td>
-</tr>
-<tr class="even">
-<td>:pixel-color</td>
-<td>a function</td>
-<td></td>
-<td>a function of a point [x y] returning each pixel's colour (nil - transparent): a raster over :domain, no grid, colour scale or legend; not with :f</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the raster’s opacity, or colour each pixel by a function instead of a field. The panels below draw a translucent density under the points, then a colour per point of a disc:</p>
+<dl class="options"><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/field {:alpha-factor 0.4})</code></div><div class="option-text">How opaque the raster is: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:pixel-color</code><span class="option-default">Default: None: the field's value colours the raster through the colour scale.</span></dt><dd><div class="option-example"><code>(chart/field {:domain {:x [-1 1], :y [-1 1]}, :pixel-color (fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))})</code></div><div class="option-text">Colours each pixel by a function of its point <code>[x y]</code> instead of a field, <code>nil</code> leaving it transparent: a raster over <code>:domain</code> (else the plot's x and y domains) with no colour scale or legend. A chart with <code>:f</code> rejects it.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -2892,7 +2675,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="field-sources" class="level3" data-number="20.3.1">
 <h3 data-number="20.3.1" class="anchored" data-anchor-id="field-sources"><span class="header-section-number">20.3.1</span> Field sources</h3>
-<p>The <a href="reference.shared_options.html#fields">Fields</a> group gives the field. A function of a point <code>[x y]</code> sampled over a <code>:domain</code> on a grid of <code>:n</code> points per axis (a coarse grid shows its cells):</p>
+<p>The <a href="reference.shared_options.html#fields">Fields</a> group gives the field. The panels below sample a function of a point <code>[x y]</code> over a <code>:domain</code>, then on a coarse grid of 12 points per axis, which shows its cells:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y))))</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
@@ -2907,7 +2690,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image9.png" class="img-fluid"></p>
 </div>
-<p>Gridded values are interpolated between the lattice points - here a 5 x 5 lattice:</p>
+<p>The chart interpolates gridded values between the lattice points, here of a 5 x 5 lattice:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lattice </span>(<span class="kw">for</span> [x (<span class="kw">range</span> <span class="dv">5</span>) y (<span class="kw">range</span> <span class="dv">5</span>)] {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> (m/sin x) (m/cos (<span class="kw">*</span> <span class="fl">0.8</span> y)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -3072,7 +2855,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image10.png" class="img-fluid"></p>
 </div>
-<p>The density of mapped points: its kernel and bandwidth, a binned estimate (faster on many points), and how far the domain reaches past the points (<code>:cut</code>, in bandwidths):</p>
+<p>The next panels change the density estimate of mapped points: its kernel and bandwidth, a binned estimate (faster on many points), and how far the domain reaches past the points (<code>:cut</code>, in bandwidths):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> faithful</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:eruptions</span> <span class="at">:y</span> <span class="at">:waiting</span>}</span>
@@ -3095,64 +2878,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image11.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 </section>
 </section>
-<section id="contour" class="level2" data-number="20.4">
-<h2 data-number="20.4" class="anchored" data-anchor-id="contour"><span class="header-section-number">20.4</span> contour</h2>
-<p>Level lines (or filled bands) of a scalar field - the same sources as <code>field</code>; categorical groups give a field each.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>x of the points (density) or of the gridded data</td>
-</tr>
-<tr class="even">
-<td>:y</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>y of the points (density) or of the gridded data</td>
-</tr>
-<tr class="odd">
-<td>:value</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>the field's value at gridded (x, y) on a full lattice, interpolated (absent - a density of the points)</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>categorical groups, each its own field with lines in its colour (else the lines are coloured by level)</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups, each its own field with lines in its dash style</td>
-</tr>
-<tr class="even">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each its own field</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="contour-lines" class="level2" data-number="20.4">
+<h2 data-number="20.4" class="anchored" data-anchor-id="contour-lines"><span class="header-section-number">20.4</span> Contour lines</h2>
+<p><code>chart/contour</code> draws the level lines, or filled bands, of a scalar field from the same sources as <code>chart/field</code>; categorical groups give a field each. Use it to read heights off a field, or to compare the densities of groups.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the points whose density the chart estimates, or of the gridded values.</li><li><code>:y</code> – The y of the points whose density the chart estimates, or of the gridded values.</li><li><code>:value</code> – The field's value at each point of a full lattice of x and y, interpolated between them; unmapped, the field is the density of the points.</li><li><code>:color</code> – Splits the rows into categorical groups, each its own field with lines in its colour; unmapped, the lines are coloured by level.</li><li><code>:dash</code> – Splits the rows into groups, each its own field with lines in its dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own field.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> volcano</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:column</span> <span class="at">:y</span> <span class="at">:row</span> <span class="at">:value</span> <span class="at">:height</span>}</span>
@@ -3169,53 +2901,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image12.png" class="img-fluid"></p>
 </div>
-<p>Its options: the levels (a count or the values), filled bands instead of lines, labels on the lines, one line colour and the opacity:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]; the theme's, for grouped lines without a mapped colour; ungrouped lines are coloured by level, lines grouped by :color take their group's colour</td>
-<td>one colour for every line instead of colouring by level (contour's own :color, not the line style's)</td>
-</tr>
-<tr class="even">
-<td>:alpha-factor</td>
-<td>a number in [0 1]</td>
-<td>1.0; the theme's; grouped filled contours take half of it</td>
-<td>factor multiplying the colours' alpha</td>
-</tr>
-<tr class="odd">
-<td>:levels</td>
-<td>integer (1..1000) or vector of a finite number (at least 1)</td>
-<td>10</td>
-<td>contour levels: a count evenly spread over the range of every sampled value (the ends left out), or a vector of level values</td>
-</tr>
-<tr class="even">
-<td>:filled</td>
-<td>true or false</td>
-<td>false</td>
-<td>fill the region at or above each level, each band coloured by its middle value, instead of drawing lines</td>
-</tr>
-<tr class="odd">
-<td>:labels</td>
-<td>true or false or a function or nil</td>
-<td>false</td>
-<td>line contours only: label each line with its level - true (the number) or a function of {:level v} returning the text (nil - no label)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the levels, filled bands instead of lines, labels on the lines, one line colour and the opacity. The panels below label lines at given heights, then fill 8 bands:</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme); Lines coloured by level; grouped lines without a mapped colour take the theme's colour, lines grouped by <code>:color</code> their group's.</span></dt><dd><div class="option-example"><code>(chart/contour {:color :black})</code></div><div class="option-text">One colour for every line or band, instead of colouring them by level; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – Nothing drawn, unless <code>:color</code> is mapped.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme); The theme's; grouped filled contours take half of it.</span></dt><dd><div class="option-example"><code>(chart/contour {:alpha-factor 0.3})</code></div><div class="option-text">How opaque the lines or bands are: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:levels</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(chart/contour {:levels 4})</code></div><div class="option-text">The values at which the chart draws contours.<ul><li><span>integer at least 1 and at most 1000</span> – That many levels, evenly spread over the range of the sampled values, the ends left out.</li><li><span>vector of finite numbers</span> – The level values, e.g. <code>[0.1 0.2 0.4]</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:filled</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/contour {:filled true})</code></div><div class="option-text">Whether the chart fills bands between levels instead of drawing lines.<ul><li><code>false</code> – Draws lines.</li><li><code>true</code> – Fills the region at or above each level; coloured by level, each band takes the colour of its middle value.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/contour {:labels true})</code></div><div class="option-text">Writes its level on each line; filled contours reject the option.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The level as a number.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:level v}</code> that returns the text; <code>nil</code> writes none.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> volcano</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:column</span> <span class="at">:y</span> <span class="at">:row</span> <span class="at">:value</span> <span class="at">:height</span>}</span>
@@ -3234,7 +2921,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="contour-sources" class="level3" data-number="20.4.1">
 <h3 data-number="20.4.1" class="anchored" data-anchor-id="contour-sources"><span class="header-section-number">20.4.1</span> Contour sources</h3>
-<p>The same sources as <code>field</code>: a function over a domain (lines on a coarse grid are angular), interpolated gridded values and a density with its own bandwidth:</p>
+<p>The panels below take the sources of <code>chart/field</code>: a function over a domain (its lines angular on a coarse grid), interpolated gridded values and a density with its own bandwidth:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/contour {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> <span class="dv">2</span> y y) (<span class="kw">*</span> x y)))</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:labels</span> <span class="va">true</span>})]</span>
@@ -3260,7 +2947,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bins_fields_files/image14.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#fields">Fields</a> – <code>:f</code> <code>:domain</code> <code>:kernel</code> <code>:bandwidth</code> <code>:binned</code> <code>:cut</code> <code>:interpolation</code> <code>:n</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_bins_fields.clj</small></small></pre></div>
 

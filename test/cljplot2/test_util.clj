@@ -8,7 +8,8 @@
   "Chart kinds whose reference sections show option cards (`nu/option-cards`) and follow the card rules of
   `option-cards-test` - the one switch of the readability rewrite; `cljplot2.describe/concepts` names their sections."
   #{:scatter :line :segment :polygon :ribbon :candlestick :smooth :rule :rect :text :image :function :bar :bullet
-    :correlation :pairwise :box :violin :extent :stripplot :beeswarm :dotplot :rug :histogram :density :ecdf :qq :pp})
+    :correlation :pairwise :box :violin :extent :stripplot :beeswarm :dotplot :rug :histogram :density :ecdf :qq :pp
+    :tile :bin2d :field :contour :parallel :cloud :surface})
 
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."

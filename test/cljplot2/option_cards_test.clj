@@ -193,6 +193,22 @@
         [:double {:min 0 :max 1}] "number at least 0 and at most 1"
         [:int {:min 0}] "integer at least 0"
         :int "integer")))
+  (testing "rules of with-rules aren't card forms: the shape stays; a predicate with a message stays; several kept parts stay an :and"
+    (let [form (fn [s] (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} s]])))))]
+      (is (= {:form :tuple :type "pair of finite numbers"}
+             (select-keys (form (schema/with-rules [:tuple schema/finite schema/finite] [(constantly nil) nil])) [:form :type])))
+      (is (= "integer above 0" (:type (form (schema/with-rules [:and :int [:> 0]] [(constantly nil) nil] [(constantly nil) nil])))))
+      (is (= "integer, odd" (:type (form (schema/with-rules [:and :int [:fn {:error/message "should be odd"} odd?]] [(constantly nil) nil])))))
+      (is (= [:a :b] (map :value (:values (first (describe/schema-rows [:map [:k {:description "k"} (schema/with-rules [:enum :a :b] [(constantly nil) nil])]]))))))
+      (is (= "pair of finite numbers"
+             (:type (form (schema/with-rules (schema/with-rules [:tuple schema/finite schema/finite] [(constantly nil) nil]) [(constantly nil) nil]))))
+          "rules over rules")
+      (is (= "pair of finite numbers" (:type (form [:maybe (schema/with-rules [:tuple schema/finite schema/finite] [(constantly nil) nil])])))
+          "rules under :maybe")
+      (is (= "vector of (pair of finite numbers)" (:type (form [:vector (schema/with-rules [:tuple schema/finite schema/finite] [(constantly nil) nil])])))
+          "rules on a vector item")
+      (is (schema/rule? (last (schema/with-rules :int [(constantly nil) nil]))))
+      (is (not (schema/rule? [:fn {:error/message "x"} odd?])))))
   (testing "a forbidden :multi branch (a form the option rejects) is no card form; a value-set branch gives values"
     (let [bins-row (first (filter #(= [:bins] (:path %)) (describe/options (chart/histogram))))]
       (is (= ["breaks" "positive integer"] (map :type (:forms bins-row))))
@@ -276,6 +292,26 @@
                {:g g :level (if (even? i) "p" "q") :v (m/+ (m/* 0.05 i i) (m/sin (m/* 1.9 i)) (if (= g "a") 0.0 1.5))}))
         {:g "a" :level "p" :v nil}))
 
+(def ^:private points-2d
+  "Rows of 60 points of two correlated variables with a second cluster - the fixture of the 2D bins and fields."
+  (for [i (range 60)
+        :let [t (m/* 0.37 i) cluster (if (m/< i 40) 0.0 4.0)]]
+    {:x (m/+ cluster (m/* 2.0 (m/sin t)) (m/* 0.05 i)) :y (m/+ cluster (m/* 1.5 (m/cos (m/* 1.3 t))) (m/* 0.04 i))}))
+
+(def ^:private lattice
+  "Rows of a 5 x 4 lattice with a value per node - the fixture of tiles and gridded surfaces."
+  (for [x (range 5) y (range 4)] {:x x :y y :v (m/+ (m/* 0.5 x) (m/sin (m/* 1.1 y)))}))
+
+(def ^:private wide-rows
+  "Wide rows of three variables (the names of the parallel chart's option examples) and a row with a missing value - the
+  fixture of parallel coordinates."
+  (conj (vec (for [i (range 6)] {:mpg (m/+ 20 i (m/* 3.0 (m/sin i))) :hp (m/+ 100 (m/* 9.0 i i)) :wt (m/- 5.0 (m/* 0.4 i))}))
+        {:mpg 31 :hp 150 :wt nil}))
+
+(def ^:private points-3d
+  "Rows of 12 points in 3D - the fixture of clouds."
+  (for [i (range 12)] {:x (m/sin (m/* 0.6 i)) :y (m/cos (m/* 0.4 i)) :z (m/* 0.25 i)}))
+
 (def ^:private example-fixtures
   "Kind -> a small plot (`:data`, `:mapping`, `:scales`, and `:options` under every example, e.g. a seeded `:rng`) on
   which every option example of the kind changes the picture:
@@ -319,6 +355,13 @@
      :ecdf {:data one-sample :mapping {:x :v}}
      :qq {:data one-sample :mapping {:x :v :y :v}}
      :pp {:data one-sample :mapping {:x :v :y :v}}
+     :tile {:data lattice :mapping {:x :x :y :y :color :v}}
+     :bin2d {:data points-2d :mapping {:x :x :y :y}}
+     :field {:data points-2d :mapping {:x :x :y :y}}
+     :contour {:data points-2d :mapping {:x :x :y :y}}
+     :parallel {:data wide-rows :mapping {} :options {:variables [:mpg :hp :wt]}}
+     :cloud {:data points-3d :mapping {:x :x :y :y :z :z}}
+     :surface {:data lattice :mapping {:x :x :y :y :z :v}}
      :correlation {:data correlated :mapping {:x :x :y :y}}
      :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 
@@ -341,7 +384,9 @@
    [:scatter [:descending]] "acts only where points of different colours overlap"
    [:bar [:label-leader]] "its example (:outer labels) throws outside a polar plot, a plot :coord"
    [:histogram [:stat-space]] "acts only on a :log axis, a plot scale"
-   [:density [:stat-space]] "acts only on a :log axis, a plot scale"})
+   [:density [:stat-space]] "acts only on a :log axis, a plot scale"
+   [:parallel [:fill]] "fills radar polygons only: a polar plot, a plot :coord"
+   [:parallel [:alpha]] "fades the radar fill only: a polar plot, a plot :coord"})
 
 (def ^:private needed-to-draw
   "`[kind path]` -> why the chart draws nothing without the option: its example has no picture to compare with, so it
@@ -354,7 +399,9 @@
    [:function [:f]] "a function chart needs :f or :parametric" [:function [:parametric]] "a function chart needs :f or :parametric"
    [:function [:t]] ":parametric needs :t"
    [:box [:stat]] "its example's own data holds statistics, not values: :tukey has nothing to compute"
-   [:pp [:domain]] "two distribution sides need :domain"})
+   [:pp [:domain]] "two distribution sides need :domain"
+   [:surface [:fu]] "its :u and :v context is valid only with :fu"
+   [:surface [:u]] "a parametric :fu needs both :u and :v" [:surface [:v]] "a parametric :fu needs both :u and :v"})
 
 (defn- drawable?
   "Tests whether a fixture plot draws: its chart's options valid and the plot rendering without an error.

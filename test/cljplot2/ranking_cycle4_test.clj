@@ -2,7 +2,7 @@
   "Ranking cycle 4: parallel coordinates and radar charts (`chart/parallel`) - variables, scaling, axes, groups,
   missing values, polar closing, fills, limits, the web."
   (:require [clojure.test :refer [deftest testing is are]]
-            [cljplot2.test-util :refer [error]]
+            [cljplot2.test-util :refer [error error-data]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.parallel :as parallel]
             [cljplot2.core :as plot]
@@ -110,7 +110,24 @@
         {:scaling :robust :robust-center :mode} :robust-center
         {:robust-spread :mad} :robust-spread
         {:scaling :std :robust-center :mean} :robust-center
-        {:scaling :robust :robust-spread 0.1 :robust-center :mean} nil))
+        {:scaling :robust :robust-spread 0.1 :robust-center :mean} nil
+        {:scaling :robust :robust-spread 0.4999} nil
+        {:scaling :robust :robust-spread ##NaN} :robust-spread
+        {:scaling :robust :robust-spread -0.1} :robust-spread
+        {:scaling :robust :robust-spread 0.5} :robust-spread
+        {:scaling :robust :robust-spread 0} :robust-spread))
+    (testing ":robust-spread reports one error: a keyword as a name, a number as a quantile"
+      (are [v] (= 1 (count (:errors (error-data #(build {:data rows3 :charts [(chart/parallel {:variables [:a :b] :scaling :robust :robust-spread v})]})))))
+        :foo 0.5 0 -0.1 ##NaN "x"))
+    (testing ":limits: a number key reports one error"
+      (is (= 1 (count (:errors (error-data #(build {:data rows3 :charts [(chart/parallel {:variables [:a :b] :limits {1 [0 4]}})]})))))))
+    (testing ":limits keys: a variable's keyword or its pair's label; any other key (a number, an unknown label) fails"
+      (are [vs lims k] (= k (:key (error #(build {:data rows3 :charts [(chart/parallel {:variables vs :limits lims})]}))))
+        [["A" :a] :b] {"A" [0 4]} nil
+        [:a :b] {:a [0 4]} nil
+        [:a :b] {1 [0 4]} :limits
+        [:a :b] {"a" [0 4]} :limits
+        [:a :b] {} nil))
     (testing "1.4 zero spread - 0.5 for :uniminmax, 0 otherwise"
       (is (= [0.5 0.5 0.5] (column (rows :uniminmax [1 2 3]) 1)))
       (is (every? #(= [0.0 0.0 0.0] (column (rows % [1 2 3]) 1)) [:std :robust :center]))

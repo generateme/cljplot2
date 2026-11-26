@@ -23,14 +23,14 @@
 
 (nu/data-table faithful)
 
-;; Random log-normal values (seeded) - skewed in data units, even on a log axis:
+;; The table below holds seeded log-normal values, skewed in data units and even on a log axis:
 
 (def skewed (mapv (fn [v] {:value v})
                   (r/->seq (r/distribution :log-normal {:scale 3.0 :shape 0.8 :rng (r/rng :mersenne 7)}) 400)))
 
 (nu/data-table skewed)
 
-;; Seeded samples, normal and t with 3 degrees of freedom - for the Q-Q and P-P plots:
+;; The table below holds seeded normal samples and samples of t with 3 degrees of freedom; the Q-Q and P-P plots use it:
 
 (def samples (let [g (r/rng :mersenne 11)
                    t3 (r/distribution :t {:degrees-of-freedom 3 :rng g})]
