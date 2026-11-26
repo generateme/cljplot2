@@ -69,6 +69,10 @@ How a value comes from a row: a key such as `:x`, a function of the row such as 
 
 A pair `[h v]`: `h` is `:left`, `:center` or `:right` and `v` is `:top`, `:middle` or `:bottom`, e.g. `[:center :middle]`.
 
+## bandwidth rule
+
+A rule that picks the bandwidth from the sample: a fastmath selector, e.g. `:nrd0` (R's default) or `:sj` (Sheather-Jones).
+
 ## boolean
 
 Either `true` or `false`.
@@ -92,6 +96,10 @@ How a line is dashed: a style name such as `:dashed` or `:dotted`, a vector of d
 ## date or time
 
 A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time.LocalDate/of 2024 1 31)`.
+
+## density kernel
+
+The shape a density estimate puts at each value: a fastmath kernel name, e.g. `:gaussian` or `:epanechnikov`.
 
 ## fill pattern
 

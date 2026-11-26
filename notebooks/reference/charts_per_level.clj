@@ -1,6 +1,6 @@
 ;; # Distribution per level
 
-;; Charts that show how the values of each level are spread: summaries (`box`, `violin`, `extent`) and the values
+;; These charts draw how the values of each level are spread: summaries (`box`, `violin`, `extent`) and the values
 ;; themselves (`stripplot`, `beeswarm`, `dotplot`, `rug`). Use them to compare spreads across levels; they all take
 ;; the [Strip options](reference.shared_options.html#strip-options) for placement, width and grouping.
 
@@ -24,12 +24,14 @@
 
 (nu/data-table mtcars)
 
-;; ## box
+;; ## Box plots
 
-;; A box per level (and group): the quartiles, the median, whiskers to the most extreme values within 1.5 IQR of
-;; the box and the outliers past them - computed from the values ...
+;; `chart/box` draws a box per level and group: the quartiles, the median, whiskers and outliers. Use it to compare
+;; the spread of many levels at a glance. By default the chart computes the statistics from the values:
 
-(nu/options-table (describe/mapping (chart/box)) :values)
+(nu/shared-groups (describe/options (chart/box)))
+
+(nu/mapping-list (describe/mapping (chart/box)) :values)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-width :y :species :color :species}
@@ -38,9 +40,9 @@
                     :legend false}
                    {:width 600 :height 300})
 
-;; ... or read from rows of precomputed statistics, one row per level and group, with `:stat :identity`:
+;; With `:stat :identity` the chart reads the statistics from one row per level and group instead:
 
-(nu/options-table (describe/mapping (chart/box)) :summary)
+(nu/mapping-list (describe/mapping (chart/box)) :summary)
 
 (def summaries [{:site "north" :lower 2.1 :q1 3.4 :median 4.0 :q3 4.9 :upper 6.3 :outliers [7.4 8.0] :mean 4.3 :n 40}
                 {:site "south" :lower 1.0 :q1 2.2 :median 2.9 :q3 3.3 :upper 4.4 :outliers [0.2] :mean 2.8 :n 15}
@@ -56,11 +58,11 @@
                     :labels {:x "value"}}
                    {:width 600 :height 280})
 
-;; Its options: the box and outlier style, the statistics, outliers on or off, the mean marker, widths by count and
-;; the Tufte variant (whisker lines and a median point) - here on rear axle ratios, with outliers in the 4- and
-;; 8-cylinder groups:
+;; These options style the boxes and outliers and pick what the chart draws. The plots below show rear axle ratios,
+;; where the 4- and 8-cylinder groups have outliers: a custom style with the mean marker, no outliers with widths by
+;; count, and the Tufte variant:
 
-(nu/options-table (describe/own-rows (describe/options (chart/box))))
+(nu/option-cards 'chart/box (describe/own-rows (describe/options (chart/box))))
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :drat :y :cyl}
@@ -81,7 +83,8 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
-;; `:padding` - space past the values along the value axis, fractions of their span (default 5% each side):
+;; On the right `:padding` widens the value axis by 40% of the values' span on each side; the left panel keeps the
+;; default:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :drat :y :cyl}
@@ -96,13 +99,14 @@
                                  {:columns 2})
                    {:width 900 :height 280})
 
-(nu/shared-groups (describe/options (chart/box)))
+;; ## Violin plots
 
-;; ## violin
+;; `chart/violin` draws a kernel density estimate of each level's values, mirrored around its centre line, with inner
+;; marks, a small box by default. Use it to see the shape of a distribution, e.g. two peaks a box plot hides.
 
-;; A mirrored kernel density per level (and group), with inner marks - a small box by default.
+(nu/shared-groups (describe/options (chart/violin)))
 
-(nu/options-table (describe/mapping (chart/violin)))
+(nu/mapping-list (describe/mapping (chart/violin)))
 
 (plot/render-image {:data iris
                     :mapping {:x :species :y :petal-length :color :species}
@@ -110,10 +114,10 @@
                     :legend false}
                    {:width 600 :height 320})
 
-;; Its options: the fill, outline and inner marks' colour, the density estimate (kernel, bandwidth, points, how far
-;; past the data), how widths compare between violins and the inner marks:
+;; These options style the violins and set the density estimate, the widths and the inner marks. The panels below
+;; pair a bandwidth, a reach past the data and a width scale with three inner marks:
 
-(nu/options-table (describe/own-rows (describe/options (chart/violin))))
+(nu/option-cards 'chart/violin (describe/own-rows (describe/options (chart/violin))))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :petal-length}
@@ -131,10 +135,11 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; The inner marks' sizes and the quartile dash are theme keys of `[:chart :violin]`, not options:
+;; A theme sets the inner marks' sizes and the quartile dash; below, a wider inner box with a bigger median and
+;; dotted quartiles:
 
-(nu/options-table (describe/style-rows :violin [:inner-box-width :inner-median-size :inner-quartile-dash
-                                                :inner-rug-width :inner-point-size]))
+(nu/theme-key-list :violin (describe/style-rows :violin [:inner-box-width :inner-median-size :inner-quartile-dash
+                                                         :inner-rug-width :inner-point-size]))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :petal-length}
@@ -149,8 +154,8 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-;; The fill and outline, and the density estimate: another kernel, few evaluation points (a coarse outline),
-;; widths by count (`:varwidth`) and the padding:
+;; The left panel sets a fill and outline. The middle one evaluates the Epanechnikov kernel at only 8 points, so its
+;; outline is coarse. The right one, on mtcars by cylinders, sets `:varwidth` and `:padding`:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :petal-length}
@@ -168,8 +173,8 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; Every `:scale` - violins as wide as their slots, of equal areas, or of areas by count (mtcars by gears: 15, 12
-;; and 5 cars - the five-gear violin shrinks):
+;; The panels show each `:scale` on mtcars by gears (15, 12 and 5 cars). With areas by count the five-gear violin
+;; shrinks:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :gear :y :mpg}
@@ -189,7 +194,7 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
-;; Every `:inner` mark:
+;; The panels show each `:inner` mark in turn:
 
 (plot/render-image (plot/arrange [{:data iris :mapping {:x :species :y :petal-length}
                                    :charts [(chart/violin {:inner :box})] :labels {:title ":inner :box"}}
@@ -204,14 +209,15 @@
                                  {:columns 5})
                    {:width 1000 :height 300})
 
-(nu/shared-groups (describe/options (chart/violin)))
+;; ## Error bars
 
-;; ## extent
+;; `chart/extent` draws an interval per level and group, computed from the values - their range, a confidence
+;; interval, quantiles or a bootstrap estimate - with a mark at its centre. Use it for error bars, alone or over bars and
+;; points.
 
-;; An interval per level (and group) from the item's values - their range, a confidence interval, quantiles or a
-;; bootstrap estimate - with a mark at its centre.
+(nu/shared-groups (describe/options (chart/extent)))
 
-(nu/options-table (describe/mapping (chart/extent)))
+(nu/mapping-list (describe/mapping (chart/extent)))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :species}
@@ -219,10 +225,10 @@
                     :scales {:y {:reverse true}}}
                    {:width 600 :height 280})
 
-;; Its options: the interval's and centre's style, the method giving the interval (and its arguments), the
-;; bootstrap's statistic and random generator (seeded here), the centre mark and the padding:
+;; These options style the intervals and pick the method that computes them. The panels show `:stddev` in a custom
+;; style, the 10th to 90th percentiles without a centre, and a seeded bootstrap of the mean:
 
-(nu/options-table (describe/own-rows (describe/options (chart/extent))))
+(nu/option-cards 'chart/extent (describe/own-rows (describe/options (chart/extent))))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :species}
@@ -242,11 +248,9 @@
                                  {:columns 3})
                    {:width 1000 :height 300})
 
-;; Every method on one sample (setosa sepal lengths), a level each: the range (`:min-max`), spreads around the mean
-;; (`:stddev`, `:sem`, `:mad` - around the median), quantile intervals (`:percentile`, `:quantile`, `:pi`, `:hpdi`,
-;; the bias-corrected `:percentile-bc` / `:percentile-bca`), Tukey's whisker ends and fences (`:adjacent`,
-;; `:inner-fence`, `:outer-fence`), the mean's confidence interval (`:ci`) and the bootstrap confidence intervals of
-;; the mean (`:bootstrap-*`, 500 resamples, seeded):
+;; The plot below draws every method on setosa sepal lengths, a level each: the range, spreads around the mean
+;; (`:mad` around the median), quantile intervals, Tukey's whisker ends and fences, the mean's confidence interval
+;; and seeded bootstrap intervals:
 
 (def setosa (filter #(= "setosa" (:species %)) iris))
 
@@ -264,9 +268,8 @@
                     :labels {:x "sepal length [cm]"}}
                    {:width 700 :height 600})
 
-;; The bootstrap resamples the mean unless `:statistic` names another function - here the median (the bootstrap
-;; of the mean is the "bootstrap mean" panel above); `:center :method` (the default) marks the method's centre, here
-;; sized up with `:size`:
+;; On the left the bootstrap resamples the median instead of the mean (compare the "bootstrap mean" panel above), and
+;; `:size` enlarges its centre mark. On the right `:padding` widens the value axis:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :species}
@@ -282,13 +285,14 @@
                                  {:columns 2})
                    {:width 800 :height 300})
 
-(nu/shared-groups (describe/options (chart/extent)))
+;; ## Strip plots
 
-;; ## stripplot
+;; `chart/stripplot` draws every value as a point across its level's strip, jittered so equal values don't hide each
+;; other. Use it for small samples, where each value counts.
 
-;; Every value as a point across its level's strip, jittered so equal values don't hide each other.
+(nu/shared-groups (describe/options (chart/stripplot)))
 
-(nu/options-table (describe/mapping (chart/stripplot)))
+(nu/mapping-list (describe/mapping (chart/stripplot)))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :species :color :species}
@@ -297,9 +301,10 @@
                     :legend false}
                    {:width 600 :height 280})
 
-;; Its options: the point style, the jitter spread (seeded for the same image on every build) and the padding:
+;; These options style the points and set the jitter, seeded here so every build draws the same image. The panels
+;; show no jitter, a wide jitter of outlined squares, and `:padding`:
 
-(nu/options-table (describe/own-rows (describe/options (chart/stripplot))))
+(nu/option-cards 'chart/stripplot (describe/own-rows (describe/options (chart/stripplot))))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :species}
@@ -321,13 +326,14 @@
                                  {:columns 3})
                    {:width 1000 :height 280})
 
-(nu/shared-groups (describe/options (chart/stripplot)))
+;; ## Beeswarm plots
 
-;; ## beeswarm
+;; `chart/beeswarm` draws every value as a point, packed across the strip so points don't overlap where the slot has
+;; room. Use it when each value counts and the swarm's width should show the density.
 
-;; Every value as a point, packed across the strip without overlaps - the swarm's width shows the density.
+(nu/shared-groups (describe/options (chart/beeswarm)))
 
-(nu/options-table (describe/mapping (chart/beeswarm)))
+(nu/mapping-list (describe/mapping (chart/beeswarm)))
 
 (plot/render-image {:data iris
                     :mapping {:x :species :y :petal-length :color :species}
@@ -335,10 +341,10 @@
                     :legend false}
                    {:width 600 :height 320})
 
-;; Its options: the point style (the size is also the packing diameter), squeezing a wide swarm into its slot,
-;; the packing direction and the padding:
+;; These options style the points and set how the chart packs them. The panels show large points left to overflow
+;; their slot and squeezed into it, and the packing around their values:
 
-(nu/options-table (describe/own-rows (describe/options (chart/beeswarm))))
+(nu/option-cards 'chart/beeswarm (describe/own-rows (describe/options (chart/beeswarm))))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-width}
@@ -355,7 +361,8 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; The point style, the default packing (`:across` - points move only across the value axis) and the padding:
+;; The left panel draws outlined triangles in the default packing, where points move only across the value axis; the
+;; right one sets `:padding`:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-width}
@@ -369,23 +376,24 @@
                                  {:columns 2})
                    {:width 900 :height 320})
 
-(nu/shared-groups (describe/options (chart/beeswarm)))
+;; ## Dot plots
 
-;; ## dotplot
+;; `chart/dotplot` bins the values along the value axis and stacks a dot per value in its bin (Wilkinson's dot plot).
+;; Use it to show a distribution's shape while every value stays countable.
 
-;; Values binned along the value axis, each a dot stacked in its bin (Wilkinson's dot plot).
+(nu/shared-groups (describe/options (chart/dotplot)))
 
-(nu/options-table (describe/mapping (chart/dotplot)))
+(nu/mapping-list (describe/mapping (chart/dotplot)))
 
 (plot/render-image {:data mtcars
                     :mapping {:x :mpg}
                     :charts [(chart/dotplot {:binwidth 1.5})]}
                    {:width 600 :height 280})
 
-;; Its options: the dot style, the binning (density or fixed bins from an origin), where dots sit, how they
-;; stack and the padding:
+;; These options style the dots and set how the chart bins and stacks them. The panels show fixed bins, stacks
+;; centred on their slots, and each dot at its own value:
 
-(nu/options-table (describe/own-rows (describe/options (chart/dotplot))))
+(nu/option-cards 'chart/dotplot (describe/own-rows (describe/options (chart/dotplot))))
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg}
@@ -402,7 +410,7 @@
                                  {:columns 3})
                    {:width 1000 :height 280})
 
-;; A style - a fixed dot size, outlined squares - and the padding:
+;; The left panel sets a fixed dot size and outlined squares; the right one sets `:padding`:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :mpg}
@@ -416,22 +424,24 @@
                                  {:columns 2})
                    {:width 800 :height 280})
 
-(nu/shared-groups (describe/options (chart/dotplot)))
+;; ## Rug plots
 
-;; ## rug
+;; `chart/rug` draws a short line per value, along the panel's edge or in one strip per level. Use it beside another
+;; chart to show where the values lie.
 
-;; A short line per value - along the panel's edge, or one strip per level; often beside another chart.
+(nu/shared-groups (describe/options (chart/rug)))
 
-(nu/options-table (describe/mapping (chart/rug)))
+(nu/mapping-list (describe/mapping (chart/rug)))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width}
                     :charts [(chart/scatter) (chart/rug {:mapping {:y nil}})]}
                    {:width 600 :height 320})
 
-;; Its options: the line colour and width, and the padding:
+;; These options set the lines' colour and width. The panels show the defaults with a rug per level, wider lines,
+;; and `:padding`:
 
-(nu/options-table (describe/own-rows (describe/options (chart/rug))))
+(nu/option-cards 'chart/rug (describe/own-rows (describe/options (chart/rug))))
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :petal-length :y :species}
@@ -450,5 +460,3 @@
                                    :labels {:title ":padding {:x [0.3 0.3]}"}}]
                                  {:columns 3})
                    {:width 1000 :height 260})
-
-(nu/shared-groups (describe/options (chart/rug)))

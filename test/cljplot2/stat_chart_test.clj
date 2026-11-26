@@ -174,7 +174,7 @@
     (let [default (first (:curves (panel (build {:data rows :mapping {:x :v} :charts [(chart/density {:cut 0})]}))))
           custom (first (:curves (panel (build {:data rows :mapping {:x :v} :charts [(chart/density {:cut 0 :bandwidth 0.5 :kernel :epanechnikov})]}))))]
       (is (not= (:y default) (:y custom)) "kernel and bandwidth used"))
-    (is (= :density (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density {:kernel :no-such-kernel})]})))))
+    (is (= :kernel (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density {:kernel :no-such-kernel})]})))))
     (are [opts k] (= k (:key (error #(build {:data rows :mapping {:x :v} :charts [(chart/density opts)]}))))
       {:n 1} :n
       {:cut -1} :cut

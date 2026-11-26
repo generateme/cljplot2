@@ -39,8 +39,8 @@
 
 (def ^:private style-entries
   "Map entries of the candlestick style (theme `[:chart :candlestick]`, also options)."
-  [(schema/optional :up-color {:description "The colour of a candle that closes at or above its open." :cljplot2/example :seagreen} schema/color)
-   (schema/optional :down-color {:description "The colour of a candle that closes below its open." :cljplot2/example :firebrick} schema/color)
+  [(schema/optional :up-color {:description "The colour of a candle that closes at or above its open." :cljplot2/example :seagreen} schema/solid-color)
+   (schema/optional :down-color {:description "The colour of a candle that closes below its open." :cljplot2/example :firebrick} schema/solid-color)
    (schema/optional :width {:description "The body width, as a fraction of the smallest step between x values (of a band's width on a categorical axis)." :cljplot2/example 0.5}
                     schema/fraction)
    (schema/optional :line-width {:description "The width in pixels of the wicks, or of the bars with `:style :ohlc`." :cljplot2/example 2} schema/non-neg)

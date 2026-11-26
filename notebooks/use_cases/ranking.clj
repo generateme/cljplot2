@@ -160,7 +160,7 @@
 
 ;; ### Error bars
 
-;; [`chart/extent`](reference.charts_per_level.html#extent) with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
+;; [`chart/extent`](reference.charts_per_level.html#error-bars) with the bars' mapping takes the same slots: mean bars with ± one standard deviation.
 
 (nu/source-note {:source "R Graph Gallery - Barplot with error bars"
                  :url "https://r-graph-gallery.com/4-barplot-with-error-bar.html"

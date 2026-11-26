@@ -64,7 +64,8 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   schema. A chart draws with
   `(theme/resolved-style theme chart)` - its style keys are the entries of its `:schema` `:style` (extras a chart
   takes outside it are merged explicitly); a style key that isn't an option (theme only, e.g. cloud
-  `:projection-alpha-factor`) is shown on the chart page with `describe/style-rows kind keys`. The theme style is
+  `:projection-alpha-factor`) is shown on the chart page with `describe/style-rows kind keys` (on a migrated page in a
+  Theme keys box, `nu/theme-key-list`). The theme style is
   `(theme/chart-style theme kind options)`: `[:chart kind]` with the named style of its `:theme-style` option
   (shared group `:theme-style`, every kind with a theme style) merged over it, its own style options over both.
   Named styles are partial `[:chart name]` entries; builders draw with registered ones (`theme/named-styles` - name
@@ -291,7 +292,7 @@ the theme: banned names, and one type family per name across all owners). One na
   `nu/option-cards call rows [section]` instead of options tables (per option a boxed card: a header with the option
   and its default, an example call, then its description, a bullet per value or form with its meaning and the other
   values of a long list on one line), each card group after a sentence or two on what the options are for, and
-  `nu/mapping-list` (a titled Mapping box) instead of the mapping table; the section heading names the concept
+  `nu/mapping-list` (a titled Mapping box; a section of sliced mapping rows) instead of the mapping table; the section heading names the concept
   (`describe/concepts`, e.g. `## Smoothing`), its first sentence names the function and says what it's for; type
   names link to the Types chapter (`nu/type-entries`, from `describe/documented-types` - `schema/named-types` and higher layers' documented named
   types). Links into a reference section
@@ -355,7 +356,8 @@ the theme: banned names, and one type family per name across all owners). One na
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -
   is listed with its reason; one the chart can't draw without - `:f`, a rule's positions - is listed in `needed-to-draw`
-  and only has to render);
+  and only has to render); an option whose card documents `:none` renders with it (`none-colours-test`; a colour that
+  can't draw nothing takes `schema/solid-color`);
   `migrated` equals the keys of `describe/concepts` and each migrated section uses cards, never an options table, and a
   mapping list when the chart has mapping keys.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata

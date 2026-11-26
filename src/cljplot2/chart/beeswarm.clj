@@ -17,7 +17,8 @@
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
   Functions: [[swarm-offsets]], [[around-offsets]] and [[fit-offsets]] - the packing; the key glyph is [[cljplot2.chart.legend/point-legend]] (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]]); [[schemas]] - its style, options and mapping."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
             [cljplot2.data.position :as position]
@@ -34,11 +35,11 @@
 
 (def ^:private style-entries
   "Map entries of the beeswarm's point style (theme `[:chart :beeswarm]`), also its options."
-  [(schema/optional :size {:description "point size in pixels, also the packing diameter (a mapped :size wins)"} schema/non-neg)
-   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
-   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
+  [(schema/optional :size {:description "The point size in pixels, also the diameter the packing keeps apart; a mapped `:size` wins." :cljplot2/example 12} schema/non-neg)
+   (schema/optional :color {:description "The colour of the points; a mapped `:color` wins." :cljplot2/value-meanings {:none "No fill."} :cljplot2/example :orange} schema/color)
+   (schema/optional :stroke-color {:description "The colour of each point's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+   (schema/optional :stroke-width {:description "The width of the outline in pixels; `0` draws no outline." :cljplot2/example 3 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :shape {:description "The shape of every point; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)])
 
 (def schemas
   "Schemas of the beeswarm chart: `:style` (theme `[:chart :beeswarm]`), `:options`, `:mapping` (merged)."
@@ -48,23 +49,24 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/nilable :fit {:description "squeeze a swarm wider than its item's cross range into it (points may then overlap)"
-                                             :default true}
+                (conj (schema/nilable :fit {:description "Whether the chart squeezes a swarm wider than its slot into it; the points may then overlap."
+                                             :default true :cljplot2/value-meanings {true "Squeezes the swarm into its slot." false "Keeps the packing; the swarm may leave its slot."}
+                                             :cljplot2/example-context {:size 40}}
                                       schema/bool)
-                      (schema/optional :pack {:description "packing: :across (points move only across the value axis) or :around (in both directions - round clusters, points may leave their value a little)"
-                                              :default :across}
+                      (schema/optional :pack {:description "How the chart packs the points."
+                                              :default :across
+                                              :cljplot2/value-meanings {:across "Across the value axis only, so equal values form a line."
+                                                                        :around "In both directions: close values form round clusters, the points up to a few diameters off their value."}}
                                        [:enum :across :around])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                                       data/position-padding)))
+                      strip/padding-option))
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical swarms"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one swarm), or values for vertical swarms"}
+              [(schema/nilable :x {:description "The values of horizontal swarms, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal swarms, or the values of vertical ones; with no levels the chart draws one swarm."}
                                schema/accessor)
-               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
-               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
-               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each in its own point colour."} schema/accessor)
+               (schema/nilable :shape {:description "Splits the rows into groups, each with its own point shape."} schema/accessor)
+               (schema/nilable :size {:description "Splits the rows into groups, each with its own point size."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, dodged as other groups."} schema/accessor)])})
 
 (def ^{:const true :private true :tag 'double} eps
   "Tolerance (pixels) of the packing: offsets closer than this to an interval end count as on it."
@@ -255,6 +257,7 @@
   (let [{:keys [point span value-pixel] :as pl} (strip-chart/placement box scales options place)
         fit? (data/option options :fit true)
         around? (= :around (:pack options))]
+    (c2d/set-stroke-custom canvas {:size (:stroke-width style)})
     (doseq [{:keys [level slot values aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))
                   s (double (span level))]

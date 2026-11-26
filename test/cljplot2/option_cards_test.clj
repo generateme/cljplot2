@@ -11,8 +11,10 @@
             [clojure2d.core :as c2d]
             [fastmath.core :as m]
             [fastmath.random :as r]
+            [fastmath.stats :as stats]
             [malli.core :as malli]
             [cljplot2.chart :as chart]
+            [cljplot2.chart.extent :as extent-chart]
             [cljplot2.data.pairwise :as pairwise]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
@@ -249,10 +251,17 @@
   "Rows of two related variables, the fixture of the statistic cells."
   (map (fn [i] {:x i :y (m/+ i (m/* 4.0 (m/sin (m/* 1.7 i))))}) (range 20)))
 
+(def ^:private per-level
+  "Rows of two levels, 12 and 7 spread values (unequal counts) and an outlier - the fixture of the distribution per level
+  charts."
+  (for [l ["a" "b"] i (range (if (= l "a") 12 7))]
+    {:l l :v (m/+ (m/* 0.4 i) (m/sin (m/* 2.3 i)) (if (= l "a") 0.0 2.0) (if (m/== i 11) 6.0 0.0))}))
+
 (def ^:private example-fixtures
-  "Kind -> a small plot (`:data`, `:mapping`, `:scales`) on which every option example of the kind changes the picture:
+  "Kind -> a small plot (`:data`, `:mapping`, `:scales`, and `:options` under every example, e.g. a seeded `:rng`) on
+  which every option example of the kind changes the picture:
   unsorted x, two groups, a missing y, up and down candles, bars of two groups below 0, two bullets, two related
-  variables (statistic cells); annotation charts draw from their examples' options, on
+  variables (statistic cells), two levels of spread values with an outlier (distribution per level); annotation charts draw from their examples' options, on
   fixed scales where an example adds no extent (rule, text, function)."
   (let [xs [3 1 4 2 6 5 8 7]
         rows (for [g ["a" "b"] [i x] (map-indexed vector xs)]
@@ -278,6 +287,13 @@
            :mapping {:x :k :y :v :group :g}}
      :bullet {:data [{:k "revenue" :r [60 80 100] :m [92 75] :t [95]} {:k "costs" :r [50 75 100] :m [70 60] :t [80]}]
               :mapping {:y :k :ranges :r :measures :m :markers :t}}
+     :box {:data per-level :mapping {:x :v :y :l}}
+     :violin {:data per-level :mapping {:x :v :y :l}}
+     :extent {:data per-level :mapping {:x :v :y :l}}
+     :stripplot {:data per-level :mapping {:x :v :y :l} :options {:rng (r/rng :mersenne 3)}}
+     :beeswarm {:data per-level :mapping {:x :v :y :l}}
+     :dotplot {:data per-level :mapping {:x :v :y :l}}
+     :rug {:data per-level :mapping {:x :v :y :l}}
      :correlation {:data correlated :mapping {:x :x :y :y}}
      :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 
@@ -309,7 +325,8 @@
    [:text [:text]] "literal labels need :x, :y and :text"
    [:image [:f]] "the chart's one required option"
    [:function [:f]] "a function chart needs :f or :parametric" [:function [:parametric]] "a function chart needs :f or :parametric"
-   [:function [:t]] ":parametric needs :t"})
+   [:function [:t]] ":parametric needs :t"
+   [:box [:stat]] "its example's own data holds statistics, not values: :tukey has nothing to compute"})
 
 (defn- drawable?
   "Tests whether a fixture plot draws: its chart's options valid and the plot rendering without an error.
@@ -328,8 +345,8 @@
           :let [constructor (get (describe/chart-constructors) kind)
                 rows (describe/options (constructor))
                 options-schema (get-in (constructor) [:schema :options])
-                {:keys [data mapping scales]} (example-fixtures kind)
-                draw (fn [options] (cond-> {:data data :mapping mapping :charts [(constructor options)]} scales (assoc :scales scales)))]
+                {:keys [data mapping scales] base :options} (example-fixtures kind)
+                draw (fn [options] (cond-> {:data data :mapping mapping :charts [(constructor (merge base options))]} scales (assoc :scales scales)))]
           row (leaf-rows (describe/own-rows rows))
           :when (not (contains? inert-in-fixtures [kind (:path row)]))
           :let [example (evaluated (describe/example-options rows row))]]
@@ -400,3 +417,21 @@
 (deftest statistic-descriptions-test
   (testing "every built-in statistic says what it measures (its card meaning, `pairwise/statistic-meanings`)"
     (is (every? #(seq (:description %)) (vals pairwise/statistics)))))
+
+(deftest none-colours-test
+  (testing "every migrated chart's colour option documenting :none (a colour form beside it) draws with it"
+    (doseq [kind migrated
+            :let [constructor (get (describe/chart-constructors) kind)
+                  {:keys [data mapping scales] base :options} (example-fixtures kind)]
+            row (leaf-rows (describe/own-rows (describe/options (constructor))))
+            :when (and (some #(= :none (:value %)) (:values row)) (some #(= ::schema/solid-color (:form %)) (:forms row)))
+            :let [options (assoc-in (or (evaluated (describe/example-options (describe/options (constructor)) row)) {}) (:path row) :none)
+                  p (cond-> {:data data :mapping mapping :charts [(constructor (merge base options))]} scales (assoc :scales scales))]]
+      (testing (str kind " " (:path row))
+        (is (some? (plot/render-image p {:width 160 :height 120})))))))
+
+(deftest extent-method-descriptions-test
+  (testing "every extent method says what it gives (its card meaning)"
+    (is (= (set (concat (keys extent-chart/extent-methods) (keys extent-chart/bootstrap-intervals)))
+           (set (keys extent-chart/method-descriptions))))
+    (is (every? #(re-find #"^[A-Z`].*\.$" %) (vals extent-chart/method-descriptions)))))

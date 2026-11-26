@@ -23,8 +23,8 @@
 
 (def ^:private style-entries
   "Map entries of the rug's style (theme `[:chart :rug]`), also its options."
-  [(schema/optional :color {:description "rug line colour (a mapped :color wins)"} schema/color)
-   (schema/optional :line-width {:description "rug line width in pixels (0 - nothing drawn)"} schema/non-neg)])
+  [(schema/optional :color {:description "The colour of the rug lines; a mapped `:color` wins." :cljplot2/example :orange} schema/solid-color)
+   (schema/optional :line-width {:description "The width of the rug lines in pixels; `0` draws nothing." :cljplot2/example 3} schema/non-neg)])
 
 (def schemas
   "Schemas of the rug chart: `:style` (theme `[:chart :rug]`), `:options`, `:mapping` (merged)."
@@ -34,15 +34,13 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                         :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                               data/position-padding)))
+                (conj strip/padding-option))
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical rugs"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one rug along the panel edge), or values for vertical rugs"}
+              [(schema/nilable :x {:description "The values of horizontal rugs, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal rugs, or the values of vertical ones; with no levels the chart draws one rug along the panel edge."}
                                schema/accessor)
-               (schema/nilable :color {:description "groups, each in its own line colour"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each in its own line colour."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, dodged as other groups."} schema/accessor)])})
 
 (defn- compute-in-strip-frame
   "Computes the rug's stats in the strip frame (levels on `:y`).

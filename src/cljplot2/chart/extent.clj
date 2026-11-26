@@ -64,12 +64,37 @@
    :percentile-bc stats/percentile-bc-extent
    :percentile-bca stats/percentile-bca-extent})
 
+(def method-descriptions
+  "What each method of [[extent-methods]] and [[bootstrap-intervals]] gives, as sentences for option cards: keyword -> sentence."
+  {:min-max "The smallest and the largest value."
+   :stddev "The mean plus and minus one standard deviation."
+   :mad "The median plus and minus the median absolute deviation."
+   :sem "The mean plus and minus its standard error."
+   :percentile "Two percentiles around the median, by default the 25th and 75th."
+   :quantile "Two quantiles around the median, by default the 0.25 and 0.75 quantiles."
+   :pi "The central interval holding a share of the values, with equal tails, by default half."
+   :hpdi "The narrowest interval holding a share of the values, by default 95%."
+   :adjacent "The box plot's whisker ends: the most extreme values within 1.5 IQR of the quartiles."
+   :inner-fence "The quartiles widened by 1.5 IQR."
+   :outer-fence "The quartiles widened by 3 IQR."
+   :ci "The t-based confidence interval of the mean, by default 95%."
+   :percentile-bc "A bias-corrected percentile interval, by default from the 2.5th to the 97.5th percentile."
+   :percentile-bca "A bias-corrected and accelerated percentile interval, by default from the 2.5th to the 97.5th percentile."
+   :bootstrap-normal "A bootstrap interval of `:statistic` by the normal approximation."
+   :bootstrap-basic "A basic bootstrap interval of `:statistic`."
+   :bootstrap-percentile "The percentile bootstrap interval of `:statistic`, by default 95% of 500 resamples."
+   :bootstrap-mad-median "The median of the resampled `:statistic` plus and minus their median absolute deviation: a spread band, not a confidence interval."
+   :bootstrap-bc "A bias-corrected bootstrap interval of `:statistic`."
+   :bootstrap-bca "A bias-corrected and accelerated bootstrap interval of `:statistic`."
+   :bootstrap-studentized "A studentized bootstrap interval of `:statistic`."
+   :bootstrap-t "A bootstrap-t interval of `:statistic`."})
+
 (def ^:private style-entries
   "Map entries of the extent style (theme `[:chart :extent]`, also options)."
-  [(schema/optional :color {:description "interval colour (a mapped :color wins)"} schema/color)
-   (schema/optional :line-width {:description "interval line width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "shape of the centre mark (a mapped :shape wins)"} schema/shape)
-   (schema/optional :size {:description "size of the centre mark in pixels (a mapped :size wins)"} schema/non-neg)])
+  [(schema/optional :color {:description "The colour of the intervals; a mapped `:color` wins." :cljplot2/example :orange} schema/solid-color)
+   (schema/optional :line-width {:description "The width of the interval lines in pixels." :cljplot2/example 5} schema/non-neg)
+   (schema/optional :shape {:description "The shape of the centre mark; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)
+   (schema/optional :size {:description "The size of the centre mark in pixels; a mapped `:size` wins." :cljplot2/example 14} schema/non-neg)])
 
 (def schemas
   "Schemas of the extent chart: `:style` (theme `[:chart :extent]`), `:options`, `:mapping` (merged)."
@@ -79,33 +104,41 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :method {:description "interval of the values: a fastmath extent or bootstrap method keyword, or a function of the values returning [lo hi] or [lo hi centre]"
-                                                :default :min-max}
+                (conj (schema/optional :method {:description "How the chart computes each interval from the values."
+                                                :default :min-max
+                                                :cljplot2/value-meanings (select-keys method-descriptions [:min-max :stddev :sem :ci :percentile :bootstrap-percentile])
+                                                :cljplot2/other-values "Other fastmath extents and bootstrap intervals; the bootstrap ones resample `:statistic`."
+                                                :cljplot2/form-meanings {::schema/function "A function of the values that returns `[lo hi]` or `[lo hi centre]`."}
+                                                :cljplot2/example :stddev}
                                        [:or (into [:enum] (sort (concat (keys extent-methods) (keys bootstrap-intervals))))
                                         schema/function])
-                      (schema/nilable :statistic {:description "statistic of the values resampled by the bootstrap methods"
-                                                  :cljplot2/default-doc "fastmath mean"}
+                      (schema/nilable :statistic {:description "The statistic the bootstrap methods compute on each resample, a function of the values."
+                                                  :cljplot2/default-doc "The mean."
+                                                  :cljplot2/example '(fn [vs] (stats/median vs))
+                                                  :cljplot2/example-context {:method :bootstrap-percentile :rng '(r/rng :mersenne 7)}}
                                       schema/function)
-                      (schema/nilable :method-args {:description "extra arguments passed to the method after the values (e.g. [10.0 90.0] for :percentile)"}
+                      (schema/nilable :method-args {:description "Extra arguments the method takes after the values, e.g. `[10.0 90.0]` for `:percentile`, `[0.01]` (alpha) for a 99% `:ci`, `[alpha samples]` for a bootstrap method."
+                                                    :cljplot2/default-doc "None: the method's defaults."
+                                                    :cljplot2/example [10.0 90.0] :cljplot2/example-context {:method :percentile}}
                                       [:sequential any?])
-                      (schema/nilable :rng {:description "fastmath random generator of the bootstrap methods, copied per build (every build draws the same samples)"
-                                            :cljplot2/default-doc "a fresh generator every build"}
+                      (schema/nilable :rng {:description "The random generator the bootstrap methods resample with. A seeded one gives the same intervals on every build."
+                                            :cljplot2/default-doc "An unseeded generator, so each build resamples differently."
+                                            :cljplot2/example '(r/rng :mersenne 7) :cljplot2/example-context {:method :bootstrap-percentile}}
                                       rng/schema)
-                      (schema/optional :center {:description "centre mark: :method (the method's centre) or :none"
-                                                :default :method}
+                      (schema/optional :center {:description "What the chart marks at each interval's centre."
+                                                :default :method
+                                                :cljplot2/value-meanings {:method "The method's centre, e.g. the mean or median." :none "No centre mark."}}
                                        [:enum :method :none])
                       strip/mirror-option
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                                       data/position-padding)))
+                      strip/padding-option))
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical intervals"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one interval), or values for vertical intervals"}
+              [(schema/nilable :x {:description "The values of horizontal intervals, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal intervals, or the values of vertical ones; with no levels the chart draws one interval."}
                                schema/accessor)
-               (schema/nilable :color {:description "interval colour per group (gives legend keys)"} schema/accessor)
-               (schema/nilable :shape {:description "centre mark shape per group"} schema/accessor)
-               (schema/nilable :size {:description "centre mark size per group"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic (dodged as other groups)"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each with its own interval colour."} schema/accessor)
+               (schema/nilable :shape {:description "Splits the rows into groups, each with its own centre mark shape."} schema/accessor)
+               (schema/nilable :size {:description "Splits the rows into groups, each with its own centre mark size."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own interval beside the others of its level."} schema/accessor)])})
 
 (defn- bootstrap-interval
   "Gives a bootstrap interval of a statistic of values.

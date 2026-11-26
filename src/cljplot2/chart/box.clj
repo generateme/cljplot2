@@ -50,24 +50,23 @@
 
 (def ^:private style-entries
   "Map entries of the box style (theme `[:chart :box]`), also its options."
-  (into [(schema/optional :color {:description "box fill colour; the Tufte variant's median point and mean marker (a mapped :color wins)"}
+  (into [(schema/optional :color {:description "The fill colour of the boxes, and of the `:tufte` median point and mean marker; a mapped `:color` wins." :cljplot2/example :orange}
                           schema/solid-color)
-         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines"}
+         (schema/optional :stroke-color {:description "The colour of the box outline, the whiskers and the outlier outlines."
+                                         :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No box outline; the whiskers take the darkened fill."}}
                           draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline and whisker width in pixels (0 - no box outline)"} schema/non-neg)
-         (schema/optional :shape {:description "outlier point shape, also the Tufte median point (a mapped :shape wins)"} schema/shape)
-         (schema/optional :size {:description "outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)"}
+         (schema/optional :stroke-width {:description "The width of the box outline, the whiskers and the median line in pixels; `0` draws no box outline." :cljplot2/example 3} schema/non-neg)
+         (schema/optional :shape {:description "The shape of the outlier points and of the `:tufte` median point; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)
+         (schema/optional :size {:description "The size of the outlier points and of the `:tufte` median point in pixels; the mean marker is half of it, at least 3 pixels. A mapped `:size` wins." :cljplot2/example 12}
                           schema/non-neg)]
         draw/pattern-style-entries))
 
 (def ^:private padding-entry
   "Map entry of the `:padding` option."
-  (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                             :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                   data/position-padding))
+  strip/padding-option)
 
 (def ^:private stat-keys-doc
-  "with :stat :identity, the statistics of a level and group")
+  "With `:stat :identity`, a row's statistic of its level and group")
 
 (def schemas
   "Schemas of the box chart: `:style` (theme `[:chart :box]`), `:options`, `:mapping` (merged)."
@@ -77,36 +76,47 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :stat {:description "statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)"
-                                              :default :tukey}
+                (conj (schema/optional :stat {:description "Where the box statistics come from."
+                                              :default :tukey
+                                              :cljplot2/value-meanings {:tukey "Computed from the values: quartiles, whiskers to the most extreme values within 1.5 IQR, outliers beyond."
+                                                                        :identity "Read from one row per level and group, through the mapping keys `:lower`, `:q1`, `:median`, `:q3`, `:upper`."}
+                                              :cljplot2/example-context {:data [{:l "a" :lo 1 :a 2 :m 3 :b 4 :hi 6}]
+                                                                         :mapping {:x nil :y :l :lower :lo :q1 :a :median :m :q3 :b :upper :hi}}}
                                        [:enum :tukey :identity])
-                      (schema/nilable :outliers {:description "draw the outliers (and include them in the value extent)" :default true} schema/bool)
-                      (schema/nilable :mean {:description "draw a mean marker (with :stat :identity it needs :mean mapped)" :default false} schema/bool)
-                      (schema/nilable :varwidth {:description "box width proportional to the square root of its count, relative to the largest (with :stat :identity it needs :n mapped)"
-                                                 :default false}
+                      (schema/nilable :outliers {:description "Whether the chart draws the outliers; drawn outliers also widen the value axis." :default true
+                                                 :cljplot2/value-meanings {true "Draws them." false "Draws none."}}
                                       schema/bool)
-                      (schema/nilable :variant {:description "drawing: :classic (box, median line, whiskers with caps) or :tufte (Tufte's quartile plot: whisker lines and a median point, no box)"
-                                                :default :classic}
+                      (schema/nilable :mean {:description "Draws a mean marker; with `:stat :identity` it needs `:mean` mapped." :default false
+                                             :cljplot2/value-meanings {true "Draws it." false "Draws none."}}
+                                      schema/bool)
+                      (schema/nilable :varwidth {:description "How wide each box is relative to the widest one; with `:stat :identity` it needs `:n` mapped."
+                                                 :default false
+                                                 :cljplot2/value-meanings {true "By the square root of each box's count of values." false "Every box equally wide."}}
+                                      schema/bool)
+                      (schema/nilable :variant {:description "How the chart draws each box."
+                                                :default :classic
+                                                :cljplot2/value-meanings {:classic "A box with a median line and whiskers with caps."
+                                                                          :tufte "Tufte's quartile plot: no box, a median point and a line from each whisker end to its quartile."}}
                                       [:enum :classic :tufte])
                       padding-entry))
    :mapping (schema/with-rules
               [:map
-               (schema/nilable :x {:cljplot2/section :values :description "values (data units) on the value axis (not read with :stat :identity), or levels for vertical boxes"}
+               (schema/nilable :x {:cljplot2/section :values :description "The values of horizontal boxes, or the levels of vertical ones; `:stat :identity` reads no values."}
                                schema/accessor)
-               (schema/nilable :y {:cljplot2/section :values :description "levels on the categorical axis (absent - one box), or values for vertical boxes"} schema/accessor)
-               (schema/nilable :color {:cljplot2/section :values :description "groups, each a box in its own fill colour"} schema/accessor)
-               (schema/nilable :pattern {:cljplot2/section :values :description "groups, each a box with its own fill pattern"} schema/accessor)
-               (schema/nilable :shape {:cljplot2/section :values :description "groups, each with its own outlier shape"} schema/accessor)
-               (schema/nilable :size {:cljplot2/section :values :description "groups, each with its own outlier size"} schema/accessor)
-               (schema/nilable :group {:cljplot2/section :values :description "groups without a visual aesthetic, each its own box"} schema/accessor)
-               (schema/nilable :lower {:cljplot2/section :summary :description (str stat-keys-doc ": the lower whisker end")} schema/accessor)
-               (schema/nilable :q1 {:cljplot2/section :summary :description (str stat-keys-doc ": the first quartile")} schema/accessor)
-               (schema/nilable :median {:cljplot2/section :summary :description (str stat-keys-doc ": the median")} schema/accessor)
-               (schema/nilable :q3 {:cljplot2/section :summary :description (str stat-keys-doc ": the third quartile")} schema/accessor)
-               (schema/nilable :upper {:cljplot2/section :summary :description (str stat-keys-doc ": the upper whisker end")} schema/accessor)
-               (schema/nilable :outliers {:cljplot2/section :summary :description (str stat-keys-doc ": a collection of outlier values (optional)")} schema/accessor)
-               (schema/nilable :mean {:cljplot2/section :summary :description (str stat-keys-doc ": the mean (needed by the :mean option)")} schema/accessor)
-               (schema/nilable :n {:cljplot2/section :summary :description (str stat-keys-doc ": the count (needed by :varwidth and :n-label)")} schema/accessor)]
+               (schema/nilable :y {:cljplot2/section :values :description "The levels of horizontal boxes, or the values of vertical ones; with no levels the chart draws one box."} schema/accessor)
+               (schema/nilable :color {:cljplot2/section :values :description "Splits the rows into groups, each a box in its own fill colour."} schema/accessor)
+               (schema/nilable :pattern {:cljplot2/section :values :description "Splits the rows into groups, each a box with its own fill pattern."} schema/accessor)
+               (schema/nilable :shape {:cljplot2/section :values :description "Splits the rows into groups, each with its own outlier shape."} schema/accessor)
+               (schema/nilable :size {:cljplot2/section :values :description "Splits the rows into groups, each with its own outlier size."} schema/accessor)
+               (schema/nilable :group {:cljplot2/section :values :description "Splits the rows into groups that look the same, each its own box."} schema/accessor)
+               (schema/nilable :lower {:cljplot2/section :summary :description (str stat-keys-doc ": the lower whisker end.")} schema/accessor)
+               (schema/nilable :q1 {:cljplot2/section :summary :description (str stat-keys-doc ": the first quartile.")} schema/accessor)
+               (schema/nilable :median {:cljplot2/section :summary :description (str stat-keys-doc ": the median.")} schema/accessor)
+               (schema/nilable :q3 {:cljplot2/section :summary :description (str stat-keys-doc ": the third quartile.")} schema/accessor)
+               (schema/nilable :upper {:cljplot2/section :summary :description (str stat-keys-doc ": the upper whisker end.")} schema/accessor)
+               (schema/nilable :outliers {:cljplot2/section :summary :description (str stat-keys-doc ": a collection of outlier values, optional.")} schema/accessor)
+               (schema/nilable :mean {:cljplot2/section :summary :description (str stat-keys-doc ": the mean, which the `:mean` option needs.")} schema/accessor)
+               (schema/nilable :n {:cljplot2/section :summary :description (str stat-keys-doc ": the count, which `:varwidth` and `:n-label` need.")} schema/accessor)]
               [#(when-not (or (some? (:x %)) (some? (:y %)) (some? (:q1 %)))
                   "should map :x or :y (the values), or the statistics (:q1 ... with :stat :identity)")
                nil])})

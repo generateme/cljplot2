@@ -373,22 +373,43 @@
      (kindly/hide-code
       (kind/hiccup (into [:dl {:class "options"}] (map #(option-card call rows %)) shown))))))
 
-(defn mapping-list
-  "The mapping keys of a chart in a titled box, its code hidden: each key, `required` when the chart needs it, and its
-  description. `rows` - `cljplot2.describe/mapping` of the chart. Throws `ex-info {:key :rows}` for no rows."
-  [rows]
-  (when (empty? rows)
-    (throw (ex-info "A mapping list needs rows." {:key :rows :value rows})))
+(defn- key-box
+  "Hiccup of a titled box of keys (class `mapping`), its code hidden: a point per row - its key, the `extra` hiccup of
+  the row, and its description.
+
+  Parameters: `title` (string); `hint` (hiccup, after the title); `rows` (option rows); `extra` - a function of a row
+  giving hiccup after the key (a sequence, possibly empty)."
+  [title hint rows extra]
   (kindly/hide-code
    (kind/hiccup [:div {:class "mapping"}
-                 [:div {:class "mapping-title"} "Mapping"
-                  [:span {:class "mapping-hint"} " – the row values the chart reads, under " [:code ":mapping"]]]
+                 (into [:div {:class "mapping-title"} title] hint)
                  (into [:ul]
-                       (map (fn [{:keys [path required description]}]
+                       (map (fn [{:keys [path description] :as row}]
                               (into [:li [:code (str/join " " (map pr-str path))]]
-                                    (concat (when required [" " [:span {:class "required"} "required"]])
-                                            [" – "] (rich-text description)))))
+                                    (concat (extra row) [" – "] (rich-text description)))))
                        rows)])))
+
+(defn mapping-list
+  "The mapping keys of a chart in a titled box, its code hidden: each key, `required` when the chart needs it, and its
+  description. `rows` - `cljplot2.describe/mapping` of the chart; `section` (optional) - only the rows of that
+  `:cljplot2/section`. Throws `ex-info {:key :rows}` for no rows (none in the section)."
+  ([rows] (mapping-list rows nil))
+  ([rows section]
+   (let [shown (cond->> rows section (filter #(= section (:section %))))]
+     (when (empty? shown)
+       (throw (ex-info "A mapping list needs rows." {:key :rows :value rows :section section})))
+     (key-box "Mapping" [[:span {:class "mapping-hint"} " – the row values the chart reads, under " [:code ":mapping"]]] shown
+              (fn [{:keys [required]}] (when required [" " [:span {:class "required"} "required"]]))))))
+
+(defn theme-key-list
+  "The theme-only style keys of a chart kind in a titled box, its code hidden: each key with its default theme value
+  and its description - keys a theme sets that aren't chart options. `kind` - the chart kind; `rows` -
+  `cljplot2.describe/style-rows` of the keys. Throws `ex-info {:key :rows}` for no rows."
+  [kind rows]
+  (when (empty? rows)
+    (throw (ex-info "A theme key list needs rows." {:key :rows :value rows})))
+  (key-box "Theme keys" [[:span {:class "mapping-hint"} " – set under " [:code (pr-str [:theme :chart kind])] ", not options"]] rows
+           (fn [{:keys [default]}] (when (some? default) [" (default " [:code (pr-str default)] ")"]))))
 
 (defn type-entries
   "The Types page's sections, its code hidden: a `##` heading per documented type (`cljplot2.describe/documented-types`,

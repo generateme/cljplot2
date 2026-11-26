@@ -49,7 +49,7 @@ code-block-background: true
 
 # Distribution per level
 
-Charts that show how the values of each level are spread: summaries (`box`, `violin`, `extent`) and the values
+These charts draw how the values of each level are spread: summaries (`box`, `violin`, `extent`) and the values
 themselves (`stripplot`, `beeswarm`, `dotplot`, `rug`). Use them to compare spreads across levels; they all take
 the [Strip options](reference.shared_options.html#strip-options) for placement, width and grouping.
 
@@ -100,18 +100,21 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 
-## box
+## Box plots
 
-A box per level (and group): the quartiles, the median, whiskers to the most extreme values within 1.5 IQR of
-the box and the outliers past them - computed from the values ...
+`chart/box` draws a box per level and group: the quartiles, the median, whiskers and outliers. Use it to compare
+the spread of many levels at a glance. By default the chart computes the statistics from the values:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis (not read with :stat :identity), or levels for vertical boxes</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one box), or values for vertical boxes</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a box in its own fill colour</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a box with its own fill pattern</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own outlier shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own outlier size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own box</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal boxes, or the levels of vertical ones; <code>:stat :identity</code> reads no values.</li><li><code>:y</code> – The levels of horizontal boxes, or the values of vertical ones; with no levels the chart draws one box.</li><li><code>:color</code> – Splits the rows into groups, each a box in its own fill colour.</li><li><code>:pattern</code> – Splits the rows into groups, each a box with its own fill pattern.</li><li><code>:shape</code> – Splits the rows into groups, each with its own outlier shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own outlier size.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own box.</li></ul></div>
+```
 
 
 
@@ -132,15 +135,12 @@ the box and the outliers past them - computed from the values ...
 :::
 
 
-... or read from rows of precomputed statistics, one row per level and group, with `:stat :identity`:
+With `:stat :identity` the chart reads the statistics from one row per level and group instead:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:lower</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the lower whisker end</td></tr><tr><td>:q1</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the first quartile</td></tr><tr><td>:median</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the median</td></tr><tr><td>:q3</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the third quartile</td></tr><tr><td>:upper</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the upper whisker end</td></tr><tr><td>:outliers</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: a collection of outlier values (optional)</td></tr><tr><td>:mean</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the mean (needed by the :mean option)</td></tr><tr><td>:n</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>with :stat :identity, the statistics of a level and group: the count (needed by :varwidth and :n-label)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:lower</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the lower whisker end.</li><li><code>:q1</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the first quartile.</li><li><code>:median</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the median.</li><li><code>:q3</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the third quartile.</li><li><code>:upper</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the upper whisker end.</li><li><code>:outliers</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: a collection of outlier values, optional.</li><li><code>:mean</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the mean, which the <code>:mean</code> option needs.</li><li><code>:n</code> – With <code>:stat :identity</code>, a row's statistic of its level and group: the count, which <code>:varwidth</code> and <code>:n-label</code> need.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -178,17 +178,14 @@ the box and the outliers past them - computed from the values ...
 :::
 
 
-Its options: the box and outlier style, the statistics, outliers on or off, the mean marker, widths by count and
-the Tufte variant (whisker lines and a median point) - here on rear axle ratios, with outliers in the 4- and
-8-cylinder groups:
+These options style the boxes and outliers and pick what the chart draws. The plots below show rear axle ratios,
+where the 4- and 8-cylinder groups have outliers: a custom style with the mean marker, no outliers with widths by
+count, and the Tufte variant:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[0 114 178]</td><td>box fill colour; the Tufte variant's median point and mean marker (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill); also the whiskers and outlier outlines</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline and whisker width in pixels (0 - no box outline)</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>outlier point shape, also the Tufte median point (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>5</td><td>outlier point size in pixels, also the Tufte median point; the mean marker is half of it (a mapped :size wins)</td></tr><tr><td>:stat</td><td>one of :tukey :identity</td><td>:tukey</td><td>statistics: :tukey (computed from the values) or :identity (pre-aggregated, one row per level and group read through the mapping keys :lower :q1 :median :q3 :upper)</td></tr><tr><td>:outliers</td><td>true or false or nil</td><td>true</td><td>draw the outliers (and include them in the value extent)</td></tr><tr><td>:mean</td><td>true or false or nil</td><td>false</td><td>draw a mean marker (with :stat :identity it needs :mean mapped)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>box width proportional to the square root of its count, relative to the largest (with :stat :identity it needs :n mapped)</td></tr><tr><td>:variant</td><td>one of :classic :tufte or nil</td><td>:classic</td><td>drawing: :classic (box, median line, whiskers with caps) or :tufte (Tufte's quartile plot: whisker lines and a median point, no box)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/box {:color :orange})</code></div><div class="option-text">The fill colour of the boxes, and of the <code>:tufte</code> median point and mean marker; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/box {:stroke-color :none})</code></div><div class="option-text">The colour of the box outline, the whiskers and the outlier outlines.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No box outline; the whiskers take the darkened fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/box {:stroke-width 3})</code></div><div class="option-text">The width of the box outline, the whiskers and the median line in pixels; <code>0</code> draws no box outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/box {:shape \s})</code></div><div class="option-text">The shape of the outlier points and of the <code>:tufte</code> median point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>5</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/box {:size 12})</code></div><div class="option-text">The size of the outlier points and of the <code>:tufte</code> median point in pixels; the mean marker is half of it, at least 3 pixels. A mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stat</code><span class="option-default">Default: <code>:tukey</code></span></dt><dd><div class="option-example"><code>(chart/box {:data [{:l "a", :lo 1, :a 2, :m 3, :b 4, :hi 6}], :mapping {:x nil, :y :l, :lower :lo, :q1 :a, :median :m, :q3 :b, :upper :hi}, :stat :identity})</code></div><div class="option-text">Where the box statistics come from.<ul><li><code>:tukey</code> – Computed from the values: quartiles, whiskers to the most extreme values within 1.5 IQR, outliers beyond.</li><li><code>:identity</code> – Read from one row per level and group, through the mapping keys <code>:lower</code>, <code>:q1</code>, <code>:median</code>, <code>:q3</code>, <code>:upper</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:outliers</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/box {:outliers false})</code></div><div class="option-text">Whether the chart draws the outliers; drawn outliers also widen the value axis.<ul><li><code>true</code> – Draws them.</li><li><code>false</code> – Draws none.</li></ul></div></dd></div><div class="option-card"><dt><code>:mean</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/box {:mean true})</code></div><div class="option-text">Draws a mean marker; with <code>:stat :identity</code> it needs <code>:mean</code> mapped.<ul><li><code>false</code> – Draws none.</li><li><code>true</code> – Draws it.</li></ul></div></dd></div><div class="option-card"><dt><code>:varwidth</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/box {:varwidth true})</code></div><div class="option-text">How wide each box is relative to the widest one; with <code>:stat :identity</code> it needs <code>:n</code> mapped.<ul><li><code>false</code> – Every box equally wide.</li><li><code>true</code> – By the square root of each box's count of values.</li></ul></div></dd></div><div class="option-card"><dt><code>:variant</code><span class="option-default">Default: <code>:classic</code></span></dt><dd><div class="option-example"><code>(chart/box {:variant :tufte})</code></div><div class="option-text">How the chart draws each box.<ul><li><code>:classic</code> – A box with a median line and whiskers with caps.</li><li><code>:tufte</code> – Tufte's quartile plot: no box, a median point and a line from each whisker end to its quartile.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/box {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -221,7 +218,8 @@ the Tufte variant (whisker lines and a median point) - here on rear axle ratios,
 :::
 
 
-`:padding` - space past the values along the value axis, fractions of their span (default 5% each side):
+On the right `:padding` widens the value axis by 40% of the values' span on each side; the left panel keeps the
+default:
 
 
 ::: {.sourceClojure}
@@ -248,23 +246,21 @@ the Tufte variant (whisker lines and a median point) - here on rear axle ratios,
 
 
 
+## Violin plots
+
+`chart/violin` draws a kernel density estimate of each level's values, mirrored around its centre line, with inner
+marks, a small box by default. Use it to see the shape of a distribution, e.g. two peaks a box plot hides.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## violin
-
-A mirrored kernel density per level (and group), with inner marks - a small box by default.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical violins</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one violin), or values for vertical violins</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a violin in its own fill colour</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each a violin with its own fill pattern</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic, each its own violin</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal violins, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal violins, or the values of vertical ones; with no levels the chart draws one violin.</li><li><code>:color</code> – Splits the rows into groups, each a violin in its own fill colour.</li><li><code>:pattern</code> – Splits the rows into groups, each a violin with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own violin.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -284,16 +280,13 @@ A mirrored kernel density per level (and group), with inner marks - a small box 
 :::
 
 
-Its options: the fill, outline and inner marks' colour, the density estimate (kernel, bandwidth, points, how far
-past the data), how widths compare between violins and the inner marks:
+These options style the violins and set the density estimate, the widths and the inner marks. The panels below
+pair a bandwidth, a reach past the data and a width scale with three inner marks:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[0 114 178]</td><td>violin fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels (0 - no outline)</td></tr><tr><td>:inner-color</td><td>one of :contrast or a clojure2d color or :none</td><td>:contrast</td><td>colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)</td></tr><tr><td>:kernel</td><td>keyword</td><td>:gaussian</td><td>density kernel (a fastmath kernel keyword)</td></tr><tr><td>:bandwidth</td><td>a positive number or keyword</td><td>:nrd0</td><td>kernel bandwidth in data units, or a fastmath bandwidth selector keyword</td></tr><tr><td>:n</td><td>integer, >= 2 or nil</td><td>100</td><td>number of density evaluation points per violin</td></tr><tr><td>:cut</td><td>a non-negative number or nil</td><td>0.0</td><td>how far the violin reaches past the data range, in bandwidths (0 - the data range)</td></tr><tr><td>:scale</td><td>one of :width :area :count</td><td>:width</td><td>violin widths: :width (each as wide as its slot), :area (equal areas - densities on one scale) or :count (areas proportional to the counts)</td></tr><tr><td>:varwidth</td><td>true or false or nil</td><td>false</td><td>multiply each violin's width by the square root of its count relative to the largest</td></tr><tr><td>:inner</td><td>one of :box :quartiles :rug :points :none</td><td>:box</td><td>inner marks: :box (IQR bar, whisker line, median dot), :quartiles (quartile lines across), :rug (a tick per value), :points (values on the centre line) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/violin {:color :orange})</code></div><div class="option-text">The fill colour of the violins; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/violin {:stroke-color :none})</code></div><div class="option-text">The outline colour of the violins.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/violin {:stroke-width 3})</code></div><div class="option-text">The outline width in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:inner-color</code><span class="option-default">Default: <code>:contrast</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/violin {:inner-color :none})</code></div><div class="option-text">The colour of the inner marks.<ul><li><code>:contrast</code> – Black or white, whichever reads better on the fill.</li><li><code>:none</code> – No inner marks.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:kernel</code><span class="option-default">Default: <code>:gaussian</code></span></dt><dd><div class="option-example"><code>(chart/violin {:kernel :epanechnikov})</code></div><div class="option-text">The kernel of the density estimate.<ul><li><code>:gaussian</code> – The normal curve; smooth, with long tails.</li><li><code>:epanechnikov</code> – A parabola, the most efficient kernel in theory.</li><li><code>:triangular</code> – A triangle.</li><li><code>:uniform</code> – A flat step: a moving count.</li><li class="option-other">Other fastmath kernels. <code>:cauchy</code>, <code>:cosine</code>, <code>:laplace</code>, <code>:logistic</code>, <code>:quartic</code>, <code>:sigmoid</code>, <code>:silverman</code>, <code>:tricube</code>, <code>:triweight</code>, <code>:wigner</code></li></ul></div></dd></div><div class="option-card"><dt><code>:bandwidth</code><span class="option-default">Default: <code>:nrd0</code></span></dt><dd><div class="option-example"><code>(chart/violin {:bandwidth 0.2})</code></div><div class="option-text">The bandwidth of the density estimate: how far each value's kernel spreads.<ul><li><code>:nrd0</code> – Silverman's rule of thumb, R's default.</li><li><code>:nrd</code> – Scott's rule of thumb, wider than <code>:nrd0</code>.</li><li><code>:sj</code> – Sheather and Jones' plug-in selector, good for multimodal data.</li><li class="option-other">Other fastmath selectors: rule-of-thumb, plug-in and cross-validation variants. <code>:nrd-adjust</code>, <code>:sj-dpi</code>, <code>:lscv</code>, <code>:lcv</code>, <code>:rlcv</code></li><li><a href="reference.types.html#positive-finite-number">positive finite number</a> – A bandwidth in data units, e.g. <code>0.3</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>100</code></span></dt><dd><div class="option-example"><code>(chart/violin {:n 4})</code></div><div class="option-text">The number of points at which the chart evaluates each violin's density.<ul><li><span>integer at least 2</span></li></ul></div></dd></div><div class="option-card"><dt><code>:cut</code><span class="option-default">Default: <code>0.0</code></span></dt><dd><div class="option-example"><code>(chart/violin {:cut 3})</code></div><div class="option-text">How far each violin reaches past its values' range, in bandwidths; <code>0</code> stops at the range.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:scale</code><span class="option-default">Default: <code>:width</code></span></dt><dd><div class="option-example"><code>(chart/violin {:scale :area})</code></div><div class="option-text">How the chart scales the violins' widths.<ul><li><code>:width</code> – Every violin as wide as its slot.</li><li><code>:area</code> – Equal areas: the densities on one scale.</li><li><code>:count</code> – Areas proportional to the counts of values.</li></ul></div></dd></div><div class="option-card"><dt><code>:varwidth</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/violin {:varwidth true})</code></div><div class="option-text">How wide each violin is relative to the widest one; it multiplies the width <code>:scale</code> gives.<ul><li><code>false</code> – Every violin as wide as <code>:scale</code> makes it.</li><li><code>true</code> – By the square root of each violin's count of values.</li></ul></div></dd></div><div class="option-card"><dt><code>:inner</code><span class="option-default">Default: <code>:box</code></span></dt><dd><div class="option-example"><code>(chart/violin {:inner :quartiles})</code></div><div class="option-text">The marks the chart draws inside each violin.<ul><li><code>:box</code> – A thin interquartile bar, a whisker line and a median dot.</li><li><code>:quartiles</code> – Dashed lines across at the quartiles and a line at the median.</li><li><code>:rug</code> – A tick per value.</li><li><code>:points</code> – The values on the centre line.</li><li><code>:none</code> – No inner marks.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/violin {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -323,15 +316,13 @@ past the data), how widths compare between violins and the inner marks:
 :::
 
 
-The inner marks' sizes and the quartile dash are theme keys of `[:chart :violin]`, not options:
+A theme sets the inner marks' sizes and the quartile dash; below, a wider inner box with a bigger median and
+dotted quartiles:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:inner-box-width</td><td>a positive number</td><td>5.0</td><td>width in pixels of the inner box (quartile bar) of :inner :box</td></tr><tr><td>:inner-median-size</td><td>a positive number</td><td>4.0</td><td>diameter in pixels of the median dot of :inner :box</td></tr><tr><td>:inner-quartile-dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers</td><td>[4.0 3.0]</td><td>dash style of the quartile lines of :inner :quartiles</td></tr><tr><td>:inner-rug-width</td><td>a positive number</td><td>1.0</td><td>line width in pixels of the ticks of :inner :rug</td></tr><tr><td>:inner-point-size</td><td>a positive number</td><td>3.0</td><td>diameter in pixels of the points of :inner :points</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :violin]</code>, not options</span></div><ul><li><code>:inner-box-width</code> (default <code>5.0</code>) – The width of the inner box, the quartile bar of <code>:inner :box</code>, in pixels.</li><li><code>:inner-median-size</code> (default <code>4.0</code>) – The diameter of the median dot of <code>:inner :box</code>, in pixels.</li><li><code>:inner-quartile-dash</code> (default <code>[4.0 3.0]</code>) – The dash style of the quartile lines of <code>:inner :quartiles</code>.</li><li><code>:inner-rug-width</code> (default <code>1.0</code>) – The line width of the ticks of <code>:inner :rug</code>, in pixels.</li><li><code>:inner-point-size</code> (default <code>3.0</code>) – The diameter of the points of <code>:inner :points</code>, in pixels.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -358,8 +349,8 @@ The inner marks' sizes and the quartile dash are theme keys of `[:chart :violin]
 :::
 
 
-The fill and outline, and the density estimate: another kernel, few evaluation points (a coarse outline),
-widths by count (`:varwidth`) and the padding:
+The left panel sets a fill and outline. The middle one evaluates the Epanechnikov kernel at only 8 points, so its
+outline is coarse. The right one, on mtcars by cylinders, sets `:varwidth` and `:padding`:
 
 
 ::: {.sourceClojure}
@@ -388,8 +379,8 @@ widths by count (`:varwidth`) and the padding:
 :::
 
 
-Every `:scale` - violins as wide as their slots, of equal areas, or of areas by count (mtcars by gears: 15, 12
-and 5 cars - the five-gear violin shrinks):
+The panels show each `:scale` on mtcars by gears (15, 12 and 5 cars). With areas by count the five-gear violin
+shrinks:
 
 
 ::: {.sourceClojure}
@@ -420,7 +411,7 @@ and 5 cars - the five-gear violin shrinks):
 :::
 
 
-Every `:inner` mark:
+The panels show each `:inner` mark in turn:
 
 
 ::: {.sourceClojure}
@@ -447,24 +438,22 @@ Every `:inner` mark:
 
 
 
+## Error bars
+
+`chart/extent` draws an interval per level and group, computed from the values - their range, a confidence
+interval, quantiles or a bootstrap estimate - with a mark at its centre. Use it for error bars, alone or over bars and
+points.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li></ul></div>
 ```
 
 
 
-## extent
-
-An interval per level (and group) from the item's values - their range, a confidence interval, quantiles or a
-bootstrap estimate - with a mark at its centre.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical intervals</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one interval), or values for vertical intervals</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>interval colour per group (gives legend keys)</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>centre mark shape per group</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>centre mark size per group</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (dodged as other groups)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal intervals, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal intervals, or the values of vertical ones; with no levels the chart draws one interval.</li><li><code>:color</code> – Splits the rows into groups, each with its own interval colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own centre mark shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own centre mark size.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own interval beside the others of its level.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -484,16 +473,13 @@ bootstrap estimate - with a mark at its centre.
 :::
 
 
-Its options: the interval's and centre's style, the method giving the interval (and its arguments), the
-bootstrap's statistic and random generator (seeded here), the centre mark and the padding:
+These options style the intervals and pick the method that computes them. The panels show `:stddev` in a custom
+style, the 10th to 90th percentiles without a centre, and a seeded bootstrap of the mean:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>interval colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>2</td><td>interval line width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>shape of the centre mark (a mapped :shape wins)</td></tr><tr><td>:size</td><td>a non-negative number</td><td>7</td><td>size of the centre mark in pixels (a mapped :size wins)</td></tr><tr><td>:method</td><td>one of :adjacent :bootstrap-basic :bootstrap-bc :bootstrap-bca :bootstrap-mad-median :bootstrap-normal :bootstrap-percentile :bootstrap-studentized :bootstrap-t :ci :hpdi :inner-fence :mad :min-max :outer-fence :percentile :percentile-bc :percentile-bca :pi :quantile :sem :stddev or a function</td><td>:min-max</td><td>interval of the values: a fastmath extent or bootstrap method keyword, or a function of the values returning [lo hi] or [lo hi centre]</td></tr><tr><td>:statistic</td><td>a function or nil</td><td>fastmath mean</td><td>statistic of the values resampled by the bootstrap methods</td></tr><tr><td>:method-args</td><td>sequential of any value or nil</td><td></td><td>extra arguments passed to the method after the values (e.g. [10.0 90.0] for :percentile)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh generator every build</td><td>fastmath random generator of the bootstrap methods, copied per build (every build draws the same samples)</td></tr><tr><td>:center</td><td>one of :method :none</td><td>:method</td><td>centre mark: :method (the method's centre) or :none</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/extent {:color :orange})</code></div><div class="option-text">The colour of the intervals; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>2</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/extent {:line-width 5})</code></div><div class="option-text">The width of the interval lines in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/extent {:shape \s})</code></div><div class="option-text">The shape of the centre mark; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>7</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/extent {:size 14})</code></div><div class="option-text">The size of the centre mark in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:min-max</code></span></dt><dd><div class="option-example"><code>(chart/extent {:method :stddev})</code></div><div class="option-text">How the chart computes each interval from the values.<ul><li><code>:min-max</code> – The smallest and the largest value.</li><li><code>:bootstrap-percentile</code> – The percentile bootstrap interval of <code>:statistic</code>, by default 95% of 500 resamples.</li><li><code>:ci</code> – The t-based confidence interval of the mean, by default 95%.</li><li><code>:percentile</code> – Two percentiles around the median, by default the 25th and 75th.</li><li><code>:sem</code> – The mean plus and minus its standard error.</li><li><code>:stddev</code> – The mean plus and minus one standard deviation.</li><li class="option-other">Other fastmath extents and bootstrap intervals; the bootstrap ones resample <code>:statistic</code>. <code>:adjacent</code>, <code>:bootstrap-basic</code>, <code>:bootstrap-bc</code>, <code>:bootstrap-bca</code>, <code>:bootstrap-mad-median</code>, <code>:bootstrap-normal</code>, <code>:bootstrap-studentized</code>, <code>:bootstrap-t</code>, <code>:hpdi</code>, <code>:inner-fence</code>, <code>:mad</code>, <code>:outer-fence</code>, <code>:percentile-bc</code>, <code>:percentile-bca</code>, <code>:pi</code>, <code>:quantile</code></li><li><a href="reference.types.html#function">function</a> – A function of the values that returns <code>[lo hi]</code> or <code>[lo hi centre]</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:statistic</code><span class="option-default">Default: The mean.</span></dt><dd><div class="option-example"><code>(chart/extent {:method :bootstrap-percentile, :rng (r/rng :mersenne 7), :statistic (fn [vs] (stats/median vs))})</code></div><div class="option-text">The statistic the bootstrap methods compute on each resample, a function of the values.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method-args</code><span class="option-default">Default: None: the method's defaults.</span></dt><dd><div class="option-example"><code>(chart/extent {:method :percentile, :method-args [10.0 90.0]})</code></div><div class="option-text">Extra arguments the method takes after the values, e.g. <code>[10.0 90.0]</code> for <code>:percentile</code>, <code>[0.01]</code> (alpha) for a 99% <code>:ci</code>, <code>[alpha samples]</code> for a bootstrap method.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:rng</code><span class="option-default">Default: An unseeded generator, so each build resamples differently.</span></dt><dd><div class="option-example"><code>(chart/extent {:method :bootstrap-percentile, :rng (r/rng :mersenne 7)})</code></div><div class="option-text">The random generator the bootstrap methods resample with. A seeded one gives the same intervals on every build.<ul><li><a href="reference.types.html#random-generator">random generator</a></li></ul></div></dd></div><div class="option-card"><dt><code>:center</code><span class="option-default">Default: <code>:method</code></span></dt><dd><div class="option-example"><code>(chart/extent {:center :none})</code></div><div class="option-text">What the chart marks at each interval's centre.<ul><li><code>:method</code> – The method's centre, e.g. the mean or median.</li><li><code>:none</code> – No centre mark.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/extent {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -525,11 +511,9 @@ bootstrap's statistic and random generator (seeded here), the centre mark and th
 :::
 
 
-Every method on one sample (setosa sepal lengths), a level each: the range (`:min-max`), spreads around the mean
-(`:stddev`, `:sem`, `:mad` - around the median), quantile intervals (`:percentile`, `:quantile`, `:pi`, `:hpdi`,
-the bias-corrected `:percentile-bc` / `:percentile-bca`), Tukey's whisker ends and fences (`:adjacent`,
-`:inner-fence`, `:outer-fence`), the mean's confidence interval (`:ci`) and the bootstrap confidence intervals of
-the mean (`:bootstrap-*`, 500 resamples, seeded):
+The plot below draws every method on setosa sepal lengths, a level each: the range, spreads around the mean
+(`:mad` around the median), quantile intervals, Tukey's whisker ends and fences, the mean's confidence interval
+and seeded bootstrap intervals:
 
 
 ::: {.sourceClojure}
@@ -568,9 +552,8 @@ the mean (`:bootstrap-*`, 500 resamples, seeded):
 :::
 
 
-The bootstrap resamples the mean unless `:statistic` names another function - here the median (the bootstrap
-of the mean is the "bootstrap mean" panel above); `:center :method` (the default) marks the method's centre, here
-sized up with `:size`:
+On the left the bootstrap resamples the median instead of the mean (compare the "bootstrap mean" panel above), and
+`:size` enlarges its centre mark. On the right `:padding` widens the value axis:
 
 
 ::: {.sourceClojure}
@@ -598,23 +581,21 @@ sized up with `:size`:
 
 
 
+## Strip plots
+
+`chart/stripplot` draws every value as a point across its level's strip, jittered so equal values don't hide each
+other. Use it for small samples, where each value counts.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## stripplot
-
-Every value as a point across its level's strip, jittered so equal values don't hide each other.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical strips</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one strip), or values for vertical strips</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each in its own point colour</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal strips, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal strips, or the values of vertical ones; with no levels the chart draws one strip.</li><li><code>:color</code> – Splits the rows into groups, each in its own point colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own point shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own point size.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged as other groups.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -635,15 +616,13 @@ Every value as a point across its level's strip, jittered so equal values don't 
 :::
 
 
-Its options: the point style, the jitter spread (seeded for the same image on every build) and the padding:
+These options style the points and set the jitter, seeded here so every build draws the same image. The panels
+show no jitter, a wide jitter of outlined squares, and `:padding`:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 100]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:jitter</td><td>a number in [0 1]</td><td>0.25</td><td>jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator per build (builds differ)</td><td>random number generator for jitter (seeded for reproducible plots)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/stripplot {:size 12})</code></div><div class="option-text">The point size in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 100]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/stripplot {:color :orange})</code></div><div class="option-text">The colour of the points; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/stripplot {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/stripplot {:stroke-color :black, :stroke-width 3})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/stripplot {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:jitter</code><span class="option-default">Default: <code>0.25</code></span></dt><dd><div class="option-example"><code>(chart/stripplot {:rng (r/rng :mersenne 7), :jitter 0.8})</code></div><div class="option-text">How far the chart scatters the points across their strip, as a fraction of its width: Gaussian offsets with a standard deviation of a quarter of <code>:jitter</code>, cut off at half of it. <code>0</code> puts the points on the centre line.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:rng</code><span class="option-default">Default: An unseeded generator, so each build jitters differently.</span></dt><dd><div class="option-example"><code>(chart/stripplot {:rng (r/rng :mersenne 7)})</code></div><div class="option-text">The random generator of the jitter. A seeded one gives the same jitter on every build.<ul><li><a href="reference.types.html#random-generator">random generator</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/stripplot {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -678,23 +657,21 @@ Its options: the point style, the jitter spread (seeded for the same image on ev
 
 
 
+## Beeswarm plots
+
+`chart/beeswarm` draws every value as a point, packed across the strip so points don't overlap where the slot has
+room. Use it when each value counts and the swarm's width should show the density.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## beeswarm
-
-Every value as a point, packed across the strip without overlaps - the swarm's width shows the density.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical swarms</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one swarm), or values for vertical swarms</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each in its own point colour</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal swarms, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal swarms, or the values of vertical ones; with no levels the chart draws one swarm.</li><li><code>:color</code> – Splits the rows into groups, each in its own point colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own point shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own point size.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged as other groups.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -714,16 +691,13 @@ Every value as a point, packed across the strip without overlaps - the swarm's w
 :::
 
 
-Its options: the point style (the size is also the packing diameter), squeezing a wide swarm into its slot,
-the packing direction and the padding:
+These options style the points and set how the chart packs them. The panels show large points left to overflow
+their slot and squeezed into it, and the packing around their values:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>6</td><td>point size in pixels, also the packing diameter (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 180]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:fit</td><td>true or false or nil</td><td>true</td><td>squeeze a swarm wider than its item's cross range into it (points may then overlap)</td></tr><tr><td>:pack</td><td>one of :across :around</td><td>:across</td><td>packing: :across (points move only across the value axis) or :around (in both directions - round clusters, points may leave their value a little)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:size 12})</code></div><div class="option-text">The point size in pixels, also the diameter the packing keeps apart; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 180]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:color :orange})</code></div><div class="option-text">The colour of the points; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:stroke-color :black})</code></div><div class="option-text">The colour of each point's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:stroke-color :black, :stroke-width 3})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:shape \s})</code></div><div class="option-text">The shape of every point; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fit</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/beeswarm {:size 40, :fit false})</code></div><div class="option-text">Whether the chart squeezes a swarm wider than its slot into it; the points may then overlap.<ul><li><code>true</code> – Squeezes the swarm into its slot.</li><li><code>false</code> – Keeps the packing; the swarm may leave its slot.</li></ul></div></dd></div><div class="option-card"><dt><code>:pack</code><span class="option-default">Default: <code>:across</code></span></dt><dd><div class="option-example"><code>(chart/beeswarm {:pack :around})</code></div><div class="option-text">How the chart packs the points.<ul><li><code>:across</code> – Across the value axis only, so equal values form a line.</li><li><code>:around</code> – In both directions: close values form round clusters, the points up to a few diameters off their value.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/beeswarm {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -752,7 +726,8 @@ the packing direction and the padding:
 :::
 
 
-The point style, the default packing (`:across` - points move only across the value axis) and the padding:
+The left panel draws outlined triangles in the default packing, where points move only across the value axis; the
+right one sets `:padding`:
 
 
 ::: {.sourceClojure}
@@ -778,23 +753,21 @@ The point style, the default packing (`:across` - points move only across the va
 
 
 
+## Dot plots
+
+`chart/dotplot` bins the values along the value axis and stacks a dot per value in its bin (Wilkinson's dot plot).
+Use it to show a distribution's shape while every value stays countable.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## dotplot
-
-Values binned along the value axis, each a dot stacked in its bin (Wilkinson's dot plot).
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical dot plots</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one dot plot), or values for vertical dot plots</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each in its own point colour</td></tr><tr><td>:shape</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point shape</td></tr><tr><td>:size</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each with its own point size</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (sharing stacks unless dodged)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal dot plots, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal dot plots, or the values of vertical ones; with no levels the chart draws one dot plot.</li><li><code>:color</code> – Splits the rows into groups, each in its own point colour.</li><li><code>:shape</code> – Splits the rows into groups, each with its own point shape.</li><li><code>:size</code> – Splits the rows into groups, each with its own point size.</li><li><code>:group</code> – Splits the rows into groups that look the same, sharing stacks unless dodged.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -813,16 +786,13 @@ Values binned along the value axis, each a dot stacked in its bin (Wilkinson's d
 :::
 
 
-Its options: the dot style, the binning (density or fixed bins from an origin), where dots sit, how they
-stack and the padding:
+These options style the dots and set how the chart bins and stacks them. The panels show fixed bins, stacks
+centred on their slots, and each dot at its own value:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot</td><td>dot size in pixels (a mapped :size wins)</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>point colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>point outline colour (or :none)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>point shape (a mapped :shape wins)</td></tr><tr><td>:method</td><td>one of :dot-density :histogram</td><td>:dot-density</td><td>binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)</td></tr><tr><td>:binwidth</td><td>a finite number, a positive number</td><td>the range of all values / 30 (1 for a single distinct value)</td><td>bin width in data units</td></tr><tr><td>:origin</td><td>a finite number</td><td>the smallest value</td><td>left edge of the first fixed bin in data units (only with :method :histogram - an error otherwise)</td></tr><tr><td>:at</td><td>one of :center :value</td><td>:center</td><td>where a bin's dots sit along the value axis: :center (the bin centre) or :value (each dot at its own value - the wheat plot)</td></tr><tr><td>:stack-dir</td><td>one of :up :center</td><td>:up</td><td>stacking: :up (from the slot's low cross edge toward the next level) or :center (centred on the slot)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:size</code><span class="option-default">Default: The stacking diameter: the bin width in pixels, shrunk so the tallest stack fits its slot.</span></dt><dd><div class="option-example"><code>(chart/dotplot {:size 4})</code></div><div class="option-text">The drawn size of the dots in pixels; a mapped <code>:size</code> wins.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/dotplot {:color :orange})</code></div><div class="option-text">The colour of the dots; a mapped <code>:color</code> wins.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/dotplot {:stroke-color :black})</code></div><div class="option-text">The colour of each dot's outline.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/dotplot {:stroke-color :black, :stroke-width 3})</code></div><div class="option-text">The width of the outline in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shape</code><span class="option-default">Default: <code>\O</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/dotplot {:shape \s})</code></div><div class="option-text">The shape of every dot; a mapped <code>:shape</code> wins.<ul><li><a href="reference.types.html#point-shape">point shape</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:dot-density</code></span></dt><dd><div class="option-example"><code>(chart/dotplot {:method :histogram})</code></div><div class="option-text">How the chart bins the values.<ul><li><code>:dot-density</code> – Wilkinson's dot density bins, each centred between its smallest and largest value.</li><li><code>:histogram</code> – Fixed bins from <code>:origin</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:binwidth</code><span class="option-default">Default: The range of all values over 30, or <code>1</code> for a single distinct value.</span></dt><dd><div class="option-example"><code>(chart/dotplot {:binwidth 1})</code></div><div class="option-text">The width of a bin in data units.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:origin</code><span class="option-default">Default: The smallest value.</span></dt><dd><div class="option-example"><code>(chart/dotplot {:method :histogram, :binwidth 1, :origin 0.25})</code></div><div class="option-text">The low edge of the first fixed bin in data units; it needs <code>:method :histogram</code>.<ul><li><a href="reference.types.html#finite-number">finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:at</code><span class="option-default">Default: <code>:center</code></span></dt><dd><div class="option-example"><code>(chart/dotplot {:at :value})</code></div><div class="option-text">Where a bin's dots sit along the value axis.<ul><li><code>:center</code> – At the bin's centre.</li><li><code>:value</code> – Each dot at its own value, as in a wheat plot.</li></ul></div></dd></div><div class="option-card"><dt><code>:stack-dir</code><span class="option-default">Default: <code>:up</code></span></dt><dd><div class="option-example"><code>(chart/dotplot {:stack-dir :center})</code></div><div class="option-text">Which way the stacks grow.<ul><li><code>:up</code> – From the slot's low edge towards the next level.</li><li><code>:center</code> – Both ways from the slot's centre line.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/dotplot {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -851,7 +821,7 @@ stack and the padding:
 :::
 
 
-A style - a fixed dot size, outlined squares - and the padding:
+The left panel sets a fixed dot size and outlined squares; the right one sets `:padding`:
 
 
 ::: {.sourceClojure}
@@ -877,23 +847,21 @@ A style - a fixed dot size, outlined squares - and the padding:
 
 
 
+## Rug plots
+
+`chart/rug` draws a short line per value, along the panel's edge or in one strip per level. Use it beside another
+chart to show where the values lie.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## rug
-
-A short line per value - along the panel's edge, or one strip per level; often beside another chart.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>values (data units) on the value axis, or levels for vertical rugs</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one rug along the panel edge), or values for vertical rugs</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups, each in its own line colour</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The values of horizontal rugs, or the levels of vertical ones.</li><li><code>:y</code> – The levels of horizontal rugs, or the values of vertical ones; with no levels the chart draws one rug along the panel edge.</li><li><code>:color</code> – Splits the rows into groups, each in its own line colour.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged as other groups.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -912,15 +880,13 @@ A short line per value - along the panel's edge, or one strip per level; often b
 :::
 
 
-Its options: the line colour and width, and the padding:
+These options set the lines' colour and width. The panels show the defaults with a rug per level, wider lines,
+and `:padding`:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178 100]</td><td>rug line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>rug line width in pixels (0 - nothing drawn)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178 100]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/rug {:color :orange})</code></div><div class="option-text">The colour of the rug lines; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/rug {:line-width 3})</code></div><div class="option-text">The width of the rug lines in pixels; <code>0</code> draws nothing.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> at both ends of the value axis; with <code>:place :bottom</code>, also the <code>:bottom-share</code> below the data.</span></dt><dd><div class="option-example"><code>(chart/rug {:padding {:x [0.3 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -950,12 +916,6 @@ Its options: the line colour and width, and the padding:
 ::: {.clay-image}
 ![](reference.charts_per_level_files/image23.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li></ul></div>
-```
 
 
 

@@ -52,7 +52,7 @@
 
   Functions:
 
-  - options: [[options]], [[mirror-option]], [[ridge-options]], [[default-ridge-overlap]], [[values-mapping]]
+  - options: [[options]], [[padding-option]], [[mirror-option]], [[ridge-options]], [[default-ridge-overlap]], [[values-mapping]]
   - items and stats: [[split]], [[padding]], [[explicit-padding]], [[extents]]
   - geometry: [[in-slot]], [[slot-half]], [[slot-side]]
   - ridgelines: [[ridges?]], [[ridge-split]], [[ridge-scale-defaults]], [[ridge-point]], [[ridge-order]]
@@ -115,6 +115,13 @@
     (schema/optional :level-axis {:cljplot2/section :placement :description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
                                   :cljplot2/default-doc "the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y"}
                      [:enum :x :y])]))
+
+(def padding-option
+  "Map entry of the `:padding` option of the strip charts that pad both ends of the value axis (box, violin, extent, stripplot, beeswarm, dotplot, rug)."
+  (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span."
+                             :cljplot2/default-doc "`0.05` at both ends of the value axis; with `:place :bottom`, also the `:bottom-share` below the data."
+                             :cljplot2/example {:x [0.3 0.3]}}
+                   data/position-padding))
 
 (def mirror-option
   "Map entry of the `:mirror` option (shared group `:mirror`) of strip charts drawing a negative side (bar, extent)."

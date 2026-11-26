@@ -80,10 +80,10 @@
                  (into style-entries)
                  (into data/common-options)
                  (into theme/theme-style-entries)
-                 (conj (schema/optional :kernel {:cljplot2/section :estimate :description "fastmath KDE kernel" :default :gaussian} keyword?)
+                 (conj (schema/optional :kernel {:cljplot2/section :estimate :description "fastmath KDE kernel" :default :gaussian} kde/kernel-schema)
                        (schema/optional :bandwidth {:cljplot2/section :estimate :description "kernel bandwidth in data units, or a fastmath bandwidth selector"
                                                     :default :nrd0}
-                                        [:or schema/pos keyword?])
+                                        [:or schema/finite-pos kde/bandwidth-rule-schema])
                        (schema/nilable :n {:cljplot2/section :estimate :description "number of evaluation points of each curve" :default 512} [:and :int [:>= 2]])
                        (schema/nilable :cut {:cljplot2/section :estimate :description "how many bandwidths the curve extends past the extreme values on each side"
                                              :default 3}

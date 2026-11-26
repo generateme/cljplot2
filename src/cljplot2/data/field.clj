@@ -32,6 +32,7 @@
             [fastmath.vector :as v]
             [fastmath.interpolation :as interp]
             [fastmath.kernel :as k]
+            [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema])
@@ -43,7 +44,7 @@
 
 (def ^:private bandwidth-schema
   "Schema of `:bandwidth`: a positive number, a selector keyword, or a pair of them."
-  (let [one [:or schema/finite-pos [:enum :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]]]
+  (let [one [:or schema/finite-pos kde/bandwidth-rule-schema [:= :scott]]]
     [:or one [:tuple one one]]))
 
 (def n-schema
@@ -63,7 +64,7 @@
                       [:y {:description "y domain [lo hi]"} [:tuple schema/finite schema/finite]]])
     (schema/optional :kernel {:cljplot2/section :density :description "fastmath kernel of the 2D density estimate of mapped points"
                               :default :gaussian}
-                     keyword?)
+                     kde/kernel-schema)
     (schema/optional :bandwidth {:cljplot2/section :density :description "bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them"
                                  :cljplot2/default-doc ":nrd per axis (MASS::kde2d, as ggplot2)"}
                      bandwidth-schema)

@@ -13,7 +13,8 @@
   `[0.05 0.05]`), plus the strip options and `:data` / `:mapping`.
 
   Functions: [[schemas]] - its style, options and mapping. The key glyph is [[cljplot2.chart.legend/point-legend]] (the chart computes and draws through [[cljplot2.chart.strip/compute]] and [[cljplot2.chart.strip/draw]])."
-  (:require [fastmath.core :as m]
+  (:require [clojure2d.core :as c2d]
+            [fastmath.core :as m]
             [fastmath.random :as r]
             [fastmath.vector :as v]
             [cljplot2.data.group :as group]
@@ -31,11 +32,11 @@
 
 (def ^:private style-entries
   "Map entries of the strip plot's point style (theme `[:chart :stripplot]`), also its options."
-  [(schema/optional :size {:description "point size in pixels (a mapped :size wins)"} schema/non-neg)
-   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
-   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
+  [(schema/optional :size {:description "The point size in pixels; a mapped `:size` wins." :cljplot2/example 12} schema/non-neg)
+   (schema/optional :color {:description "The colour of the points; a mapped `:color` wins." :cljplot2/value-meanings {:none "No fill."} :cljplot2/example :orange} schema/color)
+   (schema/optional :stroke-color {:description "The colour of each point's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+   (schema/optional :stroke-width {:description "The width of the outline in pixels; `0` draws no outline." :cljplot2/example 3 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :shape {:description "The shape of every point; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)])
 
 (def schemas
   "Schemas of the stripplot chart: `:style` (theme `[:chart :stripplot]`), `:options`, `:mapping` (merged)."
@@ -45,23 +46,22 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :jitter {:description "jitter spread across the strip, a fraction of the item's cross range (Gaussian, sd :jitter / 4, clamped to ±:jitter / 2; 0 - on the centre line)"
-                                                :default 0.25}
+                (conj (schema/optional :jitter {:description "How far the chart scatters the points across their strip, as a fraction of its width: Gaussian offsets with a standard deviation of a quarter of `:jitter`, cut off at half of it. `0` puts the points on the centre line."
+                                                :default 0.25 :cljplot2/example 0.8 :cljplot2/example-context {:rng '(r/rng :mersenne 7)}}
                                        schema/fraction)
-                      (schema/nilable :rng {:description "random number generator for jitter (seeded for reproducible plots)"
-                                            :cljplot2/default-doc "a fresh unseeded generator per build (builds differ)"}
+                      (schema/nilable :rng {:description "The random generator of the jitter. A seeded one gives the same jitter on every build."
+                                            :cljplot2/default-doc "An unseeded generator, so each build jitters differently."
+                                            :cljplot2/example '(r/rng :mersenne 7)}
                                       rng/schema)
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                                       data/position-padding)))
+                      strip/padding-option))
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical strips"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one strip), or values for vertical strips"}
+              [(schema/nilable :x {:description "The values of horizontal strips, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal strips, or the values of vertical ones; with no levels the chart draws one strip."}
                                schema/accessor)
-               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
-               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
-               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each in its own point colour."} schema/accessor)
+               (schema/nilable :shape {:description "Splits the rows into groups, each with its own point shape."} schema/accessor)
+               (schema/nilable :size {:description "Splits the rows into groups, each with its own point size."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, dodged as other groups."} schema/accessor)])})
 
 (def ^{:const true :private true :tag 'double} default-jitter
   "Jitter spread when `:jitter` isn't given, a fraction of an item's cross range."
@@ -129,6 +129,7 @@
   See also [[cljplot2.chart.strip/placement]]."
   [_chart {:keys [items style place options]} canvas box scales env]
   (let [{:keys [point] :as pl} (strip-chart/placement box scales options place)]
+    (c2d/set-stroke-custom canvas {:size (:stroke-width style)})
     (doseq [{:keys [level slot values offsets aesthetics]} items
             :let [st (group/style style aesthetics scales (:theme env))]
             :when st

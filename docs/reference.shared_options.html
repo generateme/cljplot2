@@ -2470,7 +2470,7 @@ window.Quarto = {
 <div class="clay-image">
 <p><img src="reference.shared_options_files/image12.png" class="img-fluid"></p>
 </div>
-<p><code>:level-axis</code> names the axis of the levels - needed when both axes or neither are categorical; here the rounded petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each (points spread across the band by the <a href="reference.charts_per_level.html#stripplot">stripplot</a>’s seeded <code>:jitter</code>):</p>
+<p><code>:level-axis</code> names the axis of the levels - needed when both axes or neither are categorical; here the rounded petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each (points spread across the band by the <a href="reference.charts_per_level.html#strip-plots">stripplot</a>’s seeded <code>:jitter</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> (levels/categorical #(m/round (<span class="at">:petal-width</span> <span class="va">%</span>)))}</span>
@@ -2794,13 +2794,13 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td>:kernel</td>
-<td>keyword</td>
+<td>a fastmath KDE kernel keyword</td>
 <td>:gaussian</td>
 <td>fastmath kernel of the 2D density estimate of mapped points</td>
 </tr>
 <tr class="even">
 <td>:bandwidth</td>
-<td>a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott or [a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott, a positive finite number or one of :nrd :nrd0 :nrd-adjust :sj :sj-dpi :rlcv :lcv :lscv :scott]</td>
+<td>a positive finite number or a fastmath bandwidth selector keyword or :scott or [a positive finite number or a fastmath bandwidth selector keyword or :scott, a positive finite number or a fastmath bandwidth selector keyword or :scott]</td>
 <td>:nrd per axis (MASS::kde2d, as ggplot2)</td>
 <td>bandwidth of the density estimate: a number, a fastmath selector or :scott, or a pair [hx hy] of them</td>
 </tr>

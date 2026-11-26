@@ -60,7 +60,7 @@
                                        schema/bool)
                       (schema/optional :jitter {:description "Random offsets that spread overlapping points: `[dx dy]` moves each point by up to ±dx and ±dy in the axis scale's units (log units on a `:log` axis)." :cljplot2/default-doc "No jitter." :cljplot2/example [0.1 0.1]}
                                        [:tuple schema/non-neg schema/non-neg])
-                      (schema/nilable :rng {:description "The random generator of the jitter." :cljplot2/example-context {:jitter [0.1 0.1]} :cljplot2/example '(r/rng :mersenne 7)
+                      (schema/nilable :rng {:description "The random generator of the jitter. A seeded one gives the same jitter on every build." :cljplot2/example-context {:jitter [0.1 0.1]} :cljplot2/example '(r/rng :mersenne 7)
                                             :cljplot2/default-doc "An unseeded generator, so each build jitters differently."}
                                       rng/schema)))
    :mapping [:map

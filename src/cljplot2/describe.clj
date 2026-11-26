@@ -37,6 +37,7 @@
             [cljplot2.data.rng :as rng]
             [cljplot2.data.field :as field]
             [cljplot2.data.hierarchy :as hierarchy]
+            [cljplot2.data.kde :as kde]
             [cljplot2.data.rows :as rows]
             [cljplot2.data.space3d :as space]
             [cljplot2.data.strip :as strip]
@@ -71,7 +72,8 @@
   {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
    :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
    :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
-   :pairwise "Statistic cells"})
+   :pairwise "Statistic cells" :box "Box plots" :violin "Violin plots" :extent "Error bars" :stripplot "Strip plots"
+   :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -223,11 +225,12 @@
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
 (def documented-types
-  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range). Option cards link a form of these types to its explanation."
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule). Option cards link a form of these types to its explanation."
   (merge schema/named-types
          (into {} (map (fn [s] [(malli/type s) s]))
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
-                function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema])))
+                function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
+                kde/kernel-schema kde/bandwidth-rule-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."

@@ -39,12 +39,14 @@
 
 (def ^:private style-entries
   "Map entries of the dot plot's point style (theme `[:chart :dotplot]`), also its options."
-  [(schema/optional :size {:description "dot size in pixels (a mapped :size wins)"
-                           :cljplot2/default-doc "the dot diameter: the bin width in pixels, shrunk so the tallest stack fits its slot"} schema/non-neg)
-   (schema/optional :color {:description "point colour (a mapped :color wins)"} schema/color)
-   (schema/optional :stroke-color {:description "point outline colour (or :none)"} schema/color)
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)
-   (schema/optional :shape {:description "point shape (a mapped :shape wins)"} schema/shape)])
+  [(schema/optional :size {:description "The drawn size of the dots in pixels; a mapped `:size` wins."
+                           :cljplot2/default-doc "The stacking diameter: the bin width in pixels, shrunk so the tallest stack fits its slot."
+                           :cljplot2/example 4}
+                    schema/non-neg)
+   (schema/optional :color {:description "The colour of the dots; a mapped `:color` wins." :cljplot2/value-meanings {:none "No fill."} :cljplot2/example :orange} schema/color)
+   (schema/optional :stroke-color {:description "The colour of each dot's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+   (schema/optional :stroke-width {:description "The width of the outline in pixels; `0` draws no outline." :cljplot2/example 3 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :shape {:description "The shape of every dot; a mapped `:shape` wins." :cljplot2/example \s} schema/shape)])
 
 (def schemas
   "Schemas of the dot plot: `:style` (theme `[:chart :dotplot]`), `:options`, `:mapping` (merged)."
@@ -55,33 +57,36 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :method {:description "binning: :dot-density (Wilkinson) or :histogram (fixed bins from :origin)"
-                                                :default :dot-density}
+                (conj (schema/optional :method {:description "How the chart bins the values."
+                                                :default :dot-density
+                                                :cljplot2/value-meanings {:dot-density "Wilkinson's dot density bins, each centred between its smallest and largest value." :histogram "Fixed bins from `:origin`."}}
                                        [:enum :dot-density :histogram])
-                      (schema/optional :binwidth {:description "bin width in data units"
-                                                  :cljplot2/default-doc "the range of all values / 30 (1 for a single distinct value)"}
-                                       [:and schema/finite schema/pos])
-                      (schema/optional :origin {:description "left edge of the first fixed bin in data units (only with :method :histogram - an error otherwise)"
-                                                :cljplot2/default-doc "the smallest value"}
+                      (schema/optional :binwidth {:description "The width of a bin in data units."
+                                                  :cljplot2/default-doc "The range of all values over 30, or `1` for a single distinct value."
+                                                  :cljplot2/example 1}
+                                       schema/finite-pos)
+                      (schema/optional :origin {:description "The low edge of the first fixed bin in data units; it needs `:method :histogram`."
+                                                :cljplot2/default-doc "The smallest value."
+                                                :cljplot2/example 0.25 :cljplot2/example-context {:method :histogram :binwidth 1}}
                                        schema/finite)
-                      (schema/optional :at {:description "where a bin's dots sit along the value axis: :center (the bin centre) or :value (each dot at its own value - the wheat plot)"
-                                            :default :center}
+                      (schema/optional :at {:description "Where a bin's dots sit along the value axis."
+                                            :default :center
+                                            :cljplot2/value-meanings {:center "At the bin's centre." :value "Each dot at its own value, as in a wheat plot."}}
                                        [:enum :center :value])
-                      (schema/optional :stack-dir {:description "stacking: :up (from the slot's low cross edge toward the next level) or :center (centred on the slot)"
-                                                   :default :up}
+                      (schema/optional :stack-dir {:description "Which way the stacks grow."
+                                                   :default :up
+                                                   :cljplot2/value-meanings {:up "From the slot's low edge towards the next level." :center "Both ways from the slot's centre line."}}
                                        [:enum :up :center])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                                       data/position-padding)))
+                      strip/padding-option))
              [#(when (and (some? (:origin %)) (not= :histogram (:method %))) "the :origin of fixed bins needs :method :histogram") [:origin]])
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical dot plots"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one dot plot), or values for vertical dot plots"}
+              [(schema/nilable :x {:description "The values of horizontal dot plots, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal dot plots, or the values of vertical ones; with no levels the chart draws one dot plot."}
                                schema/accessor)
-               (schema/nilable :color {:description "groups, each in its own point colour"} schema/accessor)
-               (schema/nilable :shape {:description "groups, each with its own point shape"} schema/accessor)
-               (schema/nilable :size {:description "groups, each with its own point size"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic (sharing stacks unless dodged)"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each in its own point colour."} schema/accessor)
+               (schema/nilable :shape {:description "Splits the rows into groups, each with its own point shape."} schema/accessor)
+               (schema/nilable :size {:description "Splits the rows into groups, each with its own point size."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, sharing stacks unless dodged."} schema/accessor)])})
 
 (defn- bins-of
   "Gives the bins of increasing values under the chart's method.

@@ -35,20 +35,23 @@
 
 (def ^:private style-entries
   "Map entries of the violin style (theme `[:chart :violin]`), also its options."
-  (into [(schema/optional :color {:description "violin fill colour (a mapped :color wins)"} schema/solid-color)
-         (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-         (schema/optional :stroke-width {:description "outline width in pixels (0 - no outline)"} schema/non-neg)
-         (schema/optional :inner-color {:description "colour of the inner marks: a colour, :contrast (black or white, whichever reads better on the fill) or :none (not drawn)"}
+  (into [(schema/optional :color {:description "The fill colour of the violins; a mapped `:color` wins." :cljplot2/example :orange} schema/solid-color)
+         (schema/optional :stroke-color {:description "The outline colour of the violins."
+                                         :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No outline."}}
+                          draw/stroke-color)
+         (schema/optional :stroke-width {:description "The outline width in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)
+         (schema/optional :inner-color {:description "The colour of the inner marks."
+                                        :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on the fill." :none "No inner marks."}}
                           [:or [:enum :contrast] schema/color])]
         draw/pattern-style-entries))
 
 (def ^:private inner-style-entries
   "Map entries of the violin style for the inner marks (theme `[:chart :violin]` only, not options)."
-  [(schema/optional :inner-box-width {:description "width in pixels of the inner box (quartile bar) of :inner :box"} schema/pos)
-   (schema/optional :inner-median-size {:description "diameter in pixels of the median dot of :inner :box"} schema/pos)
-   (schema/optional :inner-quartile-dash {:description "dash style of the quartile lines of :inner :quartiles"} schema/dash)
-   (schema/optional :inner-rug-width {:description "line width in pixels of the ticks of :inner :rug"} schema/pos)
-   (schema/optional :inner-point-size {:description "diameter in pixels of the points of :inner :points"} schema/pos)])
+  [(schema/optional :inner-box-width {:description "The width of the inner box, the quartile bar of `:inner :box`, in pixels."} schema/pos)
+   (schema/optional :inner-median-size {:description "The diameter of the median dot of `:inner :box`, in pixels."} schema/pos)
+   (schema/optional :inner-quartile-dash {:description "The dash style of the quartile lines of `:inner :quartiles`."} schema/dash)
+   (schema/optional :inner-rug-width {:description "The line width of the ticks of `:inner :rug`, in pixels."} schema/pos)
+   (schema/optional :inner-point-size {:description "The diameter of the points of `:inner :points`, in pixels."} schema/pos)])
 
 (def schemas
   "Schemas of the violin chart: `:style` (theme `[:chart :violin]`), `:options`, `:mapping` (merged)."
@@ -58,33 +61,42 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into strip/options)
-                (conj (schema/optional :kernel {:description "density kernel (a fastmath kernel keyword)" :default :gaussian} keyword?)
-                      (schema/optional :bandwidth {:description "kernel bandwidth in data units, or a fastmath bandwidth selector keyword"
-                                                   :default :nrd0}
-                                       [:or schema/pos keyword?])
-                      (schema/nilable :n {:description "number of density evaluation points per violin" :default 100} [:and :int [:>= 2]])
-                      (schema/nilable :cut {:description "how far the violin reaches past the data range, in bandwidths (0 - the data range)"
-                                            :default 0.0}
+                (conj (schema/optional :kernel {:description "The kernel of the density estimate." :default :gaussian
+                                                :cljplot2/other-values "Other fastmath kernels."}
+                                       kde/kernel-schema)
+                      (schema/optional :bandwidth {:description "The bandwidth of the density estimate: how far each value's kernel spreads."
+                                                   :default :nrd0
+                                                   :cljplot2/other-values "Other fastmath selectors: rule-of-thumb, plug-in and cross-validation variants."
+                                                   :cljplot2/form-meanings {::schema/finite-pos "A bandwidth in data units, e.g. `0.3`."}
+                                                   :cljplot2/example 0.2}
+                                       [:or schema/finite-pos kde/bandwidth-rule-schema])
+                      (schema/nilable :n {:description "The number of points at which the chart evaluates each violin's density." :default 100 :cljplot2/example 4} [:and :int [:>= 2]])
+                      (schema/nilable :cut {:description "How far each violin reaches past its values' range, in bandwidths; `0` stops at the range."
+                                            :default 0.0 :cljplot2/example 3}
                                       schema/non-neg)
-                      (schema/optional :scale {:description "violin widths: :width (each as wide as its slot), :area (equal areas - densities on one scale) or :count (areas proportional to the counts)"
-                                               :default :width}
+                      (schema/optional :scale {:description "How the chart scales the violins' widths."
+                                               :default :width
+                                               :cljplot2/value-meanings {:width "Every violin as wide as its slot." :area "Equal areas: the densities on one scale."
+                                                                         :count "Areas proportional to the counts of values."}}
                                        [:enum :width :area :count])
-                      (schema/nilable :varwidth {:description "multiply each violin's width by the square root of its count relative to the largest"
-                                                 :default false}
+                      (schema/nilable :varwidth {:description "How wide each violin is relative to the widest one; it multiplies the width `:scale` gives."
+                                                 :default false
+                                                 :cljplot2/value-meanings {true "By the square root of each violin's count of values." false "Every violin as wide as `:scale` makes it."}}
                                       schema/bool)
-                      (schema/optional :inner {:description "inner marks: :box (IQR bar, whisker line, median dot), :quartiles (quartile lines across), :rug (a tick per value), :points (values on the centre line) or :none"
-                                               :default :box}
+                      (schema/optional :inner {:description "The marks the chart draws inside each violin."
+                                               :default :box
+                                               :cljplot2/value-meanings {:box "A thin interquartile bar, a whisker line and a median dot."
+                                                                         :quartiles "Dashed lines across at the quartiles and a line at the median."
+                                                                         :rug "A tick per value." :points "The values on the centre line." :none "No inner marks."}}
                                        [:enum :box :quartiles :rug :points :none])
-                      (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span"
-                                                 :cljplot2/default-doc "[0.05 0.05] along the value axis; with :place :bottom also :bottom-share below the data"}
-                                       data/position-padding)))
+                      strip/padding-option))
    :mapping (strip/values-mapping
-              [(schema/nilable :x {:description "values (data units) on the value axis, or levels for vertical violins"} schema/accessor)
-               (schema/nilable :y {:description "levels on the categorical axis (absent - one violin), or values for vertical violins"}
+              [(schema/nilable :x {:description "The values of horizontal violins, or the levels of vertical ones."} schema/accessor)
+               (schema/nilable :y {:description "The levels of horizontal violins, or the values of vertical ones; with no levels the chart draws one violin."}
                                schema/accessor)
-               (schema/nilable :color {:description "groups, each a violin in its own fill colour"} schema/accessor)
-               (schema/nilable :pattern {:description "groups, each a violin with its own fill pattern"} schema/accessor)
-               (schema/nilable :group {:description "groups without a visual aesthetic, each its own violin"} schema/accessor)])})
+               (schema/nilable :color {:description "Splits the rows into groups, each a violin in its own fill colour."} schema/accessor)
+               (schema/nilable :pattern {:description "Splits the rows into groups, each a violin with its own fill pattern."} schema/accessor)
+               (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own violin."} schema/accessor)])})
 
 (def ^{:const true :private true :tag 'long} default-points
   "Density evaluation points per violin when `:n` isn't given."

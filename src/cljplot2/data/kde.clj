@@ -3,7 +3,9 @@
 
   The estimates come from `fastmath.kernel`; charts such as `density` and `violin` evaluate them on a grid of points spanning the sample widened by a few bandwidths.
 
-  Functions: [[estimate]] - the estimate of a sample and the span of its curve, [[grid-points]] - equally spaced evaluation points, [[curve]] - the estimate evaluated at points."
+  Functions: [[estimate]] - the estimate of a sample and the span of its curve, [[grid-points]] - equally spaced evaluation points, [[curve]] - the estimate evaluated at points.
+
+  Schemas: [[kernel-schema]] - a fastmath KDE kernel name, [[bandwidth-rule-schema]] - a fastmath bandwidth selector; option types of the density charts (density, violin) and of the 2D estimates (field, contour)."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [fastmath.kernel :as k]
@@ -11,6 +13,37 @@
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
+
+(def ^:private kernels
+  "The fastmath kernels of a density estimate (one- or two-dimensional), sorted."
+  (vec (sort (get k/kernel-list :kde))))
+
+(def kernel-schema
+  "Schema of a density kernel: a fastmath KDE kernel name (`fastmath.kernel/kernel-list` under `:kde`)."
+  (schema/named-type ::kernel (set kernels) (str "should be a fastmath KDE kernel: " (apply str (interpose " " kernels)))
+                     {:cljplot2/type-name "density kernel"
+                      :cljplot2/type-meaning "The shape a density estimate puts at each value: a fastmath kernel name, e.g. `:gaussian` or `:epanechnikov`."
+                      :cljplot2/type-doc "a fastmath KDE kernel keyword"
+                      :cljplot2/value-set kernels
+                      :cljplot2/value-meanings {:gaussian "The normal curve; smooth, with long tails."
+                                                :epanechnikov "A parabola, the most efficient kernel in theory."
+                                                :uniform "A flat step: a moving count."
+                                                :triangular "A triangle."}}))
+
+(def ^:private bandwidth-rules
+  "The fastmath bandwidth selectors of a density estimate (the 2D estimate also takes `:scott`)."
+  [:nrd0 :nrd :nrd-adjust :sj :sj-dpi :lscv :lcv :rlcv])
+
+(def bandwidth-rule-schema
+  "Schema of a bandwidth rule: a fastmath bandwidth selector keyword."
+  (schema/named-type ::bandwidth-rule (set bandwidth-rules) (str "should be a fastmath bandwidth selector: " (apply str (interpose " " bandwidth-rules)))
+                     {:cljplot2/type-name "bandwidth rule"
+                      :cljplot2/type-meaning "A rule that picks the bandwidth from the sample: a fastmath selector, e.g. `:nrd0` (R's default) or `:sj` (Sheather-Jones)."
+                      :cljplot2/type-doc "a fastmath bandwidth selector keyword"
+                      :cljplot2/value-set bandwidth-rules
+                      :cljplot2/value-meanings {:nrd0 "Silverman's rule of thumb, R's default."
+                                                :nrd "Scott's rule of thumb, wider than `:nrd0`."
+                                                :sj "Sheather and Jones' plug-in selector, good for multimodal data."}}))
 
 (defn estimate
   "Gives the kernel density estimate of a sample with the span its curve is drawn over.
