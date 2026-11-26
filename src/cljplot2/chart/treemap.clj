@@ -39,9 +39,9 @@
 
 (def ^:private style-entries
   "Map entries of the treemap style (theme `[:chart :treemap]`; also options)."
-  (into [(schema/optional :gap {:description "gap inside every group around its header and children, in pixels"} schema/non-neg)
-         (schema/optional :stroke-color {:description "cell outline colour"} schema/color)
-         (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)]
+  (into [(schema/optional :gap {:description "The room inside every group around its header and children, in pixels." :cljplot2/example 8} schema/non-neg)
+         (schema/optional :stroke-color {:description "The outline colour of the cells." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+         (schema/optional :stroke-width {:description "The outline width of the cells in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -51,11 +51,15 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :layout {:description "rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)"
-                                                :default :squarify}
+                (conj (schema/optional :layout {:description "How the chart cuts each group's rectangle into its children's cells."
+                                                :default :squarify
+                                                :cljplot2/value-meanings {:squarify "Cells as near to squares as the values allow."
+                                                                          :slice-dice "Slices across the rectangle, turning direction at every level."}}
                                        [:enum :squarify :slice-dice])
-                      (schema/optional :order {:description "order of siblings: :value (descending) or :data (first appearance)"
-                                               :cljplot2/default-doc ":value for :squarify, :data for :slice-dice"}
+                      (schema/optional :order {:description "The order of siblings within their group's rectangle."
+                                               :cljplot2/default-doc "`:value` with `:squarify`, `:data` with `:slice-dice`."
+                                               :cljplot2/value-meanings {:value "Largest first." :data "In order of first appearance; a group's unnamed leaf comes last."}
+                                               :cljplot2/example :data}
                                        [:enum :value :data]))
                 (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})

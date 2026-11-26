@@ -4,7 +4,7 @@
             [clojure.test :refer [deftest testing is are]]
             [fastmath.core :as m]
             [fastmath.random :as r]
-            [cljplot2.test-util :refer [error]]
+            [cljplot2.test-util :refer [error same-pixels?]]
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.data.hierarchy :as hierarchy]
@@ -235,6 +235,9 @@
   (testing "2.4 :root true - the root in NA"
     (let [[_ _ packed :as r] (render (pk {:data [{:a "L" :v 1} {:a "R" :v 1}] :charts [(chart/pack {:root true :leaf-labels false})]}))]
       (is (= [128 128 128] (at r {:x (:x packed) :y (- (double (:y packed)) (* 0.8 (double (:r packed))))})))))
+  (testing "boundary: hiding the root equals no root; a depth past the tree hides nothing"
+    (is (same-pixels? (pk {:charts [(chart/pack {:root true :hidden-levels #{0}})]}) (pk {}) {:width 300 :height 300}))
+    (is (same-pixels? (pk {:charts [(chart/pack {:hidden-levels #{5}})]}) (pk {}) {:width 300 :height 300})))
   (testing "2.7 :hidden-levels - no rings at that depth, leaves in place"
     (let [[_ _ packed :as r] (render (pk {:charts [(chart/pack {:hidden-levels #{1} :leaf-labels false :group-labels false})]}))]
       (is (not= (first (get-in plain [:palette :color])) (at r (above-children (named packed "A")))))

@@ -26,10 +26,10 @@
 (def mapping-schema
   "Schema of a hierarchy chart's merged mapping: `:value` and a non-empty `:hierarchy` vector."
   [:map
-   [:value {:description "node size: a positive finite number per row (other rows are dropped)"} schema/accessor]
-   [:hierarchy {:description "the levels of the tree, outer level first (a row's path ends at its first nil or \"\")"}
+   [:value {:description "The size of each row's node, a positive finite number; the chart drops other rows."} schema/accessor]
+   [:hierarchy {:description "The levels of the tree, outer level first; a row's path ends at its first `nil` or `\"\"`."}
     [:vector {:min 1} schema/accessor]]
-   (schema/nilable :color {:description "leaf colour (rows with the same path but different colours stay separate leaves)"}
+   (schema/nilable :color {:description "Colours each leaf; rows with the same path but different colours stay separate leaves."}
                    schema/accessor)])
 
 (def ^:private label-option

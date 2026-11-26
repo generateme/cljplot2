@@ -1,13 +1,17 @@
 ;; # Shares and sets
 
-;; Charts of the parts of a whole: nested rectangles (`treemap`), bands or rings (`partition`), nested circles
-;; (`pack`) and a grid of cells (`waffle`); `venn` shows how sets overlap.
+;; These charts draw the parts of a whole as nested rectangles (`treemap`), bands or rings (`partition`), nested
+;; circles (`pack`) or a grid of cells (`waffle`); `venn` draws overlapping sets. Use them to compare shares, or to
+;; count the items that sets have in common.
 
 (ns reference.charts-shares-sets
   (:require [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+
+;; The table below holds made-up costs of the teams of three departments; the treemaps, icicles and circle packings
+;; use it:
 
 (def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
              {:dept "science" :team "chemistry" :cost 18} {:dept "arts" :team "music" :cost 15}
@@ -16,22 +20,39 @@
 
 (nu/data-table budget)
 
-;; ## treemap
+;; The table below holds made-up shares of an energy mix; the waffles use it:
 
-;; Each leaf a rectangle of area proportional to its value, nested inside the rectangle of its group; the levels
-;; come from `:hierarchy`, outer level first.
+(def energy-mix [{:source "coal" :share 35} {:source "gas" :share 23} {:source "nuclear" :share 10}
+                 {:source "hydro" :share 15} {:source "wind and solar" :share 17}])
 
-(nu/options-table (describe/mapping (chart/treemap)))
+(nu/data-table energy-mix)
+
+;; The table below holds the members of three clubs, a row per membership; the Venn diagrams use it:
+
+(def memberships (concat (for [i (range 12)] {:club "chess" :member (str "p" i)})
+                         (for [i (range 8 14)] {:club "running" :member (str "p" i)})
+                         (for [i (range 0 24 3)] {:club "choir" :member (str "p" i)})))
+
+(nu/data-table memberships)
+
+;; ## Treemaps
+
+;; `chart/treemap` draws each leaf of a hierarchy as a rectangle, its area by its value, nested inside the rectangle
+;; of its group. Use it to compare the shares of many parts and their groups at once.
+
+(nu/shared-groups (describe/options (chart/treemap)))
+
+(nu/mapping-list (describe/mapping (chart/treemap)))
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
                     :charts [(chart/treemap)]}
                    {:width 600 :height 380})
 
-;; Its options: the gap inside a group, the cell borders and the layout - near-square cells or slices turning
-;; direction at each depth:
+;; These options set the room inside a group, the cell outlines, the layout and the order of siblings. The panels
+;; below draw a wider gap with black outlines, then slices:
 
-(nu/options-table (describe/own-rows (describe/options (chart/treemap))))
+(nu/option-cards 'chart/treemap (describe/own-rows (describe/options (chart/treemap))))
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -44,8 +65,8 @@
                                  {:columns 2})
                    {:width 1000 :height 380})
 
-;; `:order` sets the siblings' order, as in the partition: by descending value (the default of `:squarify`) or in
-;; data order (the default of `:slice-dice`) - slices ordered by size make a mosaic read largest first:
+;; The next panels swap the default orders: slices ordered by value read largest first, and squarified cells keep the
+;; data order:
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -58,14 +79,14 @@
                                  {:columns 2})
                    {:width 1000 :height 380})
 
-(nu/shared-groups (describe/options (chart/treemap)))
+;; ## Icicles and sunbursts
 
-;; ## partition
+;; `chart/partition` draws a hierarchy as an icicle: adjacent bands, one per level, each node as wide as its value. In
+;; polar coordinates the bands become the rings of a sunburst. Use it to show the shares at every level of a tree.
 
-;; The hierarchy as adjacent bands, one per level, each node as wide as its value - an icicle plot; in polar
-;; coordinates the bands become rings (a sunburst).
+(nu/shared-groups (describe/options (chart/partition)))
 
-(nu/options-table (describe/mapping (chart/partition)))
+(nu/mapping-list (describe/mapping (chart/partition)))
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -79,11 +100,11 @@
                                  {:columns 2})
                    {:width 1000 :height 420})
 
-;; Its options: borders, the order of siblings, how nodes are coloured (by their top-level node, lighter by depth,
-;; or each by its name) and whether the root is drawn. `:order :data` keeps the rows' order - here the budget
-;; reversed, so sport comes first and the teams go from the cheapest up (by value, the default above, science leads):
+;; These options set the cell outlines, the order of siblings, how the chart colours the nodes and whether it draws
+;; the root. The left panel below draws the root at the centre and keeps the order of the reversed budget rows, so
+;; sport comes first and the teams go from the cheapest up; the right one colours each node by its name:
 
-(nu/options-table (describe/own-rows (describe/options (chart/partition))))
+(nu/option-cards 'chart/partition (describe/own-rows (describe/options (chart/partition))))
 
 (plot/render-image (plot/arrange [{:data (reverse budget)
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -99,7 +120,7 @@
                                  {:columns 2})
                    {:width 1000 :height 460})
 
-;; The borders in an icicle: thick dark lines instead of the default thin white ones (the icicle above):
+;; The icicle below draws thick dark outlines instead of the default thin white ones:
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
@@ -107,23 +128,24 @@
                     :labels {:title ":stroke-color, :stroke-width 3"}}
                    {:width 600 :height 360})
 
-(nu/shared-groups (describe/options (chart/partition)))
+;; ## Circle packing
 
-;; ## pack
+;; `chart/pack` draws each leaf of a hierarchy as a circle, its area by its value, packed inside the circle of its
+;; group. Use it for the shares of a tree when the groups matter more than exact areas.
 
-;; Each leaf a circle of area proportional to its value, packed inside the circle of its group.
+(nu/shared-groups (describe/options (chart/pack)))
 
-(nu/options-table (describe/mapping (chart/pack)))
+(nu/mapping-list (describe/mapping (chart/pack)))
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
                     :charts [(chart/pack)]}
                    {:width 500 :height 450})
 
-;; Its options: the gap between circles, borders, the packing order, the root circle and the depths left out of the
-;; drawing (the layout unchanged - here the group circles, depth 1):
+;; These options set the room between circles, the outlines, the packing order, the root circle and the depths the
+;; chart leaves out. The panels below draw a wider gap with the root, then leave out the group circles (depth 1):
 
-(nu/options-table (describe/own-rows (describe/options (chart/pack))))
+(nu/option-cards 'chart/pack (describe/own-rows (describe/options (chart/pack))))
 
 (plot/render-image (plot/arrange [{:data budget
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -136,8 +158,8 @@
                                  {:columns 2})
                    {:width 1000 :height 480})
 
-;; The packing order, here of the budget rows reversed (smallest first): siblings by value (largest first) or in
-;; data order; and wider borders:
+;; The next panels pack the reversed budget rows (smallest first) by value, then in data order; the third panel draws
+;; thick dark outlines:
 
 (plot/render-image (plot/arrange [{:data (reverse budget)
                                    :mapping {:hierarchy [:dept :team] :value :cost}
@@ -154,28 +176,25 @@
                                  {:columns 3})
                    {:width 1000 :height 360})
 
-(nu/shared-groups (describe/options (chart/pack)))
+;; ## Waffle charts
 
-;; ## waffle
+;; `chart/waffle` draws a grid of cells, 10 by 10 by default, each category taking its share of the cells. Use it to
+;; show a few shares as countable units.
 
-;; A grid of cells (10 × 10 by default), each category taking a share of the cells proportional to its value.
+(nu/shared-groups (describe/options (chart/waffle)))
 
-(nu/options-table (describe/mapping (chart/waffle)))
-
-(def energy-mix [{:source "coal" :share 35} {:source "gas" :share 23} {:source "nuclear" :share 10}
-                 {:source "hydro" :share 15} {:source "wind and solar" :share 17}])
-
-(nu/data-table energy-mix)
+(nu/mapping-list (describe/mapping (chart/waffle)))
 
 (plot/render-image {:data energy-mix
                     :mapping {:color :source :value :share}
                     :charts [(chart/waffle)]}
                    {:width 500 :height 380})
 
-;; Its options: the cell shape, gap and border; the grid size and fill order; or `:unit` - the value of one cell,
-;; so the cell count follows the values (here one cell per 2 units, 5 columns wide):
+;; These options set the cells' shape, gap and outline and the grid's size and fill order; `:unit` instead makes each
+;; cell stand for a fixed value, so the cell count follows the values. The panels below draw circles on a 5 by 20
+;; grid, fill by columns with white outlines and no gap, then draw one cell per 2 units, 5 columns wide:
 
-(nu/options-table (describe/own-rows (describe/options (chart/waffle))))
+(nu/option-cards 'chart/waffle (describe/own-rows (describe/options (chart/waffle))))
 
 (plot/render-image (plot/arrange [{:data energy-mix
                                    :mapping {:color :source :value :share}
@@ -195,30 +214,24 @@
                                  {:columns 3 :widths [1.3 1 1.1]})
                    {:width 1000 :height 380})
 
-(nu/shared-groups (describe/options (chart/waffle)))
+;; ## Venn diagrams
 
-;; ## venn
+;; `chart/venn` draws two or three sets as overlapping circles and labels each region with the number of items it
+;; holds; each row names an item and a set it belongs to. Use it to show how a few sets overlap.
 
-;; Two or three sets as overlapping circles, each region labelled with the number of items it holds; a row names
-;; an item and a set it belongs to.
+(nu/shared-groups (describe/options (chart/venn)))
 
-(nu/options-table (describe/mapping (chart/venn)))
-
-(def memberships (concat (for [i (range 12)] {:club "chess" :member (str "p" i)})
-                         (for [i (range 8 14)] {:club "running" :member (str "p" i)})
-                         (for [i (range 0 24 3)] {:club "choir" :member (str "p" i)})))
-
-(nu/data-table memberships)
+(nu/mapping-list (describe/mapping (chart/venn)))
 
 (plot/render-image {:data memberships
                     :mapping {:set :club :item :member}
                     :charts [(chart/venn)]}
                    {:width 500 :height 420})
 
-;; Its options: the fill and outline, which sets are shown, proportional areas (two sets), and the set and region
-;; labels - a function of `{:sets :size :share}` writes a region's text:
+;; These options set the fill and outline, which sets the chart shows, proportional areas of two sets, and the set and
+;; region labels. The panels below draw two proportional sets, two equal circles, then shares as region labels:
 
-(nu/options-table (describe/own-rows (describe/options (chart/venn))))
+(nu/option-cards 'chart/venn (describe/own-rows (describe/options (chart/venn))))
 
 (plot/render-image (plot/arrange [{:data memberships
                                    :mapping {:set :club :item :member}
@@ -236,7 +249,7 @@
                                  {:columns 3})
                    {:width 1000 :height 380})
 
-;; Without set names, and with thick outlines in the darkened set colours:
+;; The next panels leave out the set names, then draw thick outlines in the darkened set colours:
 
 (plot/render-image (plot/arrange [{:data memberships
                                    :mapping {:set :club :item :member}
@@ -249,14 +262,12 @@
                                  {:columns 2})
                    {:width 900 :height 380})
 
-;; The gap between a circle and its set name is a theme key of `[:chart :venn]`, not an option:
+;; A theme key sets the room between a circle and its set name. The diagram below widens it:
 
-(nu/options-table (describe/style-rows :venn [:label-gap]))
+(nu/theme-key-list :venn (describe/style-rows :venn [:label-gap]))
 
 (plot/render-image {:data memberships
                     :mapping {:set :club :item :member}
                     :charts [(chart/venn)]
                     :theme {:chart {:venn {:label-gap 16}}}}
                    {:width 500 :height 420})
-
-(nu/shared-groups (describe/options (chart/venn)))

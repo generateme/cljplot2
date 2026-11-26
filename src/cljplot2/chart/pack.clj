@@ -47,10 +47,10 @@
 
 (def ^:private style-entries
   "Map entries of the pack style (theme `[:chart :pack]`; also options)."
-  (into [(schema/optional :gap {:description "gap between siblings and between a child and its parent's edge, in pixels"}
+  (into [(schema/optional :gap {:description "The room between siblings and between a child and its parent's edge, in pixels." :cljplot2/example 10}
                           schema/non-neg)
-         (schema/optional :stroke-color {:description "circle outline colour"} schema/color)
-         (schema/optional :stroke-width {:description "circle outline width in pixels"} schema/non-neg)]
+         (schema/optional :stroke-color {:description "The outline colour of the circles." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+         (schema/optional :stroke-width {:description "The outline width of the circles in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -60,12 +60,16 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :order {:description "packing order of siblings: :value (descending, largest near the centre) or :data"
-                                               :default :value}
+                (conj (schema/optional :order {:description "The order in which the chart packs siblings."
+                                               :default :value
+                                               :cljplot2/value-meanings {:value "Largest first, near the centre." :data "In order of first appearance; a group's unnamed leaf comes last."}}
                                        [:enum :value :data])
-                      (schema/nilable :root {:description "draw the root circle too" :default false} schema/bool)
-                      (schema/nilable :hidden-levels {:description "depths (root 0, top level 1) not drawn, the layout unchanged"
-                                                      :default #{}}
+                      (schema/nilable :root {:description "Whether the chart draws the root circle too."
+                                             :default false
+                                             :cljplot2/value-meanings {true "Draws the circle around everything." false "Starts at the top level."}}
+                                      schema/bool)
+                      (schema/nilable :hidden-levels {:description "The depths the chart leaves out, counting the root as `0` and the top level as `1`; the other circles keep their places."
+                                                      :default #{} :cljplot2/example #{1}}
                                       [:set [:int {:min 0}]]))
                 (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})

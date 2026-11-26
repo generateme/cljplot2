@@ -49,8 +49,9 @@ code-block-background: true
 
 # Shares and sets
 
-Charts of the parts of a whole: nested rectangles (`treemap`), bands or rings (`partition`), nested circles
-(`pack`) and a grid of cells (`waffle`); `venn` shows how sets overlap.
+These charts draw the parts of a whole as nested rectangles (`treemap`), bands or rings (`partition`), nested
+circles (`pack`) or a grid of cells (`waffle`); `venn` draws overlapping sets. Use them to compare shares, or to
+count the items that sets have in common.
 
 
 ::: {.sourceClojure}
@@ -63,6 +64,9 @@ Charts of the parts of a whole: nested rectangles (`treemap`), bands or rings (`
 ```
 :::
 
+
+The table below holds made-up costs of the teams of three departments; the treemaps, icicles and circle packings
+use it:
 
 
 ::: {.sourceClojure}
@@ -81,19 +85,57 @@ Charts of the parts of a whole: nested rectangles (`treemap`), bands or rings (`
 ```
 
 
+The table below holds made-up shares of an energy mix; the waffles use it:
 
-## treemap
 
-Each leaf a rectangle of area proportional to its value, nested inside the rectangle of its group; the levels
-come from `:hierarchy`, outer level first.
+::: {.sourceClojure}
+```clojure
+(def energy-mix [{:source "coal" :share 35} {:source "gas" :share 23} {:source "nuclear" :share 10}
+                 {:source "hydro" :share 15} {:source "wind and solar" :share 17}])
+```
+:::
 
-::: {.clay-table}
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>source</th><th>share</th></tr></thead><tbody><tr><td>coal</td><td>35</td></tr><tr><td>gas</td><td>23</td></tr><tr><td>nuclear</td><td>10</td></tr><tr><td>hydro</td><td>15</td></tr><tr><td>wind and solar</td><td>17</td></tr></tbody></table></div>
 ```
 
+
+The table below holds the members of three clubs, a row per membership; the Venn diagrams use it:
+
+
+::: {.sourceClojure}
+```clojure
+(def memberships (concat (for [i (range 12)] {:club "chess" :member (str "p" i)})
+                         (for [i (range 8 14)] {:club "running" :member (str "p" i)})
+                         (for [i (range 0 24 3)] {:club "choir" :member (str "p" i)})))
+```
 :::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>club</th><th>member</th></tr></thead><tbody><tr><td>chess</td><td>p0</td></tr><tr><td>chess</td><td>p1</td></tr><tr><td>chess</td><td>p2</td></tr><tr><td>chess</td><td>p3</td></tr><tr><td>chess</td><td>p4</td></tr><tr><td>chess</td><td>p5</td></tr><tr><td>chess</td><td>p6</td></tr><tr><td>chess</td><td>p7</td></tr><tr><td>chess</td><td>p8</td></tr><tr><td>chess</td><td>p9</td></tr><tr><td>chess</td><td>p10</td></tr><tr><td>chess</td><td>p11</td></tr><tr><td>running</td><td>p8</td></tr><tr><td>running</td><td>p9</td></tr><tr><td>running</td><td>p10</td></tr><tr><td>running</td><td>p11</td></tr><tr><td>running</td><td>p12</td></tr><tr><td>running</td><td>p13</td></tr><tr><td>choir</td><td>p0</td></tr><tr><td>choir</td><td>p3</td></tr><tr><td>choir</td><td>p6</td></tr><tr><td>choir</td><td>p9</td></tr><tr><td>choir</td><td>p12</td></tr><tr><td>choir</td><td>p15</td></tr><tr><td>choir</td><td>p18</td></tr><tr><td>choir</td><td>p21</td></tr></tbody></table></div>
+```
+
+
+
+## Treemaps
+
+`chart/treemap` draws each leaf of a hierarchy as a rectangle, its area by its value, nested inside the rectangle
+of its group. Use it to compare the shares of many parts and their groups at once.
+
+
+```{=html}
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#hierarchy-labels">Hierarchy labels</a> – <code>:group-labels</code> <code>:leaf-labels</code></li></ul></div>
+```
+
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:value</code> <span class="required">required</span> – The size of each row's node, a positive finite number; the chart drops other rows.</li><li><code>:hierarchy</code> <span class="required">required</span> – The levels of the tree, outer level first; a row's path ends at its first <code>nil</code> or <code>""</code>.</li><li><code>:color</code> – Colours each leaf; rows with the same path but different colours stay separate leaves.</li></ul></div>
+```
 
 
 
@@ -112,16 +154,13 @@ come from `:hierarchy`, outer level first.
 :::
 
 
-Its options: the gap inside a group, the cell borders and the layout - near-square cells or slices turning
-direction at each depth:
+These options set the room inside a group, the cell outlines, the layout and the order of siblings. The panels
+below draw a wider gap with black outlines, then slices:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap inside every group around its header and children, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:layout</td><td>one of :squarify :slice-dice</td><td>:squarify</td><td>rectangle layout: :squarify (near-square cells) or :slice-dice (slices turning by depth)</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value for :squarify, :data for :slice-dice</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:gap</code><span class="option-default">Default: <code>3</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/treemap {:gap 8})</code></div><div class="option-text">The room inside every group around its header and children, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:white</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/treemap {:stroke-color :black})</code></div><div class="option-text">The outline colour of the cells.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/treemap {:stroke-width 3})</code></div><div class="option-text">The outline width of the cells in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:layout</code><span class="option-default">Default: <code>:squarify</code></span></dt><dd><div class="option-example"><code>(chart/treemap {:layout :slice-dice})</code></div><div class="option-text">How the chart cuts each group's rectangle into its children's cells.<ul><li><code>:squarify</code> – Cells as near to squares as the values allow.</li><li><code>:slice-dice</code> – Slices across the rectangle, turning direction at every level.</li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:value</code> with <code>:squarify</code>, <code>:data</code> with <code>:slice-dice</code>.</span></dt><dd><div class="option-example"><code>(chart/treemap {:order :data})</code></div><div class="option-text">The order of siblings within their group's rectangle.<ul><li><code>:value</code> – Largest first.</li><li><code>:data</code> – In order of first appearance; a group's unnamed leaf comes last.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -146,8 +185,8 @@ direction at each depth:
 :::
 
 
-`:order` sets the siblings' order, as in the partition: by descending value (the default of `:squarify`) or in
-data order (the default of `:slice-dice`) - slices ordered by size make a mosaic read largest first:
+The next panels swap the default orders: slices ordered by value read largest first, and squarified cells keep the
+data order:
 
 
 ::: {.sourceClojure}
@@ -172,24 +211,21 @@ data order (the default of `:slice-dice`) - slices ordered by size make a mosaic
 
 
 
+## Icicles and sunbursts
+
+`chart/partition` draws a hierarchy as an icicle: adjacent bands, one per level, each node as wide as its value. In
+polar coordinates the bands become the rings of a sunburst. Use it to show the shares at every level of a tree.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#hierarchy-labels">Hierarchy labels</a> – <code>:group-labels</code> <code>:leaf-labels</code></li></ul></div>
 ```
 
 
 
-## partition
-
-The hierarchy as adjacent bands, one per level, each node as wide as its value - an icicle plot; in polar
-coordinates the bands become rings (a sunburst).
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:value</code> <span class="required">required</span> – The size of each row's node, a positive finite number; the chart drops other rows.</li><li><code>:hierarchy</code> <span class="required">required</span> – The levels of the tree, outer level first; a row's path ends at its first <code>nil</code> or <code>""</code>.</li><li><code>:color</code> – Colours each leaf; rows with the same path but different colours stay separate leaves.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -215,17 +251,14 @@ coordinates the bands become rings (a sunburst).
 :::
 
 
-Its options: borders, the order of siblings, how nodes are coloured (by their top-level node, lighter by depth,
-or each by its name) and whether the root is drawn. `:order :data` keeps the rows' order - here the budget
-reversed, so sport comes first and the teams go from the cheapest up (by value, the default above, science leads):
+These options set the cell outlines, the order of siblings, how the chart colours the nodes and whether it draws
+the root. The left panel below draws the root at the centre and keeps the order of the reversed budget rows, so
+sport comes first and the teams go from the cheapest up; the right one colours each node by its name:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>order of siblings: :value (descending) or :data (first appearance)</td></tr><tr><td>:color-by</td><td>one of :top :name</td><td>:top</td><td>node colours: :top - each top-level node's palette colour, lighter by depth; :name - every node by its name through the color scale</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root too, every level one up</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:white</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/partition {:stroke-color :black})</code></div><div class="option-text">The outline colour of the cells.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/partition {:stroke-width 3})</code></div><div class="option-text">The outline width of the cells in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:value</code></span></dt><dd><div class="option-example"><code>(chart/partition {:order :data})</code></div><div class="option-text">The order of siblings within their parent's span.<ul><li><code>:value</code> – Largest first.</li><li><code>:data</code> – In order of first appearance; a group's unnamed leaf comes last.</li></ul></div></dd></div><div class="option-card"><dt><code>:color-by</code><span class="option-default">Default: <code>:top</code></span></dt><dd><div class="option-example"><code>(chart/partition {:color-by :name})</code></div><div class="option-text">How the chart colours the nodes; <code>:name</code> can't go with a mapped <code>:color</code>.<ul><li><code>:top</code> – Without a mapped <code>:color</code>, each top-level node takes the next palette colour and its descendants lighter shades by depth; a mapped <code>:color</code> colours the leaves and the groups take the NA colour.</li><li><code>:name</code> – Every node takes its name's colour from the colour scale, with a legend; equal names share a colour at every depth.</li></ul></div></dd></div><div class="option-card"><dt><code>:root</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/partition {:root true})</code></div><div class="option-text">Whether the chart draws the root too.<ul><li><code>false</code> – Starts at the top level.</li><li><code>true</code> – Draws the root at the bottom (the centre in polar plots), every level one up.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -253,7 +286,7 @@ reversed, so sport comes first and the teams go from the cheapest up (by value, 
 :::
 
 
-The borders in an icicle: thick dark lines instead of the default thin white ones (the icicle above):
+The icicle below draws thick dark outlines instead of the default thin white ones:
 
 
 ::: {.sourceClojure}
@@ -273,23 +306,21 @@ The borders in an icicle: thick dark lines instead of the default thin white one
 
 
 
+## Circle packing
+
+`chart/pack` draws each leaf of a hierarchy as a circle, its area by its value, packed inside the circle of its
+group. Use it for the shares of a tree when the groups matter more than exact areas.
+
+
 ```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#hierarchy-labels">Hierarchy labels</a> – <code>:group-labels</code> <code>:leaf-labels</code></li></ul></div>
 ```
 
 
 
-## pack
-
-Each leaf a circle of area proportional to its value, packed inside the circle of its group.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:value (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>node size: a positive finite number per row (other rows are dropped)</td></tr><tr><td>:hierarchy (required)</td><td>vector of a keyword, a function or a categorical marker of one (at least 1)</td><td></td><td>the levels of the tree, outer level first (a row's path ends at its first nil or "")</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>leaf colour (rows with the same path but different colours stay separate leaves)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:value</code> <span class="required">required</span> – The size of each row's node, a positive finite number; the chart drops other rows.</li><li><code>:hierarchy</code> <span class="required">required</span> – The levels of the tree, outer level first; a row's path ends at its first <code>nil</code> or <code>""</code>.</li><li><code>:color</code> – Colours each leaf; rows with the same path but different colours stay separate leaves.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -308,16 +339,13 @@ Each leaf a circle of area proportional to its value, packed inside the circle o
 :::
 
 
-Its options: the gap between circles, borders, the packing order, the root circle and the depths left out of the
-drawing (the layout unchanged - here the group circles, depth 1):
+These options set the room between circles, the outlines, the packing order, the root circle and the depths the
+chart leaves out. The panels below draw a wider gap with the root, then leave out the group circles (depth 1):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a non-negative number</td><td>3</td><td>gap between siblings and between a child and its parent's edge, in pixels</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>circle outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:order</td><td>one of :value :data</td><td>:value</td><td>packing order of siblings: :value (descending, largest near the centre) or :data</td></tr><tr><td>:root</td><td>true or false or nil</td><td>false</td><td>draw the root circle too</td></tr><tr><td>:hidden-levels</td><td>set of integer (at least 0) or nil</td><td>#{}</td><td>depths (root 0, top level 1) not drawn, the layout unchanged</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:gap</code><span class="option-default">Default: <code>3</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pack {:gap 10})</code></div><div class="option-text">The room between siblings and between a child and its parent's edge, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:white</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pack {:stroke-color :black})</code></div><div class="option-text">The outline colour of the circles.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/pack {:stroke-width 3})</code></div><div class="option-text">The outline width of the circles in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:value</code></span></dt><dd><div class="option-example"><code>(chart/pack {:order :data})</code></div><div class="option-text">The order in which the chart packs siblings.<ul><li><code>:value</code> – Largest first, near the centre.</li><li><code>:data</code> – In order of first appearance; a group's unnamed leaf comes last.</li></ul></div></dd></div><div class="option-card"><dt><code>:root</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/pack {:root true})</code></div><div class="option-text">Whether the chart draws the root circle too.<ul><li><code>false</code> – Starts at the top level.</li><li><code>true</code> – Draws the circle around everything.</li></ul></div></dd></div><div class="option-card"><dt><code>:hidden-levels</code><span class="option-default">Default: <code>#{}</code></span></dt><dd><div class="option-example"><code>(chart/pack {:hidden-levels #{1}})</code></div><div class="option-text">The depths the chart leaves out, counting the root as <code>0</code> and the top level as <code>1</code>; the other circles keep their places.<ul><li><span>set of (integer at least 0)</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -342,8 +370,8 @@ drawing (the layout unchanged - here the group circles, depth 1):
 :::
 
 
-The packing order, here of the budget rows reversed (smallest first): siblings by value (largest first) or in
-data order; and wider borders:
+The next panels pack the reversed budget rows (smallest first) by value, then in data order; the third panel draws
+thick dark outlines:
 
 
 ::: {.sourceClojure}
@@ -372,37 +400,20 @@ data order; and wider borders:
 
 
 
+## Waffle charts
+
+`chart/waffle` draws a grid of cells, 10 by 10 by default, each category taking its share of the cells. Use it to
+show a few shares as countable units.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#hierarchy-labels">Hierarchy labels</a> – <code>:group-labels</code> <code>:leaf-labels</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## waffle
-
-A grid of cells (10 × 10 by default), each category taking a share of the cells proportional to its value.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the category: one colour and a share of the cells per category</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>every row counts 1</td><td>weight per row, a non-negative finite number (other rows are dropped)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern, splitting categories too</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def energy-mix [{:source "coal" :share 35} {:source "gas" :share 23} {:source "nuclear" :share 10}
-                 {:source "hydro" :share 15} {:source "wind and solar" :share 17}])
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>source</th><th>share</th></tr></thead><tbody><tr><td>coal</td><td>35</td></tr><tr><td>gas</td><td>23</td></tr><tr><td>nuclear</td><td>10</td></tr><tr><td>hydro</td><td>15</td></tr><tr><td>wind and solar</td><td>17</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:color</code> <span class="required">required</span> – Splits the rows into categories, each with its own colour and its share of the cells.</li><li><code>:value</code> – The weight of each row, a non-negative finite number; the chart drops other rows.</li><li><code>:pattern</code> – Splits the rows into groups, each with its own fill pattern; a category with two patterns takes two shares of the cells.</li></ul></div>
 ```
 
 
@@ -422,16 +433,14 @@ A grid of cells (10 × 10 by default), each category taking a share of the cells
 :::
 
 
-Its options: the cell shape, gap and border; the grid size and fill order; or `:unit` - the value of one cell,
-so the cell count follows the values (here one cell per 2 units, 5 columns wide):
+These options set the cells' shape, gap and outline and the grid's size and fill order; `:unit` instead makes each
+cell stand for a fixed value, so the cell count follows the values. The panels below draw circles on a 5 by 20
+grid, fill by columns with white outlines and no gap, then draw one cell per 2 units, 5 columns wide:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:gap</td><td>a finite number, >= 0, < 1</td><td>0.1</td><td>space between cells, a fraction of a cell</td></tr><tr><td>:cell-shape</td><td>one of :square :circle</td><td>:square</td><td>cell shape: :square or :circle</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:none</td><td>cell outline colour</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>cell outline width in pixels</td></tr><tr><td>:rows</td><td>integer (1..10000)</td><td>10</td><td>grid rows (ignored with :unit)</td></tr><tr><td>:columns</td><td>integer (1..10000)</td><td>10</td><td>grid columns</td></tr><tr><td>:unit</td><td>a positive finite number</td><td>none - the categories share the :rows x :columns grid</td><td>the value of one cell: a category gets value / unit cells, the grid :columns wide</td></tr><tr><td>:fill-order</td><td>one of :rows :columns</td><td>:rows</td><td>fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:gap</code><span class="option-default">Default: <code>0.1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/waffle {:gap 0.4})</code></div><div class="option-text">The room between cells, as a fraction of a cell.<ul><li><span>finite number at least 0 and below 1</span></li></ul></div></dd></div><div class="option-card"><dt><code>:cell-shape</code><span class="option-default">Default: <code>:square</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/waffle {:cell-shape :circle})</code></div><div class="option-text">The shape of every cell.<ul><li><code>:square</code> – A square.</li><li><code>:circle</code> – A circle.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/waffle {:stroke-color :black})</code></div><div class="option-text">The outline colour of the cells.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/waffle {:stroke-color :black, :stroke-width 3})</code></div><div class="option-text">The outline width of the cells in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:rows</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(chart/waffle {:rows 5})</code></div><div class="option-text">The number of rows of the grid; <code>:unit</code> ignores it.<ul><li><span>integer at least 1 and at most 10000</span></li></ul></div></dd></div><div class="option-card"><dt><code>:columns</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(chart/waffle {:columns 5})</code></div><div class="option-text">The number of columns of the grid.<ul><li><span>integer at least 1 and at most 10000</span></li></ul></div></dd></div><div class="option-card"><dt><code>:unit</code><span class="option-default">Default: None: the categories share the <code>:rows</code> by <code>:columns</code> grid.</span></dt><dd><div class="option-example"><code>(chart/waffle {:unit 2})</code></div><div class="option-text">The value one cell stands for: a category gets about its value divided by <code>:unit</code> cells, on a grid <code>:columns</code> wide; a unit above every value draws no cells.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:fill-order</code><span class="option-default">Default: <code>:rows</code></span></dt><dd><div class="option-example"><code>(chart/waffle {:fill-order :columns})</code></div><div class="option-text">How the chart fills the grid from the bottom-left cell.<ul><li><code>:rows</code> – Row by row, upwards.</li><li><code>:columns</code> – Column by column.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -464,39 +473,20 @@ so the cell count follows the values (here one cell per 2 units, 5 columns wide)
 
 
 
+## Venn diagrams
+
+`chart/venn` draws two or three sets as overlapping circles and labels each region with the number of items it
+holds; each row names an item and a set it belongs to. Use it to show how a few sets overlap.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 ```
 
 
 
-## venn
-
-Two or three sets as overlapping circles, each region labelled with the number of items it holds; a row names
-an item and a set it belongs to.
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:set (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the set a row's item belongs to</td></tr><tr><td>:item (required)</td><td>a keyword, a function or a categorical marker of one</td><td></td><td>the item (repeated rows count once)</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def memberships (concat (for [i (range 12)] {:club "chess" :member (str "p" i)})
-                         (for [i (range 8 14)] {:club "running" :member (str "p" i)})
-                         (for [i (range 0 24 3)] {:club "choir" :member (str "p" i)})))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>club</th><th>member</th></tr></thead><tbody><tr><td>chess</td><td>p0</td></tr><tr><td>chess</td><td>p1</td></tr><tr><td>chess</td><td>p2</td></tr><tr><td>chess</td><td>p3</td></tr><tr><td>chess</td><td>p4</td></tr><tr><td>chess</td><td>p5</td></tr><tr><td>chess</td><td>p6</td></tr><tr><td>chess</td><td>p7</td></tr><tr><td>chess</td><td>p8</td></tr><tr><td>chess</td><td>p9</td></tr><tr><td>chess</td><td>p10</td></tr><tr><td>chess</td><td>p11</td></tr><tr><td>running</td><td>p8</td></tr><tr><td>running</td><td>p9</td></tr><tr><td>running</td><td>p10</td></tr><tr><td>running</td><td>p11</td></tr><tr><td>running</td><td>p12</td></tr><tr><td>running</td><td>p13</td></tr><tr><td>choir</td><td>p0</td></tr><tr><td>choir</td><td>p3</td></tr><tr><td>choir</td><td>p6</td></tr><tr><td>choir</td><td>p9</td></tr><tr><td>choir</td><td>p12</td></tr><tr><td>choir</td><td>p15</td></tr><tr><td>choir</td><td>p18</td></tr><tr><td>choir</td><td>p21</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:set</code> <span class="required">required</span> – The set a row's item belongs to.</li><li><code>:item</code> <span class="required">required</span> – The item; repeated rows count once.</li></ul></div>
 ```
 
 
@@ -516,16 +506,13 @@ an item and a set it belongs to.
 :::
 
 
-Its options: the fill and outline, which sets are shown, proportional areas (two sets), and the set and region
-labels - a function of `{:sets :size :share}` writes a region's text:
+These options set the fill and outline, which sets the chart shows, proportional areas of two sets, and the set and
+region labels. The panels below draw two proportional sets, two equal circles, then shares as region labels:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.4</td><td>fill opacity</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>circle outline colour: a colour, :none or :darker (the darkened set colour)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>circle outline width in pixels</td></tr><tr><td>:sets</td><td>vector of any value (at least 1)</td><td>every set, in first-appearance order</td><td>the sets shown (2 or 3), in order</td></tr><tr><td>:proportional</td><td>true or false or nil</td><td>true</td><td>2 sets: circle and overlap areas proportional to the counts (false - equal circles)</td></tr><tr><td>:set-labels</td><td>true or false or nil</td><td>true</td><td>write the set names outside their circles</td></tr><tr><td>:region-labels</td><td>true or false or a function or nil</td><td>true</td><td>region labels: true - the item count, false - none, or a function of {:sets :size :share} returning the text</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.4</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/venn {:alpha 0.8})</code></div><div class="option-text">The opacity of the circles' fill; overlaps mix their colours.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/venn {:stroke-color :black})</code></div><div class="option-text">The outline colour of the circles.<ul><li><code>:darker</code> – The set's colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/venn {:stroke-width 3})</code></div><div class="option-text">The outline width of the circles in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:sets</code><span class="option-default">Default: Every set, in order of first appearance.</span></dt><dd><div class="option-example"><code>(chart/venn {:sets ["b" "a"]})</code></div><div class="option-text">The sets the chart shows, in order: 2 or 3 different values of the mapped <code>:set</code>; a name no row belongs to is an error.<ul><li><span>vector of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:proportional</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/venn {:sets ["a" "b"], :proportional false})</code></div><div class="option-text">Whether the areas of 2 sets follow their counts; 3 sets always take equal circles.<ul><li><code>true</code> – Circle areas follow the set sizes and the overlap's area follows the items the sets share.</li><li><code>false</code> – Two equal circles.</li></ul></div></dd></div><div class="option-card"><dt><code>:set-labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/venn {:set-labels false})</code></div><div class="option-text">Writes each set's name outside its circle.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:region-labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/venn {:region-labels false})</code></div><div class="option-text">Writes a label in every region, in the <code>:venn-count</code> text role: by default black or white by the colour under it.<ul><li><code>true</code> – The region's item count.</li><li><code>false</code> – No labels.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:sets :size :share}</code> that returns the text, <code>:share</code> of the panel's distinct items.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -555,7 +542,7 @@ labels - a function of `{:sets :size :share}` writes a region's text:
 :::
 
 
-Without set names, and with thick outlines in the darkened set colours:
+The next panels leave out the set names, then draw thick outlines in the darkened set colours:
 
 
 ::: {.sourceClojure}
@@ -579,15 +566,12 @@ Without set names, and with thick outlines in the darkened set colours:
 :::
 
 
-The gap between a circle and its set name is a theme key of `[:chart :venn]`, not an option:
+A theme key sets the room between a circle and its set name. The diagram below widens it:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-gap</td><td>a non-negative number</td><td>4</td><td>pixels between a circle and its set name (theme only, not an option)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :venn]</code>, not options</span></div><ul><li><code>:label-gap</code> (default <code>4</code>) – pixels between a circle and its set name (theme only, not an option)</li></ul></div>
 ```
-
-:::
 
 
 
@@ -605,12 +589,6 @@ The gap between a circle and its set name is a theme key of `[:chart :venn]`, no
 ::: {.clay-image}
 ![](reference.charts_shares_sets_files/image14.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
-```
 
 
 

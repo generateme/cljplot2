@@ -5,7 +5,7 @@
 
   Mapping: `:set` and `:item` - one row per item in a set (repeated rows count once; rows with a `nil` set or item
   are dropped and counted). Sets in first-appearance order over all panels, or `:sets` (a vector) choosing and
-  ordering them; 1 or more than 3 sets throw `ex-info {:key :sets}`. Facets: a diagram per panel, the same sets.
+  ordering them (each set once - a schema rule); 1 or more than 3 sets, or a `:sets` name no row belongs to, throw `ex-info {:key :sets}`. Facets: a diagram per panel, the same sets.
 
   Layout (when drawing, fitted to the panel with room for the set names, centred; see [[cljplot2.layout.venn]]):
   2 sets - circle areas proportional to the set sizes and the overlap to the intersection (`:proportional false` -
@@ -41,9 +41,11 @@
 
 (def ^:private style-entries
   "Map entries of the venn style (theme `[:chart :venn]`; also options)."
-  [(schema/optional :alpha {:description "fill opacity"} schema/fraction)
-   (schema/optional :stroke-color {:description "circle outline colour: a colour, :none or :darker (the darkened set colour)"} draw/stroke-color)
-   (schema/optional :stroke-width {:description "circle outline width in pixels"} schema/non-neg)])
+  [(schema/optional :alpha {:description "The opacity of the circles' fill; overlaps mix their colours." :cljplot2/example 0.8} schema/fraction)
+   (schema/optional :stroke-color {:description "The outline colour of the circles."
+                                   :cljplot2/value-meanings {:darker "The set's colour, darkened." :none "No outline."} :cljplot2/example :black}
+                    draw/stroke-color)
+   (schema/optional :stroke-width {:description "The outline width of the circles in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)])
 
 (def schemas
   "Schemas of the Venn diagram: `:style` (theme `[:chart :venn]`), `:options`, `:mapping` (merged)."
@@ -54,20 +56,26 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :sets {:description "the sets shown (2 or 3), in order"
-                                              :cljplot2/default-doc "every set, in first-appearance order"}
-                                       [:vector {:min 1} any?])
-                      (schema/nilable :proportional {:description "2 sets: circle and overlap areas proportional to the counts (false - equal circles)"
-                                                     :default true}
+                (conj (schema/optional :sets {:description "The sets the chart shows, in order: 2 or 3 different values of the mapped `:set`; a name no row belongs to is an error."
+                                              :cljplot2/default-doc "Every set, in order of first appearance." :cljplot2/example ["b" "a"]}
+                                       (schema/with-rules [:vector {:min 1} any?]
+                                         [#(when-not (apply distinct? %) "should name each set once") nil]))
+                      (schema/nilable :proportional {:description "Whether the areas of 2 sets follow their counts; 3 sets always take equal circles."
+                                                     :default true
+                                                     :cljplot2/value-meanings {true "Circle areas follow the set sizes and the overlap's area follows the items the sets share." false "Two equal circles."}
+                                                     :cljplot2/example-context {:sets ["a" "b"]}}
                                       schema/bool)
-                      (schema/nilable :set-labels {:description "write the set names outside their circles" :default true} schema/bool)
-                      (schema/nilable :region-labels {:description (str "region labels: true - the item count, false - none, or a function of "
-                                                                        "{:sets :size :share} returning the text")
-                                                      :default true}
+                      (schema/nilable :set-labels {:description "Writes each set's name outside its circle."
+                                                   :default true :cljplot2/value-meanings {true "Writes the names." false "No names."}}
+                                      schema/bool)
+                      (schema/nilable :region-labels {:description "Writes a label in every region, in the `:venn-count` text role: by default black or white by the colour under it."
+                                                      :default true
+                                                      :cljplot2/value-meanings {true "The region's item count." false "No labels."}
+                                                      :cljplot2/form-meanings {::schema/function "A function of `{:sets :size :share}` that returns the text, `:share` of the panel's distinct items."}}
                                       [:or schema/bool schema/function])))
    :mapping [:map
-             [:set {:description "the set a row's item belongs to"} schema/accessor]
-             [:item {:description "the item (repeated rows count once)"} schema/accessor]]})
+             [:set {:description "The set a row's item belongs to."} schema/accessor]
+             [:item {:description "The item; repeated rows count once."} schema/accessor]]})
 
 (def ^:private defaults
   "Option defaults the drawing reads."
@@ -82,14 +90,19 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - `:set`, `:item`.
   - `env` (map): `:theme`.
 
-  Returns `{:data {panel {:sets [s ..] :sizes [n ..] :regions {#{i ..} n} :total n :style st :options o}} :dropped {:set n}}`: regions keyed by set indices (see [[cljplot2.layout.venn]]); a panel without members is left out; `:dropped` - rows with a `nil` set or item.
+  Returns `{:data {panel {:sets [s ..] :sizes [n ..] :regions {#{i ..} n} :total n :style st :options o}} :dropped {:set n}}`: regions keyed by set indices (see [[cljplot2.layout.venn]]); `:sizes` - a count per set, 0 for a set without items in the panel; a panel without members is left out; `:dropped` - rows with a `nil` set or item.
 
-  Throws `ex-info {:key :sets}` for 1 or more than 3 sets, `{:key :mapping}` when rows exist but every `:set` or every `:item` is `nil` (see [[cljplot2.data.rows/check-mapped!]])."
+  Throws `ex-info {:key :sets}` for 1 or more than 3 sets or a `:sets` name in no panel's rows, `{:key :mapping}` when rows exist but every `:set` or every `:item` is `nil` (see [[cljplot2.data.rows/check-mapped!]])."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
   (let [set-of (data/row-accessor :set (:set mapping))
-        _ (data/check-mapped! (mapcat val groups) [[:set set-of] [:item (data/row-accessor :item (:item mapping))]] (fn [_ v] (some? v)))
-        order (sets/set-order (mapcat val groups) set-of (:sets options))
-        n (count order)]
+        all-rows (mapcat val groups)
+        _ (data/check-mapped! all-rows [[:set set-of] [:item (data/row-accessor :item (:item mapping))]] (fn [_ v] (some? v)))
+        order (sets/set-order all-rows set-of (:sets options))
+        n (count order)
+        absent (when (:sets options) (seq (remove (set (keep set-of all-rows)) order)))]
+    (when absent
+      (schema/fail! (str "Venn :sets names sets no row belongs to: " (pr-str (vec absent)) ".")
+                    {:key :sets :value (vec absent)}))
     (when (and (m/pos? n) (not (m/<= 2 n 3)))
       (schema/fail! (str "A Venn diagram shows 2 or 3 sets, got " n " - choose them with :sets, or use the UpSet recipe of cljplot2.data.sets.")
                     {:key :sets :value order}))
@@ -100,7 +113,7 @@
       {:data (into {} (keep (fn [[panel {:keys [members]}]]
                               (when (and (m/pos? n) (seq members))
                                 [panel {:sets order
-                                        :sizes (mapv (frequencies (mapcat identity (vals members))) order)
+                                        :sizes (let [counts (frequencies (mapcat identity (vals members)))] (mapv #(get counts % 0) order))
                                         :regions (frequencies (map (fn [ss] (set (map index ss))) (vals members)))
                                         :total (count members)
                                         :style st :options opts}])))

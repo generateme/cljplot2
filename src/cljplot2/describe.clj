@@ -77,7 +77,8 @@
    :pairwise "Statistic cells" :box "Box plots" :violin "Violin plots" :extent "Error bars" :stripplot "Strip plots"
    :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots" :histogram "Histograms" :density "Density curves"
    :ecdf "Empirical CDFs" :qq "Q-Q plots" :pp "P-P plots" :tile "Heatmaps" :bin2d "2D bins" :field "Raster fields"
-   :contour "Contour lines" :parallel "Parallel coordinates" :cloud "3D clouds" :surface "3D surfaces"})
+   :contour "Contour lines" :parallel "Parallel coordinates" :cloud "3D clouds" :surface "3D surfaces" :treemap "Treemaps"
+   :partition "Icicles and sunbursts" :pack "Circle packing" :waffle "Waffle charts" :venn "Venn diagrams"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."

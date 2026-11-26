@@ -36,10 +36,12 @@
 
 (def ^:private style-entries
   "Map entries of the waffle style (theme `[:chart :waffle]`, also options)."
-  (into [(schema/optional :gap {:description "space between cells, a fraction of a cell"} [:and schema/finite [:>= 0] [:< 1]])
-         (schema/optional :cell-shape {:description "cell shape: :square or :circle"} [:enum :square :circle])
-         (schema/optional :stroke-color {:description "cell outline colour"} schema/color)
-         (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)]
+  (into [(schema/optional :gap {:description "The room between cells, as a fraction of a cell." :cljplot2/example 0.4} [:and schema/finite [:>= 0] [:< 1]])
+         (schema/optional :cell-shape {:description "The shape of every cell." :cljplot2/value-meanings {:square "A square." :circle "A circle."}} [:enum :square :circle])
+         (schema/optional :stroke-color {:description "The outline colour of the cells." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+         (schema/optional :stroke-width {:description "The outline width of the cells in pixels; `0` draws no outline." :cljplot2/example 3
+                                         :cljplot2/example-context {:stroke-color :black}}
+                          schema/non-neg)]
         draw/pattern-style-entries))
 
 (def ^{:private true :const true :tag 'long} max-cells
@@ -52,20 +54,21 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :rows {:description "grid rows (ignored with :unit)" :default 10} [:int {:min 1 :max max-cells}])
-                      (schema/optional :columns {:description "grid columns" :default 10} [:int {:min 1 :max max-cells}])
-                      (schema/optional :unit {:description "the value of one cell: a category gets value / unit cells, the grid :columns wide"
-                                              :cljplot2/default-doc "none - the categories share the :rows x :columns grid"}
+                (conj (schema/optional :rows {:description "The number of rows of the grid; `:unit` ignores it." :default 10 :cljplot2/example 5} [:int {:min 1 :max max-cells}])
+                      (schema/optional :columns {:description "The number of columns of the grid." :default 10 :cljplot2/example 5} [:int {:min 1 :max max-cells}])
+                      (schema/optional :unit {:description "The value one cell stands for: a category gets about its value divided by `:unit` cells, on a grid `:columns` wide; a unit above every value draws no cells."
+                                              :cljplot2/default-doc "None: the categories share the `:rows` by `:columns` grid." :cljplot2/example 2}
                                        schema/finite-pos)
-                      (schema/optional :fill-order {:description "fill from the bottom-left cell: :rows (row by row, upwards) or :columns (column by column)"
-                                                    :default :rows}
+                      (schema/optional :fill-order {:description "How the chart fills the grid from the bottom-left cell."
+                                                    :default :rows
+                                                    :cljplot2/value-meanings {:rows "Row by row, upwards." :columns "Column by column."}}
                                        [:enum :rows :columns])))
    :mapping [:map
-             [:color {:description "the category: one colour and a share of the cells per category"} schema/accessor]
-             (schema/nilable :value {:description "weight per row, a non-negative finite number (other rows are dropped)"
-                                     :cljplot2/default-doc "every row counts 1"}
+             [:color {:description "Splits the rows into categories, each with its own colour and its share of the cells."} schema/accessor]
+             (schema/nilable :value {:description "The weight of each row, a non-negative finite number; the chart drops other rows."
+                                     :cljplot2/default-doc "Every row counts 1."}
                              schema/accessor)
-             (schema/nilable :pattern {:description "fill pattern, splitting categories too"} schema/accessor)]})
+             (schema/nilable :pattern {:description "Splits the rows into groups, each with its own fill pattern; a category with two patterns takes two shares of the cells."} schema/accessor)]})
 
 (defn largest-remainder
   "Gives whole counts summing to `n` in proportion to weights, by largest-remainder rounding.

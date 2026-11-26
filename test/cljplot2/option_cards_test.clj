@@ -128,6 +128,8 @@
 (deftest migration-switch-test
   (testing "the migrated kinds are exactly the kinds with a concept title"
     (is (= migrated (set (keys describe/concepts)))))
+  (testing "every chart kind is migrated, so a new chart can't miss its cards"
+    (is (= migrated (set (keys (describe/chart-constructors))))))
   (doseq [kind migrated
           :let [section (concept-section (describe/concepts kind))]]
     (testing (str kind ": its section shows option cards and - for a chart with mapping keys - a mapping list, no options table")
@@ -312,6 +314,20 @@
   "Rows of 12 points in 3D - the fixture of clouds."
   (for [i (range 12)] {:x (m/sin (m/* 0.6 i)) :y (m/cos (m/* 0.4 i)) :z (m/* 0.25 i)}))
 
+(def ^:private tree-rows
+  "Rows of a two-level tree with values and a colour, in data order other than value order - the fixture of the
+  hierarchy charts."
+  [{:g "a" :n "a1" :v 1 :c "x"} {:g "a" :n "a2" :v 3 :c "y"} {:g "a" :n "a3" :v 5 :c "x"}
+   {:g "b" :n "b1" :v 2 :c "y"} {:g "b" :n "b2" :v 4 :c "x"} {:g "c" :n "c1" :v 12 :c "y"}])
+
+(def ^:private categories
+  "Rows of three weighted categories - the fixture of waffles."
+  [{:k "p" :w 37} {:k "q" :w 21} {:k "r" :w 12} {:k "p" :w 5}])
+
+(def ^:private set-items
+  "Rows of items in three overlapping sets - the fixture of Venn diagrams."
+  (for [[s items] {"a" (range 0 12) "b" (range 6 16) "c" (range 10 20)} i items] {:s s :i i}))
+
 (def ^:private example-fixtures
   "Kind -> a small plot (`:data`, `:mapping`, `:scales`, and `:options` under every example, e.g. a seeded `:rng`) on
   which every option example of the kind changes the picture:
@@ -362,6 +378,11 @@
      :parallel {:data wide-rows :mapping {} :options {:variables [:mpg :hp :wt]}}
      :cloud {:data points-3d :mapping {:x :x :y :y :z :z}}
      :surface {:data lattice :mapping {:x :x :y :y :z :v}}
+     :treemap {:data tree-rows :mapping {:value :v :hierarchy [:g :n]}}
+     :partition {:data tree-rows :mapping {:value :v :hierarchy [:g :n]}}
+     :pack {:data tree-rows :mapping {:value :v :hierarchy [:g :n]}}
+     :waffle {:data categories :mapping {:color :k :value :w}}
+     :venn {:data set-items :mapping {:set :s :item :i}}
      :correlation {:data correlated :mapping {:x :x :y :y}}
      :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 

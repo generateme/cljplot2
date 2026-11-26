@@ -47,8 +47,8 @@
 
 (def ^:private style-entries
   "Map entries of the partition style (theme `[:chart :partition]`; also options)."
-  (into [(schema/optional :stroke-color {:description "cell outline colour"} schema/color)
-         (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)]
+  (into [(schema/optional :stroke-color {:description "The outline colour of the cells." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
+         (schema/optional :stroke-width {:description "The outline width of the cells in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -58,14 +58,19 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :order {:description "order of siblings: :value (descending) or :data (first appearance)"
-                                               :default :value}
+                (conj (schema/optional :order {:description "The order of siblings within their parent's span."
+                                               :default :value
+                                               :cljplot2/value-meanings {:value "Largest first." :data "In order of first appearance; a group's unnamed leaf comes last."}}
                                        [:enum :value :data])
-                      (schema/optional :color-by {:description (str "node colours: :top - each top-level node's palette colour, lighter by depth; "
-                                                                    ":name - every node by its name through the color scale")
-                                                  :default :top}
+                      (schema/optional :color-by {:description "How the chart colours the nodes; `:name` can't go with a mapped `:color`."
+                                                  :default :top
+                                                  :cljplot2/value-meanings {:top "Without a mapped `:color`, each top-level node takes the next palette colour and its descendants lighter shades by depth; a mapped `:color` colours the leaves and the groups take the NA colour."
+                                                                            :name "Every node takes its name's colour from the colour scale, with a legend; equal names share a colour at every depth."}}
                                        [:enum :top :name])
-                      (schema/nilable :root {:description "draw the root too, every level one up" :default false} schema/bool))
+                      (schema/nilable :root {:description "Whether the chart draws the root too."
+                                             :default false
+                                             :cljplot2/value-meanings {true "Draws the root at the bottom (the centre in polar plots), every level one up." false "Starts at the top level."}}
+                                      schema/bool))
                 (into hierarchy/label-entries))
    :mapping hierarchy/mapping-schema})
 

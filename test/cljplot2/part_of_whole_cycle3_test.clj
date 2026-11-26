@@ -3,7 +3,7 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest testing is are]]
             [fastmath.core :as m]
-            [cljplot2.test-util :refer [error]]
+            [cljplot2.test-util :refer [error same-pixels?]]
             [cljplot2.chart :as chart]
             [cljplot2.chart.waffle :as waffle]
             [cljplot2.core :as plot]
@@ -81,6 +81,9 @@
                                                  [:data :panel :categories]))))
           "exactly the limit")
       (is (= :rows (:key (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:rows 200 :columns 100})]})))))
+      (is (nil? (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:rows 100 :columns 100})]}))) "100 x 100, the limit")
+      (is (= :rows (:key (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:rows 101 :columns 100})]})))) "101 x 100")
+      (is (nil? (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:gap 0.999})]}))) "the largest gap below 1")
       (is (= :columns (:key (error #(stats {:data rows :mapping {:color :c} :charts [(chart/waffle {:columns 10001})]}))))))
     (testing "facets and empty data render"
       (is (= 2 (count (:data (stats {:data (map #(assoc % :f (if (= "a" (:c %)) "p" "q")) rows) :mapping {:color :c :facet :f}
@@ -210,7 +213,16 @@
       (is (= :sets (:key (error #(build (p {:data [{:set "A" :item 1}]}))))))
       (is (= :sets (:key (error #(build (p {:data (conj members {:set "D" :item 1})}))))))
       (is (str/includes? (ex-message (try (build (p {:data [{:set "A" :item 1}]})) (catch Exception e e))) "UpSet"))
-      (is (= ["A" "B"] (get-in (build (p {:charts [(chart/venn {:sets ["A" "B"]})]})) [:stats 0 :data :panel :sets]))))
+      (is (= ["A" "B"] (get-in (build (p {:charts [(chart/venn {:sets ["A" "B"]})]})) [:stats 0 :data :panel :sets])))
+      (testing "boundary: on valid 3-set data, :sets of none, one or four sets, a repeated set or a set no row belongs to fail under :sets"
+        (doseq [sets [[] ["A"] ["A" "B" "C" "D"] ["A" "A"] ["A" "Z"] ["Z" "Y"]]]
+          (is (= :sets (:key (error #(build (p {:charts [(chart/venn {:sets sets})]}))))) (pr-str sets))))
+      (testing "a set without items in one facet panel has size 0 there"
+        (let [data (concat (map #(assoc % :f "p") members) [{:set "A" :item 1 :f "q"} {:set "B" :item 1 :f "q"}])
+              d (get-in (build (p {:data data :mapping (assoc mapping :facet :f)})) [:stats 0 :data])]
+          (is (= [1 1 0] (get-in d ["q" :sizes])))))
+      (testing "3 sets: :proportional doesn't apply"
+        (is (same-pixels? (p {:charts [(chart/venn {:proportional false})]}) (p {}) {:width 300 :height 300}))))
     (testing "stats: regions by set indices, total, dropped; no legend"
       (let [b (build (p {:data (conj members {:set nil :item 3})}))
             d (get-in b [:stats 0 :data :panel])]

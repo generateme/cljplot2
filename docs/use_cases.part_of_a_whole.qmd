@@ -317,7 +317,7 @@ Nested rectangles, areas proportional to the value: the world's population by re
 
 ### Basic, groups and subgroups
 
-One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_shares_sets.html#treemap)
+One level (regions) and three (regions → subregions → countries); [treemap](reference.charts_shares_sets.html#treemaps)
 `:gap` frames the groups, `:stroke-color` outlines the cells, a theme palette recolours the regions.
 
 Source: R Graph Gallery - Treemap; data-to-viz - Treemap ([1](https://r-graph-gallery.com/treemap.html), [2](https://www.data-to-viz.com/graph/treemap.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -506,7 +506,7 @@ proportional to its value (packing leaves gaps), compare circles within a group.
 ### One level
 
 Europe's countries: a circle each (the palette's colours repeat - they only tell neighbours apart); leaves coloured
-by their subregion; wider gaps ([pack](reference.charts_shares_sets.html#pack) `:gap`, pixels; `:leaf-labels false`
+by their subregion; wider gaps ([pack](reference.charts_shares_sets.html#circle-packing) `:gap`, pixels; `:leaf-labels false`
 hides the names).
 
 Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing ([1](https://r-graph-gallery.com/circle-packing.html), [2](https://www.data-to-viz.com/graph/circularpacking.html)). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -578,7 +578,7 @@ Source: [R Graph Gallery - Circular packing (hide some levels)](https://r-graph-
 
 ## Sunburst
 
-The hierarchy as rings: a [partition](reference.charts_shares_sets.html#partition) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
+The hierarchy as rings: a [partition](reference.charts_shares_sets.html#icicles-and-sunbursts) (an icicle in cartesian coordinates) under polar coordinates - regions inside,
 subregions, then countries outward.
 
 Source: [data-to-viz - Sunburst](https://www.data-to-viz.com/graph/sunburst.html). Data: World population by region, subregion and country, data-to-viz example dataset `11_SevCatOneNumNestedOneObsPerGroup` (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).
@@ -612,7 +612,7 @@ A grid of cells: by default 10 × 10, a cell per percent of the whole (largest-r
 
 ### Basic, shapes, colours, groups
 
-The regions' shares; circle cells ([waffle](reference.charts_shares_sets.html#waffle) `:cell-shape`, `:gap` - a
+The regions' shares; circle cells ([waffle](reference.charts_shares_sets.html#waffle-charts) `:cell-shape`, `:gap` - a
 fraction of a cell); a palette; subregions within each region (a facet per region, each region's
 subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).
 
@@ -680,7 +680,7 @@ data-to-viz: no more than three sets in a Venn diagram, a number in every region
 
 ### Two and three sets
 
-Two artists (the [venn](reference.charts_shares_sets.html#venn) `:sets`): circle areas and the overlap
+Two artists (the [venn](reference.charts_shares_sets.html#venn-diagrams) `:sets`): circle areas and the overlap
 proportional to the word counts. Three: the classic layout, counts and shares from a label function
 (`:region-labels`).
 

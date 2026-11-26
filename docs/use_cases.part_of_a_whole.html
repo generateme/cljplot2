@@ -2514,7 +2514,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Nested rectangles, areas proportional to the value: the world’s population by region, subregion and country.</p>
 <section id="basic-groups-and-subgroups" class="level3" data-number="35.2.1">
 <h3 data-number="35.2.1" class="anchored" data-anchor-id="basic-groups-and-subgroups"><span class="header-section-number">35.2.1</span> Basic, groups and subgroups</h3>
-<p>One level (regions) and three (regions → subregions → countries); <a href="reference.charts_shares_sets.html#treemap">treemap</a> <code>:gap</code> frames the groups, <code>:stroke-color</code> outlines the cells, a theme palette recolours the regions.</p>
+<p>One level (regions) and three (regions → subregions → countries); <a href="reference.charts_shares_sets.html#treemaps">treemap</a> <code>:gap</code> frames the groups, <code>:stroke-color</code> outlines the cells, a theme palette recolours the regions.</p>
 <p>Source: R Graph Gallery - Treemap; data-to-viz - Treemap (<a href="https://r-graph-gallery.com/treemap.html">1</a>, <a href="https://www.data-to-viz.com/graph/treemap.html">2</a>). Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -2641,7 +2641,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Circles with areas proportional to the value, nested in their groups’ enclosing circles - a group’s area isn’t proportional to its value (packing leaves gaps), compare circles within a group.</p>
 <section id="one-level" class="level3" data-number="35.5.1">
 <h3 data-number="35.5.1" class="anchored" data-anchor-id="one-level"><span class="header-section-number">35.5.1</span> One level</h3>
-<p>Europe’s countries: a circle each (the palette’s colours repeat - they only tell neighbours apart); leaves coloured by their subregion; wider gaps (<a href="reference.charts_shares_sets.html#pack">pack</a> <code>:gap</code>, pixels; <code>:leaf-labels false</code> hides the names).</p>
+<p>Europe’s countries: a circle each (the palette’s colours repeat - they only tell neighbours apart); leaves coloured by their subregion; wider gaps (<a href="reference.charts_shares_sets.html#circle-packing">pack</a> <code>:gap</code>, pixels; <code>:leaf-labels false</code> hides the names).</p>
 <p>Source: R Graph Gallery - Circular packing; data-to-viz - Circular packing (<a href="https://r-graph-gallery.com/circle-packing.html">1</a>, <a href="https://www.data-to-viz.com/graph/circularpacking.html">2</a>). Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -2685,7 +2685,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sunburst" class="level2" data-number="35.6">
 <h2 data-number="35.6" class="anchored" data-anchor-id="sunburst"><span class="header-section-number">35.6</span> Sunburst</h2>
-<p>The hierarchy as rings: a <a href="reference.charts_shares_sets.html#partition">partition</a> (an icicle in cartesian coordinates) under polar coordinates - regions inside, subregions, then countries outward.</p>
+<p>The hierarchy as rings: a <a href="reference.charts_shares_sets.html#icicles-and-sunbursts">partition</a> (an icicle in cartesian coordinates) under polar coordinates - regions inside, subregions, then countries outward.</p>
 <p>Source: <a href="https://www.data-to-viz.com/graph/sunburst.html">data-to-viz - Sunburst</a>. Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -2706,7 +2706,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A grid of cells: by default 10 × 10, a cell per percent of the whole (largest-remainder rounding keeps the total at 100).</p>
 <section id="basic-shapes-colours-groups" class="level3" data-number="35.7.1">
 <h3 data-number="35.7.1" class="anchored" data-anchor-id="basic-shapes-colours-groups"><span class="header-section-number">35.7.1</span> Basic, shapes, colours, groups</h3>
-<p>The regions’ shares; circle cells (<a href="reference.charts_shares_sets.html#waffle">waffle</a> <code>:cell-shape</code>, <code>:gap</code> - a fraction of a cell); a palette; subregions within each region (a facet per region, each region’s subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).</p>
+<p>The regions’ shares; circle cells (<a href="reference.charts_shares_sets.html#waffle-charts">waffle</a> <code>:cell-shape</code>, <code>:gap</code> - a fraction of a cell); a palette; subregions within each region (a facet per region, each region’s subregions in shades of its colour in the default palette - 22 subregions are more than its 14 colours).</p>
 <p>Source: <a href="https://r-graph-gallery.com/waffle.html">R Graph Gallery - Waffle chart</a>. Data: World population by region, subregion and country, data-to-viz example dataset <code>11_SevCatOneNumNestedOneObsPerGroup</code> (Yan Holtz; Wikipedia); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
@@ -2748,7 +2748,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The words three French artists use in their songs: a word is in an artist’s set when it appears in their lyrics. data-to-viz: no more than three sets in a Venn diagram, a number in every region - the UpSet plot handles more.</p>
 <section id="two-and-three-sets" class="level3" data-number="35.8.1">
 <h3 data-number="35.8.1" class="anchored" data-anchor-id="two-and-three-sets"><span class="header-section-number">35.8.1</span> Two and three sets</h3>
-<p>Two artists (the <a href="reference.charts_shares_sets.html#venn">venn</a> <code>:sets</code>): circle areas and the overlap proportional to the word counts. Three: the classic layout, counts and shares from a label function (<code>:region-labels</code>).</p>
+<p>Two artists (the <a href="reference.charts_shares_sets.html#venn-diagrams">venn</a> <code>:sets</code>): circle areas and the overlap proportional to the word counts. Three: the classic layout, counts and shares from a label function (<code>:region-labels</code>).</p>
 <p>Source: R Graph Gallery - Venn diagram; data-to-viz - Venn diagram (<a href="https://r-graph-gallery.com/venn-diagram.html">1</a>, <a href="https://www.data-to-viz.com/graph/venn.html">2</a>). Data: Words in the songs of three French artists, data-to-viz example dataset <code>14_SeveralIndepLists</code> (Yan Holtz); licence: MIT (data_to_viz repository).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image</span>
