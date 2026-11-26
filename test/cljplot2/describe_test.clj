@@ -22,10 +22,21 @@
       (is (= :common (:fragment (row rows :data))))
       (is (= :strip (:fragment (row rows :place))))
       (is (nil? (:fragment (row rows :measure-fraction)))))
-    (testing "every row has the documented keys (`:example` only when the entry gives one, `:theme-default` only on theme defaults)"
+    (testing "every row has the documented keys (`:example` and `:example-context` only when the entry gives them, `:theme-default` only on theme defaults)"
       (is (every? #(= #{:key :path :type :required :default :default-doc :description :fragment :section :values :forms :other-values}
-                      (set (keys (dissoc % :example :theme-default))))
+                      (set (keys (dissoc % :example :example-context :no-example :theme-default))))
                   rows)))))
+
+(deftest fragment-rows-test
+  (testing "a style group's rows without a default read the chart's theme style"
+    (is (every? #(= "The chart's theme style." (:default-doc %)) (describe/fragment-rows :line-style))))
+  (testing "boundary: other groups' rows keep their own defaults and texts; no row gets both"
+    (is (= 0 (:default (first (filter #(= :corner-radius (:key %)) (describe/fragment-rows :corner-radius))))))
+    (is (not-any? #(= "The chart's theme style." (:default-doc %))
+                  (mapcat describe/fragment-rows (remove #(:style (describe/fragments %)) (keys describe/fragments)))))
+    (is (not-any? #(and (some? (:default %)) (:default-doc %)) (mapcat describe/fragment-rows (keys describe/fragments)))))
+  (testing "boundary: an unknown group has no rows"
+    (is (empty? (describe/fragment-rows :no-such-group)))))
 
 (deftest schema-rows-test
   (let [s [:map {:closed true}

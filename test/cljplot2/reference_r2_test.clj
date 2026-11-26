@@ -8,7 +8,7 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [error-data migrated-builders migrated-function-groups migrated-functions]]))
+            [cljplot2.test-util :refer [card-groups error-data migrated-builders migrated-functions]]))
 
 (def builders
   "The builders of `cljplot2.core`."
@@ -95,7 +95,7 @@
     [bad (error-data #(apply @v (concat (positional-args v) [{bad 1}])))]))
 
 (deftest builders-test
-  (doseq [:let [card-groups (migrated-function-groups)]
+  (doseq [:let [card-group-set (card-groups)]
           v builders]
     (testing (str (var-name v) ": options schema, documented")
       (is (some? (:cljplot2/options (meta v))))
@@ -104,7 +104,7 @@
                                      (if (migrated-builders (:name (meta v)))
                                        (set (map :path (describe/own-rows (describe/options v))))
                                        #{})
-                                     card-groups))))
+                                     card-group-set))))
     (testing (str (var-name v) ": the core var documents the implementation's schema")
       (let [n (:name (meta v))
             impl-ns (cond ('#{arrange pairs} n) "cljplot2.multiplot" ('#{acf horizon} n) "cljplot2.series-plots" :else "cljplot2.graphs")

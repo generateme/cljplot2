@@ -178,6 +178,17 @@
                                                     options))]}
           extra)))
 
+(deftest contrast-over-box-test
+  (let [color-of (fn [content] (c/to-color (:color (label/drawn-style theme/default-theme (merge {:role :annotation} content)))))]
+    (testing ":contrast reads against the label's own :background box"
+      (is (= (c/to-color :white) (color-of {:color :contrast :background :black})))
+      (is (= (c/to-color :black) (color-of {:color :contrast :background :yellow}))))
+    (testing "boundary: without a box (none or nil) :contrast reads against the plot backdrop"
+      (is (= (c/to-color :black) (color-of {:color :contrast :background :none})))
+      (is (= (c/to-color :black) (color-of {:color :contrast :background nil}))))
+    (testing "boundary: a fixed colour stays, whatever the box"
+      (is (= (c/to-color [200 0 0]) (color-of {:color [200 0 0] :background :black}))))))
+
 (deftest along-path-style-test
   (testing "drawn-style resolves the font, colour and background of the role and inline keys"
     (let [st (label/drawn-style theme/default-theme {:role :annotation :background [1 2 3] :inset 4})]

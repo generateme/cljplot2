@@ -9,7 +9,7 @@
   - `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a nested map's with [[rows-under]].
   - `:default` / `:default-doc` / `:description` / `:fragment` / `:section` - `nil` when absent.
   - `:values` - `[{:value v :meaning m} ...]`, the literal values the entry accepts (enum members, `:=` constants, `true` / `false`, a named type's `:cljplot2/value-set`), `nil` only when documented; `:forms` - `[{:form k :type text :meaning m} ...]`, its other accepted forms (`k` a named type's keyword or a malli type, `text` the short type text - a named type's name, composites spelled from their children's names); `:other-values` - the meaning of the values without their own; meanings from the entry's `:cljplot2/value-meanings` / `:cljplot2/form-meanings`, else the schema's `:cljplot2/value-meanings` (see [[cljplot2.schema]]). Empty for a flattened map's row.
-  - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can; `:example-context` - options the example needs (`:cljplot2/example-context`), only when given; [[example-options]] - the example's whole options map.
+  - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can; `:example-context` - options the example needs (`:cljplot2/example-context`), only when given; `:no-example` - true when the entry declines an example (`:cljplot2/no-example`); [[example-options]] - the example's whole options map.
   - `:theme-default` - true on a chart's style row whose `:default` comes from the theme.
   - `:required` - false in a merged map (`:cljplot2/merged` - the theme, render options: users give partial overrides).
   - `:default` is the value used when the option is absent (a style row's comes from the theme), `:default-doc` the text of a computed default; only a style row may have both - the theme value and how the chart applies it (e.g. only to grouped lines).
@@ -102,7 +102,7 @@
    'cljplot2.data.vector-field/mapped-points "Mapped points"})
 
 (def fragments
-  "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
+  "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]]), with `:owner` - the user-facing data function whose options the group is (its reference section documents them) - or `:style true` - a group of chart style entries, their defaults in each chart's theme style."
   {:common {:title "Common options" :doc "the chart's own data and mapping and its legend glyph, taken by every chart"
             :entries rows/common-options}
    :strip {:title "Strip options" :doc "placement, width and grouping of strip charts - one item per level on a categorical axis"
@@ -111,7 +111,7 @@
    :ridge {:title "Ridgelines" :doc "overlapping rows of histograms and densities over a categorical axis"
            :entries strip/ridge-options}
    :annotation {:title "Annotation options" :doc "the extents of annotation charts" :entries annotation/options}
-   :cell {:title "Cell style" :doc "the cell shape and outline of grid-cell charts" :entries cell-draw/style-entries}
+   :cell {:style true :title "Cell style" :doc "the cell shape and outline of grid-cell charts" :entries cell-draw/style-entries}
    :corner-radius {:title "Rounded corners" :doc "rounded bar corners"
                    :entries [draw/corner-radius-option draw/corner-radius-end-option]}
    :curve {:title "Curves" :doc "interpolation and sampling of the line between data points" :entries curve/options}
@@ -121,32 +121,32 @@
                       :entries hierarchy/label-entries}
    :frame-3d {:title "3D frame" :doc "view, proportions, frame and domains of a 3D chart" :entries space/frame-options}
    :shading {:title "3D shading" :doc "ambient share and light direction of the shaded 3D charts" :entries space/shading-options}
-   :line-style {:title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
-   :pattern {:title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
+   :line-style {:style true :title "Line style" :doc "colour, width and dash of a line" :entries polyline/style-entries}
+   :pattern {:style true :title "Fill patterns" :doc "the pattern drawn over a filled mark" :entries draw/pattern-style-entries}
    :builder {:title "Builder options" :doc "title, scales and theme of a built plot (a builder takes the ones it uses)"
              :entries multiplot/builder-entries}
-   :graph/graph {:title "Graph" :doc "edge and node rows of a graph: accessors of the ends, weight and ids; directedness"
+   :graph/graph {:owner 'cljplot2.data.graph/graph :title "Graph" :doc "edge and node rows of a graph: accessors of the ends, weight and ids; directedness"
                  :entries graph/graph-entries}
-   :graph/layout {:title "Graph layout" :doc "node positions of a network: force, circle or random, iterations, gravity, random generator"
+   :graph/layout {:owner 'cljplot2.data.graph/layout :title "Graph layout" :doc "node positions of a network: force, circle or random, iterations, gravity, random generator"
                   :entries graph/layout-entries}
-   :graph/chord-layout {:title "Chord layout" :doc "node order, sector gaps, ring radius and the smallest flow of a chord diagram"
+   :graph/chord-layout {:owner 'cljplot2.data.graph/chord-layout :title "Chord layout" :doc "node order, sector gaps, ring radius and the smallest flow of a chord diagram"
                         :entries graph/chord-layout-entries}
-   :graph/arc-layout {:title "Arc layout" :doc "node order of an arc diagram" :entries graph/arc-layout-entries}
-   :graph/sankey-layout {:title "Sankey layout" :doc "columns, node width, gaps and relaxation of a sankey diagram"
+   :graph/arc-layout {:owner 'cljplot2.data.graph/arc-layout :title "Arc layout" :doc "node order of an arc diagram" :entries graph/arc-layout-entries}
+   :graph/sankey-layout {:owner 'cljplot2.data.graph/sankey-layout :title "Sankey layout" :doc "columns, node width, gaps and relaxation of a sankey diagram"
                          :entries graph/sankey-layout-entries}
-   :graph/alluvial-graph {:title "Alluvial graph" :doc "axes, weights and fill level of an alluvial diagram"
+   :graph/alluvial-graph {:owner 'cljplot2.data.graph/alluvial-graph :title "Alluvial graph" :doc "axes, weights and fill level of an alluvial diagram"
                           :entries graph/alluvial-graph-entries}
-   :tree/layout {:title "Dendrogram layout" :doc "cluster cut and circular layout of a dendrogram" :entries tree/layout-entries}
-   :tree/node-link-layout {:title "Node-link tree layout"
+   :tree/layout {:owner 'cljplot2.data.tree/layout :title "Dendrogram layout" :doc "cluster cut and circular layout of a dendrogram" :entries tree/layout-entries}
+   :tree/node-link-layout {:owner 'cljplot2.data.tree/node-link-layout :title "Node-link tree layout"
                            :doc "tidy or cluster placement, link shape and circular layout of a node-link tree"
                            :entries tree/node-link-layout-entries}
-   :tree/bundle-paths {:title "Edge bundling" :doc "edge ends and bundling strength of hierarchical edge bundling"
+   :tree/bundle-paths {:owner 'cljplot2.data.tree/bundle-paths :title "Edge bundling" :doc "edge ends and bundling strength of hierarchical edge bundling"
                        :entries tree/bundle-paths-entries}
-   :hierarchy/sequence-levels {:title "Sequences" :doc "sequence accessor, step separator, end marker and weights of a flow sunburst"
+   :hierarchy/sequence-levels {:owner 'cljplot2.data.hierarchy/sequence-levels :title "Sequences" :doc "sequence accessor, step separator, end marker and weights of a flow sunburst"
                                :entries hierarchy/sequence-levels-entries}
-   :series/acf-rows {:title "Autocorrelation rows" :doc "lags, significance level and kind of the autocorrelation rows"
+   :series/acf-rows {:owner 'cljplot2.data.series/acf-rows :title "Autocorrelation rows" :doc "lags, significance level and kind of the autocorrelation rows"
                      :entries series/acf-rows-entries}
-   :series/horizon-rows {:title "Horizon rows" :doc "row keys, band count and height, and resampling of the horizon bands"
+   :series/horizon-rows {:owner 'cljplot2.data.series/horizon-rows :title "Horizon rows" :doc "row keys, band count and height, and resampling of the horizon bands"
                          :entries series/horizon-rows-entries}
    :arrange {:title "Multiplot layout" :doc "sub-plots in a grid: shape, weights, panel alignment"
              :entries plot-grid/arrange-entries}
@@ -251,13 +251,13 @@
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
 (def documented-types
-  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule, overlap fraction ...). Option cards link a form of these types to its explanation."
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule, overlap fraction, data ...). Option cards link a form of these types to its explanation."
   (merge schema/named-types
          (into {} (map (fn [s] [(malli/type s) s]))
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
                 kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
-                probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema shingle/overlap-schema])))
+                probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema shingle/overlap-schema rows/data-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."
@@ -432,10 +432,12 @@
 
   - `row` (map): an option row (see the namespace doc).
 
-  Returns `[v]` - the example wrapped, so `false` is one too: the row's own `:example` (the entry's `:cljplot2/example`) when it has one, else the first of its values - those with a meaning first - other than its `:default` and `nil`; `nil` when there is none (a row taking no literal value needs its own example)."
-  [{:keys [values default] :as row}]
-  (if (contains? row :example)
-    [(:example row)]
+  Returns `[v]` - the example wrapped, so `false` is one too: the row's own `:example` (the entry's `:cljplot2/example`) when it has one, else the first of its values - those with a meaning first - other than its `:default` and `nil`; `nil` when there is none (a row taking no literal value needs its own example) or the entry declines one (`:cljplot2/no-example`, row `:no-example` - an option the card's call can't show)."
+  [{:keys [values default no-example] :as row}]
+  (cond
+    no-example nil
+    (contains? row :example) [(:example row)]
+    :else
     (some (fn [{:keys [value]}] (when (and (some? value) (not= value default)) [value]))
           (concat (filter :meaning values) (remove :meaning values)))))
 
@@ -540,7 +542,8 @@
                               :fragment (:cljplot2/fragment props) :section (or (:cljplot2/section props) section)}
                              (if flat? {:values [] :forms [] :other-values nil} (option-forms props s)))
                  (contains? props :cljplot2/example) (assoc :example (:cljplot2/example props))
-                 (:cljplot2/example-context props) (assoc :example-context (:cljplot2/example-context props)))
+                 (:cljplot2/example-context props) (assoc :example-context (:cljplot2/example-context props))
+                 (:cljplot2/no-example props) (assoc :no-example true))
       {::container (and (container? s) (not (:cljplot2/entries-fragment props)))})))
 
 (defn- map-rows
@@ -675,9 +678,11 @@
 
   - `fragment` (keyword): a key of [[fragments]].
 
-  Returns the rows; empty for an unknown group. See also [[fragment-keys]]."
+  Returns the rows; empty for an unknown group. A style group's row without a default (`:style true` in [[fragments]]) gets the default text `The chart's theme style.` - its value comes from the theme style of the chart taking it. See also [[fragment-keys]]."
   [fragment]
-  (schema-rows (into [:map] (get-in fragments [fragment :entries]))))
+  (let [{:keys [entries style]} (get fragments fragment)]
+    (cond->> (schema-rows (into [:map] entries))
+      style (mapv #(if (or (some? (:default %)) (:default-doc %)) % (assoc % :default-doc "The chart's theme style."))))))
 
 (defn container-row?
   "Tests whether a row is the row of a map holding options of its own (a heading of its entries' rows, no default), not an option.

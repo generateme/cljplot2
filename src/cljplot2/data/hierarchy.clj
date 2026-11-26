@@ -41,12 +41,15 @@
   "Option entries `:group-labels` / `:leaf-labels` of the hierarchy charts (see `label-option`)."
   (schema/in-fragment
    :hierarchy-labels
-   [(schema/nilable :group-labels {:description (str "group labels: true - the node's name, false - none, or a function of the node info "
-                                                     "{:name :value :depth :path :share :parent-share} returning the text")
-                                   :default true}
+   [(schema/nilable :group-labels {:description "The labels of the groups."
+                                   :default true
+                                   :cljplot2/value-meanings {true "The group's name." false "No group labels."}
+                                   :cljplot2/form-meanings {::schema/function "A function of the node `{:name :value :depth :path :share :parent-share}` that returns the label text."}}
                     label-option)
-    (schema/nilable :leaf-labels {:description "leaf labels: as :group-labels, for the leaves"
-                                  :default true}
+    (schema/nilable :leaf-labels {:description "The labels of the leaves, as `:group-labels` for groups."
+                                  :default true
+                                  :cljplot2/value-meanings {true "The leaf's name." false "No leaf labels."}
+                                  :cljplot2/form-meanings {::schema/function "A function of the node `{:name :value :depth :path :share :parent-share}` that returns the label text."}}
                     label-option)]))
 
 (defn level-accessors

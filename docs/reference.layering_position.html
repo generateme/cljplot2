@@ -552,29 +552,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="layers" class="level2" data-number="7.1">
 <h2 data-number="7.1" class="anchored" data-anchor-id="layers"><span class="header-section-number">7.1</span> Layers</h2>
-<p>A layer is any chart; annotation charts (<code>rule</code>, <code>rect</code>, <code>text</code>, <code>function</code>, <code>image</code>) take literal positions or a function instead of data and inherit only the plot’s facet keys. The positions of <code>rule</code>, <code>rect</code> and <code>text</code> count for the scales unless <code>:extent false</code> (the Annotation options group, shown at work in <a href="reference.shared_options.html#annotation-options">Shared options</a>):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:extent</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>include the positions in the scale extents</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>A layer is any chart; annotation charts (<code>rule</code>, <code>rect</code>, <code>text</code>, <code>function</code>, <code>image</code>) take literal positions or a function instead of data and inherit only the plot’s facet keys. The positions of <code>rule</code>, <code>rect</code> and <code>text</code> count for the scales unless <code>:extent false</code>, an option of the <a href="reference.shared_options.html#annotation-options">Annotation options</a> group.</p>
 <p>Data: Old Faithful geyser eruptions, R datasets package <code>faithful</code> (Härdle 1991; Azzalini &amp; Bowman 1990); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> faithful </span>(nu/dataset <span class="at">:faithful</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

@@ -43,11 +43,11 @@
 (def ^:private view-schema
   "`:view {:azimuth deg :elevation deg :distance δ}` (elevation in [-90 90]; δ >= 0, see the namespace doc)."
   [:map {:closed true}
-   (schema/optional :azimuth {:description "rotation around the vertical axis, degrees" :default 40.0} schema/finite)
-   (schema/optional :elevation {:description "angle of the eye above the floor, degrees" :default 30.0}
+   (schema/optional :azimuth {:description "The rotation around the vertical axis in degrees." :default 40.0 :cljplot2/example 120} schema/finite)
+   (schema/optional :elevation {:description "The angle of the eye above the floor in degrees." :default 30.0 :cljplot2/example 70}
                     [:and schema/finite [:>= -90] [:<= 90]])
-   (schema/optional :distance {:description "perspective: 0 - parallel projection, larger - stronger perspective (lattice distance)"
-                               :default 0.0}
+   (schema/optional :distance {:description "The perspective, as lattice's distance: 0 projects in parallel, larger values strengthen the perspective."
+                               :default 0.0 :cljplot2/example 0.8}
                     schema/finite-non-neg)])
 
 (def ^:private aspect-schema
@@ -58,7 +58,8 @@
   "`:domain {:x [a b] :y [a b] :z [a b]}` - explicit data domains (each optional; `a > b` reverses the axis, e.g. depth
   growing downward)."
   (into [:map {:closed true}]
-        (map #(schema/optional % {:description (str "explicit " (name %) " domain [a b] (a > b reverses the axis)")}
+        (map #(schema/optional % {:description (str "The " (name %) " domain `[a b]`; a above b reverses the axis.")
+                                  :cljplot2/default-doc "The data's range, rounded to nice values." :cljplot2/example [5 -5]}
                                (schema/with-rules [:tuple schema/finite schema/finite]
                                  [(fn [[^double a ^double b]] (when (m/== a b) "domain should be two different numbers"))])))
         [:x :y :z]))
@@ -67,21 +68,26 @@
   "Option entries shared by the 3D charts: view, box proportions, frame, axis titles, explicit domains."
   (schema/in-fragment
    :frame-3d
-   [(schema/optional :view {:cljplot2/section :view :description "the eye's position: azimuth, elevation and perspective distance"} view-schema)
-    (schema/optional :aspect {:cljplot2/section :view :description "box proportions [ax ay az]" :default [1 1 1]} aspect-schema)
-    (schema/nilable :box {:cljplot2/section :axes :description "draw the box: hidden edges dashed and a floor grid behind the data, visible edges over it"
-                          :default true}
+   [(schema/optional :view {:cljplot2/section :view :description "The eye's position: its azimuth, elevation and perspective distance."} view-schema)
+    (schema/optional :aspect {:cljplot2/section :view :description "The box's proportions `[ax ay az]`." :default [1 1 1] :cljplot2/example [2 1 1]}
+                     aspect-schema)
+    (schema/nilable :box {:cljplot2/section :axes :description "Whether the chart draws the box: hidden edges dashed and a floor grid behind the data, visible edges over it."
+                          :default true :cljplot2/value-meanings {true "The box and the floor grid." false "No box."}}
                     schema/bool)
-    (schema/nilable :axes {:cljplot2/section :axes :description "draw ticks, tick labels and axis titles" :default true} schema/bool)
-    (schema/nilable :axis-titles {:cljplot2/section :axes :description "axis titles (nil - none)" :cljplot2/default-doc "the mapped column names"}
+    (schema/nilable :axes {:cljplot2/section :axes :description "Whether the chart draws the ticks, tick labels and axis titles." :default true
+                           :cljplot2/value-meanings {true "Ticks, labels and titles." false "None of them."}}
+                    schema/bool)
+    (schema/nilable :axis-titles {:cljplot2/section :axes :description "The axis titles; `nil` draws none." :cljplot2/default-doc "The mapped column names; a binned cloud's z reads `Count`, a density surface's `Density`."}
                     [:map {:closed true}
-                     (schema/optional :x {:description "x axis title"} any?)
-                     (schema/optional :y {:description "y axis title"} any?)
-                     (schema/optional :z {:description "z axis title"} any?)])
-    (schema/optional :domain {:cljplot2/section :domain :description "explicit data domains (needed for each of several 3D charts in one plot)"
-                              :cljplot2/default-doc "the data's domains"}
+                     (schema/optional :x {:description "The x axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "east"} any?)
+                     (schema/optional :y {:description "The y axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "north"} any?)
+                     (schema/optional :z {:description "The z axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "height"} any?)])
+    (schema/optional :domain {:cljplot2/section :domain :description "Explicit data domains, needed by each of several 3D charts in one plot and by a surface of `:f` (`:x` and `:y`)."
+                              :cljplot2/default-doc "The data's ranges, rounded to nice values."}
                      domains-schema)
-    (schema/optional :reverse {:cljplot2/section :view :description "axes running the other way (mirrors the scene)"} [:set [:enum :x :y :z]])]))
+    (schema/optional :reverse {:cljplot2/section :view :description "The axes that run the other way, mirroring the scene."
+                               :cljplot2/default-doc "None." :cljplot2/example #{:x}}
+                     [:set [:enum :x :y :z]])]))
 
 (def axes
   "The 3D axes in point order."
@@ -693,11 +699,11 @@
   "Option entries shared by the shaded 3D charts (`surface`, `cloud` bars): the ambient share and the light direction of Lambert shading (see [[shader]])."
   (schema/in-fragment
    :shading
-   [(schema/optional :ambient {:description "share of a shaded face's colour independent of the light (0 - light only, 1 - no shading)"
-                               :default default-ambient}
+   [(schema/optional :ambient {:description "The share of a shaded face's colour that doesn't depend on the light: 0 is light only, 1 no shading."
+                               :default default-ambient :cljplot2/example 0.9}
                      schema/fraction)
-    (schema/optional :light {:description "direction toward the light [x y z] in view coordinates (x right, y up, z away from the eye), normalized"
-                             :default default-light}
+    (schema/optional :light {:description "The direction toward the light `[x y z]` in view coordinates: x right, y up, z away from the eye."
+                             :default default-light :cljplot2/example [1 0 0]}
                      light-schema)]))
 
 (defn- light-direction

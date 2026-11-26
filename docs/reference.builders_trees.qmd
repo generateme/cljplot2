@@ -244,7 +244,7 @@ their merge heights and the leaves along one axis. Use it to show how observatio
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_graphs_trees.html#dendrogram-layouts">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
@@ -298,7 +298,7 @@ and the group names in the text role `:dendrogram-group-label`:
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :dendrogram-branch]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[70 70 70]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :dendrogram-branch]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[70 70 70]</code>) – The colour of the line; a mapped <code>:color</code> wins.</li><li><code>:line-width</code> (default <code>1</code>) – The width of the line in pixels.</li><li><code>:dash</code> (default <code>:none</code>) – The dash style of the line; a mapped <code>:dash</code> wins.</li></ul></div>
 ```
 
 
@@ -334,7 +334,7 @@ hierarchy's structure.
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_graphs_trees.html#node-link-layouts">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
@@ -415,7 +415,7 @@ The links' theme style has these keys; the plot below draws darker, thicker link
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tree-link]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[176 176 176]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>0.9</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tree-link]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[176 176 176]</code>) – The colour of the line; a mapped <code>:color</code> wins.</li><li><code>:line-width</code> (default <code>0.9</code>) – The width of the line in pixels.</li><li><code>:dash</code> (default <code>:none</code>) – The dash style of the line; a mapped <code>:dash</code> wins.</li></ul></div>
 ```
 
 
@@ -592,7 +592,7 @@ its ends. Use it for many links between the members of a hierarchy.
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#edge-bundling">Edge bundling</a> – <code>:from</code> <code>:to</code> <code>:beta</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_graphs_trees.html#edge-bundling">Edge bundling</a> – <code>:from</code> <code>:to</code> <code>:beta</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
@@ -644,7 +644,7 @@ An edge bundle draws in theme styles: the edges in `[:chart :bundle-edge]` (a li
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :bundle-edge]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[0 114 178]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :bundle-edge]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[0 114 178]</code>) – The colour of the line; a mapped <code>:color</code> wins.</li><li><code>:line-width</code> (default <code>1</code>) – The width of the line in pixels.</li><li><code>:dash</code> (default <code>:none</code>) – The dash style of the line; a mapped <code>:dash</code> wins.</li></ul></div>
 ```
 
 
@@ -701,7 +701,7 @@ a website.
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#sequences">Sequences</a> – <code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_graphs_trees.html#sequence-levels">Sequences</a> – <code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
@@ -763,7 +763,7 @@ The cells draw in the theme style `[:chart :sequences-cell]` (a partition style)
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :sequences-cell]</code>, not options</span></div><ul><li><code>:stroke-color</code> (default <code>:white</code>) – The outline colour of the cells.</li><li><code>:stroke-width</code> (default <code>0.3</code>) – The outline width of the cells in pixels; <code>0</code> draws no outline.</li><li><code>:pattern</code> (default <code>:solid</code>) – pattern drawn over the fill (a mapped :pattern wins)</li><li><code>:pattern-color</code> (default <code>:darker</code>) – pattern ink: a colour, :none or :darker (the darkened fill)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :sequences-cell]</code>, not options</span></div><ul><li><code>:stroke-color</code> (default <code>:white</code>) – The outline colour of the cells.</li><li><code>:stroke-width</code> (default <code>0.3</code>) – The outline width of the cells in pixels; <code>0</code> draws no outline.</li><li><code>:pattern</code> (default <code>:solid</code>) – The pattern drawn over the fill; a mapped <code>:pattern</code> wins.</li><li><code>:pattern-color</code> (default <code>:darker</code>) – The colour of the pattern's ink.</li></ul></div>
 ```
 
 

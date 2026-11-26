@@ -127,7 +127,7 @@
                  (#'plot-grid/arrange-problem {:plots [{} {:arrange {:plots [{:legend-only true} {:legend-only true}] :columns 2}}]
                                                :columns 2 :widths [1 :measured]}))))
   (testing ":row-spans is keyed by plot index"
-    (is (re-find #"plot index \(not cell\)"
+    (is (re-find #"plot.s index \(not its cell.s\)"
                  (:description (some #(when (= :row-spans (:key %)) %) (describe/options plot-grid/arrange-schema)))))))
 
 ;; D15: one list of margin sides

@@ -1,8 +1,9 @@
 ;; # Shared options
 
-;; Option groups taken by several charts, builders or data functions, documented once here. A chart's page lists the
-;; groups it takes and which of their keys (a chart may take only part of a group); builder tables mark the rows of a
-;; group with its title.
+;; These groups hold options that several charts or builders take. A chart's or builder's section lists the groups it
+;; takes with their keys and links here. Use this chapter to see what each option does and how it looks; each card's
+;; example draws one chart that takes the group. Each data function's section documents the options it owns, and the
+;; last section here links them.
 
 (ns reference.shared-options
   (:require [fastmath.core :as m]
@@ -16,14 +17,43 @@
             [cljplot2.schema :as schema]
             [notebook-utils :as nu]))
 
+;; The table below holds a made-up wave in two halves; the common, annotation, line style, text style and multiplot
+;; sections use it:
+
 (def wave (for [t (range 30)] {:t t :v (m/sin (m/* 0.3 t)) :g (if (< t 15) "early" "late")}))
 
 (nu/data-table wave)
+
+;; The table below holds made-up counts of three levels in two groups; the bar sections use it:
 
 (def counts [{:k "a" :g "x" :v 3} {:k "a" :g "y" :v 2} {:k "b" :g "x" :v 5}
              {:k "b" :g "y" :v 4} {:k "c" :g "x" :v 4} {:k "c" :g "y" :v 1}])
 
 (nu/data-table counts)
+
+;; The table below holds eight made-up points; the curve and theme style sections use them:
+
+(def points (for [x (range 8)] {:x x :y (nth [1 3 2 5 4 4.5 2 3] x)}))
+
+(nu/data-table points)
+
+;; The table below holds a made-up budget of departments and teams; the hierarchy label section uses it:
+
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
+             {:dept "sport" :team "football" :cost 20}])
+
+(nu/data-table budget)
+
+;; The table below holds made-up energy flows; the builder section uses it:
+
+(def flows [{:from "coal" :to "power" :value 30} {:from "gas" :to "power" :value 20} {:from "gas" :to "homes" :value 15}
+            {:from "power" :to "homes" :value 25} {:from "power" :to "industry" :value 25}])
+
+(nu/data-table flows)
+
+;; The tables below hold the iris flowers and the Old Faithful eruptions; the strip, mirror, ridgeline, cell, field
+;; and 3D sections use them:
 
 (nu/source-note {:dataset :iris})
 
@@ -41,10 +71,11 @@
 
 ;; ### Common options
 
-;; Every chart may read its own rows and merge its own mapping over the plot's - e.g. a reference curve beside the
-;; data (Data and mapping chapter) - and leave its key glyph out of the legends.
+;; These options give a chart its own rows and mapping and switch its legend glyph off; every chart takes them, but
+;; the function chart takes only `:legend` and the image chart none. The plot below draws a line from its own rows
+;; beside the plot's points:
 
-(nu/options-table (describe/fragment-rows :common))
+(nu/option-cards 'chart/line (describe/fragment-rows :common))
 
 (plot/render-image {:data wave
                     :mapping {:x :t :y :v}
@@ -52,9 +83,8 @@
                              (chart/line {:data (for [t (range 0 30 0.5)] {:t t :v (m/sin (m/* 0.3 t))})})]}
                    {:width 500 :height 250})
 
-;; `:legend false` keeps a chart's glyph out of the legend while its colours still follow the scale: the rug's
-;; ticks would otherwise be drawn over the scatter's dots in every key (left). A legend no chart draws a key into is
-;; dropped.
+;; In the right plot below `:legend false` keeps the rug's glyph out of the legend. On the left the rug's ticks cover
+;; the scatter's dots in every key:
 
 (plot/render-image (plot/arrange (for [legend [true false]]
                                    {:data wave
@@ -66,10 +96,10 @@
 
 ;; ### Annotation options
 
-;; The rule, rect and text charts mark literal positions. By default their positions count for the scales (the axis
-;; reaches them); `:extent false` leaves them out - the rule at y = 2 is then off the panel (right).
+;; This option decides whether the literal positions of an annotation chart widen the scales; the rule, rect and text
+;; charts take it. In the right panel below the rule at y = 2 lies off the panel:
 
-(nu/options-table (describe/fragment-rows :annotation))
+(nu/option-cards 'chart/rule (describe/fragment-rows :annotation))
 
 (plot/render-image (plot/arrange (for [extent [true false]]
                                    {:data wave
@@ -81,17 +111,17 @@
 
 ;; ### Line style
 
-;; Colour, width and dash of the lines of line-like charts (line, rule, segment, smooth, density, ecdf ...); a
-;; mapped aesthetic wins over the fixed value.
+;; These options set the colour, width and dash of a line; the line, rule, segment, smooth, density, ecdf, function,
+;; contour and parallel charts take them. The plot below draws a thick red dashed line:
 
-(nu/options-table (describe/fragment-rows :line-style))
+(nu/option-cards 'chart/line (describe/fragment-rows :line-style))
 
 (plot/render-image {:data wave
                     :mapping {:x :t :y :v}
                     :charts [(chart/line {:color [178 34 34] :line-width 3 :dash [6 2]})]}
                    {:width 500 :height 250})
 
-;; Every built-in dash style (a dash may also be a vector of dash and gap lengths, as above):
+;; The plot below draws every built-in dash style; a dash may also be a vector of dash and gap lengths, as above:
 
 (plot/render-image {:charts (vec (mapcat (fn [i d]
                                            [(chart/rule {:y i :dash d :line-width 2})
@@ -102,14 +132,11 @@
 
 ;; ### Curves
 
-;; The line between data points of lines and ribbons: straight, a fastmath interpolation or a step, sampled for
-;; drawing.
+;; These options shape the line between data points, straight or interpolated, and set how densely the chart samples
+;; it; the line chart takes them, the ribbon all but `:curve`. The panels below draw four interpolators through the
+;; points:
 
-(nu/options-table (describe/fragment-rows :curve))
-
-(def points (for [x (range 8)] {:x x :y (nth [1 3 2 5 4 4.5 2 3] x)}))
-
-(nu/data-table points)
+(nu/option-cards 'chart/line (describe/fragment-rows :curve))
 
 (plot/render-image (plot/arrange (for [interpolator [:linear :monotone :cubic :step]]
                                    {:data points
@@ -119,11 +146,11 @@
                                  {:columns 4})
                    {:width 1000 :height 260})
 
-;; Every interpolation method (`schema/interpolation-methods`) through the same points, with default parameters -
-;; most pass through them or smooth them; `:pava` and `:cir` fit a monotone curve - `:pava` flat runs joined by a
-;; step, `:cir` flat, then sloping; `:kriging` stays near a constant (its variogram is fitted to the points, by a
-;; seeded search, so every render draws the same curve), and `:gp` / `:rbf` use a kernel too narrow for points this
-;; far apart:
+;; The panels below draw every interpolation method (`schema/interpolation-methods`) through the same points with
+;; default parameters. Most pass through the points or smooth them. `:pava` and `:cir` fit a monotone curve: `:pava`
+;; joins flat runs by steps, `:cir` slopes between them. `:kriging` stays near a constant; a seeded search fits its
+;; variogram to the points, so every render draws the same curve. `:gp` and `:rbf` use a kernel too narrow for points
+;; this far apart:
 
 (plot/render-image (plot/arrange (for [interpolator (sort schema/interpolation-methods)]
                                    {:data points
@@ -133,9 +160,9 @@
                                  {:columns 4})
                    {:width 1000 :height 800})
 
-;; `:interpolator-params` are the method's arguments after the points - for `:gp` and `:rbf` a fastmath kernel. A
-;; curve is fitted in pixels along the line's horizontal axis, so the kernel's width is in pixels: here 60, a bit
-;; more than the gap between the points:
+;; `:gp` and `:rbf` take a fastmath kernel in `:interpolator-params`. The chart fits a curve in pixels along the
+;; line's horizontal axis, so the kernel's width is in pixels. The panels below take 60, a bit more than the gap
+;; between the points:
 
 (plot/render-image (plot/arrange [{:data points
                                    :mapping {:x :x :y :y}
@@ -150,9 +177,7 @@
                                  {:columns 2})
                    {:width 800 :height 280})
 
-;; Without an interpolator, `:curve` draws a smooth path through the points in their order - also a closed or
-;; looping one (`:parametric`, a Catmull-Rom curve; `:bezier`, bezier pieces); `:sample-step` sets how densely a
-;; curve is sampled (here coarse, to show the samples):
+;; The panels below draw both `:curve` kinds, then a coarse `:sample-step` that shows the samples:
 
 (plot/render-image (plot/arrange (for [[title opts] [[":curve :parametric" {:curve :parametric}]
                                                      [":curve :bezier" {:curve :bezier}]
@@ -166,9 +191,10 @@
 
 ;; ### Fill patterns
 
-;; A pattern drawn over filled marks (bars, areas, boxes, tiles of hierarchies ...), in its own colour.
+;; These options draw a pattern over a filled mark; bars, areas, boxes and the hierarchy charts take them. The plot
+;; below draws a bar per pattern:
 
-(nu/options-table (describe/fragment-rows :pattern))
+(nu/option-cards 'chart/bar (describe/fragment-rows :pattern))
 
 (plot/render-image {:data (for [[i p] (map-indexed vector [:hatch :back-hatch :cross :dots])] {:p (name p) :v (+ 3 i)})
                     :mapping {:x :p :y :v :pattern :p}
@@ -178,9 +204,10 @@
 
 ;; ### Rounded corners
 
-;; Rounded bar corners: all of them, or only the end away from the baseline.
+;; These options round the corners of bars and rectangles: all of them, or only those at a bar's value end; the bar,
+;; histogram and rect charts take them. The plot below rounds the value ends:
 
-(nu/options-table (describe/fragment-rows :corner-radius))
+(nu/option-cards 'chart/bar (describe/fragment-rows :corner-radius))
 
 (plot/render-image {:data counts
                     :mapping {:x :k :y :v :color :g}
@@ -189,24 +216,23 @@
 
 ;; ### Strip options
 
-;; Strip charts (bar, box, violin, stripplot, beeswarm, dotplot, rug, bullet, extent) draw one item per level of a
-;; categorical axis.
+;; These options place the items of strip charts, which draw one item per level of a categorical axis: bar, box,
+;; violin, stripplot, beeswarm, dotplot, rug, bullet and extent.
 
 ;; #### Placement
 
-;; Where the items sit across the value axis, how wide, and which axis holds the levels:
+;; These options set where the items sit across the value axis, how wide they are and which axis holds the levels.
+;; The plot below draws narrow boxes over wide violins:
 
-(nu/options-table (describe/fragment-rows :strip) :placement)
+(nu/option-cards 'chart/box (describe/fragment-rows :strip) :placement)
 
 (plot/render-image {:data iris
                     :mapping {:x :species :y :sepal-length}
                     :charts [(chart/violin {:width 0.9}) (chart/box {:width 0.15})]}
                    {:width 500 :height 280})
 
-;; Without levels an item sits by `:place`: across the panel's middle (`:width` a fraction of the panel), below the
-;; data (`:bottom` - the y axis reaches below zero, `:width` a fraction of the room under zero), at the panel's edge
-;; or at a value of the other axis (`{:at v}`) - those two `:thickness` pixels thick. Here a box of the eruption
-;; times over the scatter:
+;; Without levels an item sits where `:place` puts it. The panels below draw a box of the eruption times over the
+;; scatter in each place:
 
 (plot/render-image (plot/arrange (for [[place opts] [[:center {:width 0.15}] [:bottom {:width 0.8}]
                                                      [:edge {:thickness 12}] [{:at 60} {:thickness 20}]]]
@@ -217,9 +243,9 @@
                                  {:columns 2})
                    {:width 900 :height 600})
 
-;; `:level-axis` names the axis of the levels - needed when both axes or neither are categorical; here the rounded
-;; petal widths on y (0 to 3), declared categorical, are the levels, a strip of sepal lengths at each (points spread
-;; across the band by the [stripplot](reference.charts_per_level.html#strip-plots)'s seeded `:jitter`):
+;; In the plot below the rounded petal widths on y are declared categorical, so they hold the levels, with a strip of
+;; sepal lengths at each; `:level-axis :y` only states the default. The
+;; [stripplot](reference.charts_per_level.html#strip-plots)'s seeded `:jitter` spreads the points across the band:
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y (levels/categorical #(m/round (:petal-width %)))}
@@ -229,21 +255,21 @@
 
 ;; #### Groups
 
-;; Groups of one level share its band: side by side (`:dodge`, with a gap), on top of each other, or one half each
-;; (`:mirror`).
+;; These options set how the groups of one level share its band. The plot below dodges the boxes of narrow and wide
+;; petals with a wide gap:
 
-(nu/options-table (describe/fragment-rows :strip) :groups)
+(nu/option-cards 'chart/box (describe/fragment-rows :strip) :groups)
 
-(plot/render-image {:data counts
-                    :mapping {:x :k :y :v :color :g}
-                    :charts [(chart/bar {:position :dodge :dodge-gap 0.3})]}
+(plot/render-image {:data iris
+                    :mapping {:x :species :y :sepal-length :color #(if (< (:petal-width %) 1.3) "narrow" "wide")}
+                    :charts [(chart/box {:position :dodge :dodge-gap 0.3})]}
                    {:width 500 :height 260})
 
 ;; #### Counts
 
-;; Each item's row count written past its largest value.
+;; These options write each item's row count past its largest value. The plot below counts the flowers per species:
 
-(nu/options-table (describe/fragment-rows :strip) :n-label)
+(nu/option-cards 'chart/box (describe/fragment-rows :strip) :n-label)
 
 (plot/render-image {:data iris
                     :mapping {:x :species :y :petal-length}
@@ -252,9 +278,10 @@
 
 ;; ### Mirrored strips
 
-;; Two groups on the two sides of the value axis, e.g. a population pyramid.
+;; This option draws two groups on the two sides of the value axis, as in a population pyramid; the bar and extent
+;; charts take it. The plot below mirrors flipped bars:
 
-(nu/options-table (describe/fragment-rows :mirror))
+(nu/option-cards 'chart/bar (describe/fragment-rows :mirror))
 
 (plot/render-image {:data counts
                     :mapping {:x :k :y :v :color :g}
@@ -263,7 +290,8 @@
                     :scales {:x {:reverse true}}}
                    {:width 500 :height 260})
 
-;; The same mirroring upright, and on a range chart (the second group's intervals below the axis):
+;; The panels below mirror upright bars and the intervals of a range chart; the second group's items lie below the
+;; axis:
 
 (plot/render-image (plot/arrange [{:data counts
                                    :mapping {:x :k :y :v :color :g}
@@ -278,9 +306,10 @@
 
 ;; ### Ridgelines
 
-;; Histograms and densities over a categorical axis - one row per level, overlapping by `:overlap` rows.
+;; This option sets how far ridgelines overlap, the rows of histograms or densities drawn per level of a categorical
+;; axis; the histogram and density charts take it. The plot below overlaps the species' densities:
 
-(nu/options-table (describe/fragment-rows :ridge))
+(nu/option-cards 'chart/density (describe/fragment-rows :ridge))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :species :color :species}
@@ -291,10 +320,10 @@
 
 ;; ### Cell style
 
-;; The cell shape and outline of grid-cell charts (tile, bin2d): any fastmath grid type, scaled. Every cell type
-;; binning the same points:
+;; These options set the shape, size and outline of the cells of grid-cell charts; the tile and bin2d charts take
+;; them. The panels below bin the same points in every cell type:
 
-(nu/options-table (describe/fragment-rows :cell))
+(nu/option-cards 'chart/tile (describe/fragment-rows :cell))
 
 (plot/render-image (plot/arrange (for [cell (:cell describe/attribute-values)]
                                    {:data iris
@@ -307,22 +336,24 @@
 
 ;; ### Fields
 
-;; Raster and contour charts draw a scalar field.
+;; These options give the scalar field that the field and contour charts draw: a function, a kernel density estimate
+;; of mapped points, or gridded data.
 
 ;; #### A function
 
-;; The field as a function of a point over a domain ...
+;; These options give the field as a function of a point over a domain. The plot below draws contours of a function:
 
-(nu/options-table (describe/fragment-rows :field) :function)
+(nu/option-cards 'chart/field (describe/fragment-rows :field) :function)
 
 (plot/render-image {:charts [(chart/contour {:f (fn [[x y]] (+ (* x x) (* 2 y y))) :domain {:x [-2 2] :y [-2 2]}})]}
                    {:width 450 :height 350})
 
 ;; #### A density estimate
 
-;; ... or the kernel density estimate of mapped points ...
+;; These options set the kernel density estimate of mapped points. The plot below draws the estimate of the iris
+;; sepals:
 
-(nu/options-table (describe/fragment-rows :field) :density)
+(nu/option-cards 'chart/field (describe/fragment-rows :field) :density)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width}
@@ -331,24 +362,20 @@
 
 ;; #### The grid
 
-;; ... sampled on a grid of `:n` points per axis (interpolating gridded data with `:interpolation`).
+;; These options set the grid the chart samples and how it interpolates gridded data. The plot below samples a
+;; function on a coarse grid:
 
-(nu/options-table (describe/fragment-rows :field) :grid)
+(nu/option-cards 'chart/field (describe/fragment-rows :field) :grid)
 
 (plot/render-image {:charts [(chart/field {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [0 3] :y [0 3]} :n 12})]}
                    {:width 450 :height 350})
 
 ;; ### Hierarchy labels
 
-;; Group and leaf labels of treemaps, partitions and circle packings: off, on, or a function writing them.
+;; These options switch the group and leaf labels on or off, or write them with a function; the treemap, partition
+;; and pack charts take them. The plot below drops the group labels and writes each leaf's value:
 
-(nu/options-table (describe/fragment-rows :hierarchy-labels))
-
-(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
-             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}
-             {:dept "sport" :team "football" :cost 20}])
-
-(nu/data-table budget)
+(nu/option-cards 'chart/treemap (describe/fragment-rows :hierarchy-labels))
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
@@ -357,13 +384,13 @@
 
 ;; ### 3D frame
 
-;; 3D charts (cloud, surface) draw their data in a box seen in perspective.
+;; These options set the box in which the 3D charts, cloud and surface, draw their data.
 
 ;; #### View
 
-;; The eye sits at an azimuth and elevation, at a perspective distance; the box has proportions and may mirror axes.
+;; These options place the eye and shape the box. The plot below turns the cloud and flattens its box:
 
-(nu/options-table (describe/fragment-rows :frame-3d) :view)
+(nu/option-cards 'chart/surface (describe/fragment-rows :frame-3d) :view)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length :color :species}
@@ -372,9 +399,9 @@
 
 ;; #### Axes
 
-;; The box, the ticks and the axis titles.
+;; These options draw the box, the ticks and the axis titles. The plot below drops the box and names the axes:
 
-(nu/options-table (describe/fragment-rows :frame-3d) :axes)
+(nu/option-cards 'chart/surface (describe/fragment-rows :frame-3d) :axes)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
@@ -383,9 +410,9 @@
 
 ;; #### Domains
 
-;; Explicit domains - needed when several 3D charts share a plot.
+;; This option fixes the domains. The plot below fixes all three:
 
-(nu/options-table (describe/fragment-rows :frame-3d) :domain)
+(nu/option-cards 'chart/surface (describe/fragment-rows :frame-3d) :domain)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
@@ -394,12 +421,12 @@
 
 ;; ### 3D shading
 
-;; Shaded 3D faces (surface quads, cloud bars) are lit by Lambert's law: an ambient share of the colour plus the rest
-;; by the face's angle to the light, whose direction is given in view coordinates (x right, y up, z away from the eye).
+;; These options light the shaded faces of 3D charts by Lambert's law: an ambient share of the colour plus the rest by
+;; the face's angle to the light. The surface chart takes them for its quads and the cloud chart for its bars. The
+;; panels below draw the default shading beside a smaller ambient share lit from the upper right, on the surface
+;; $z = \sin(xy)$:
 
-(nu/options-table (describe/fragment-rows :shading))
-
-;; The default shading beside a darker ambient share lit from the right, on the surface $z = \sin(xy)$.
+(nu/option-cards 'chart/surface (describe/fragment-rows :shading))
 
 (plot/render-image (plot/arrange [{:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y)))
                                                             :domain {:x [-2 2] :y [-2 2]} :color [120 160 220]})]
@@ -413,10 +440,11 @@
 
 ;; ### Text style
 
-;; Font, size, colour, padding, alignment and background of the `text` chart - also the style of every theme text
-;; role (Theme chapter).
+;; These options set the font, size, colour, inset, background, alignment and formula switch of a text, over its text
+;; role (Theme chapter); label maps take them all, the text chart all but `:align`. The plot below writes a styled
+;; note:
 
-(nu/options-table (describe/fragment-rows :text-style))
+(nu/option-cards 'chart/text (describe/fragment-rows :text-style))
 
 (plot/render-image {:data wave
                     :mapping {:x :t :y :v}
@@ -425,27 +453,41 @@
                                           :color :white :background [70 90 140] :inset 6})]}
                    {:width 500 :height 250})
 
+;; ### Named theme styles
+
+;; This option names a theme style `[:chart name]`, a partial style a theme defines once, merged over the chart's own
+;; `[:chart kind]`; every chart with a theme style takes it. Builders draw with styles of their own. `build` checks the
+;; merged style against the chart's style keys and rejects a name the theme doesn't have. The plot below draws the
+;; highlighted points in a style named `:highlight`:
+
+(nu/option-cards 'chart/scatter (describe/fragment-rows :theme-style))
+
+(plot/render-image {:data points
+                    :mapping {:x :x :y :y}
+                    :charts [(chart/scatter)
+                             (chart/scatter {:data (filter #(> (:y %) 4) points) :theme-style :highlight})]
+                    :theme {:chart {:highlight {:size 14 :color [215 48 39] :shape \s}}}}
+                   {:width 500 :height 300})
+
 ;; ## Builders
 
 ;; ### Builder options
 
-;; Title, scales and theme of the plot a builder returns.
+;; These options give the plot a builder returns its title, scales and theme; every builder takes the ones it uses
+;; (`plot/arrange` no `:scales`, `plot/pairs` only `:title`). The plot below titles a sankey diagram and sets its
+;; background:
 
-(nu/options-table (describe/fragment-rows :builder))
-
-(def flows [{:from "coal" :to "power" :value 30} {:from "gas" :to "power" :value 20} {:from "gas" :to "homes" :value 15}
-            {:from "power" :to "homes" :value 25} {:from "power" :to "industry" :value 25}])
-
-(nu/data-table flows)
+(nu/option-cards '(plot/network edges) (describe/fragment-rows :builder))
 
 (plot/render-image (plot/sankey flows {:title "Energy flows" :theme {:plot {:background :white}}})
                    {:width 500 :height 300})
 
 ;; ### Multiplot layout
 
-;; The grid of `plot/arrange` (and of a plot's `:arrange`): shape, weights, panel alignment.
+;; These options lay out the grid of `plot/arrange` and of a plot's `:arrange`: its shape, its weights and the panels'
+;; alignment. The plot below gives a line three times the width of a box:
 
-(nu/options-table (describe/fragment-rows :arrange))
+(nu/option-cards '(plot/arrange plots) (describe/fragment-rows :arrange))
 
 (plot/render-image (plot/arrange [{:data wave :mapping {:x :t :y :v} :charts [(chart/line)]}
                                   {:data wave :mapping {:x :g :y :v} :charts [(chart/box)]}]
@@ -454,139 +496,7 @@
 
 ;; ## Builders and data functions
 
-;; The options a builder forwards to the data function computing its layout; the function takes them directly too.
+;; The groups below are the options of data functions, which builders forward; each function's section documents
+;; them:
 
-;; ### Graph
-
-;; The edge rows' ends, weight and node ids, optional node rows, directedness. A directed
-;; [network](reference.builders_graphs.html#networks) with node labels (`:labels`) and a seeded layout (`:rng`):
-
-(nu/options-table (describe/fragment-rows :graph/graph))
-
-(def edges [{:a "x" :b "y" :w 3} {:a "y" :b "z" :w 1} {:a "z" :b "x" :w 2} {:a "z" :b "u" :w 2}])
-
-(nu/data-table edges)
-
-(plot/render-image (plot/network edges {:from :a :to :b :value :w :directed true :labels true :rng (r/rng :mersenne 1)})
-                   {:width 450 :height 300})
-
-;; ### Graph layout
-
-;; Node positions of a network: force-directed, a circle, or random.
-
-(nu/options-table (describe/fragment-rows :graph/layout))
-
-(plot/render-image (plot/network edges {:from :a :to :b :layout :circle :labels true}) {:width 450 :height 300})
-
-;; ### Chord layout
-
-;; Node order, gaps between sectors, the ring's inner radius and the smallest drawn flow.
-
-(nu/options-table (describe/fragment-rows :graph/chord-layout))
-
-(plot/render-image (plot/chord flows {:gap-angle 6 :inner-radius 0.8}) {:width 450 :height 450})
-
-;; ### Arc layout
-
-;; Node order along the line.
-
-(nu/options-table (describe/fragment-rows :graph/arc-layout))
-
-(plot/render-image (plot/arc edges {:from :a :to :b :order :cluster}) {:width 450 :height 250})
-
-;; ### Sankey layout
-
-;; Columns, node width, gaps and relaxation of a sankey diagram.
-
-(nu/options-table (describe/fragment-rows :graph/sankey-layout))
-
-(plot/render-image (plot/sankey flows {:align :left :node-width 0.06 :gap 0.08}) {:width 500 :height 300})
-
-;; ### Alluvial graph
-
-;; The axes (categorical columns) the strands cross, their weights and which axis colours them.
-
-(nu/options-table (describe/fragment-rows :graph/alluvial-graph))
-
-(plot/render-image (plot/alluvial [{:class "1st" :sex "f" :n 140} {:class "1st" :sex "m" :n 180}
-                                   {:class "3rd" :sex "f" :n 190} {:class "3rd" :sex "m" :n 510}]
-                                  {:variables [:class :sex] :value :n :strand-color :sex})
-                   {:width 500 :height 300})
-
-;; ### Dendrogram layout
-
-;; A cut into `:k` clusters and a circular layout.
-
-(nu/options-table (describe/fragment-rows :tree/layout))
-
-(def org (tree/from-levels [{:div "north" :team "a"} {:div "north" :team "b"} {:div "south" :team "c"}
-                            {:div "south" :team "d"} {:div "south" :team "e"}]
-                           {:hierarchy [:div :team]}))
-
-(plot/render-image (plot/dendrogram org {:k 2}) {:width 450 :height 300})
-
-;; ### Node-link tree layout
-
-;; Tidy or cluster placement, diagonal or straight (`:line`) links, circular.
-
-(nu/options-table (describe/fragment-rows :tree/node-link-layout))
-
-(plot/render-image (plot/tree org {:layout :cluster :links :line}) {:width 450 :height 300})
-
-;; ### Edge bundling
-
-;; Edges between the tree's leaves, bent along the tree with strength `:beta`.
-
-(nu/options-table (describe/fragment-rows :tree/bundle-paths))
-
-(plot/render-image (plot/bundle [{:from "a" :to "d"} {:from "b" :to "e"} {:from "a" :to "c"}] org {:beta 0.9})
-                   {:width 400 :height 400})
-
-;; ### Sequences
-
-;; Step sequences as text (`"home-search-end"`) split into rings of a flow sunburst.
-
-(nu/options-table (describe/fragment-rows :hierarchy/sequence-levels))
-
-(plot/render-image (plot/sequences [{:sequence "home-search-product" :n 5} {:sequence "home-product" :n 3}
-                                    {:sequence "search-product-cart" :n 2}]
-                                   {:value :n})
-                   {:width 400 :height 400})
-
-;; ### Autocorrelation rows
-
-;; The lags of the correlogram, the confidence level of its bands and whether the rows are the partial autocorrelation (`plot/acf` forwards `:lags` and `:level`; it picks the correlograms with its own `:correlograms`).
-
-(nu/options-table (describe/fragment-rows :series/acf-rows))
-
-(plot/render-image (plot/acf (map #(m/sin (m/* 0.5 %)) (range 100)) {:lags 30 :correlograms :pacf})
-                   {:width 600 :height 300})
-
-;; ### Horizon rows
-
-;; The keys of the series rows, the number and height of the bands and resampling between points.
-
-(nu/options-table (describe/fragment-rows :series/horizon-rows))
-
-(plot/render-image (plot/horizon (for [s ["a" "b"] t (range 60)]
-                                   {:x t :y (* (if (= s "a") 1 -1) (m/sin (m/* 0.2 t)) t) :series s})
-                                 {:series :series :bands 3})
-                   {:width 600 :height 250})
-
-;; ### Named theme styles
-
-;; A chart's style comes from the theme `[:chart kind]`; `:theme-style` names a `[:chart name]` entry merged over
-;; it - a partial style a theme defines once and charts pick by name (builders draw with their own, see each
-;; builder's page). `build` checks the merged style against the chart's style keys; a name the theme hasn't is an
-;; error.
-
-(nu/options-table (describe/fragment-rows :theme-style))
-
-;; Highlighted points in a style named `:highlight`, the rest in the scatter style:
-
-(plot/render-image {:data points
-                    :mapping {:x :x :y :y}
-                    :charts [(chart/scatter)
-                             (chart/scatter {:data (filter #(> (:y %) 4) points) :theme-style :highlight})]
-                    :theme {:chart {:highlight {:size 14 :color [215 48 39] :shape \s}}}}
-                   {:width 500 :height 300})
+(nu/owned-groups)

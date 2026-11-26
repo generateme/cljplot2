@@ -30,9 +30,12 @@
   "Map entries of a line style (all optional; defaults from the theme)."
   (schema/in-fragment
    :line-style
-   [(schema/optional :color {:description "line colour (a mapped :color wins)"} schema/color)
-    (schema/optional :line-width {:description "line width in pixels"} schema/non-neg)
-    (schema/nilable :dash {:description "dash style of the line (a mapped :dash wins)"} schema/dash)]))
+   [(schema/optional :color {:description "The colour of the line; a mapped `:color` wins."
+                             :cljplot2/example :black
+                             :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:black`."}}
+                     schema/color)
+    (schema/optional :line-width {:description "The width of the line in pixels." :cljplot2/example 4} schema/non-neg)
+    (schema/nilable :dash {:description "The dash style of the line; a mapped `:dash` wins." :cljplot2/example :dashed} schema/dash)]))
 
 (defn finite-runs
   "Gives the runs of consecutive indices whose coordinates are finite.

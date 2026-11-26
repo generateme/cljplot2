@@ -14,10 +14,8 @@
 
 ;; A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions or
 ;; a function instead of data and inherit only the plot's facet keys. The positions of `rule`, `rect` and `text`
-;; count for the scales unless `:extent false` (the Annotation options group, shown at work in
-;; [Shared options](reference.shared_options.html#annotation-options)):
-
-(nu/options-table (describe/fragment-rows :annotation))
+;; count for the scales unless `:extent false`, an option of the
+;; [Annotation options](reference.shared_options.html#annotation-options) group.
 
 (nu/source-note {:dataset :faithful})
 

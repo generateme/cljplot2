@@ -290,7 +290,11 @@ the theme: banned names, and one type family per name across all owners). One na
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
   Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
-  `test-util/migrated-builders`, data functions in `test-util/migrated-functions` - the switches; `describe/concepts`
+  `test-util/migrated-builders`, data functions in `test-util/migrated-functions`, shared groups in
+  `test-util/migrated-groups` - the switches; a group's cards on Shared options print its representative's call
+  (`chart/line`, `'(plot/network edges)`) and `option-cards-test` checks them through it (`group-fixtures`); a group a
+  data function owns (`:owner` in `describe/fragments`) is documented in that function's section, Shared options
+  boxes link there; a style group (`:style true`) gives its rows the default text `The chart's theme style.`; `describe/concepts`
   keyed by kind keyword, builder symbol or data function's qualified symbol; data function sections show cards of all
   their `describe/options` rows - a function owns its shared group's rows, whose texts read in the card style for the
   builders forwarding them too):

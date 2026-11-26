@@ -118,7 +118,7 @@ is always 1). Use it to find the lags a series depends on.
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> – <code>:lags</code> <code>:level</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_sets_series.html#autocorrelation">Autocorrelation rows</a> – <code>:lags</code> <code>:level</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
@@ -219,7 +219,7 @@ darker colour, and negative values mirror up in reds. Use it to compare many ser
 
 
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#horizon-rows">Horizon rows</a> – <code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.data_sets_series.html#horizon-bands">Horizon rows</a> – <code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 

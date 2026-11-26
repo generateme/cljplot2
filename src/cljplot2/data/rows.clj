@@ -74,24 +74,32 @@
 (def data-schema
   "Schema of plot or chart `:data`: a sequence of rows (maps) or a map of columns (sequences); rows and columns are checked by [[rows]]."
   (schema/named-type ::data #(or (sequential? %) (map? %))
-                     "should be a sequence of rows (maps) or a map of columns (sequences)"))
+                     "should be a sequence of rows (maps) or a map of columns (sequences)"
+                     {:cljplot2/type-doc "a sequence of rows (maps) or a map of columns (sequences)"
+                      :cljplot2/type-name "data"
+                      :cljplot2/type-meaning "Rows or columns: a sequence of maps, e.g. `[{:x 1 :y 2} {:x 2 :y 3}]`, or a map of equal-length sequences, e.g. `{:x [1 2] :y [2 3]}`."}))
 
 (def legend-option
   "Map entries (one) of the chart option `:legend` (shared group `:common`), for charts taking no other common option: `false` - the chart draws no key glyph in any legend (its aesthetics still take their scales and other charts' glyphs stay; a legend no chart draws a key into is dropped)."
   (schema/in-fragment
    :common
-   [(schema/nilable :legend {:description "draw the chart's key glyph in the legends (false - the chart adds none, a legend no chart keys is dropped; its aesthetics still scale)"
-                             :default true}
+   [(schema/nilable :legend {:description "Whether the chart draws its key glyph in the legends; its aesthetics take their scales either way."
+                             :default true
+                             :cljplot2/value-meanings {true "The chart's glyph in every legend of its aesthetics."
+                                                       false "No glyph; a legend no chart draws a key into is dropped."}}
                     schema/bool)]))
 
 (def common-options
   "Map entries of the options every chart takes (shared group `:common`): its own `:data` (see [[rows]]), `:mapping` (merged over the plot's) and `:legend` (see [[legend-option]])."
   (schema/in-fragment
    :common
-   (into [(schema/nilable :data {:description "the chart's own data instead of the plot's"
-                                 :cljplot2/default-doc "the plot's :data"}
+   (into [(schema/nilable :data {:description "The chart's own data instead of the plot's."
+                                 :cljplot2/default-doc "The plot's `:data`."
+                                 :cljplot2/example '(for [t (range 0 6 0.5)] {:x t :y (m/sin t) :g "a"})}
                           data-schema)
-          (schema/optional :mapping {:description "the chart's mapping, merged over the plot's mapping (a key set to nil removes it)"}
+          (schema/optional :mapping {:description "The chart's mapping, merged over the plot's; a key set to `nil` removes it."
+                                     :cljplot2/default-doc "The plot's `:mapping`."
+                                     :cljplot2/example {:y :x}}
                            mapping-schema)]
          legend-option)))
 

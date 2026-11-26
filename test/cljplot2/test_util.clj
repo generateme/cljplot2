@@ -29,6 +29,21 @@
      cljplot2.data.tree/layout cljplot2.data.tree/node-link-layout cljplot2.data.vector-field/arrows
      cljplot2.data.vector-field/traces})
 
+(def migrated-groups
+  "Shared groups of options (keys of `cljplot2.describe/fragments`) whose Shared options sections show option cards and
+  follow the card rules of `option-cards-test` - the groups' switch; the groups a data function owns are documented
+  by its section instead (`:owner`)."
+  #{:annotation :arrange :builder :cell :common :corner-radius :curve :field :frame-3d :hierarchy-labels :line-style
+    :mirror :pattern :ridge :shading :strip :text-style :theme-style})
+
+(declare migrated-function-groups)
+
+(defn card-groups
+  "The shared groups whose entries read in the card style: the migrated groups ([[migrated-groups]]) and those the
+  migrated data functions own ([[migrated-function-groups]])."
+  []
+  (into migrated-groups (migrated-function-groups)))
+
 (defn migrated-function-groups
   "The shared groups whose options the migrated data functions take ([[migrated-functions]]): the functions own them,
   so their texts read in the card style - also for the builders forwarding them."

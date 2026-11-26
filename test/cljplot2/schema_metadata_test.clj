@@ -20,7 +20,7 @@
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
             [cljplot2.theme]
-            [cljplot2.test-util :refer [explicit-defaults migrated migrated-function-groups pixels same-pixels?]]))
+            [cljplot2.test-util :refer [card-groups explicit-defaults migrated pixels same-pixels?]]))
 
 (def chart-constructors
   "Kind -> constructor (var) of every built-in chart."
@@ -209,7 +209,7 @@
           [kind path t]))))
 
 (deftest writing-rules-test
-  (let [card-owners (into migrated (migrated-function-groups))
+  (let [card-owners (into migrated (card-groups))
         rows (remove #(contains? card-owners (:kind %)) (all-rows))]
     (testing "descriptions"
       (is (= [] (rule-breaks rows :description))))
@@ -225,8 +225,9 @@
                                     {:kind :k :path [:g] :description "One. Two. Three."}]
                                    :description #{"A full sentence." "One. Two. Three."})))))
     (testing "boundary: the groups skipped are the migrated functions' (a function's own group), never a chart's group"
-      (is (contains? (migrated-function-groups) :graph/graph))
-      (is (not-any? (migrated-function-groups) [:common :line-style :strip])))
+      (is (contains? (card-groups) :graph/graph))
+      (is (contains? (card-groups) :line-style))
+      (is (not-any? (card-groups) [:annotation-x :plot])))
     (testing "boundary: a card-style text not shared with a migrated chart breaks the table rule"
       (is (= 1 (count (rule-breaks [{:kind :k :path [:a] :description "A full sentence."}] :description #{})))))
     (testing "a migrated chart's mapped :group reads the card way"
@@ -273,8 +274,10 @@
     (walk schema [])))
 
 (deftest non-chart-descriptions-test
-  (doseq [[n s] non-chart-schemas
-          :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (all-entries s))]]
+  (doseq [:let [card-group? (card-groups)]
+          [n s] non-chart-schemas
+          :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (all-entries s))
+                table-entries (remove (fn [[_ props]] (card-group? (:cljplot2/fragment props))) entries)]]
     (testing (str n ": every entry described")
       (is (seq entries))
       (is (= [] (vec (keep (fn [[path props]] (when-not (:description props) path)) entries)))))
@@ -283,9 +286,9 @@
     (testing (str n ": writing rule")
       (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :description (:description props)
                                                       :default-doc (:cljplot2/default-doc props)})
-                                  entries)
+                                  table-entries)
                              :description)))
-      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :default-doc (:cljplot2/default-doc props)}) entries)
+      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :default-doc (:cljplot2/default-doc props)}) table-entries)
                              :default-doc))))
     (testing (str n ": readable type texts")
       (is (= [] (vec (keep #(when (re-find #":cljplot2\.|#object|\[:(cat|\?|\*|\+|fn|map|and|or|maybe|enum)\b|\w\?(,| |$)" (:type %))

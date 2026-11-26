@@ -497,10 +497,7 @@ cells. A row is a plain map; `:section` names its table slice:
  :values [],
  :other-values nil,
  :required false,
- :forms
- [{:form :cljplot2.data.rows/data,
-   :type "a sequence of rows (maps) or a map of columns (sequences)",
-   :meaning nil}]}
+ :forms [{:form :cljplot2.data.rows/data, :type "data", :meaning nil}]}
 
 ```
 :::

@@ -266,10 +266,40 @@
       (str/replace #"\s+" "-")
       (str/replace #"^[^\p{L}]+" "")))
 
+(def ^:private function-pages
+  "Namespace of a data function owning a shared group (`:owner` in `cljplot2.describe/fragments`) -> the book page of
+  its Data functions chapter (`reference-notebook-test` checks it against the chapters' functions)."
+  {'cljplot2.data.graph "reference.data_graphs_trees.html" 'cljplot2.data.tree "reference.data_graphs_trees.html"
+   'cljplot2.data.hierarchy "reference.data_graphs_trees.html" 'cljplot2.data.series "reference.data_sets_series.html"})
+
+(defn- function-link
+  "The link of user-facing data function `f` (a qualified symbol): its page (see [[function-pages]]) and the anchor of
+  its section, headed by its concept (`cljplot2.describe/concepts`)."
+  [f]
+  (str (function-pages (symbol (namespace f))) "#" (heading-anchor (describe/concepts f))))
+
+(defn- group-link
+  "The link of shared group `fragment`: the section of its owner function (`:owner` in `cljplot2.describe/fragments`),
+  else its section of the Shared options chapter."
+  [fragment]
+  (let [{:keys [owner title]} (describe/fragments fragment)]
+    (if owner (function-link owner) (str shared-options-page "#" (heading-anchor title)))))
+
+(defn owned-groups
+  "The shared groups a user-facing data function owns (`:owner` in `cljplot2.describe/fragments`) in a list, its code
+  hidden: a point per group - its title, linked to the owner's section, the function and the group's keys."
+  []
+  (kindly/hide-code
+   (kind/hiccup (into [:ul]
+                      (for [[fragment {:keys [owner title]}] (sort-by (comp :title val) describe/fragments)
+                            :when owner]
+                        (into [:li [:a {:href (group-link fragment)} title] " – " [:code (str (last (str/split (namespace owner) #"\.")) "/" (name owner))] ": "]
+                              (interpose " " (keep #(when (m/one? (count (:path %))) [:code (pr-str (:key %))]) (describe/fragment-rows fragment)))))))))
+
 (defn shared-groups
   "The shared groups option `rows` take (`cljplot2.describe/fragment-keys`) in a titled box, its code hidden: a point per
-  group, linked to its section of the Shared options chapter, with the keys of the group the rows hold. Throws
-  `ex-info {:key :rows}` for rows without groups."
+  group, linked to its section of the Shared options chapter - or, for a group a data function owns, to that function's
+  section - with the keys of the group the rows hold. Throws `ex-info {:key :rows}` for rows without groups."
   [rows]
   (let [groups (describe/fragment-keys rows)]
     (when (empty? groups)
@@ -281,7 +311,7 @@
                    (into [:ul]
                          (for [[fragment ks] groups
                                :let [title (get-in describe/fragments [fragment :title])]]
-                           (into [:li [:a {:href (str shared-options-page "#" (heading-anchor title))} title] " – "]
+                           (into [:li [:a {:href (group-link fragment)} title] " – "]
                                  (interpose " " (map #(vector :code (pr-str %)) ks)))))]))))
 
 ;; option cards (reference pages rewritten for readability)

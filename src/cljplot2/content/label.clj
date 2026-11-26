@@ -105,7 +105,7 @@
 
   Returns `{:lines :formulas :bold :rotation :h-align :v-align :inset :color :background :font}` - the role's style
   with the label's inline overrides, the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the colour
-  resolved against the plot backdrop; `:lines` - vectors of runs (see [[cljplot2.data.text/text-lines]]),
+  resolved against the label's own `:background` box, or the plot backdrop without one; `:lines` - vectors of runs (see [[cljplot2.data.text/text-lines]]),
   `:formulas` - truthy when a run is a formula, `:bold` - true for a bold font style."
   [theme content]
   (let [rotation (get content :rotation 0)
@@ -120,7 +120,9 @@
      :h-align (align 0)
      :v-align (align 1)
      :inset (double inset)
-     :color (draw/resolved-text-color (:color style) (draw/plot-backdrop theme))
+     :color (draw/resolved-text-color (:color style) (if (or (nil? (:background style)) (theme/none? (:background style)))
+                                                       (draw/plot-backdrop theme)
+                                                       (:background style)))
      :background (:background style)
      :font (font/resolve-font (:font style) (:font-style style) (:size style))}))
 
@@ -133,7 +135,7 @@
   - `content` (map): the label content (`:role`, inline style keys).
 
   Returns `{:font :color :background :inset}` - the font resolved (see [[cljplot2.graphics.font/resolve-font]]), the
-  colour resolved against the plot backdrop (`:contrast` - black or white), the role's or the inline `:background`
+  colour resolved against the label's `:background` box, or the plot backdrop without one (`:contrast` - black or white), the role's or the inline `:background`
   (`:none` or `nil` - none) and `:inset` in pixels.
 
   Throws as [[cljplot2.theme/text-style]] for an unknown role."

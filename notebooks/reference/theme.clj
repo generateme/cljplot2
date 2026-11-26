@@ -293,9 +293,8 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-;; The keys of a text style:
-
-(nu/options-table (describe/fragment-rows :text-style))
+;; A text role's style takes the keys of the [Text style](reference.shared_options.html#text-style) group, plus
+;; `:min-size`. The plot below restyles the title's role:
 
 (plot/render-image (assoc iris-plot
                           :labels {:title "Iris"}

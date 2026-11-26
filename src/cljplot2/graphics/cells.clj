@@ -20,11 +20,26 @@
   (a color, `:none` or `:darker`), `:stroke-width`, `:alpha-factor` (fill alpha multiplier, a fraction; theme default 1.0 - colors as they are)."
   (schema/in-fragment
    :cell
-   [(schema/optional :cell {:description "cell shape of the grid (a fastmath grid cell type)"} cells/cell-schema)
-    (schema/optional :cell-scale {:description "cell polygon size relative to its grid cell, in (0 1]"} [:and schema/finite [:> 0] [:<= 1]])
-    (schema/optional :stroke-color {:description "cell outline: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-    (schema/optional :stroke-width {:description "cell outline width in pixels"} schema/non-neg)
-    (schema/optional :alpha-factor {:description "factor multiplying the fill colours' alpha"} schema/fraction)]))
+   [(schema/optional :cell {:description "The shape of the grid cells, a fastmath grid cell type."
+                            :cljplot2/example :pointy-hex
+                            :cljplot2/value-meanings {:square "Squares." :shifted-square "Squares, every second row shifted half a cell."
+                                                      :triangle "Triangles." :rhombus "Rhombi."
+                                                      :flat-hex "Hexagons with a flat top." :pointy-hex "Hexagons with a pointed top."}}
+                     cells/cell-schema)
+    (schema/optional :cell-scale {:description "The size of a cell's polygon relative to its grid cell; smaller values leave gaps."
+                                  :cljplot2/example 0.7}
+                     [:and schema/finite [:> 0] [:<= 1]])
+    (schema/optional :stroke-color {:description "The colour of the cell outlines."
+                                    :cljplot2/example :black :cljplot2/example-context {:stroke-width 2}
+                                    :cljplot2/value-meanings {:darker "The cell's fill colour, darkened." :none "No outline."}
+                                    :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:white`."}}
+                     draw/stroke-color)
+    (schema/optional :stroke-width {:description "The width of the cell outlines in pixels; 0 draws none."
+                                    :cljplot2/example 3 :cljplot2/example-context {:stroke-color :black}}
+                     schema/non-neg)
+    (schema/optional :alpha-factor {:description "A factor multiplying the alpha of the fill colours: 1 keeps them, smaller values fade them."
+                                    :cljplot2/example 0.4}
+                     schema/fraction)]))
 
 (defn- shrunk
   "Gives the cell corners shrunk toward their mean.

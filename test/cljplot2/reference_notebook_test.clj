@@ -24,7 +24,9 @@
             [cljplot2.scale.coord]
             [cljplot2.theme]
             [cljplot2.scale.position]
-            [cljplot2.notebook-forms :refer [resolved-forms calls]]))
+            [cljplot2.notebook-forms :refer [resolved-forms calls]]
+            [cljplot2.test-util :refer [migrated-groups]]
+            [notebook-utils]))
 
 (def ^:private concept-chapters
   "The concept chapters (R3), in reading order."
@@ -226,6 +228,17 @@
   (let [arg (and (seq? form) (second form))]
     (and (seq? arg) (= 'cljplot2.scale.aesthetic/scale-spec-schema (first arg)))))
 
+(defn- migrated-group-slice
+  "The shared group with option cards (`test-util/migrated-groups`) every row of `section` among option `rows` belongs to
+  - a nested row by its top-level entry - or `nil`. Such a section links to the group's cards on Shared options instead
+  of a table of its own."
+  [rows section]
+  (let [by-path (into {} (map (juxt :path identity)) rows)
+        group-of (fn [{:keys [path]}] (:fragment (by-path (subvec path 0 1))))
+        groups (set (map group-of (filter #(= section (:section %)) rows)))]
+    (when (and (= 1 (count groups)) (contains? migrated-groups (first groups)))
+      (first groups))))
+
 (deftest sliced-tables-test
   (let [by-form (group-by :rows-form (table-calls))]
     (doseq [[form tables] by-form
@@ -242,14 +255,32 @@
           (is (every? :section (filter leaf-row? rows)))
           (is (not-any? nil? (map :section tables)))
           (when-not (aesthetic-rows-form? form)
-            (is (= sections (set (map :section tables)))))
+            (is (= (set (if (= 'cljplot2.describe/fragment-rows (first form)) sections (remove #(migrated-group-slice rows %) sections)))
+                   (set (map :section tables)))
+                "every section a table, but a section of one migrated group's rows - a link to its cards")
+            (when-not (= 'cljplot2.describe/fragment-rows (first form))
+              (doseq [section sections
+                      :let [g (migrated-group-slice rows section)]
+                      :when g
+                      page pages]
+                (is (str/includes? (slurp (str "notebooks/reference/" page ".clj"))
+                                   (str "reference.shared_options.html#" (#'notebook-utils/heading-anchor (:title (describe/fragments g)))))
+                    (str page " links the " g " cards in place of its " section " table")))))
           (doseq [section (map :section tables)]
             (is (<= (count (filter #(= section (:section %)) rows)) max-table-rows) section)))))))
 
+(deftest owned-group-links-test
+  (testing "an owned group's link goes to the page of its owner function (data-chapters)"
+    (doseq [[g {:keys [owner]}] describe/fragments
+            :when owner
+            :let [page (some (fn [[p fs]] (when (some #{owner} fs) p)) data-chapters)]]
+      (is (str/starts-with? (#'notebook-utils/group-link g) (str "reference." page ".html#")) [g owner page]))))
+
 (deftest fragment-sections-test
-  (testing "every shared group has a table in the Shared options chapter"
-    (is (= (set (keys describe/fragments))
-           (set (map second (calls (get (notebook-forms) "shared_options") 'cljplot2.describe/fragment-rows)))))))
+  (testing "every shared group a data function doesn't own has its cards in the Shared options chapter; an owned group is listed there (`nu/owned-groups`)"
+    (is (= (set (remove #(:owner (describe/fragments %)) (keys describe/fragments)))
+           (set (map second (calls (get (notebook-forms) "shared_options") 'cljplot2.describe/fragment-rows)))))
+    (is (seq (calls (get (notebook-forms) "shared_options") 'notebook-utils/owned-groups)))))
 
 (deftest theme-sections-test
   (testing "every top-level theme key has a table in the Theme chapter"
@@ -367,9 +398,9 @@
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))))))
 
 (deftest shared-group-headings-test
-  (testing "every shared group has a heading of its title in the Shared options chapter (chart pages link to it)"
+  (testing "every shared group a data function doesn't own has a heading of its title in the Shared options chapter (chart pages link to it)"
     (let [headings (set (map second (re-seq #"(?m)^;; ### (.+)$" (slurp "notebooks/reference/shared_options.clj"))))]
-      (is (= #{} (into (sorted-set) (remove headings) (map :title (vals describe/fragments))))))))
+      (is (= #{} (into (sorted-set) (remove headings) (map :title (remove :owner (vals describe/fragments)))))))))
 
 (def ^:private max-enum-values
   "Enums of at most this many values have every value shown on a chart page (AK7 b)."

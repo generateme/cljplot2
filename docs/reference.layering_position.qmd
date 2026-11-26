@@ -72,17 +72,8 @@ Grouped marks of one chart are placed by its `:position` option: side by side, s
 
 A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions or
 a function instead of data and inherit only the plot's facet keys. The positions of `rule`, `rect` and `text`
-count for the scales unless `:extent false` (the Annotation options group, shown at work in
-[Shared options](reference.shared_options.html#annotation-options)):
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:extent</td><td>true or false or nil</td><td>true</td><td>include the positions in the scale extents</td></tr></tbody></table>
-```
-
-:::
-
+count for the scales unless `:extent false`, an option of the
+[Annotation options](reference.shared_options.html#annotation-options) group.
 
 Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 

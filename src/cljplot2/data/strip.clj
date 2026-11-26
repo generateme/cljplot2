@@ -86,34 +86,48 @@
   "Map entries of the options every strip chart takes (shared group `:strip`, besides [[cljplot2.data.rows/common-options]]): placement, group positions, n labels and the level axis (see the namespace doc)."
   (schema/in-fragment
    :strip
-   [(schema/optional :place {:cljplot2/section :placement :description "where the items sit across the value axis: :band (one band per level), {:at v} (centred on v of a numeric scale), :center, :edge or :bottom (between the panel edge and 0)"
-                             :cljplot2/default-doc ":band with a level mapping, else the chart's own (:center for most, :edge for the rug)"}
+   [(schema/optional :place {:cljplot2/section :placement :description "Where the items sit across the value axis."
+                             :cljplot2/default-doc "`:band` with a level mapping, else the chart's own: `:center` for most, `:edge` for the rug."
+                             :cljplot2/example :bottom
+                             :cljplot2/value-meanings {:band "A band per level of the level axis."
+                                                       :center "Across the middle of the panel."
+                                                       :edge "Along the panel's edge, `:thickness` pixels thick."
+                                                       :bottom "Between the panel's edge and 0, below the data."}
+                             :cljplot2/form-meanings {:map "Centred on v of the numeric scale across the value axis, `:thickness` pixels thick."}}
                      [:multi {:dispatch map?}
-                      [true [:map {:closed true} [:at schema/finite]]]
+                      [true [:map {:closed true :cljplot2/type-name "`{:at v}`"} [:at schema/finite]]]
                       [false (into [:enum] (sort named-places))]])
-    (schema/optional :width {:cljplot2/section :placement :description "fraction an item spans across the value axis: of the level's band, of the panel for :center, of the room between the panel edge and 0 for :bottom"
-                             :default 0.8}
+    (schema/optional :width {:cljplot2/section :placement :description "The fraction an item spans across the value axis: of the level's band, of the panel for `:center`, of the room between the panel's edge and 0 for `:bottom`."
+                             :default 0.8 :cljplot2/example 0.3}
                      schema/non-neg)
-    (schema/optional :thickness {:cljplot2/section :placement :description "item thickness in pixels for :place {:at v} and :edge"
-                                 :cljplot2/default-doc "20 pixels for {:at v}, 8 for :edge"}
+    (schema/optional :thickness {:cljplot2/section :placement :description "The thickness of an item in pixels with `:place {:at v}` or `:edge`."
+                                 :cljplot2/default-doc "`20` pixels for `{:at v}`, `8` for `:edge`."
+                                 :cljplot2/example 40 :cljplot2/example-context {:place {:at 1}}}
                      schema/non-neg)
-    (schema/optional :position {:cljplot2/section :groups :description "how groups of one level share its band: :dodge (side by side), :overlay (on top of each other) or :mirror (two groups, one half each)"
-                                :cljplot2/default-doc ":dodge when a level holds two or more groups, else :overlay (dotplot: always :overlay)"}
+    (schema/optional :position {:cljplot2/section :groups :description "How the groups of one level share its band."
+                                :cljplot2/default-doc "`:dodge` when a level holds two or more groups, else `:overlay`; a dotplot defaults to `:overlay`."
+                                :cljplot2/example :overlay :cljplot2/example-context {:mapping {:color :g}}
+                                :cljplot2/value-meanings {:dodge "Side by side." :overlay "On top of each other."
+                                                          :mirror "Two groups, one half of the band each."}}
                      (into [:enum] (sort positions)))
-    (schema/optional :dodge-gap {:cljplot2/section :groups :description "gap between dodged groups, a fraction of a group's part of the band"
-                                 :default 0.1}
+    (schema/optional :dodge-gap {:cljplot2/section :groups :description "The gap between dodged groups, a fraction of a group's part of the band."
+                                 :default 0.1 :cljplot2/example 0.5 :cljplot2/example-context {:mapping {:color :g} :position :dodge}}
                      schema/fraction)
-    (schema/optional :bottom-share {:cljplot2/section :placement :description "padding below the data asked for with :place :bottom (only there), a fraction of the y data span"
-                                    :cljplot2/default-doc "0.15 with :place :bottom"}
+    (schema/optional :bottom-share {:cljplot2/section :placement :description "The room below the data with `:place :bottom`, a fraction of the y data span."
+                                    :cljplot2/default-doc "`0.15` with `:place :bottom`."
+                                    :cljplot2/example 0.5 :cljplot2/example-context {:place :bottom}}
                      schema/fraction)
-    (schema/nilable :n-label {:cljplot2/section :n-label :description "draw each item's row count just past its largest value"
-                              :default false}
+    (schema/nilable :n-label {:cljplot2/section :n-label :description "Whether each item shows its row count just past its largest value."
+                              :default false
+                              :cljplot2/value-meanings {true "A count label per item." false "No count labels."}}
                     schema/bool)
-    (schema/optional :n-format {:cljplot2/section :n-label :description "text of the n labels: a format string or a function of the count"
-                                :default "n=%d"}
+    (schema/optional :n-format {:cljplot2/section :n-label :description "The text of the count labels: a format string or a function of the count."
+                                :default "n=%d" :cljplot2/example "%d rows" :cljplot2/example-context {:n-label true}}
                      schema/count-format)
-    (schema/optional :level-axis {:cljplot2/section :placement :description "the mapping axis holding the levels (decides when both or neither of :x and :y are categorical)"
-                                  :cljplot2/default-doc "the categorical axis of the mapping; with neither, :x when only :y is mapped, else :y"}
+    (schema/optional :level-axis {:cljplot2/section :placement :description "The mapping axis that holds the levels; it decides when both or neither of `:x` and `:y` are categorical."
+                                  :cljplot2/default-doc "The mapping's categorical axis; with neither, `:x` when only `:y` is mapped, else `:y`."
+                                  :cljplot2/no-example true
+                                  :cljplot2/value-meanings {:x "The levels along x, values along y." :y "The levels along y, values along x."}}
                      [:enum :x :y])]))
 
 (def padding-option
@@ -127,7 +141,11 @@
   "Map entry of the `:mirror` option (shared group `:mirror`) of strip charts drawing a negative side (bar, extent)."
   (first (schema/in-fragment
           :mirror
-          [(schema/optional :mirror {:description "a grouping dimension with exactly two levels; the second level's items are drawn on the negative side"}
+          [(schema/optional :mirror {:description "A grouping dimension with exactly two levels: the chart draws the second level's items on the negative side."
+                                     :cljplot2/default-doc "None: no group is mirrored."
+                                     :cljplot2/example :group :cljplot2/example-context {:position :dodge}
+                                     :cljplot2/value-meanings {:color "The mapped `:color`." :shape "The mapped `:shape`." :size "The mapped `:size`."
+                                                               :dash "The mapped `:dash`." :pattern "The mapped `:pattern`." :group "The mapped `:group`."}}
                             (into [:enum] (conj aesthetic/dims :group)))])))
 
 (def ^{:const true :tag 'double} default-ridge-overlap
@@ -138,8 +156,8 @@
   "Map entries of the ridgeline options (shared group `:ridge`) of histogram and density with a categorical `:y`."
   (schema/in-fragment
    :ridge
-   [(schema/optional :overlap {:description "height of the tallest ridge in band steps (above 1 - ridges overlap the next level)"
-                               :default default-ridge-overlap}
+   [(schema/optional :overlap {:description "The height of the tallest ridge in band steps; above 1 the ridges overlap the next level."
+                               :default default-ridge-overlap :cljplot2/example 2 :cljplot2/example-context {:mapping {:y :level}}}
                      schema/non-neg)]))
 
 (defn- place-of

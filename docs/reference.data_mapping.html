@@ -577,20 +577,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>:data</td>
 <td>a sequence of rows (maps) or a map of columns (sequences) or nil</td>
-<td>the plot's :data</td>
-<td>the chart's own data instead of the plot's</td>
+<td>The plot's `:data`.</td>
+<td>The chart's own data instead of the plot's.</td>
 </tr>
 <tr class="even">
 <td>:mapping</td>
 <td>a mapping: key -&gt; accessor (a keyword or a function of a row)</td>
-<td></td>
-<td>the chart's mapping, merged over the plot's mapping (a key set to nil removes it)</td>
+<td>The plot's `:mapping`.</td>
+<td>The chart's mapping, merged over the plot's; a key set to `nil` removes it.</td>
 </tr>
 <tr class="odd">
 <td>:legend</td>
 <td>true or false or nil</td>
 <td>true</td>
-<td>draw the chart's key glyph in the legends (false - the chart adds none, a legend no chart keys is dropped; its aesthetics still scale)</td>
+<td>Whether the chart draws its key glyph in the legends; its aesthetics take their scales either way.</td>
 </tr>
 </tbody>
 </table>

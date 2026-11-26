@@ -1391,71 +1391,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="label-style" class="level2" data-number="8.3">
 <h2 data-number="8.3" class="anchored" data-anchor-id="label-style"><span class="header-section-number">8.3</span> Label style</h2>
-<p>Text style keys in a label map override its role’s style for this label only:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:font</td>
-<td>a bundled, installed or logical font name, or a java.awt.Font</td>
-<td></td>
-<td>font name (bundled, installed or logical) or a java.awt.Font</td>
-</tr>
-<tr class="even">
-<td>:size</td>
-<td>a positive number</td>
-<td></td>
-<td>font size in points</td>
-</tr>
-<tr class="odd">
-<td>:font-style</td>
-<td>one of :bold :bold-italic :italic :plain</td>
-<td></td>
-<td>font style</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :contrast</td>
-<td></td>
-<td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
-</tr>
-<tr class="odd">
-<td>:inset</td>
-<td>a non-negative number</td>
-<td></td>
-<td>space between the text and its box edge on every side, in pixels</td>
-</tr>
-<tr class="even">
-<td>:align</td>
-<td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td>
-<td></td>
-<td>alignment [horizontal vertical] of the text at its anchor</td>
-</tr>
-<tr class="odd">
-<td>:background</td>
-<td>a clojure2d color or :none</td>
-<td></td>
-<td>box colour behind the text (:none - no box)</td>
-</tr>
-<tr class="even">
-<td>:dollar-math</td>
-<td>true or false or nil</td>
-<td></td>
-<td>true draws text between two dollar signs as a LaTeX formula (a dollar after a backslash stays literal), false keeps every dollar literal; default true</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The keys of the <a href="reference.shared_options.html#text-style">Text style</a> group in a label map override its role’s style for this label only:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
@@ -1996,13 +1932,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x594d6436</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x44dc3d71</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x4f8ed009</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x5ec12b8b</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
 <div class="sourceClojure">

@@ -219,7 +219,8 @@
   "Map entry of the chart option `:theme-style` (shared group `:theme-style`), taken by every chart kind with a theme style: the name of a theme `[:chart name]` style merged over the kind's, see [[chart-style]]."
   (schema/in-fragment
    :theme-style
-   [(schema/optional :theme-style {:description "name of a theme [:chart name] style (a builder's, or one the theme adds) merged over the kind's style"}
+   [(schema/optional :theme-style {:description "The name of a theme style `[:chart name]`, a builder's or one the theme adds, merged over the kind's style."
+                                   :cljplot2/default-doc "None: the kind's style." :cljplot2/example :network-node}
                      keyword?)]))
 
 (defn chart-style
@@ -315,13 +316,32 @@
             (schema/nilable :min-size {:description (text-style-descriptions :min-size)} schema/pos)
             (schema/nilable :dollar-math {:description (text-style-descriptions :dollar-math)} schema/bool))))
 
+(def ^:private text-style-card-props
+  "Text style key -> its card properties in the shared group `:text-style` (description, default text, meanings,
+  example); the theme's text style tables keep [[text-style-descriptions]] until their own cards."
+  {:font {:description "The font: a bundled, installed or logical family name, or a `java.awt.Font`." :cljplot2/example "Serif"}
+   :size {:description "The font size in points." :cljplot2/example 20}
+   :font-style {:description "The font style." :cljplot2/example :bold
+                :cljplot2/value-meanings {:plain "Upright, regular weight." :bold "Bold." :italic "Italic." :bold-italic "Bold and italic."}}
+   :color {:description "The text colour." :cljplot2/example :red
+           :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on what is behind: the text's own `:background` box, a chart's fill under its labels, else the plot background."}
+           :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:black`."}}
+   :inset {:description "The space between the text and its box's edge on every side, in pixels." :cljplot2/example 8 :cljplot2/example-context {:background :yellow}}
+   :align {:description "The alignment `[horizontal vertical]` of a label's lines at its anchor; label maps take it, the text chart doesn't." :cljplot2/no-example true}
+   :background {:description "The colour of a box behind the text." :cljplot2/example :yellow
+                :cljplot2/value-meanings {:none "No box."}
+                :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:white`."}}
+   :dollar-math {:description "Whether text between two dollar signs draws as a LaTeX formula; a dollar after a backslash stays literal."
+                 :cljplot2/example false :cljplot2/example-context {:text ["$x^2$ costs $5"]}
+                 :cljplot2/value-meanings {true "Formulas between dollars." false "Every dollar literal."}}})
+
 (def text-style-overrides
   "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."
   (schema/in-fragment
    :text-style
-   (conj (mapv (fn [[k s]] (schema/optional k {:description (text-style-descriptions k)} s))
+   (conj (mapv (fn [[k s]] (schema/optional k (assoc (text-style-card-props k) :cljplot2/default-doc "The text role's value.") s))
                (conj text-style-entries [:align schema/align] [:background schema/color]))
-         (schema/nilable :dollar-math {:description (text-style-descriptions :dollar-math)} schema/bool))))
+         (schema/nilable :dollar-math (assoc (text-style-card-props :dollar-math) :cljplot2/default-doc "The text role's value.") schema/bool))))
 
 (def text-roles
   "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, bundle, chord, pairs). A theme may add roles of its own, used by labels' and text charts' `:role`."

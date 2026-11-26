@@ -1071,21 +1071,26 @@
   reuse them."
   (schema/in-fragment
    :arrange
-   [[:plots {:description "the sub-plots, filling the grid row by row"} [:sequential {:min 1} :map]]
-    (schema/nilable :columns {:description "grid columns" :cljplot2/default-doc "one column (from :rows when given)"} schema/pos-int)
-    (schema/nilable :rows {:description "grid rows" :cljplot2/default-doc "from the plot count and :columns"} schema/pos-int)
-    (schema/nilable :widths {:description "relative column weights; :measured sizes a column of legend-only plots, [:fixed px] a fixed width"
-                             :cljplot2/default-doc "equal"}
+   [[:plots {:description "The sub-plots, filling the grid row by row; `plot/arrange` takes them as its first argument."} [:sequential {:min 1} :map]]
+    (schema/nilable :columns {:description "The number of grid columns." :cljplot2/default-doc "One column, or as many as `:rows` needs." :cljplot2/example 2} schema/pos-int)
+    (schema/nilable :rows {:description "The number of grid rows." :cljplot2/default-doc "As many as the plots need in `:columns`." :cljplot2/example 1} schema/pos-int)
+    (schema/nilable :widths {:description "The columns' relative widths, one per column."
+                             :cljplot2/default-doc "Equal widths." :cljplot2/example [3 2] :cljplot2/example-context {:columns 2}
+                             :cljplot2/form-meanings {:sequential "Per column a weight, `:measured` - the width of its legend-only plots - or `[:fixed px]`, a width in pixels."}}
                     [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
-    (schema/nilable :heights {:description "relative row weights; :measured sizes a row of legend-only plots to their legends (scaled down to fit), [:fixed px] a fixed height"
-                              :cljplot2/default-doc "equal"}
+    (schema/nilable :heights {:description "The rows' relative heights, one per row."
+                              :cljplot2/default-doc "Equal heights." :cljplot2/example [3 1]
+                              :cljplot2/form-meanings {:sequential "Per row a weight, `:measured` - the height of its legend-only plots, scaled down to fit - or `[:fixed px]`, a height in pixels."}}
                     [:sequential [:or schema/pos [:= :measured] [:tuple [:= :fixed] schema/non-neg]]])
-    (schema/nilable :row-spans {:description "plot index (not cell) -> the rows that plot spans from its own row down (later plots skip the covered cells; rows are added when not given)"
-                                :cljplot2/default-doc "every plot one row"}
+    (schema/nilable :row-spans {:description "A map from a plot's index (not its cell's) to the number of rows the plot spans from its own row down; later plots skip the covered cells."
+                                :cljplot2/default-doc "Every plot spans one row." :cljplot2/example {0 2} :cljplot2/example-context {:columns 2}}
                     [:map-of [:int {:min 0}] schema/pos-int])
-    (schema/nilable :align {:description "align the sub-plots' panels in rows and columns" :default true} schema/bool)
-    (schema/nilable :equal-panels {:description "resize columns and rows so every aligned panel has the same size and the gaps between panels are even (builds twice)"
-                                   :default false}
+    (schema/nilable :align {:description "Whether the sub-plots' panels line up in rows and columns." :default true
+                            :cljplot2/value-meanings {true "Panels line up." false "Each sub-plot fills its cell on its own."}}
+                    schema/bool)
+    (schema/nilable :equal-panels {:description "Whether every aligned panel gets the same size and the gaps between panels are even; the plot builds twice."
+                                   :default false :cljplot2/example-context {:columns 2}
+                                   :cljplot2/value-meanings {true "Equal panels and gaps." false "Panels as the tracks fall."}}
                     schema/bool)]))
 
 (def arrange-schema

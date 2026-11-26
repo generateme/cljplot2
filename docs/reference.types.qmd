@@ -107,6 +107,10 @@ A format string for a whole number such as `n=%d`, or a function of the count th
 
 How a line is dashed: a style name such as `:dashed` or `:dotted`, a vector of dash and gap lengths in pixels such as `[5 3]`, or `:none` (also `:solid`) for a solid line.
 
+## data
+
+Rows or columns: a sequence of maps, e.g. `[{:x 1 :y 2} {:x 2 :y 3}]`, or a map of equal-length sequences, e.g. `{:x [1 2] :y [2 3]}`.
+
 ## date or time
 
 A `java.time` value: a date, a date-time, an instant or a time, e.g. `(java.time.LocalDate/of 2024 1 31)`.

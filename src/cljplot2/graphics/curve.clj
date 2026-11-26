@@ -52,13 +52,21 @@
   "Map entries of the curve options of a line chart."
   (schema/in-fragment
    :curve
-   [(schema/optional :interpolator {:description "interpolation of the line between data points (none - straight segments)"}
+   [(schema/optional :interpolator {:description "The curve the line follows between its data points, fitted as a function of x."
+                                    :cljplot2/default-doc "None: straight segments."
+                                    :cljplot2/example :cubic}
                      schema/interpolator)
-    (schema/optional :interpolator-params {:description "extra parameters passed to the interpolation method"} [:vector any?])
-    (schema/optional :curve {:description "path curve instead of a function of x: :parametric (x(t), y(t) over the chord length) or :bezier"}
+    (schema/optional :interpolator-params {:description "Extra arguments the interpolation method takes after the points, e.g. its options map or a kernel."
+                                           :cljplot2/default-doc "None."
+                                           :cljplot2/example [{:bandwidth 0.9}] :cljplot2/example-context {:interpolator :loess}}
+                     [:vector any?])
+    (schema/optional :curve {:description "A path curve through the points in their order instead of a function of x, for loops and connected scatters."
+                             :cljplot2/default-doc "None: the line is a function of x."
+                             :cljplot2/value-meanings {:parametric "Both coordinates interpolated by `:interpolator` (default `:cubic`) over the path's length, so the curve passes through every point."
+                                                       :bezier "A Bezier path through the points; it can't take `:interpolator`."}}
                      [:enum :parametric :bezier])
-    (schema/optional :sample-step {:description "distance between evaluated positions: pixels or {:count n} per run"
-                                   :default default-sample-step}
+    (schema/optional :sample-step {:description "How densely the chart samples an interpolated curve."
+                                   :default default-sample-step :cljplot2/example {:count 4} :cljplot2/example-context {:interpolator :cubic}}
                      sample-step-schema)]))
 
 ;; sampling

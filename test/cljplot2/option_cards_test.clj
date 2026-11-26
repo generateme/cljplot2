@@ -33,7 +33,7 @@
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
             [cljplot2.core :as plot]
-            [cljplot2.test-util :refer [error-data migrated migrated-builders migrated-functions same-pixels?]]
+            [cljplot2.test-util :refer [error-data migrated migrated-builders migrated-functions migrated-groups same-pixels?]]
             [notebook-utils]))
 
 (def ^:private max-listed-values
@@ -141,7 +141,14 @@
                           (slurp %)))
         (reference-files)))
 
-(declare function-fixtures)
+(declare function-fixtures group-fixtures)
+
+(defn- group-section
+  "The source of the Shared options section headed `### title`, up to the next `##` or `###` heading (its `####`
+  slices included); `nil` when the page has none."
+  [title]
+  (second (re-find (re-pattern (str "(?ms)^;; ### " (java.util.regex.Pattern/quote title) "$(.*?)(?=^;; ###? |\\z)"))
+                   (slurp "notebooks/reference/shared_options.clj"))))
 
 (deftest migration-switch-test
   (testing "the migrated kinds and builders are exactly those with a concept title (kinds keywords, builders symbols)"
@@ -192,6 +199,28 @@
       (is (some? placeholders))
       (is (every? (set (map (comp str :name) (:cljplot2/arguments (meta v))))
                   (filter #(re-matches #"[a-z][\w-]*" %) (str/split (str placeholders) #"\s+"))))))
+  (testing "every shared group is migrated or owned by a data function (documented in its section), and has a fixture"
+    (is (= (set (keys describe/fragments)) (into migrated-groups (keep (fn [[k {:keys [owner]}]] (when owner k))) describe/fragments)))
+    (is (empty? (filter #(:owner (describe/fragments %)) migrated-groups)))
+    (is (= migrated-groups (set (keys group-fixtures))))
+    (is (every? #(contains? (set (map symbol (describe/api-vars))) (:owner %)) (filter :owner (vals describe/fragments)))))
+  (doseq [g migrated-groups
+          :let [section (str (group-section (:title (describe/fragments g))))]]
+    (testing (str g ": its Shared options section shows option cards of the group through its tested representative, no options table")
+      (is (str/includes? section (str "(describe/fragment-rows " g ")")))
+      (is (str/includes? section "nu/option-cards"))
+      (let [via (:via (group-fixtures g))]
+        (is (str/includes? section (if (symbol? via) (str "(nu/option-cards '(plot/" via " ") (str "(nu/option-cards 'chart/" (name via) " ")))
+            (str "the cards print the call of " via)))
+      (is (not (str/includes? section "nu/options-table")))))
+  (doseq [[g {:keys [owner]}] describe/fragments :when owner]
+    (testing (str g ": its owner is a migrated data function taking the group")
+      (is (contains? migrated-functions owner))
+      (is (some #(= g (first %)) (describe/fragment-keys (describe/options (resolve owner)))))))
+  (testing "boundary: a group section ends at the next ## or ### heading, not at a #### slice"
+    (is (str/includes? (str (group-section "Strip options")) "#### Counts"))
+    (is (not (str/includes? (str (group-section "Strip options")) "### Mirrored strips")))
+    (is (nil? (group-section "No such group"))))
   (testing "boundary: a section ends at the next ## heading"
     (is (nil? (concept-section "No such concept")))))
 
@@ -303,7 +332,7 @@
     (is (= [[:b]] (default-gaps [{:path [:a] :default false} {:path [:b]} {:path [:c] :required true}
                                  {:path [:d] :theme-default true :default 1}])))))
 
-(declare owners)
+(declare owners without-examples)
 
 (defn- evaluated
   "`options` with each code form (a list, e.g. `(fn [x] (m/sin x))`) replaced by its value, evaluated whole in this
@@ -328,8 +357,8 @@
                            :when (or (and (qualified-keyword? form) (not (contains? describe/documented-types form)))
                                      (validation-text? type))]
                        [path type])))))
-    (testing (str kind ": every option has an example")
-      (is (= [] (vec (keep #(when-not (describe/example %) (:path %)) leaves)))))
+    (testing (str kind ": every option has an example (but those of without-examples)")
+      (is (= [] (vec (keep #(when-not (or (describe/example %) (without-examples [kind (:path %)])) (:path %)) leaves)))))
     (testing (str kind ": every example is a valid option on its own (a code form evaluated first)")
       (doseq [row options
               :let [example (evaluated (describe/example-options options row))]
@@ -602,6 +631,64 @@
     {:id sym :rows rows :options (describe/own-rows rows) :mapping [] :schema (:cljplot2/options (meta v)) :base base
      :draw (call args) :draws (update-vals per-option #(call (:args %)))}))
 
+(def ^:private group-fixtures
+  "Shared group -> its representative's fixture: `:via` - a chart kind (its fixture plot of [[example-fixtures]], with
+  `:data`, `:mapping`, `:scales`, `:before` (charts drawn under it) and `:options` given here winning) or a builder
+  symbol of `cljplot2.core` (its fixture call `:args`), `:per-option` - option path -> fixture overrides; the group's
+  rows act on it."
+  {:annotation {:via :rule :data [{:x 1 :y 1} {:x 3 :y 2}] :mapping {:x :x :y :y} :scales nil :before [(chart/scatter)] :options {:y [5]}}
+   :arrange {:via 'arrange :args [[{:data [{:x 1 :y 12000} {:x 2 :y 18000}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}
+                                   {:data [{:x 1 :y 2 :g "p"} {:x 2 :y 3 :g "q"}] :mapping {:x :x :y :y :color :g} :charts [(chart/line)]}]]}
+   :builder {:via 'network :args [edges] :options {:rng (r/rng :mersenne 1)}}
+   :cell {:via :tile}
+   :common {:via :line}
+   :corner-radius {:via :bar}
+   :curve {:via :line :per-option {[:interpolator-params] {:data (for [x (range 20)] {:x x :y (m/sin (m/* 0.7 x))}) :mapping {:x :x :y :y}}}}
+   :field {:via :field
+           :per-option {[:interpolation] {:data lattice :mapping {:x :x :y :y :value :v}}
+                        [:n] {:data lattice :mapping {:x :x :y :y :value :v}}}}
+   :frame-3d {:via :surface}
+   :hierarchy-labels {:via :treemap}
+   :line-style {:via :line :per-option {[:color] {:mapping {:x :x :y :y}} [:dash] {:mapping {:x :x :y :y}}}}
+   :mirror {:via :bar}
+   :pattern {:via :bar}
+   :ridge {:via :density}
+   :shading {:via :surface}
+   :strip {:via :box :data (map-indexed (fn [i row] (assoc row :g (if (even? i) "p" "q"))) per-level)
+           :per-option (into {} (for [path [[:place] [:thickness] [:bottom-share]]]
+                                  [path {:data points-2d :mapping {:x :x :y :y} :before [(chart/scatter)] :options {:mapping {:y nil}}}]))}
+   :text-style {:via :text :options {:x [5] :y [5] :text ["label"]}}
+   :theme-style {:via :scatter}})
+
+(def ^:private without-examples
+  "`[owner path]` -> why the option has no example on its card (and so no example test)."
+  {[:group/arrange [:plots]] "`plot/arrange` takes the plots as its first argument; a plot's `:arrange` map holds them"
+   [:group/text-style [:align]] "the text chart, the group's representative, takes no `:align`; label maps do (Labels and text)"
+   [:group/strip [:level-axis]] "it decides only where both axes or neither are categorical, which no drawable strip fixture has: values need a numeric axis"})
+
+(defn- group-owner
+  "The card owner of shared group `fragment` (see [[owners]]), its id `:group/<name>` (distinct from a chart kind): its
+  rows (`cljplot2.describe/fragment-rows`, as the Shared options page shows them) drawn by the representative of
+  [[group-fixtures]]."
+  [fragment]
+  (let [{:keys [via args per-option] fixture-options :options :as fixture} (group-fixtures fragment)
+        rows (describe/fragment-rows fragment)]
+    (if (symbol? via)
+      (let [v (ns-resolve 'cljplot2.core via)
+            call (fn [call-args] (fn [options] (apply @v (conj (vec call-args) (merge fixture-options options)))))]
+        {:id (keyword "group" (name fragment)) :rows rows :options rows :mapping [] :schema (:cljplot2/options (meta v)) :base fixture-options
+         :draw (call args) :draws (update-vals per-option #(call (:args %)))})
+      (let [constructor (get (describe/chart-constructors) via)
+            kind-fixture (example-fixtures via)
+            base (merge (:options kind-fixture) fixture-options)
+            plot (fn [over] (fn [options]
+                              (let [{:keys [data mapping scales before]} (merge kind-fixture (dissoc fixture :per-option :options) over)]
+                                (cond-> {:mapping mapping :charts (conj (vec before) (constructor (merge base (:options over) options)))}
+                                  data (assoc :data data)
+                                  scales (assoc :scales scales)))))]
+        {:id (keyword "group" (name fragment)) :rows rows :options rows :mapping [] :schema (get-in (constructor) [:schema :options]) :base base
+         :draw (plot {}) :draws (update-vals per-option plot)}))))
+
 (defn- function-owner
   "The card owner of data function `sym` (a qualified symbol, see [[owners]]): every option row is its own (a group's
   rows too - the function owns them), its draw function returns the compared value (`:compare :value`)."
@@ -621,7 +708,7 @@
   its own draw function, for an option acting on another fixture)."
   []
   (concat (map chart-owner (sort migrated)) (map builder-owner (sort migrated-builders))
-          (map function-owner (sort migrated-functions))))
+          (map function-owner (sort migrated-functions)) (map group-owner (sort migrated-groups))))
 
 (defn- without-option
   "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
@@ -644,7 +731,8 @@
    [:histogram [:stat-space]] "acts only on a :log axis, a plot scale"
    [:density [:stat-space]] "acts only on a :log axis, a plot scale"
    [:parallel [:fill]] "fills radar polygons only: a polar plot, a plot :coord"
-   [:parallel [:alpha]] "fades the radar fill only: a polar plot, a plot :coord"})
+   [:parallel [:alpha]] "fades the radar fill only: a polar plot, a plot :coord"
+})
 
 (def ^:private needed-to-draw
   "`[id path]` -> why the chart draws nothing without the option (a data function's call fails without it): its
@@ -689,6 +777,17 @@
   (and (malli/validate schema (merge base options))
        (try (draw options) true (catch clojure.lang.ExceptionInfo _ false))))
 
+(deftest exemptions-test
+  (let [rows-of (into {} (map (juxt :id :options)) (owners))]
+    (testing "every without-examples entry names an option of its owner that has no example"
+      (doseq [[[id path] reason] without-examples
+              :let [row (first (filter #(= path (:path %)) (rows-of id)))]]
+        (is (some? row) [id path])
+        (is (nil? (describe/example row)) [id path reason])))
+    (testing "every inert-in-fixtures and needed-to-draw entry names an option of its owner"
+      (doseq [[id path] (concat (keys inert-in-fixtures) (keys needed-to-draw))]
+        (is (some #(= path (:path %)) (rows-of id)) [id path])))))
+
 (deftest function-owner-test
   (let [graph-owner (function-owner 'cljplot2.data.graph/graph)
         bin-owner (function-owner 'cljplot2.data.levels/bin)]
@@ -719,6 +818,7 @@
   (doseq [{:keys [id rows options draws] :as owner} (owners)
           row (leaf-rows options)
           :when (not (contains? inert-in-fixtures [id (:path row)]))
+          :when (not (contains? without-examples [id (:path row)]))
           :let [example (evaluated (describe/example-options rows row))
                 draw (get draws (:path row) (:draw owner))]]
     (let [baseline (without-option example rows (:path row))
@@ -800,6 +900,17 @@
   (testing "boundary: use case and gallery pages - a renamed gallery fails, existing pages pass"
     (is (= [["galleries.cljplot_extras" nil]]
            (broken-links "(galleries.cljplot_extras.html) (galleries.cljplot.html) (use_cases.flow.html)")))))
+
+(deftest group-links-test
+  (testing "every shared group's link (Shared options boxes, owned group lists) resolves to a heading of its page"
+    (let [link #'notebook-utils/group-link]
+      (is (= [] (vec (for [g (keys describe/fragments)
+                           :let [[_ page anchor] (re-matches #"(reference\.[a-z_0-9]+)\.html#(.+)" (link g))]
+                           :when (not (contains? (heading-anchors page) anchor))]
+                       [g (link g)]))))))
+  (testing "an owned group links to its owner's section, another to Shared options"
+    (is (= "reference.data_graphs_trees.html#graphs" (#'notebook-utils/group-link :graph/graph)))
+    (is (= "reference.shared_options.html#line-style" (#'notebook-utils/group-link :line-style)))))
 
 (deftest statistic-descriptions-test
   (testing "every built-in statistic says what it measures (its card meaning, `pairwise/statistic-meanings`)"

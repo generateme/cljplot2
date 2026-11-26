@@ -50,9 +50,8 @@
 
 ;; ## Label style
 
-;; Text style keys in a label map override its role's style for this label only:
-
-(nu/options-table (describe/options label/label-options) :text-style)
+;; The keys of the [Text style](reference.shared_options.html#text-style) group in a label map override its role's
+;; style for this label only:
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :color :species}

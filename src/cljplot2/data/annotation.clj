@@ -64,8 +64,10 @@
   "Map entries of the options every annotation chart takes (besides [[cljplot2.data.rows/common-options]])."
   (schema/in-fragment
    :annotation
-   [(schema/nilable :extent {:description "include the positions in the scale extents"
-                             :default true}
+   [(schema/nilable :extent {:description "Whether the chart's positions widen the scales."
+                             :default true
+                             :cljplot2/value-meanings {true "The scales reach the positions."
+                                                       false "The positions don't change the scales; a position outside them lies off the panel."}}
                     schema/bool)]))
 
 (defn as-vector

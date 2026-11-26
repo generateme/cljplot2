@@ -2613,71 +2613,7 @@ window.Quarto = {
 <div class="clay-image">
 <p><img src="reference.theme_files/image22.png" class="img-fluid"></p>
 </div>
-<p>The keys of a text style:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:font</td>
-<td>a bundled, installed or logical font name, or a java.awt.Font</td>
-<td></td>
-<td>font name (bundled, installed or logical) or a java.awt.Font</td>
-</tr>
-<tr class="even">
-<td>:size</td>
-<td>a positive number</td>
-<td></td>
-<td>font size in points</td>
-</tr>
-<tr class="odd">
-<td>:font-style</td>
-<td>one of :bold :bold-italic :italic :plain</td>
-<td></td>
-<td>font style</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :contrast</td>
-<td></td>
-<td>text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)</td>
-</tr>
-<tr class="odd">
-<td>:inset</td>
-<td>a non-negative number</td>
-<td></td>
-<td>space between the text and its box edge on every side, in pixels</td>
-</tr>
-<tr class="even">
-<td>:align</td>
-<td>[h v], h one of :left :center :right, v one of :top :middle :bottom</td>
-<td></td>
-<td>alignment [horizontal vertical] of the text at its anchor</td>
-</tr>
-<tr class="odd">
-<td>:background</td>
-<td>a clojure2d color or :none</td>
-<td></td>
-<td>box colour behind the text (:none - no box)</td>
-</tr>
-<tr class="even">
-<td>:dollar-math</td>
-<td>true or false or nil</td>
-<td></td>
-<td>true draws text between two dollar signs as a LaTeX formula (a dollar after a backslash stays literal), false keeps every dollar literal; default true</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>A text role’s style takes the keys of the <a href="reference.shared_options.html#text-style">Text style</a> group, plus <code>:min-size</code>. The plot below restyles the title’s role:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">assoc</span> iris-plot</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris"</span>}</span>

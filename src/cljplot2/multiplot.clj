@@ -24,9 +24,13 @@
   "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the builder's and a theme; their values are validated with the built plot."
   (schema/in-fragment
    :builder
-   [(schema/optional :title {:description "plot title (a text or label options)"} any?)
-    (schema/optional :scales {:description "scale specs deep-merged into the builder's (validated with the plot)"} any?)
-    (schema/optional :theme {:description "theme overrides of the built plot"} any?)]))
+   [(schema/optional :title {:description "The plot's title: a text or a label options map." :cljplot2/default-doc "No title." :cljplot2/example "Friends"} any?)
+    (schema/optional :scales {:description "Scale specs merged at every depth into the builder's own; the built plot checks them."
+                              :cljplot2/default-doc "The builder's scales." :cljplot2/example {:size {:range [2 20]}} :cljplot2/example-context {:mapping {:size :degree}}}
+                     any?)
+    (schema/optional :theme {:description "A theme merged over the builder's own theme settings and the default theme for the built plot."
+                             :cljplot2/default-doc "The default theme." :cljplot2/example {:chart {:network-node {:color :black}}}}
+                     any?)]))
 
 (defn- builder-entries-of
   "Some of the [[builder-entries]], for a builder taking only part of the shared group.

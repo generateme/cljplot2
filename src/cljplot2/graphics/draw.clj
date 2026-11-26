@@ -37,8 +37,14 @@
   (the ink: a color or `:darker`, see [[pattern-ink]])."
   (schema/in-fragment
    :pattern
-   [(schema/optional :pattern {:description "pattern drawn over the fill (a mapped :pattern wins)"} schema/pattern)
-    (schema/optional :pattern-color {:description "pattern ink: a colour, :none or :darker (the darkened fill)"} stroke-color)]))
+   [(schema/optional :pattern {:description "The pattern drawn over the fill; a mapped `:pattern` wins."
+                               :cljplot2/example :hatch}
+                     schema/pattern)
+    (schema/optional :pattern-color {:description "The colour of the pattern's ink."
+                                     :cljplot2/example :black :cljplot2/example-context {:pattern :hatch}
+                                     :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No pattern."}
+                                     :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:white`."}}
+                     stroke-color)]))
 
 (def ^:private white
   "Opaque white: the contrast colour on dark fills and the backdrop without a plot background."
@@ -340,14 +346,18 @@
   "Option entry `:corner-radius`: pixels, every corner of a bar or rect rounded (default 0 - square)."
   (first (schema/in-fragment
           :corner-radius
-          [(schema/optional :corner-radius {:description "radius in pixels of every corner of a bar or rect" :default 0} schema/non-neg)])))
+          [(schema/optional :corner-radius {:description "The radius in pixels of every corner of a bar or rectangle; 0 keeps the corners square."
+                                            :default 0 :cljplot2/example 6}
+                            schema/non-neg)])))
 
 (def corner-radius-end-option
   "Option entry `:corner-radius-end`: pixels, only the corners at a bar's value end rounded (Vega-Lite
   `cornerRadiusEnd`); wins over `:corner-radius`."
   (first (schema/in-fragment
           :corner-radius
-          [(schema/optional :corner-radius-end {:description "radius in pixels of the corners at the bar's value end only (wins over :corner-radius)"}
+          [(schema/optional :corner-radius-end {:description "The radius in pixels of only the corners at a bar's value end; it wins over `:corner-radius`."
+                                                :cljplot2/default-doc "The corners of `:corner-radius`."
+                                                :cljplot2/example 6}
                             schema/non-neg)])))
 
 (defn corner-rounding
