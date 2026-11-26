@@ -263,9 +263,9 @@
 ;; The left panel below draws one edge colour, more opaque, without leaf names; the right one colours by group (the
 ;; default) and fades the edges:
 
-(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :none :edge-color [120 60 160]
+(plot/render-image (plot/arrange [(plot/bundle calls office-tree {:color-by :single :edge-color [120 60 160]
                                                                   :alpha 0.8 :labels false
-                                                                  :title ":color-by :none, :alpha 0.8"})
+                                                                  :title ":color-by :single, :alpha 0.8"})
                                   (plot/bundle calls office-tree {:alpha 0.15 :title ":alpha 0.15"})]
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 480})

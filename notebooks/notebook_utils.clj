@@ -1,7 +1,8 @@
 (ns notebook-utils
   "Notebook helpers: datasets read through the manifest `data/datasets.edn`, the attribution line of an example, the
-  option tables and option cards of the reference part ([[options-table]], [[option-cards]], [[mapping-list]], the
-  Types page's [[type-entries]]) and data tables ([[data-table]]).
+  option cards of the reference part ([[option-cards]], [[shared-groups]], [[mapping-list]], [[plot-mapping-list]],
+  [[argument-list]], [[theme-key-list]], the Types page's [[type-entries]]) and data tables ([[data-table]],
+  [[result-table]]).
   No plotting helpers - examples use the plain cljplot2 API."
   (:require [clojure.data.csv :as csv]
             [clojure.data.json :as json]
@@ -180,7 +181,7 @@
     (kindly/hide-code
      (kind/md (str/join " " (remove nil? (cons (when (seq urls) (source-text source urls)) data-texts)))))))
 
-;; option tables (reference part)
+;; printed values, option cards (reference part)
 
 (defn- color-key?
   "Does keyword `k` name a colour (`:color`, `:stroke-color`, `:fill`, `:background` ...)?"
@@ -209,19 +210,6 @@
                         :else x))
                 v))
 
-(defn- default-text
-  "Default cell of option `row`: its printed `:default` (an integer colour of a colour key as `0xrrggbb`) and its
-  `:default-doc`, either or both, `\"\"` without."
-  [{:keys [key default default-doc]}]
-  (let [value (when (some? default)
-                (pr-str (if (and (color-key? key) (integer? default)) (hex-color default) (readable-value default))))]
-    (str/join "; " (remove nil? [value default-doc]))))
-
-(defn- option-text
-  "Option cell of `row`: its path's keys (`:grid :x`), `(required)` after a required one."
-  [{:keys [path required]}]
-  (cond-> (str/join " " (map pr-str path)) required (str " (required)")))
-
 (defn- section-rows
   "The rows of `rows` in `section` (their `:section`); throws `ex-info {:key :section}` naming the sections of `rows`
   when none is."
@@ -232,26 +220,6 @@
                            (str/join " " (distinct (keep :section rows))) ".")
                       {:key :section :value section :known (set (keep :section rows))})))
     selected))
-
-(defn options-table
-  "Unused since every page shows option cards ([[option-cards]]); 8.4 removes it. Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`), its code
-  hidden: option path, type, default (value and / or text) and description; with `section` only the rows of that
-  slice (`:section`, see `cljplot2.describe`). A Group column - the shared group's title, documented once in the
-  Shared options chapter - when the rows mix groups (rows of one group are named by the text around the table).
-  Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows - a table is never empty."
-  ([rows]
-   (when (empty? rows)
-     (throw (ex-info "An options table needs rows." {:key :rows :value rows})))
-   (let [grouped? (< 1 (count (distinct (map :fragment rows))))
-         group-title #(get-in describe/fragments [(:fragment %) :title] "")]
-     (kindly/hide-code
-      (kind/table {:column-names (cond-> ["Option" "Type" "Default" "Description"] grouped? (conj "Group"))
-                   :row-vectors (mapv (fn [row]
-                                        (cond-> [(option-text row) (:type row) (default-text row) (:description row)]
-                                          grouped? (conj (group-title row))))
-                                      rows)}))))
-  ([rows section]
-   (options-table (section-rows rows section))))
 
 (def ^:private shared-options-page
   "The book page of the Shared options chapter (Clay names a page by its notebook namespace)."
@@ -402,7 +370,7 @@
   `(plot/network edges)`; a vector - the rows' path in a plot, e.g. `[:theme]` or `[:scales :x]`, the example printed as a
   plot map), then its description, a bullet per value or form with its meaning and the values without one on
   one line (styles in `clay.edn`). With `section`
-  only the rows of that slice (see [[options-table]]).
+  only the rows of that slice (`:section`, see `cljplot2.describe`).
   Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."
   ([call rows] (option-cards call rows nil))
   ([call rows section]
@@ -552,7 +520,7 @@
 
 (def data-table-class
   "CSS class of the box holding a [[data-table]] - compact, left-aligned and scrolling past a few rows (the style is in
-  `clay.edn`, `:include-in-header`, under the same class name); option tables keep the book's table style."
+  `clay.edn`, `:include-in-header`, under the same class name)."
   "data-table")
 
 (defn- table-box

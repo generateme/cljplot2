@@ -721,7 +721,7 @@ the summed weight. Use it with `sankey-layout` and fixed columns.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – Wide rows, one per observation or group of observations.<div>Columns:<ul><li><em>a column per variable</em> – A categorical level, read by an accessor of <code>:variables</code>.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A directed graph of <code>graph/graph</code> for <code>sankey-layout</code>: a node per level of every variable, its column under <code>:layer</code>, and an edge with the summed weight per pair of levels of neighbouring variables and strand level.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – Wide data, a row per observation or group of observations: rows (a sequence of maps) or columns (a map of equal-length sequences).<div>Columns:<ul><li><em>a column per variable</em> – A categorical level, read by an accessor of <code>:variables</code>.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A directed graph of <code>graph/graph</code> for <code>sankey-layout</code>: a node per level of every variable, its column under <code>:layer</code>, and an edge with the summed weight per pair of levels of neighbouring variables and strand level.</div></div>
 ```
 
 
@@ -848,7 +848,7 @@ path with its number of rows as `:value`. Use it for hierarchies stored as colum
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data rows, a level column for each accessor of <code>:hierarchy</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The root group: every node with its level value under <code>:name</code> and its number of rows under <code>:value</code>, a leaf per distinct level path.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data, a level column for each accessor of <code>:hierarchy</code>: rows (a sequence of maps) or columns (a map of equal-length sequences).</li></ul><div class="mapping-returns"><strong>Returns</strong> – The root group: every node with its level value under <code>:name</code> and its number of rows under <code>:value</code>, a leaf per distinct level path.</div></div>
 ```
 
 
@@ -886,7 +886,7 @@ the root, and children keep the row order. Use it for hierarchies stored as pare
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – One row per node.<div>Columns:<ul><li><code>:id</code> – The node's id; the option <code>:id</code> names another column.</li><li><code>:parent</code> – The parent's id, <code>nil</code> for the root; the option <code>:parent</code> names another column.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – The root node: each node is its row with <code>:id</code>, <code>:name</code> and <code>:height</code>, a group also with its <code>:children</code> in row order.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The nodes, a row each: rows (a sequence of maps) or columns (a map of equal-length sequences).<div>Columns:<ul><li><code>:id</code> – The node's id; the option <code>:id</code> names another column.</li><li><code>:parent</code> – The parent's id, <code>nil</code> for the root; the option <code>:parent</code> names another column.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – The root node: each node is its row with <code>:id</code>, <code>:name</code> and <code>:height</code>, a group also with its <code>:children</code> in row order.</div></div>
 ```
 
 
@@ -1156,7 +1156,7 @@ identical sequences summed. Use it for a flow sunburst.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – One sequence per row.<div>Columns:<ul><li><code>:sequence</code> – The sequence: a string of steps joined by <code>:separator</code>, or a sequence of steps; the option <code>:sequence</code> names another column.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :hierarchy :dropped}</code>: a row per distinct sequence with a column per step (<code>:step-1</code> ...) and the summed <code>:value</code>, the step keys, and the number of rows without steps.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data, each row holding one sequence: rows (a sequence of maps) or columns (a map of equal-length sequences).<div>Columns:<ul><li><code>:sequence</code> – The sequence: a string of steps joined by <code>:separator</code>, or a sequence of steps; the option <code>:sequence</code> names another column.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :hierarchy :dropped}</code>: a row per distinct sequence with a column per step (<code>:step-1</code> ...) and the summed <code>:value</code>, the step keys, and the number of rows without steps.</div></div>
 ```
 
 

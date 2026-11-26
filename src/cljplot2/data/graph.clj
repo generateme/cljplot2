@@ -1241,7 +1241,7 @@
 
   Parameters:
 
-  - `rows` (sequence of maps): the data rows.
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
   - `options` (map):
     - `:variables` - accessors of the variables in order (at least 2, required).
     - `:value` - accessor of a row's weight, a finite number >= 0, `nil` read as 1 (see [[cljplot2.data.rows/weight]]; default 1 per row).
@@ -1249,21 +1249,22 @@
 
   Returns a graph of [[graph]] (directed); every edge `{:from :to :value :strand-color}` with the summed weight.
 
-  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[alluvial-graph-options]]; fewer than 2 variables), `{:key :variables}` for a row without a value of a column, `{:key :value}` for an invalid weight."
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[alluvial-graph-options]]; fewer than 2 variables), `{:key :variables}` for a row without a value of a column, `{:key :value}` for an invalid weight. Data that are neither rows (a sequence of maps) nor columns throw `{:key :data}` (see [[cljplot2.data.rows/rows]])."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "Wide rows, one per observation or group of observations." :columns {"a column per variable" "A categorical level, read by an accessor of `:variables`." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
+   :cljplot2/arguments [{:name 'rows :description "Wide data, a row per observation or group of observations: rows (a sequence of maps) or columns (a map of equal-length sequences)." :columns {"a column per variable" "A categorical level, read by an accessor of `:variables`." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
    :cljplot2/returns "A directed graph of `graph/graph` for `sankey-layout`: a node per level of every variable, its column under `:layer`, and an edge with the summed weight per pair of levels of neighbouring variables and strand level."
    :cljplot2/options alluvial-graph-options}
   [rows {:keys [variables value strand-color] :as options}]
   (schema/check-options! alluvial-graph-options options)
-  (let [axis-of (mapv #(data/row-accessor :variables %) variables)
+  (let [rs (data/rows rows)
+        axis-of (mapv #(data/row-accessor :variables %) variables)
         value-of (if value (data/row-accessor :value value) (constantly 1.0))
         color-of (data/row-accessor :strand-color (or strand-color (first variables)))
         levels-of (fn [row] (let [ls (mapv #(% row) axis-of)]
                               (when (some nil? ls)
                                 (schema/fail! "Every row needs a value of every alluvial column." {:key :variables :value row}))
                               ls))
-        keyed (mapv (fn [row] [(levels-of row) (color-of row) (data/weight (value-of row))]) rows)
+        keyed (mapv (fn [row] [(levels-of row) (color-of row) (data/weight (value-of row))]) rs)
         color-rank (zipmap (level-order (map second keyed)) (range))
         nodes (vec (for [i (range (count variables)) level (level-order (map #(nth (first %) i) keyed))]
                      {:id [i level] :name level :layer i}))

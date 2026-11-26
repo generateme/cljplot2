@@ -118,19 +118,16 @@
     (is (= [:a :b] (mixed-sections (malli/schema [:map [:a {:cljplot2/section :s} :int] [:b :int]]))))
     (is (nil? (mixed-sections (malli/schema [:map [:a :int] [:b :int]]))))))
 
-(deftest options-table-test
+(deftest option-cards-fn-test
   (let [rows (describe/options cljplot2.pipeline/options-schema)
-        table #(-> % meta :kindly/kind)]
-    (testing "a table of all rows or of one section, its code hidden"
-      (is (= :kind/table (table (nu/options-table rows))))
-      (is (= 3 (count (:row-vectors (nu/options-table rows :image)))) "width, height, hint")
-      (is (:kindly/hide-code (meta (nu/options-table rows)))))
-    (testing "a Group column only when the rows mix groups"
-      (is (= 4 (count (:column-names (nu/options-table (describe/fragment-rows :curve))))) "one group")
-      (is (= 5 (count (:column-names (nu/options-table (describe/options (chart/line)))))) "own and group rows"))
-    (testing "boundary: no rows, an unknown section - errors, never an empty table"
-      (is (= :rows (:key (error-data #(nu/options-table [])))))
-      (is (= :section (:key (error-data #(nu/options-table rows :no-such-section))))))))
+        card-count (fn [cards] (count (filter vector? (rest cards))))]
+    (testing "a card per row, or per row of one section, its code hidden"
+      (is (= (count rows) (card-count (nu/option-cards [:options] rows))))
+      (is (= 3 (card-count (nu/option-cards [:options] rows :image))) "width, height, hint")
+      (is (:kindly/hide-code (meta (nu/option-cards [:options] rows)))))
+    (testing "boundary: no rows, an unknown section - errors, never an empty card group"
+      (is (= :rows (:key (error-data #(nu/option-cards [:options] [])))))
+      (is (= :section (:key (error-data #(nu/option-cards [:options] rows :no-such-section))))))))
 
 (defn- label-grid
   "A one-cell custom grid holding label `content`."

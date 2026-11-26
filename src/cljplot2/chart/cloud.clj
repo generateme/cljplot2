@@ -25,7 +25,7 @@
     centre, `L` the box's longest side; an eye within the sphere around the box - a schema error, any `:distance`
     below 2/√3 is fine; see [[cljplot2.data.space3d]])
   * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
-    {:x t :y t :z t}` (default the mapped column names; `nil` - none)
+    {:x t :y t :z t}` (default, also for `nil`: the mapped column names; `:none` - no titles)
   * `:reverse #{:x :y :z}` - axes running the other way (their final domains, data or explicit, reversed - see
     [[cljplot2.data.space3d/reverse-domains]]); reversing one axis mirrors the scene (turning the `:view` doesn't)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
@@ -83,8 +83,8 @@
 
 (def ^:private projection-style-entries
   "Style entries of the side projections (theme `[:chart :cloud]` only, not chart options)."
-  [(schema/optional :projection-alpha-factor {:description "alpha factor of projected points (their style's colour)"} schema/fraction)
-   (schema/optional :band-alpha-factor {:description "alpha factor of a projected density band (the chart's colour)"} schema/fraction)])
+  [(schema/optional :projection-alpha-factor {:description "The alpha factor of the projected points, multiplying their style colour's own alpha."} schema/fraction)
+   (schema/optional :band-alpha-factor {:description "The alpha factor of a projected density band, multiplying the chart colour's own alpha."} schema/fraction)])
 
 (def ^:private projection-meanings
   "Value meanings of a wall's projection."
@@ -360,7 +360,7 @@
                   :z (or (:z explicit) (space/data-domain (cond-> z-values (and (seq z-values) (#{:spikes :bars} mark-type)) (conj base)) 0.0))}
                  (:reverse options))
         frame (cond-> (space/frame-settings options mapping)
-                (and bins (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Count")
+                (and bins (not (space/titles-given? options))) (assoc-in [:titles :z] "Count")
                 (seq levels) (assoc :levels levels))
         layers (when-let [projections (not-empty (:projections options))]
                  (projection-layers projections points domains

@@ -801,10 +801,10 @@
     (schema/nilable :color-by {:description "How the plot colours the edges and leaves."
                                :default :group
                                :cljplot2/value-meanings {:group "Colours each edge by the top-level group of its source leaf and each leaf by its own group, with a legend."
-                                                         :none "Edges in `:edge-color`, leaves in the theme colour, without a legend."}}
-                     [:enum :group :none])
-    (schema/optional :edge-color {:description "The colour of the edges with `:color-by :none`." :default bundle-edge-color
-                                  :cljplot2/value-meanings {:none "No edges."} :cljplot2/example :darkorange :cljplot2/example-context {:color-by :none}}
+                                                         :single "Colours every edge in `:edge-color` and the leaves in the theme colour, without a legend."}}
+                     [:enum :group :single])
+    (schema/optional :edge-color {:description "The colour of the edges with `:color-by :single`." :default bundle-edge-color
+                                  :cljplot2/value-meanings {:none "No edges."} :cljplot2/example :darkorange :cljplot2/example-context {:color-by :single}}
                      schema/color)
     (schema/optional :labels {:description "Writes the leaf names outward around the circle." :default true
                               :cljplot2/value-meanings {true "Writes the names." false "No names."}}
@@ -823,7 +823,7 @@
   - `leaf-tree` (map): a tree of [[cljplot2.data.tree]].
   - `options` (map, optional), validated first against [[bundle-options]]:
     - `:from`, `:to` - accessors of the edge ends (default `:from`, `:to`); `:beta` - the bundling strength, straighter towards 0, default 0.85 (see [[cljplot2.data.tree/bundle-paths]]);
-    - `:color-by` - `:group` (default): edges and leaves coloured by the top-level group of their (source) leaf, with a legend; `:none` - edges in `:edge-color`, no legend;
+    - `:color-by` - `:group` (default): edges and leaves coloured by the top-level group of their (source) leaf, with a legend; `:single` - edges in `:edge-color`, no legend;
     - `:edge-color` - the edges' colour when not coloured by group, default the theme's default colour (see [[cljplot2.theme/default-color]]);
     - `:alpha` - the edges' opacity (leaf points and legend keys stay opaque), default 0.4;
     - `:labels` - leaf names outward around the circle, default `true`;

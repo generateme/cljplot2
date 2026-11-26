@@ -71,7 +71,7 @@
                                                      :cljplot2/default-doc "At most 2 decimals, whole numbers without them."
                                                      :cljplot2/example "%.4f"}
                                       schema/number-format)
-                      (schema/nilable :text-template {:description "the widest text a cell's line holds, so cells get one font size (set by pairs)"
+                      (schema/nilable :text-template {:description "The widest text a cell's line holds, so every cell gets one font size; `plot/pairs` sets it."
                                                       :cljplot2/internal true}
                                       string?)))
    :mapping [:maybe [:map

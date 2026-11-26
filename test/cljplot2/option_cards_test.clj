@@ -1,11 +1,10 @@
 (ns cljplot2.option-cards-test
   "Option cards (reference readability): the option model of `cljplot2.describe` - accepted values and forms with
-  their meanings, examples, theme defaults, concept titles - and the rules a chart migrated to cards follows: full
-  sentence descriptions, a meaning for every value of a short list (a long list's other values under one meaning),
-  a meaning for every form of an option taking several, a default for every optional option, an example for every
-  option. The switches of `test-util` - `migrated` (chart kinds), `migrated-builders`, `migrated-functions` (data
-  functions), `migrated-groups` (shared groups) and `migrated-theme-keys` - list the owners whose pages show option
-  cards."
+  their meanings, examples, theme defaults, concept titles - and the rules every card owner follows: full sentence
+  descriptions, a meaning for every value of a short list (a long list's other values under one meaning), a meaning
+  for every form of an option taking several, a default for every optional option, an example for every option. The
+  card owners come from the library: chart kinds, the builders of `cljplot2.core`, the data functions taking options,
+  the shared groups no data function owns, the theme keys but `:chart`, and the plot-level schemas."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is are]]
@@ -38,8 +37,7 @@
             [cljplot2.schema :as schema]
             [cljplot2.core :as plot]
             [cljplot2.theme :as theme]
-            [cljplot2.test-util :refer [error-data migrated migrated-builders migrated-functions migrated-groups
-                                         migrated-path? migrated-schemas migrated-theme-keys path-under? same-pixels?]]
+            [cljplot2.test-util :refer [error-data path-under? same-pixels?]]
             [notebook-utils]))
 
 (def ^:private max-listed-values
@@ -47,8 +45,29 @@
   6)
 
 (def ^:private max-description
-  "The longest description of a migrated option, in characters."
+  "The longest description of an option, in characters."
   300)
+
+(def ^:private chart-kinds
+  "Every built-in chart kind: each has a section of option cards."
+  (set (keys (describe/chart-constructors))))
+
+(def ^:private builders
+  "The builders of `cljplot2.core` (symbols): the public vars taking options (`:cljplot2/options`)."
+  (set (keep (fn [[sym v]] (when (:cljplot2/options (meta v)) sym)) (ns-publics 'cljplot2.core))))
+
+(def ^:private option-functions
+  "The user-facing data functions taking options (qualified symbols)."
+  (set (keep #(when (seq (describe/options %)) (symbol %)) (describe/api-vars))))
+
+(def ^:private unowned-groups
+  "The shared groups no data function owns: each has a Shared options section of cards (an owned group is documented
+  in its owner's section)."
+  (set (keep (fn [[k {:keys [owner]}]] (when-not owner k)) describe/fragments)))
+
+(def ^:private theme-keys
+  "The top-level theme keys with cards on the Theme page: every key but `:chart` (each chart's page documents its style)."
+  (disj (set (keys theme/default-theme)) :chart))
 
 (defn- kind-rows
   "The own option rows and the mapping rows of chart `kind`."
@@ -163,23 +182,62 @@
   (second (re-find (re-pattern (str "(?ms)^;; ### " (java.util.regex.Pattern/quote title) "$(.*?)(?=^;; ###? |\\z)"))
                    (slurp "notebooks/reference/shared_options.clj"))))
 
-(deftest migration-switch-test
-  (testing "the migrated kinds and builders are exactly those with a concept title (kinds keywords, builders symbols)"
-    (is (= migrated (set (filter keyword? (keys describe/concepts)))))
-    (is (= migrated-builders (set (filter simple-symbol? (keys describe/concepts))))))
+(def ^:private schemas-without-fixtures
+  "Plot-level schemas without a card owner of their own -> why: their rows are other owners' cards."
+  {:mapping "shown as mapping lists, owned by the mapping owner"
+   :theme "documented per top-level key by the theme owners"
+   :coord "a choice of maps - the polar one has its owner, the cartesian one is a form of the plot's `:coord` card"
+   :arrange "the `:arrange` shared group's cards (Shared options)"})
+
+(def ^:private aesthetic-scales
+  "The aesthetic scale specs: the rows they share are shown once, as one aesthetic owner's cards (most as the colour
+  owner's, the size-only `:area` as the size owner's)."
+  #{:color-scale :shape-scale :size-scale :dash-scale :pattern-scale})
+
+(def ^:private aesthetic-scale-paths
+  "The plot paths of the aesthetic scale owners' cards."
+  #{[:scales :color] [:scales :shape] [:scales :size] [:scales :dash] [:scales :pattern]})
+
+(declare owners schema-fixtures example-fixtures builder-fixtures)
+
+(defn- owner-rows
+  "Every row some card owner shows (options and mapping), each with its owner's plot path under `::owner-path` (`nil` -
+  an owner without one: charts, builders, functions, groups)."
+  []
+  (for [{:keys [options mapping path]} (owners) row (concat options mapping)]
+    (assoc row ::owner-path path)))
+
+(defn- row-covered?
+  "Tests whether option `row` of plot-level schema `n` is one of the `shown` rows (see [[owner-rows]]) - same key and
+  text, and: for a schema with a card owner (its plot path in [[schema-fixtures]]) shown by an owner with a plot path,
+  the same full plot path - an aesthetic scale's row also at the same path in another aesthetic owner; else (no plot path on
+  either side) the shown row's path a suffix of the row's (a plot key's nested map through its group)."
+  [shown n {:keys [key description path]}]
+  (let [schema-path (get-in schema-fixtures [n :path])]
+    (some (fn [{owner-path ::owner-path :as s}]
+            (and (= key (:key s)) (= description (:description s))
+                 (if (and schema-path owner-path)
+                   (or (= (into schema-path path) (into owner-path (:path s)))
+                       (and (aesthetic-scales n) (aesthetic-scale-paths owner-path) (= path (:path s))))
+                   (= (:path s) (vec (take-last (count (:path s)) path))))))
+          shown)))
+
+(deftest card-owners-test
+  (testing "the chart kinds and builders are exactly those with a concept title (kinds keywords, builders symbols), each with a fixture"
+    (is (= chart-kinds (set (filter keyword? (keys describe/concepts)))))
+    (is (= builders (set (filter simple-symbol? (keys describe/concepts)))))
+    (is (= chart-kinds (set (keys example-fixtures))))
+    (is (= builders (set (keys builder-fixtures)))))
   (testing "every user-facing function has a concept title (qualified symbols); fonts' on Labels and text"
     (is (= (set (map symbol (describe/api-vars)))
            (set (filter qualified-symbol? (keys describe/concepts))))))
-  (testing "every chart kind is migrated, so a new chart can't miss its cards"
-    (is (= migrated (set (keys (describe/chart-constructors))))))
-  (doseq [kind migrated
+  (doseq [kind chart-kinds
           :let [section (concept-section (describe/concepts kind))]]
-    (testing (str kind ": its section shows option cards and - for a chart with mapping keys - a mapping list, no options table")
+    (testing (str kind ": its section shows option cards and - for a chart with mapping keys - a mapping list")
       (is (some? section))
       (is (str/includes? (str section) "nu/option-cards"))
       (is (= (empty? (describe/mapping ((get (describe/chart-constructors) kind))))
-             (not (str/includes? (str section) "nu/mapping-list"))))
-      (is (not (str/includes? (str section) "nu/options-table"))))
+             (not (str/includes? (str section) "nu/mapping-list")))))
     (testing (str kind ": its shared groups (when it takes any) open the section, before the mapping list and cards")
       (let [text (str section)
             at (fn [s] (str/index-of text s))
@@ -187,111 +245,110 @@
         (is (= (nil? groups) (nil? (at "nu/shared-groups"))))
         (when groups
           (is (every? #(< (at "nu/shared-groups") %) (keep at ["nu/mapping-list" "nu/option-cards"])))))))
-  (doseq [sym migrated-builders
+  (doseq [sym builders
           :let [section (str (concept-section (describe/concepts sym)))
                 at (fn [s] (str/index-of section s))]]
-    (testing (str sym ": its section shows option cards, no options table, its shared groups first")
+    (testing (str sym ": its section shows option cards, its shared groups first")
       (is (str/includes? section "nu/option-cards"))
-      (is (not (str/includes? section "nu/options-table")))
       (is (some? (at "nu/shared-groups")))
       (is (and (at "nu/shared-groups") (at "nu/option-cards") (< (at "nu/shared-groups") (at "nu/option-cards"))))))
-  (testing "every user-facing function taking options is migrated and has a fixture call"
-    (is (= migrated-functions (set (keep #(when (seq (describe/options %)) (symbol %)) (describe/api-vars)))))
-    (is (= migrated-functions (set (keys function-fixtures)))))
-  (doseq [sym migrated-functions
+  (testing "every user-facing function taking options has a fixture call"
+    (is (= option-functions (set (keys function-fixtures)))))
+  (doseq [sym option-functions
           :let [section (str (concept-section (describe/concepts sym)))]]
-    (testing (str sym ": its section (headed by its concept) shows its own option cards, no options table")
+    (testing (str sym ": its section (headed by its concept) shows its own option cards")
       (is (str/includes? section "nu/option-cards"))
       (is (re-find (re-pattern (str "\\(describe/options #'[\\w.-]+/" (java.util.regex.Pattern/quote (name sym)) "\\)")) section)
-          "the cards are the function's own")
-      (is (not (str/includes? section "nu/options-table")))))
-  (doseq [[sym v] (concat (map #(vector % (ns-resolve 'cljplot2.core %)) migrated-builders) (map #(vector % (resolve %)) migrated-functions))
+          "the cards are the function's own")))
+  (doseq [[sym v] (concat (map #(vector % (ns-resolve 'cljplot2.core %)) builders) (map #(vector % (resolve %)) option-functions))
           :let [section (str (concept-section (describe/concepts sym)))
                 [_ placeholders] (re-find #"\(nu/option-cards '\([^\s)]+ ?([^)]*)\)" section)]]
     (testing (str sym ": its card calls name their arguments by the function's parameters (placeholders)")
       (is (some? placeholders))
       (is (every? (set (map (comp str :name) (:cljplot2/arguments (meta v))))
                   (filter #(re-matches #"[a-z][\w-]*" %) (str/split (str placeholders) #"\s+"))))))
-  (testing "every shared group is migrated or owned by a data function (documented in its section), and has a fixture"
-    (is (= (set (keys describe/fragments)) (into migrated-groups (keep (fn [[k {:keys [owner]}]] (when owner k))) describe/fragments)))
-    (is (empty? (filter #(:owner (describe/fragments %)) migrated-groups)))
-    (is (= migrated-groups (set (keys group-fixtures))))
+  (testing "every shared group no data function owns has a fixture; an owned group's owner is a user-facing function"
+    (is (= unowned-groups (set (keys group-fixtures))))
     (is (every? #(contains? (set (map symbol (describe/api-vars))) (:owner %)) (filter :owner (vals describe/fragments)))))
-  (doseq [g migrated-groups
+  (doseq [g unowned-groups
           :let [section (str (group-section (:title (describe/fragments g))))]]
-    (testing (str g ": its Shared options section shows option cards of the group through its tested representative, no options table")
+    (testing (str g ": its Shared options section shows option cards of the group through its tested representative")
       (is (str/includes? section (str "(describe/fragment-rows " g ")")))
       (is (str/includes? section "nu/option-cards"))
       (let [via (:via (group-fixtures g))]
         (is (str/includes? section (if (symbol? via) (str "(nu/option-cards '(plot/" via " ") (str "(nu/option-cards 'chart/" (name via) " ")))
-            (str "the cards print the call of " via)))
-      (is (not (str/includes? section "nu/options-table")))))
+            (str "the cards print the call of " via)))))
   (doseq [[g {:keys [owner]}] describe/fragments :when owner]
-    (testing (str g ": its owner is a migrated data function taking the group")
-      (is (contains? migrated-functions owner))
+    (testing (str g ": its owner is a data function taking the group")
+      (is (contains? option-functions owner))
       (is (some #(= g (first %)) (describe/fragment-keys (describe/options (resolve owner)))))))
-  (testing "every theme key but :chart (each chart's page documents its style) is migrated and has a fixture"
-    (is (= (disj (set (keys theme/default-theme)) :chart) migrated-theme-keys))
-    (is (= migrated-theme-keys (set (keys theme-fixtures)))))
+  (testing "every theme key but :chart has a fixture"
+    (is (= theme-keys (set (keys theme-fixtures)))))
+  (testing "every plot-level schema has a card owner's fixture but those documented through other owners"
+    (is (= (set (keys describe/plot-level-schemas)) (into (set (keys schema-fixtures)) (keys schemas-without-fixtures)))))
   (let [code (str/join "\n" (remove #(str/starts-with? (str/triml %) ";;") (str/split-lines (slurp "notebooks/reference/theme.clj"))))]
-    (doseq [k migrated-theme-keys]
-      (testing (str k ": the Theme page shows its keys as option cards, the example a plot key, no options table")
-        (is (str/includes? code (str "(nu/option-cards [:theme] (describe/theme-rows " k ")")))
-        (is (not (str/includes? code (str "(nu/options-table (describe/theme-rows " k ")"))))))
-    (testing "with every key migrated the Theme page has no options table at all"
-      (is (not (str/includes? code "nu/options-table")))))
-  (testing "every migrated plot-level schema but the mapping (shown as lists) has a card owner's fixture"
-    (is (= (disj (set (keys migrated-schemas)) :mapping) (set (keys schema-fixtures)))))
-  (let [schema-pages {:mapping ["rows/mapping-schema" [["data_mapping" "(nu/plot-mapping-list (describe/options rows/mapping-schema) "]]]
-                      :plot ["pipeline/plot-schema" [["data_mapping" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:data]}))"]
-                                                     ["data_mapping" "(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:groups]))"]
-                                                     ["scales_axes_coords" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:aspect]}))"]
-                                                     ["scales_axes_coords" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:flip] [:coord]}))"]
-                                                     ["intro" "(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :content)"]
-                                                     ["intro" "(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:scales]))"]]]
-                      :facets ["facet/facet-options" [["facets_arrange" "(nu/option-cards [:facets] (describe/options facet/facet-options) :shape)"]
-                                                      ["facets_arrange" "(nu/option-cards [:facets] (describe/options facet/facet-options) :panels)"]]]
-                      :facet-scale ["facet/scale-spec-schema" [["facets_arrange" "(nu/option-cards [:scales :facet] (describe/options facet/scale-spec-schema))"]]]
-                      :margins ["pipeline/margins-schema" [["facets_arrange" "(nu/option-cards [:margins] (describe/options pipeline/margins-schema))"]]]
-                      :margin-spec ["pipeline/margin-spec-schema" [["facets_arrange" "(nu/option-cards [:margins :right] (describe/options pipeline/margin-spec-schema))"]]]
-                      :labels ["plot-grid/labels-schema" [["labels_text" "(nu/option-cards [:labels] (describe/options plot-grid/labels-schema))"]]]
-                      :label ["label/label-options" [["labels_text" "(nu/option-cards [:labels :title] (describe/options label/label-options) :label)"]]]
-                      :render-options ["pipeline/options-schema" [["render" "(nu/option-cards [:options] (describe/options pipeline/options-schema) :image)"]
-                                                                  ["render" "(nu/option-cards '(plot/build plot) (describe/options pipeline/options-schema) :build)"]]]
-                      :position-scale ["position/scale-spec-schema" [["scales_axes_coords" "(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema)"]]]
-                      :polar-coord ["coord/polar-schema" [["scales_axes_coords" "(nu/option-cards [:coord] (describe/options coord/polar-schema))"]]]
-                      :color-scale ["(aesthetic/scale-spec-schema :color)" [["aesthetics_legends" "(nu/option-cards [:scales :color] (describe/options (aesthetic/scale-spec-schema :color))"]]]
-                      :shape-scale ["(aesthetic/scale-spec-schema :shape)" [["aesthetics_legends" "(nu/option-cards [:scales :shape] (describe/options (aesthetic/scale-spec-schema :shape)) :range)"]]]
-                      :size-scale ["(aesthetic/scale-spec-schema :size)" [["aesthetics_legends" "(nu/option-cards [:scales :size] (describe/options (aesthetic/scale-spec-schema :size)) :range)"]
-                                                                          ["aesthetics_legends" "(nu/option-cards [:scales :size] (describe/options (aesthetic/scale-spec-schema :size)) :size)"]]]
-                      :dash-scale ["(aesthetic/scale-spec-schema :dash)" [["aesthetics_legends" "(nu/option-cards [:scales :dash] (describe/options (aesthetic/scale-spec-schema :dash)) :range)"]]]
-                      :pattern-scale ["(aesthetic/scale-spec-schema :pattern)" [["aesthetics_legends" "(nu/option-cards [:scales :pattern] (describe/options (aesthetic/scale-spec-schema :pattern)) :range)"]]]}
+    (doseq [k theme-keys]
+      (testing (str k ": the Theme page shows its keys as option cards, the example a plot key")
+        (is (str/includes? code (str "(nu/option-cards [:theme] (describe/theme-rows " k ")"))))))
+  (let [schema-pages {:mapping [["data_mapping" "(nu/plot-mapping-list (describe/options rows/mapping-schema) "]]
+                      :plot [["data_mapping" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:data]}))"]
+                             ["data_mapping" "(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:groups]))"]
+                             ["scales_axes_coords" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:aspect]}))"]
+                             ["scales_axes_coords" "(nu/option-cards [] (describe/rows-at (describe/options pipeline/plot-schema) #{[:flip] [:coord]}))"]
+                             ["intro" "(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :content)"]
+                             ["intro" "(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:scales]))"]]
+                      :facets [["facets_arrange" "(nu/option-cards [:facets] (describe/options facet/facet-options) :shape)"]
+                               ["facets_arrange" "(nu/option-cards [:facets] (describe/options facet/facet-options) :panels)"]]
+                      :facet-scale [["facets_arrange" "(nu/option-cards [:scales :facet] (describe/options facet/scale-spec-schema))"]]
+                      :margins [["facets_arrange" "(nu/option-cards [:margins] (describe/options pipeline/margins-schema))"]]
+                      :margin-spec [["facets_arrange" "(nu/option-cards [:margins :right] (describe/options pipeline/margin-spec-schema))"]]
+                      :labels [["labels_text" "(nu/option-cards [:labels] (describe/options plot-grid/labels-schema))"]]
+                      :label [["labels_text" "(nu/option-cards [:labels :title] (describe/options label/label-options) :label)"]]
+                      :render-options [["render" "(nu/option-cards [:options] (describe/options pipeline/options-schema) :image)"]
+                                       ["render" "(nu/option-cards '(plot/build plot) (describe/options pipeline/options-schema) :build)"]]
+                      :position-scale [["scales_axes_coords" "(nu/option-cards [:scales :x] (describe/options position/scale-spec-schema)"]]
+                      :polar-coord [["scales_axes_coords" "(nu/option-cards [:coord] (describe/options coord/polar-schema))"]]
+                      :color-scale [["aesthetics_legends" "(nu/option-cards [:scales :color] (describe/options (aesthetic/scale-spec-schema :color))"]]
+                      :shape-scale [["aesthetics_legends" "(nu/option-cards [:scales :shape] (describe/options (aesthetic/scale-spec-schema :shape)) :range)"]]
+                      :size-scale [["aesthetics_legends" "(nu/option-cards [:scales :size] (describe/options (aesthetic/scale-spec-schema :size)) :range)"]
+                                   ["aesthetics_legends" "(nu/option-cards [:scales :size] (describe/options (aesthetic/scale-spec-schema :size)) :size)"]]
+                      :dash-scale [["aesthetics_legends" "(nu/option-cards [:scales :dash] (describe/options (aesthetic/scale-spec-schema :dash)) :range)"]]
+                      :pattern-scale [["aesthetics_legends" "(nu/option-cards [:scales :pattern] (describe/options (aesthetic/scale-spec-schema :pattern)) :range)"]]}
         code (fn [page] (str/join "\n" (remove #(str/starts-with? (str/triml %) ";;") (str/split-lines (slurp (str "notebooks/reference/" page ".clj"))))))]
-    (testing "every migrated schema has its pages and card calls"
-      (is (= (set (keys migrated-schemas)) (set (keys schema-pages)))))
-    (doseq [[n [schema-form calls]] schema-pages
+    (testing "every schema with a card owner's fixture, and the mapping (shown as lists), has its pages and card calls"
+      (is (= (conj (set (keys schema-fixtures)) :mapping) (set (keys schema-pages)))))
+    (doseq [[n calls] schema-pages
             [page call] calls]
-      (testing (str n ": " page " shows it as cards (the mapping as lists) through its plot path, no options table of it")
-        (is (str/includes? (code page) call) call)
-        (is (not (str/includes? (code page) (str "(nu/options-table (describe/options " schema-form)))))))
-  (testing "every option row at a migrated path is some owner's card - by key and text: a shared aesthetic row through the colour owner, a plot key's nested map (`[:facets :columns]`) through its schema's owner"
-    (let [shown (for [{:keys [options mapping]} (owners) row (concat options mapping)] row)
-          covered? (fn [{:keys [key description path]}]
-                     (some #(and (= key (:key %)) (= description (:description %))
-                                 (= (:path %) (vec (take-last (count (:path %)) path))))
-                           shown))]
-      (doseq [[n _] migrated-schemas
-              row (leaf-rows (describe/options (describe/plot-level-schemas n)))
-              :when (migrated-path? n (:path row))]
-        (is (covered? row) [n (:path row)]))))
+      (testing (str n ": " page " shows it as cards (the mapping as lists) through its plot path")
+        (is (str/includes? (code page) call) call))))
+  (testing "every option row of a plot-level schema but the theme's (the theme owners') is some owner's card - see [[row-covered?]]"
+    (let [shown (owner-rows)]
+      (doseq [[n s] (dissoc describe/plot-level-schemas :theme)
+              :let [rows (leaf-rows (describe/options s))]]
+        (if (= :coord n)
+          (is (empty? rows) "the coord is a choice of maps (no rows of its own)")
+          (is (seq rows) n))
+        (doseq [row rows]
+          (is (row-covered? shown n row) [n (:path row)])))))
+  (testing "the cartesian coord - the coord's other branch - is a form of the plot's :coord card with its meaning"
+    (let [coord-row (first (filter #(= [:coord] (:path %)) (describe/options pipeline/plot-schema)))]
+      (is (some #(and (= "`{:kind :cartesian}`" (:type %)) (:meaning %)) (:forms coord-row)))))
+  (testing "boundary: row-covered? - a row a schema owner drops is covered only at its own plot path (a facet scale card doesn't cover the x scale's), an aesthetic row through another aesthetic owner (not through a position or facet scale), a nested plot map through its owner"
+    (let [shown [{:key :descending :description "D." :path [:descending] ::owner-path [:scales :facet]}
+                 {:key :reverse :description "R." :path [:reverse] ::owner-path [:scales :color]}
+                 {:key :columns :description "C." :path [:columns] ::owner-path [:facets]}
+                 {:key :plots :description "P." :path [:plots] ::owner-path nil}]]
+      (is (not (row-covered? shown :position-scale {:key :descending :description "D." :path [:descending]})))
+      (is (row-covered? shown :facet-scale {:key :descending :description "D." :path [:descending]}))
+      (is (row-covered? shown :shape-scale {:key :reverse :description "R." :path [:reverse]}))
+      (is (not (row-covered? shown :position-scale {:key :reverse :description "R." :path [:reverse]})))
+      (is (row-covered? shown :plot {:key :columns :description "C." :path [:facets :columns]}))
+      (is (not (row-covered? shown :plot {:key :columns :description "other." :path [:facets :columns]})))
+      (is (row-covered? shown :arrange {:key :plots :description "P." :path [:plots]}))
+      (is (row-covered? shown :plot {:key :plots :description "P." :path [:arrange :plots]}))))
   (testing "boundary: the render hints the card lists are the rendering's"
     (is (= (set (map :value (:values (first (filter #(= [:hint] (:path %)) (describe/options pipeline/options-schema))))))
            cljplot2.graphics.measure/rendering-hints)))
-  (testing "no page of the book shows an options table: every option is on a card (a literal `(nu/options-table` call)"
-    (is (= [] (vec (for [^java.io.File f (file-seq (io/file "notebooks"))
-                         :when (and (str/ends-with? (.getName f) ".clj") (not= "notebook_utils.clj" (.getName f)))
-                         :when (str/includes? (slurp f) "(nu/options-table")]
-                     (.getName f))))))
   (testing "boundary: path-under? - the root itself, below it, a sibling, the empty root"
     (is (cljplot2.test-util/path-under? [:groups :na] [:groups :na]))
     (is (cljplot2.test-util/path-under? [:coord] [:coord :start]))
@@ -304,7 +361,7 @@
   (testing "boundary: a section ends at the next ## heading"
     (is (nil? (concept-section "No such concept")))))
 
-;; the card rules of migrated charts
+;; the card rules
 
 (defn- sentence-breaks
   "Paths of `rows` whose description isn't one or two sentences: starting uppercase (or with code), ending with a
@@ -928,7 +985,7 @@
   "Plot-level schema name (but the mapping, shown as lists) -> its card owner's fixture: `:path` - the plot path of
   the cards' map (their call), `:plot` - a plot on which the examples act, `:per-option` - option path -> its own plot
   (other data or mapping; the example still goes to `:path`), `:rows` - a function of the schema's rows giving those
-  the pages show as cards (default: the rows at the schema's migrated paths, `test-util/migrated-schemas`), `:schema`
+  the pages show as cards (default: every row), `:schema`
   - the schema validating an example (default the named schema), `:size` - the render options of its renders
   (default 320 x 240; `{}` - the plot's own, for options sizing the image)."
   {:position-scale {:path [:scales :x] :plot scale-scatter
@@ -968,7 +1025,7 @@
    :labels {:path [:labels] :plot walks}
    :label {:path [:labels :title] :plot walks :rows (section-rows :label)}
    :render-options {:path [:options] :plot walks :size {}
-                    :rows (fn [rows] (filterv #(and (migrated-path? :render-options (:path %)) (not= :build (:section %))) rows))
+                    :rows (fn [rows] (filterv #(not= :build (:section %)) rows))
                     :schema [:fn {:error/message "should be render options valid over the defaults"}
                              #(malli/validate pipeline/options-schema (merge pipeline/default-options %))]}})
 
@@ -987,7 +1044,7 @@
   card prints is the one drawn. Its `:base` is always `{}`."
   [n]
   (let [{:keys [path plot per-option schema] select-rows :rows
-         :or {select-rows (fn [rows] (filterv #(migrated-path? n (:path %)) rows))}} (schema-fixtures n)
+         :or {select-rows identity}} (schema-fixtures n)
         all (describe/options (describe/plot-level-schemas n))]
     (cond-> {:id (keyword "schema" (name n)) :rows all :options (select-rows all) :mapping [] :schema (or schema (describe/plot-level-schemas n)) :base {}
              :path path :draw (at-path path plot) :draws (update-vals (or per-option {}) #(at-path path %))}
@@ -1021,16 +1078,17 @@
      :draw (call args) :draws (update-vals per-option #(call (:args %)))}))
 
 (defn- owners
-  "Every migrated chart kind, builder, data function, shared group and theme key as a card owner: `:id` (the kind, the
+  "Every chart kind, builder, data function taking options, shared group no function owns, theme key but `:chart`,
+  plot-level schema with a fixture, the plot's mapping and the build option as a card owner: `:id` (the kind, the
   builder's or function's symbol, `:group/<name>`, `:theme/<key>`), `:rows` (every option
   row), `:options` (its own rows), `:mapping` (mapping rows, none for a builder or a data function), `:schema` (its options schema), `:base`
   (the fixture's base options), `:draw` (a function of options - the fixture's base options merged under them -
   returning the fixture plot - a data function's: its compared value, `:compare :value`) and `:draws` (option path ->
   its own draw function, for an option acting on another fixture)."
   []
-  (concat (map chart-owner (sort migrated)) (map builder-owner (sort migrated-builders))
-          (map function-owner (sort migrated-functions)) (map group-owner (sort migrated-groups))
-          (map theme-owner (sort migrated-theme-keys)) (map schema-owner (sort (keys schema-fixtures))) [(mapping-owner) (build-option-owner)]))
+  (concat (map chart-owner (sort chart-kinds)) (map builder-owner (sort builders))
+          (map function-owner (sort option-functions)) (map group-owner (sort unowned-groups))
+          (map theme-owner (sort theme-keys)) (map schema-owner (sort (keys schema-fixtures))) [(mapping-owner) (build-option-owner)]))
 
 (defn- without-option
   "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
@@ -1253,7 +1311,7 @@
     (is (every? #(seq (:description %)) (vals pairwise/statistics)))))
 
 (deftest none-colours-test
-  (testing "every migrated chart's and builder's colour option documenting :none (a colour form beside it) draws with it (data functions draw nothing)"
+  (testing "every chart's and builder's colour option documenting :none (a colour form beside it) draws with it (data functions draw nothing)"
     (doseq [{:keys [id rows options draw draws compare]} (owners)
             :when (not= :value compare)
             row (leaf-rows options)

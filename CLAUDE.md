@@ -64,8 +64,8 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   schema. A chart draws with
   `(theme/resolved-style theme chart)` - its style keys are the entries of its `:schema` `:style` (extras a chart
   takes outside it are merged explicitly); a style key that isn't an option (theme only, e.g. cloud
-  `:projection-alpha-factor`) is shown on the chart page with `describe/style-rows kind keys` (on a migrated page in a
-  Theme keys box, `nu/theme-key-list`). The theme style is
+  `:projection-alpha-factor`) is shown on the chart page with `describe/style-rows kind keys` (in a Theme keys box,
+  `nu/theme-key-list`). The theme style is
   `(theme/chart-style theme kind options)`: `[:chart kind]` with the named style of its `:theme-style` option
   (shared group `:theme-style`, every kind with a theme style) merged over it, its own style options over both.
   Named styles are partial `[:chart name]` entries; builders draw with registered ones (`theme/named-styles` - name
@@ -257,7 +257,9 @@ the theme: banned names, and one type family per name across all owners). One na
   dimension, not the strip frame's); other error keys name an option, never a pipeline stage.
 - Options: `nil` means the default (read with `data/option` / `data/options-with-defaults`; `:or` only for keys their
   schema doesn't let be `nil`). Builders and API functions whose options have no required key take the options map
-  optionally; the parameter is `options`, rows are `rows`.
+  optionally; the parameter is `options`, rows are `rows`; every
+  user-facing data function's `rows` also takes columns - a map of equal-length sequences, as a plot's `:data` does
+  (`data.rows/rows`, its errors `{:key :data}`; `data-columns-test`).
 - Kept on purpose: scatter, cloud and tile keep rows in data order (no `group/split`: it reorders by group, changing
   overplotting); the colour bar widens a single value to `[v, v + 1]` (its ticks), other ranges by
   `rows/widened-range`.
@@ -267,55 +269,53 @@ the theme: banned names, and one type family per name across all owners). One na
 - `notebooks/reference/*.clj` (four reference parts - Concepts, Charts, Builders, Data functions - before Use cases;
   chapter titles name their topic without the part's name; the galleries are lattice, Vega and cljplot;
   Quarto books have one level of parts), `notebooks/use_cases/*.clj` and
-  `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
-  only from `nu/options-table` (every page now shows option cards instead - see below; `option-cards-test` checks no page calls it) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
-  time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
-  `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key (but
-  `:chart`) and section has a table (cards on migrated pages) of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
+  `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Every reference option is shown
+  on an option card: `nu/option-cards call rows [section]` over `cljplot2.describe` rows (never hand-written; code
+  hidden) - per option a boxed card: a header with the option and its default, an example call of `call`, then its
+  description, a bullet per value or form with its meaning and the other values of a long list on one line. `call` is
+  a symbol (`chart/smooth`), a builder or function with its arguments before the options as placeholders shared with
+  the test fixtures (`'(plot/network edges)`, `'(graph/layout g)`), or the plot path of a plot map's cards
+  (`nu/option-cards [:theme] (describe/theme-rows k)`, `[:scales :x]`, `[:scales :color]`, `[:coord]`, `[]` - plot keys,
+  picked with `describe/rows-at`; the example printed as a plot map, e.g. `{:scales {:x {:kind :log}}}`). Mapping
+  keys show as `nu/mapping-list` boxes (a titled Mapping box; a section of sliced mapping rows), the plot's as
+  `nu/plot-mapping-list`. Each card group - one section at a time for sliced rows, at most 12 rows - comes after a
+  sentence or two on what the options are for and before its example (a chart or a value);
+  `reference-notebook-test` checks this for every schema of `describe/plot-level-schemas`, shared group, theme key
+  (but `:chart`) and section. On every book page (reference, use cases, galleries;
   `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
   some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
   class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`); a function's result
   is shown with `nu/result-table` (the same box, its call shown). Chart pages (`charts_*.clj`, ten chapters grouped by what
   they show: points, lines and areas; annotations; bars; distribution per level; distribution of one variable; fitted
   curves; 2D bins and fields; pairwise statistics; shares and sets; multivariate and 3D - kinds per page in
-  `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
-  below), its mapping table, its own
-  options (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by `:cljplot2/section` when
-  over 12 rows), each followed by an example, then `nu/shared-groups` (a Shared options box, a point per group linking to its `###`
-  heading there; on a migrated page it opens the section, right after the opening sentences);
+  `reference-notebook-test/chart-chapters`): per kind a `;; ## concept` heading (`describe/concepts`, e.g.
+  `## Smoothing`; its first sentence names the function and says what it's for), `nu/shared-groups` right after the
+  opening sentences (a Shared options box, a point per group linking to its `###` heading there), its mapping list
+  and its own option cards (`describe/own-rows` - shared groups left to the Shared options chapter, sliced by
+  `:cljplot2/section` when over 12 rows), each followed by an example;
   `chart-coverage-test`: every own top-level option set in a literal `(chart/kind {...})` map on the page and every
   value of an enum of at most 6 values given (a default counts when a call omits the option). Builder pages
   (`builders_*.clj`) likewise (own options + shared groups); data function pages (`data_*.clj`, a `;; ## concept`
   heading per `:cljplot2/api` function, `describe/concepts`, its full options rows); the same coverage rule over a call's literal last
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
-  Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
-  `test-util/migrated-builders`, data functions in `test-util/migrated-functions`, shared groups in
-  `test-util/migrated-groups`, top-level theme keys in `test-util/migrated-theme-keys` (all but `:chart` - the Theme
-  chapter's Chart section links the chart pages), plot-level schemas in `test-util/migrated-schemas` (name -> the
-  migrated key paths; their entries nested elsewhere - the plot's `:mapping`, `pairs`' - recognised by their
-  properties, `test-util/migrated-entry-props`) - the switches; cards of a plot map take its plot path as the call
-  (`nu/option-cards [:theme] (describe/theme-rows k)`, `[:scales :x]`, `[:scales :color]`, `[:coord]`, `[]` - plot
-  keys, picked with `describe/rows-at`; the example printed as a plot map, e.g. `{:scales {:x {:kind :log}}}`), drawn
-  on `option-cards-test` fixtures (`theme-fixtures` - text roles on the chart or builder drawing them;
-  `schema-fixtures` - each example at the cards' plot path, the rows shown those at migrated paths unless filtered); `describe/theme-rows
-  k` gives the rows under `k`, without its own row; the plot's mapping keys show as `nu/plot-mapping-list` boxes; a
-  group's cards on Shared options print its representative's call
-  (`chart/line`, `'(plot/network edges)`) and `option-cards-test` checks them through it (`group-fixtures`); a group a
-  data function owns (`:owner` in `describe/fragments`) is documented in that function's section, Shared options
-  boxes link there; a style group (`:style true`) gives its rows the default text `The chart's theme style.`; `describe/concepts`
-  keyed by kind keyword, builder symbol or data function's qualified symbol; data function sections show cards of all
-  their `describe/options` rows - a function owns its shared group's rows, whose texts read in the card style for the
-  builders forwarding them too):
-  `nu/option-cards call rows [section]` (`call` a symbol, `chart/smooth`, or a builder or function with its arguments
-  before the options as placeholders shared with the test fixtures, `'(plot/network edges)`, `'(graph/layout g)`) instead of options tables (per option a boxed card: a header with the option
-  and its default, an example call, then its description, a bullet per value or form with its meaning and the other
-  values of a long list on one line), each card group after a sentence or two on what the options are for, and
-  `nu/mapping-list` (a titled Mapping box; a section of sliced mapping rows) instead of the mapping table; the section heading names the concept
-  (`describe/concepts`, e.g. `## Smoothing`), its first sentence names the function and says what it's for; type
-  names link to the Types chapter (`nu/type-entries`, from `describe/documented-types` - `schema/named-types` and higher layers' documented named
-  types). Links into a reference section
-  are checked against its headings (`option-cards-test/reference-links-test`).
+  Card owners (`option-cards-test`): every chart kind, builder of `cljplot2.core`, data function taking options,
+  shared group no data function owns and theme key but `:chart` (the Theme chapter's Chart section links the chart
+  pages) - derived from the library - and every plot-level schema with a `schema-fixtures` entry (the mapping,
+  theme, coord and arrange are other owners' cards, `schemas-without-fixtures`); each owner's cards are drawn on
+  fixtures (`example-fixtures` - charts; `builder-fixtures`, `function-fixtures` - calls, a function's example must
+  change its result, `:compare :value`; `theme-fixtures` -
+  text roles on the chart or builder drawing them; `schema-fixtures` - each example at the cards' plot path;
+  `group-fixtures` - a group's cards on Shared options print its representative's call, `chart/line`,
+  `'(plot/network edges)`, and are checked through it), and every row of a plot-level schema but the theme's is some
+  owner's card (at its own plot path, `row-covered?`). `describe/theme-rows k` gives the rows under `k`, without its
+  own row; a group a data function owns (`:owner` in `describe/fragments`) is documented in that function's section, Shared options boxes link there; a
+  style group (`:style true`) gives its rows the default text `The chart's theme style.`; every chart kind, builder
+  and user-facing data function has a concept title in `describe/concepts` (keyed by kind keyword, builder symbol or
+  qualified function symbol), and nothing else does; data function sections show cards of all
+  their `describe/options` rows (a function owns its shared group's rows). Type names link to the Types chapter
+  (`nu/type-entries`, from `describe/documented-types` - `schema/named-types` and higher layers' documented named
+  types). Links into a reference section are checked against its headings (`option-cards-test/reference-links-test`).
   Conventions: a heading, 1-3 lines, code ending in `plot/render-image`; every random value from a seeded rng
   (`(r/rng :mersenne n)`); no notebook plotting helpers. `book-data-test` checks the rest:
   - images at most 1000×800 - a bigger one states its reason in the prose and is listed in
@@ -346,16 +346,15 @@ the theme: banned names, and one type family per name across all owners). One na
   silent. Functions with primitive type hints take at most 4 arguments.
 - Never mutate a caller's arrays.
 - Option schemas are closed; new options are off by default (existing images unchanged).
-- Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one sentence, lowercase, no
-  period - option tables; or one or two full sentences, at most 300 characters, saying what the option controls -
-  option cards; a text a migrated chart shares with charts still on tables may read in the card style; migrated
-  charts take the card style),
+- Every schema entry documents itself (`cljplot2.schema` ns doc): `:description` (one or two full sentences -
+  capitalised or opening with code, ending with a period - at most 300 characters, saying what the option controls;
+  default texts, argument descriptions and returns read the same way),
   `:default` for a constant behaviour default (never on style entries - the theme holds those) or
   `:cljplot2/default-doc` for a computed one; `:cljplot2/internal` for keys users don't set; shared groups via
   `schema/in-fragment` (registered in `cljplot2.describe/fragments`), `:cljplot2/entries-fragment` for a map whose
-  entries a group documents; `:cljplot2/section` slices the table of the map holding the entry (in one map all user
+  entries a group documents; `:cljplot2/section` slices the cards of the map holding the entry (in one map all user
   entries or none - for a chart, its own entries; nested entries inherit it unless their own map is sliced -
-  `describe/top-level-rows` gives a schema's own table; `schema/in-section` tags shared entries for one map); schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
+  `describe/top-level-rows` gives a schema's own rows; `schema/in-section` tags shared entries for one map); schema properties `:cljplot2/type-doc` (short type text of a large map or composite)
   and `:cljplot2/merged` (a map merged over defaults - theme, render options). `cljplot2.describe` turns schemas into
   option rows for the book's reference part;
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
@@ -376,16 +375,14 @@ the theme: banned names, and one type family per name across all owners). One na
   (`integer at least 2`); rules of `schema/with-rules` (`schema/rule?`) are left out - the description states the
   relation; form meanings are keyed by the form's short type text when two forms share a malli type (two maps: a
   `chart` and a `margin spec`), else by form key; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`, and with `:cljplot2/entries-fragment`
-  links its card form to the shared group documenting its keys - a text style, a grid line's line style). `option-cards-test` checks a migrated chart, builder or data function (card owners: fixture plots of charts, fixture
-  calls of builders and data functions - a function's example must change its result, `:compare :value`): sentences, a
+  links its card form to the shared group documenting its keys - a text style, a grid line's line style). `option-cards-test` checks every card owner: sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -
   is listed with its reason; one the chart can't draw without - `:f`, a rule's positions - is listed in `needed-to-draw`
   and only has to render); an option whose card documents `:none` renders with it (`none-colours-test`; a colour that
   can't draw nothing takes `schema/solid-color`);
-  `migrated` equals the keys of `describe/concepts` and each migrated section uses cards, never an options table, and a
-  mapping list when the chart has mapping keys.
+  each chart section uses cards and a mapping list when the chart has mapping keys.
 - Builders (`cljplot2.core` - `graphs`, `series_plots`, `multiplot`) and user-facing data functions (var metadata
   `:cljplot2/api true`) take a closed options schema in var metadata `:cljplot2/options` (also on the `plot/…`
   var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema

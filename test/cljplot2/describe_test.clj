@@ -134,7 +134,7 @@
     (testing "internal and forbidden entries have no rows"
       (is (nil? (by-path [:alignment-padding])))
       (is (nil? (by-path [:mapping :fill]))))
-    (testing "boundary: maps under validation rules (:scales :x, :arrange) aren't flattened - they have tables of their own"
+    (testing "boundary: maps under validation rules (:scales :x, :arrange) aren't flattened - they have rows of their own"
       (is (nil? (by-path [:arrange :columns])))
       (is (nil? (by-path [:scales :x :kind]))))
     (testing "the :arrange entries are the shared group :arrange"
@@ -201,7 +201,7 @@
       (is (nil? (:default (by-path [:palette :color]))))
       (is (string? (:default-doc (by-path [:palette :color]))))
       (is (= (get-in theme/default-theme [:palette :na]) (:default (by-path [:palette :na])))))
-    (testing "the style keys aren't repeated per role: one shared table, the :text-style group"
+    (testing "the style keys aren't repeated per role: one shared group of rows, the :text-style group"
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
       (is (= [:font :size :font-style :color :inset :align :background :dollar-math] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
@@ -240,7 +240,7 @@
 
 (deftest row-helpers-test
   (let [rows (describe/options pipeline/plot-schema)]
-    (testing "top-level rows: one key paths, in order; a nested map's own sections stay with its own table"
+    (testing "top-level rows: one key paths, in order; a nested map's own sections stay with its own rows"
       (is (= (filter #(= 1 (count (:path %))) rows) (describe/top-level-rows rows)))
       (is (= :layout (:section (row rows :facets))))
       (is (= :shape (:section (first (filter #(= [:facets :columns] (:path %)) rows)))))

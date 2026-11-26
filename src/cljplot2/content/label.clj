@@ -97,7 +97,7 @@
   `:labels` get their role from the layout, content has no default."
   (-> (mu/required-keys label-options [:role])
       (mu/merge [:map (schema/optional :fit {:cljplot2/internal true
-                                              :description "fit the text to its box: wrapped, shrunk down to its role's :min-size, then cut (axis titles)"}
+                                              :description "Fits the text to its box: wrapped, shrunk down to its role's `:min-size`, then cut (axis titles)."}
                                        schema/bool)])))
 
 (defmethod measure/validate-content :label

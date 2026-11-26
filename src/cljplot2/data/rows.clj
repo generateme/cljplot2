@@ -32,7 +32,7 @@
 
 (def ^:private mapping-key-docs
   "Plot-level meaning of each mapping key (each chart's mapping rows say how it reads them) and its section of the
-  mapping table: `:position`, `:interval`, `:ohlc`, `:aesthetic`, `:groups-and-order`, `:facet`, `:value`."
+  plot's mapping list: `:position`, `:interval`, `:ohlc`, `:aesthetic`, `:groups-and-order`, `:facet`, `:value`."
   {:x {:section :position :description "The x position, or the values of a strip chart with its levels on y."}
    :y {:section :position :description "The y position, or the values of a strip chart with its levels on x."}
    :z {:section :position :description "The third coordinate of 3D charts."}

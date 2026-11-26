@@ -389,7 +389,7 @@
                  (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
                  (:reverse options))
         frame (cond-> (space/frame-settings options mapping)
-                (and (= kind :density) (not (contains? options :axis-titles))) (assoc-in [:titles :z] "Density"))
+                (and (= kind :density) (not (space/titles-given? options))) (assoc-in [:titles :z] "Density"))
         st (merge (theme/resolved-style theme chart)
                   (select-keys options [:color])
                   {:surface-style (data/option options :style :surface)

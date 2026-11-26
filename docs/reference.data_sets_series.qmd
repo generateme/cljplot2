@@ -158,7 +158,7 @@ sets, size and degree, the largest first. Use it with `chart/bar`, a bar per com
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A bar per combination of sets that holds items of its own, <code>{:combination :sets :size :degree}</code>, the largest first.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set memberships, a row per item and set it belongs to: rows (a sequence of maps) or columns (a map of equal-length sequences); repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A bar per combination of sets that holds items of its own, <code>{:combination :sets :size :degree}</code>, the largest first.</div></div>
 ```
 
 
@@ -186,7 +186,7 @@ set is in the combination. Use it with `chart/scatter` under the bars.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row <code>{:combination :set :member}</code> per combination of <code>upset-rows</code> and chosen set; <code>:member</code> tells whether the set is in the combination.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set memberships, a row per item and set it belongs to: rows (a sequence of maps) or columns (a map of equal-length sequences); repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row <code>{:combination :set :member}</code> per combination of <code>upset-rows</code> and chosen set; <code>:member</code> tells whether the set is in the combination.</div></div>
 ```
 
 
@@ -364,7 +364,7 @@ mirrors negative values upward as negative band numbers. Use it to draw a horizo
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The series points, one row each.<div>Columns:<ul><li><code>:x</code> – The x value, a number; the option <code>:x</code> names another key.</li><li><code>:y</code> – The y value, a finite number or <code>nil</code>, which breaks the bands; the option <code>:y</code> names another key.</li><li><em>a series key</em> – The row's series, named by the option <code>:series</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :band-height}</code>: rows <code>{:x :y :band}</code> of the folded bands, with <code>:series</code> when the option names one, and the height of one band.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The series points, a row each: rows (a sequence of maps) or columns (a map of equal-length sequences).<div>Columns:<ul><li><code>:x</code> – The x value, a number; the option <code>:x</code> names another key.</li><li><code>:y</code> – The y value, a finite number or <code>nil</code>, which breaks the bands; the option <code>:y</code> names another key.</li><li><em>a series key</em> – The row's series, named by the option <code>:series</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :band-height}</code>: rows <code>{:x :y :band}</code> of the folded bands, with <code>:series</code> when the option names one, and the height of one band.</div></div>
 ```
 
 
@@ -466,7 +466,7 @@ tiles.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences), a numeric column per variable of <code>:variables</code>, or of <code>:x-variables</code> and <code>:y-variables</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per cell <code>{:x :y :value :n :statistic}</code>: the statistic of the x sample against the y sample, <code>nil</code> when it can't be computed, and the sample size.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (a sequence of maps) or columns (a map of equal-length sequences), a numeric column per variable of <code>:variables</code>, or of <code>:x-variables</code> and <code>:y-variables</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per cell <code>{:x :y :value :n :statistic}</code>: the statistic of the x sample against the y sample, <code>nil</code> when it can't be computed, and the sample size.</div></div>
 ```
 
 

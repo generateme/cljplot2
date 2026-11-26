@@ -111,21 +111,25 @@
 
   Parameters:
 
-  - `rows`, `mapping`, `sets` (optional): as in [[memberships]].
+  - `rows`: the memberships, rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `mapping`, `sets` (optional): as in [[memberships]].
 
   Returns `[{:combination c :sets [..] :size n :degree k} ..]` - one row per exact combination (see [[intersections]]), `c` its sets joined with ` & `, `k` the count of its sets; sorted by size descending, then degree, then set order.
 
+  Throws `ex-info {:key :data}` for data that are neither rows (a sequence of maps) nor columns (see [[cljplot2.data.rows/rows]]).
+
   See also [[membership-rows]]."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "Set membership rows, one per item and set it belongs to; repeated rows count once."}
+   :cljplot2/arguments [{:name 'rows :description "Set memberships, a row per item and set it belongs to: rows (a sequence of maps) or columns (a map of equal-length sequences); repeated rows count once."}
                          {:name 'mapping :description "The accessors of the rows' set and item." :keys {:set "The accessor of a row's set." :item "The accessor of a row's item."}}
                          {:name 'sets :optional true :description "The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance."}]
    :cljplot2/returns "A bar per combination of sets that holds items of its own, `{:combination :sets :size :degree}`, the largest first."}
   ([rows mapping] (upset-rows rows mapping nil))
   ([rows mapping sets]
-   (let [{order :sets} (memberships rows mapping sets)
+   (let [rs (data/rows rows)
+         {order :sets} (memberships rs mapping sets)
          rank (zipmap order (range))]
-     (->> (intersections rows mapping sets)
+     (->> (intersections rs mapping sets)
           (map (fn [{ss :sets n :size}] {:combination (apply str (interpose " & " ss)) :sets ss :size n :degree (count ss)}))
           (sort-by (fn [{:keys [size degree] combination-sets :sets}] [(m/- (long size)) degree (mapv rank combination-sets)]))
           vec))))
@@ -135,18 +139,22 @@
 
   Parameters:
 
-  - `rows`, `mapping`, `sets` (optional): as in [[memberships]].
+  - `rows`: the memberships, rows or columns (see [[cljplot2.data.rows/rows]]).
+  - `mapping`, `sets` (optional): as in [[memberships]].
 
-  Returns a vector of `{:combination c :set s :member bool}` for every combination of [[upset-rows]] (in its order) and every chosen set (in set order); `:member` - whether `s` is in the combination."
+  Returns a vector of `{:combination c :set s :member bool}` for every combination of [[upset-rows]] (in its order) and every chosen set (in set order); `:member` - whether `s` is in the combination.
+
+  Throws `ex-info {:key :data}` for data that are neither rows (a sequence of maps) nor columns (see [[cljplot2.data.rows/rows]])."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "Set membership rows, one per item and set it belongs to; repeated rows count once."}
+   :cljplot2/arguments [{:name 'rows :description "Set memberships, a row per item and set it belongs to: rows (a sequence of maps) or columns (a map of equal-length sequences); repeated rows count once."}
                          {:name 'mapping :description "The accessors of the rows' set and item." :keys {:set "The accessor of a row's set." :item "The accessor of a row's item."}}
                          {:name 'sets :optional true :description "The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance."}]
    :cljplot2/returns "A row `{:combination :set :member}` per combination of `upset-rows` and chosen set; `:member` tells whether the set is in the combination."}
   ([rows mapping] (membership-rows rows mapping nil))
   ([rows mapping sets]
-   (let [{order :sets} (memberships rows mapping sets)]
-     (vec (for [{:keys [combination] ss :sets} (upset-rows rows mapping sets)
+   (let [rs (data/rows rows)
+         {order :sets} (memberships rs mapping sets)]
+     (vec (for [{:keys [combination] ss :sets} (upset-rows rs mapping sets)
                 :let [in (set ss)]
                 s order]
             {:combination combination :set s :member (contains? in s)})))))

@@ -69,7 +69,13 @@
       (is (= [12 12] ((juxt :nu :nv) (:mesh cp))))
       (is (every? #(>= (double (% 2)) 0.0) (:nodes (:mesh cp))))
       (is (= "Density" (get-in cp [:frame :titles :z])))
-      (is (= :mapping (:key (error #(built {:data rows :mapping {:x :x} :charts [(chart/surface {:density true})]})))))))
+      (is (= :mapping (:key (error #(built {:data rows :mapping {:x :x} :charts [(chart/surface {:density true})]})))))
+      (testing "boundary: :axis-titles nil keeps the default titles (z Density), :none draws none, a map replaces them"
+        (let [titles (fn [o] (get-in (panel {:data rows :mapping {:x :x :y :y} :charts [(chart/surface (merge {:density true :n 12} o))]})
+                                     [:frame :titles]))]
+          (is (= {:x "x" :y "y" :z "Density"} (titles {:axis-titles nil})))
+          (is (nil? (titles {:axis-titles :none})))
+          (is (= {:z "d"} (titles {:axis-titles {:z "d"}})))))))
   (testing "5.1 one source per chart"
     (is (seq (error-ins #(built {:data lattice :mapping {:x :x :y :y} :charts [(chart/surface (assoc plane :density true))]}))))))
 
@@ -186,6 +192,11 @@
         (is (= 0.0 base))
         (is (= 0.0 (first (:z domains))))
         (is (= "Count" (get-in frame [:titles :z])))))
+    (testing "6.2 boundary: :axis-titles nil keeps the default titles (z Count), :none draws none, a map replaces them"
+      (is (= {:x "x" :y "y" :z "Count"} (:titles (:frame (cp {:axis-titles nil})))))
+      (is (nil? (:titles (:frame (cp {:axis-titles :none})))))
+      (is (= {:z "n"} (:titles (:frame (cp {:axis-titles {:z "n"}})))))
+      (is (= :axis-titles (:key (error #(built {:data rows :mapping {:x :x :y :y} :charts [(chart/cloud {:type :bars :bins [4 3] :axis-titles :all})]}))))))
     (testing "6.2 spikes too; an explicit domain bins its range"
       (is (= [-2 2] (:x (:domains (cp {:type :spikes :domain {:x [-2 2]}}))))))
     (testing "6.2 rules: :bins needs bars / spikes, no aesthetic mapping, no projections; no :z without :bins"
@@ -279,10 +290,15 @@
       (is (nil? (:titles (scene {:titles nil}))) "nil clears the titles")
       (is (= [2 1 1] (:aspect (scene {:aspect [3 1 1]} {:aspect [2 1 1]}))) "the last wins")
       (is (false? (:box (scene {:box false})))))
-    (testing "R7 overrides hold only the options set; :axis-titles nil - no titles"
+    (testing "R7 overrides hold only the options set; :axis-titles :none - no titles (clearing them), nil - the default (not set)"
       (is (= {} (space/frame-overrides {:box nil :size 3})))
-      (is (= {:view {:azimuth 5} :box false :titles nil} (space/frame-overrides {:view {:azimuth 5} :box false :axis-titles nil})))
-      (is (nil? (:titles (space/frame-settings {:axis-titles nil} {:x :x})))))
+      (is (= {:view {:azimuth 5} :box false :titles nil} (space/frame-overrides {:view {:azimuth 5} :box false :axis-titles :none})))
+      (is (= {} (space/frame-overrides {:axis-titles nil})))
+      (is (= {:titles {:x "a"}} (space/frame-overrides {:axis-titles {:x "a"}})))
+      (is (nil? (:titles (space/frame-settings {:axis-titles :none} {:x :x}))))
+      (is (= {:x "x"} (:titles (space/frame-settings {:axis-titles nil} {:x :x}))))
+      (is (= {:x "x"} (:titles (space/frame-settings {} {:x :x}))))
+      (is (= {} (:titles (space/frame-settings {:axis-titles {}} {:x :x}))) "an empty map - no title for any axis"))
     (testing "R7 a cloud's view over a surface's frame"
       (let [domain {:x [0 2] :y [0 1] :z [0 12]}
             b (built {:data lattice :mapping {:x :x :y :y :z :z}

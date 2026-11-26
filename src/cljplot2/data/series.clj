@@ -308,7 +308,7 @@
 
   Parameters:
 
-  - `rows` (sequence of maps): the data.
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]), a point each.
   - `options` (map, optional, see [[horizon-rows-options]]):
     - `:x`, `:y` - row keys of the x values (numbers) and y values (finite numbers or `nil`), default `:x` / `:y`.
     - `:series` - row key of the series, one horizon per value in first-appearance order; default one series `nil`.
@@ -319,39 +319,40 @@
 
   Returns `{:rows [{:x :y :band :series} ...] :band-height h}`: band `k` (1..n) is `clamp(y - (k-1) h, 0, h)`, band `-k` the same of `-y` (negatives mirrored upward); every series' points sorted by x with the crossings of band edges inserted, so linear areas are exact; a `nil` `y` breaks the bands (a row with `:y nil` per band); `:series` only with the option.
 
-  Throws `ex-info` for an invalid option (checked first: `{:key :bands}`, `{:key :band-height}`, `{:key :steps-per-gap}` ...), `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number, `{:key :interpolator}` for an unknown method or a repeated x in a run.
+  Throws `ex-info` for an invalid option (checked first: `{:key :bands}`, `{:key :band-height}`, `{:key :steps-per-gap}` ...), `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number, `{:key :interpolator}` for an unknown method or a repeated x in a run. Data that are neither rows (a sequence of maps) nor columns throw `{:key :data}` (see [[cljplot2.data.rows/rows]]).
 
   See also [[horizon-bands]]."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The series points, one row each." :columns {:x "The x value, a number; the option `:x` names another key." :y "The y value, a finite number or `nil`, which breaks the bands; the option `:y` names another key." "a series key" "The row's series, named by the option `:series`; optional."}}]
+   :cljplot2/arguments [{:name 'rows :description "The series points, a row each: rows (a sequence of maps) or columns (a map of equal-length sequences)." :columns {:x "The x value, a number; the option `:x` names another key." :y "The y value, a finite number or `nil`, which breaks the bands; the option `:y` names another key." "a series key" "The row's series, named by the option `:series`; optional."}}]
    :cljplot2/returns "`{:rows :band-height}`: rows `{:x :y :band}` of the folded bands, with `:series` when the option names one, and the height of one band."
    :cljplot2/options horizon-rows-options}
   ([rows] (horizon-rows rows {}))
   ([rows {:keys [x y series ^long bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10} :as options}]
    (schema/check-options! horizon-rows-options options)
-   (when-let [bad (first (remove #(number? (get % x)) rows))]
-     (schema/fail! "Horizon x values should be numbers." {:key :x :value (get bad x)}))
-   (when-let [bad (first (remove #(let [v (get % y)] (or (nil? v) (schema/finite? v))) rows))]
-     (schema/fail! "Horizon y values should be finite numbers (nil breaks the bands)." {:key :y :value (get bad y)}))
-   (let [groups (if series
-                  (let [order (distinct (map #(get % series) rows))
-                        by (group-by #(get % series) rows)]
-                    (map (fn [s] [s (by s)]) order))
-                  [[nil rows]])
-         top (v/mx (into [0.0] (keep #(when-let [value (get % y)] (m/abs (double value)))) rows))
-         h (double (or band-height (if (m/pos? top) (m// top (double bands)) 1.0)))
-         levels (band-levels bands h)
-         labels (horizon-bands bands)]
-     {:band-height h
-      :rows (vec (for [[s rs] groups
-                       :let [sorted (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
-                                          (sort-by #(double (get % x)) rs))
-                             points (with-crossings (if interpolator
-                                                      (interpolated-points sorted (fit/fit-fn interpolator nil)
-                                                                           (long steps-per-gap))
-                                                      sorted)
-                                                    levels)]
-                       band labels
-                       [px py] points]
-                   (cond-> {:x px :y (band-height-of band h py) :band band}
-                     series (assoc :series s))))})))
+   (let [point-rows (data/rows rows)]
+     (when-let [bad (first (remove #(number? (get % x)) point-rows))]
+       (schema/fail! "Horizon x values should be numbers." {:key :x :value (get bad x)}))
+     (when-let [bad (first (remove #(let [v (get % y)] (or (nil? v) (schema/finite? v))) point-rows))]
+       (schema/fail! "Horizon y values should be finite numbers (nil breaks the bands)." {:key :y :value (get bad y)}))
+     (let [groups (if series
+                    (let [order (distinct (map #(get % series) point-rows))
+                          by (group-by #(get % series) point-rows)]
+                      (map (fn [s] [s (by s)]) order))
+                    [[nil point-rows]])
+           top (v/mx (into [0.0] (keep #(when-let [value (get % y)] (m/abs (double value)))) point-rows))
+           h (double (or band-height (if (m/pos? top) (m// top (double bands)) 1.0)))
+           levels (band-levels bands h)
+           labels (horizon-bands bands)]
+       {:band-height h
+        :rows (vec (for [[s rs] groups
+                         :let [sorted (mapv (fn [r] [(double (get r x)) (some-> (get r y) double)])
+                                            (sort-by #(double (get % x)) rs))
+                               points (with-crossings (if interpolator
+                                                        (interpolated-points sorted (fit/fit-fn interpolator nil)
+                                                                             (long steps-per-gap))
+                                                        sorted)
+                                                      levels)]
+                         band labels
+                         [px py] points]
+                     (cond-> {:x px :y (band-height-of band h py) :band band}
+                       series (assoc :series s))))}))))

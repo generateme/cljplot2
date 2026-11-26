@@ -310,7 +310,7 @@
 
   See also [[statistic-samples]], [[statistic-value]]."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences), a numeric column per variable of `:variables`, or of `:x-variables` and `:y-variables`."}]
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (a sequence of maps) or columns (a map of equal-length sequences), a numeric column per variable of `:variables`, or of `:x-variables` and `:y-variables`."}]
    :cljplot2/returns "A row per cell `{:x :y :value :n :statistic}`: the statistic of the x sample against the y sample, `nil` when it can't be computed, and the sample size."
    :cljplot2/options matrix-rows-options}
   [rows {:keys [variables x-variables y-variables label] :as options}]

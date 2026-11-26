@@ -20,8 +20,7 @@
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
             [cljplot2.theme]
-            [cljplot2.test-util :refer [card-groups explicit-defaults migrated migrated-entry-props migrated-path? migrated-theme-keys pixels
-                                         same-pixels? schema-entries]]))
+            [cljplot2.test-util :refer [card-text? explicit-defaults pixels same-pixels? schema-entries]]))
 
 (def chart-constructors
   "Kind -> constructor (var) of every built-in chart."
@@ -174,71 +173,54 @@
             (assoc row :kind kind))
           (for [f (keys describe/fragments) row (describe/fragment-rows f)] (assoc row :kind f))))
 
-(defn- old-style?
-  "Tests whether text `t` follows the writing rule of option tables: one sentence of at most 200 characters, starting
-  lowercase, without a final period."
-  [t]
-  (not (or (re-find #"^[A-Z]" t) (str/ends-with? t ".") (> (count t) 200))))
-
-(defn- card-style?
-  "Tests whether text `t` follows the writing rule of option cards: one or two full sentences (capitalised or opening
-  with code, ending with a period), at most 300 characters."
-  [t]
-  (and (re-find #"^[A-Z`]" t) (str/ends-with? t ".") (<= (count t) 300)
-       (<= (count (re-seq #"\.(\s|$)" (str/replace t "e.g." "eg"))) 2)))
-
-(defn- migrated-texts
-  "The texts under `k` of the migrated charts' option and mapping rows (see `test-util/migrated`)."
-  [k]
-  (set (for [[kind ctor] chart-constructors
-             :when (contains? migrated kind)
-             :let [c (ctor)]
-             row (concat (describe/options c) (describe/mapping c))
-             :let [t (get row k)]
-             :when (string? t)]
-         t)))
-
 (defn- rule-breaks
-  "`[kind path text]` of the texts under `k` of `rows` breaking the writing rule (see [[old-style?]]); a text a
-  migrated chart shares (an entry several charts take - `shared`) may read in the card style instead
-  ([[card-style?]]); `option-cards-test` holds the migrated charts to the card style."
-  ([rows k] (rule-breaks rows k (migrated-texts k)))
-  ([rows k shared]
-   (vec (for [{:keys [kind path] :as row} rows
-              :let [t (get row k)]
-              :when (and (string? t) (not (old-style? t)) (not (and (contains? shared t) (card-style? t))))]
-          [kind path t]))))
+  "`[kind path text]` of the texts under `k` of `rows` breaking the writing rule of option cards (see `test-util/card-text?`)."
+  [rows k]
+  (vec (for [{:keys [kind path] :as row} rows
+             :let [t (get row k)]
+             :when (and (string? t) (not (card-text? t)))]
+         [kind path t])))
 
 (deftest writing-rules-test
-  (let [card-owners (into migrated (card-groups))
-        rows (remove #(contains? card-owners (:kind %)) (all-rows))]
+  (let [rows (all-rows)]
     (testing "descriptions"
       (is (= [] (rule-breaks rows :description))))
     (testing "default texts"
       (is (= [] (rule-breaks rows :default-doc))))
-    (testing "boundary: the rule itself"
-      (is (= 4 (count (rule-breaks [{:kind :k :path [:a] :description "Starts upper"}
-                                    {:kind :k :path [:b] :description "ends with a period."}
-                                    {:kind :k :path [:c] :description (apply str (repeat 201 "x"))}
-                                    {:kind :k :path [:d] :description (apply str (repeat 200 "x"))}
-                                    {:kind :k :path [:e] :description nil}
-                                    {:kind :k :path [:f] :description "A full sentence."}
-                                    {:kind :k :path [:g] :description "One. Two. Three."}]
-                                   :description #{"A full sentence." "One. Two. Three."})))))
-    (testing "boundary: the groups skipped are the migrated functions' (a function's own group), never a chart's group"
-      (is (contains? (card-groups) :graph/graph))
-      (is (contains? (card-groups) :line-style))
-      (is (not-any? (card-groups) [:annotation-x :plot])))
-    (testing "boundary: a card-style text not shared with a migrated chart breaks the table rule"
-      (is (= 1 (count (rule-breaks [{:kind :k :path [:a] :description "A full sentence."}] :description #{})))))
-    (testing "a migrated chart's mapped :group reads the card way"
-      (is (every? #(str/starts-with? (:description %) "Splits the rows into groups that look the same")
-                  (filter #(= [:group] (:path %))
-                          (mapcat (comp describe/mapping #(%)) (vals (select-keys chart-constructors migrated)))))))
+    (testing "boundary: the rule itself - capital or code first, a final period, at most 300 characters, two sentences"
+      (is (= [[:a] [:b] [:c] [:g]]
+             (mapv second (rule-breaks [{:kind :k :path [:a] :description "Starts upper"}
+                                        {:kind :k :path [:b] :description "ends with a period."}
+                                        {:kind :k :path [:c] :description (str "A" (apply str (repeat 299 "x")) ".")}
+                                        {:kind :k :path [:d] :description (str "A" (apply str (repeat 298 "x")) ".")}
+                                        {:kind :k :path [:e] :description nil}
+                                        {:kind :k :path [:f] :description "`code` first. Two."}
+                                        {:kind :k :path [:g] :description "One. Two. Three."}
+                                        {:kind :k :path [:h] :description "One, e.g. this. Two."}]
+                                       :description)))))
     (testing "a mapped :group reads the same in every chart"
-      (is (every? #(str/starts-with? (:description %) "groups without a visual aesthetic")
-                  (filter #(= [:group] (:path %))
-                          (mapcat (comp describe/mapping #(%)) (vals (apply dissoc chart-constructors migrated)))))))))
+      (let [group-rows (filter #(= [:group] (:path %)) (mapcat (comp describe/mapping #(%)) (vals chart-constructors)))]
+        (is (seq group-rows))
+        (is (every? #(str/starts-with? (:description %) "Splits the rows into groups that look the same") group-rows))))))
+
+(deftest schema-entry-texts-test
+  (testing "every entry of every chart's schemas (options, style, mapping) reads in the card style, also theme-only and internal entries without rows"
+    (is (= [] (vec (for [[kind ctor] chart-constructors
+                         [schema-key s] (:schema (ctor))
+                         [path props v] (schema-entries s)
+                         :when (not (schema/forbidden? v))
+                         t (keep #(get props %) [:description :cljplot2/default-doc])
+                         :when (not (card-text? t))]
+                     [kind schema-key path t])))))
+  (testing "the label content schema (labels the layout builds; its internal :fit) too"
+    (is (= [] (vec (for [[path props] (schema-entries @#'cljplot2.content.label/content-schema)
+                         t (keep #(get props %) [:description :cljplot2/default-doc])
+                         :when (not (card-text? t))]
+                     [path t])))))
+  (testing "boundary: the walk reaches theme-only style entries (cloud's projection alphas) and internal options (pairwise :text-template)"
+    (let [paths (fn [kind k] (set (map first (schema-entries (get-in ((chart-constructors kind)) [:schema k])))))]
+      (is (contains? (paths :cloud :style) [:projection-alpha-factor]))
+      (is (contains? (paths :pairwise :options) [:text-template])))))
 
 ;; fragments
 
@@ -260,48 +242,19 @@
   "Every non-chart schema users write: name -> schema."
   describe/plot-level-schemas)
 
-(defn- card-theme-entry?
-  "Tests whether a theme entry at `path` reads in the card style: under a migrated theme key (`test-util/migrated-theme-keys`)
-  or `:chart` (no cards - each chart's page documents its style - but one style per schema)."
-  [path]
-  (contains? (conj migrated-theme-keys :chart) (first path)))
-
 (deftest non-chart-descriptions-test
-  (doseq [:let [card-group? (card-groups) migrated-props (migrated-entry-props)]
-          [n s] non-chart-schemas
-          :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (schema-entries s))
-                card-entry? (fn [[path props]] (or (card-group? (:cljplot2/fragment props)) (and (= :theme n) (card-theme-entry? path))
-                                                   (contains? migrated-props props)))
-                table-entries (remove card-entry? entries)]]
+  (doseq [[n s] non-chart-schemas
+          :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (schema-entries s))]]
     (testing (str n ": every entry described")
       (is (seq entries))
       (is (= [] (vec (keep (fn [[path props]] (when-not (:description props) path)) entries)))))
     (testing (str n ": not both :default and a default text")
       (is (not-any? (fn [[_ props]] (and (contains? props :default) (contains? props :cljplot2/default-doc))) entries)))
-    (testing (str n ": writing rule")
-      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :description (:description props)
-                                                      :default-doc (:cljplot2/default-doc props)})
-                                  table-entries)
-                             :description)))
-      (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :default-doc (:cljplot2/default-doc props)}) table-entries)
-                             :default-doc))))
-    (testing (str n ": every migrated entry (a migrated theme key, a migrated schema path) reads in the card style, nested ones without rows too (grid line keys, a role's text style keys, tick parameters)")
-      (is (= [] (vec (for [[path props :as entry] entries
-                           :when (card-entry? entry)
+    (testing (str n ": every entry reads in the card style, nested ones without rows too (grid line keys, a role's text style keys, tick parameters)")
+      (is (= [] (vec (for [[path props] entries
                            t (keep props [:description :cljplot2/default-doc])
-                           :when (not (card-style? t))]
+                           :when (not (card-text? t))]
                        [path t])))))
-    (when (= :theme n)
-      (testing "boundary: :chart and nested paths of migrated keys are card entries"
-        (is (card-theme-entry? [:chart]))
-        (is (card-theme-entry? [:text :title :size]))
-        (is (not (card-theme-entry? [:no-such-key])))))
-    (when (= :plot n)
-      (testing "boundary: a whole migrated schema ([]) covers its nested entries; an unmigrated schema none"
-        (is (migrated-path? :plot [:groups :na]))
-        (is (migrated-path? :facets [:scales :x]))
-        (is (migrated-path? :plot [:margins :right]))
-        (is (not (migrated-path? :coord [:kind])))))
     (testing (str n ": readable type texts")
       (is (= [] (vec (keep #(when (re-find #":cljplot2\.|#object|\[:(cat|\?|\*|\+|fn|map|and|or|maybe|enum)\b|\w\?(,| |$)" (:type %))
                               [(:path %) (:type %)])

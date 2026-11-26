@@ -260,7 +260,7 @@
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]) or a bad accessor."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (a sequence of maps) or columns (a map of equal-length sequences)."}
                          {:name 'value :description "The accessor of a row's numeric value, e.g. `:hp`."}]
    :cljplot2/returns "Every row with its bin under `:as`: an interval `[lo, hi)`, the last one closed. A missing, non-numeric or non-finite value, or one outside explicit breaks, gets a `nil` bin."
    :cljplot2/options bin-options}
@@ -364,7 +364,7 @@
 
   Throws `ex-info` for bad options."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (a sequence of maps) or columns (a map of equal-length sequences)."}
                          {:name 'level :description "The accessor of a row's level."}
                          {:name 'value :description "The accessor of the value the statistic scores; a level's finite values are scored."}
                          {:name 'stat :description "A function of a non-empty sequence of numbers that returns a number, e.g. `stats/median` or `count`."}]
@@ -423,7 +423,7 @@
 
   Throws `ex-info` for bad options."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (a sequence of maps) or columns (a map of equal-length sequences)."}
                          {:name 'x :description "The accessor of a row's x: the function ranks the rows sharing an x together."}
                          {:name 'value :description "The accessor of the ranked value."}]
    :cljplot2/returns "Every row with its rank under `:as`, 1 the first; a row without a finite value or a valid x gets `nil`."

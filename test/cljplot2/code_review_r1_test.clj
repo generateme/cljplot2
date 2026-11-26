@@ -178,7 +178,7 @@
     (let [rows (describe/style-rows :network-edge)]
       (is (= [:color :line-width :dash] (map :key rows)))
       (is (= [(c/gray 120 200) 1 :none] (map :default rows)))))
-  (testing "boundary: a line style (sectioned in the line chart's own table) - one table, no sections"
+  (testing "boundary: a line style (sectioned in the line chart's own rows) - one group of rows, no sections"
     (is (every? nil? (map :section (describe/style-rows :tree-link))))
     (is (<= (count (describe/style-rows :tree-link)) 12)))
   (testing "only the given style keys, in the kind's order"

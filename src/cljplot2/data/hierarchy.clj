@@ -374,7 +374,7 @@
 
   Parameters:
 
-  - `rows` (sequence of maps): one sequence per row.
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]), one sequence per row.
   - `options` (map, optional):
     - `:sequence` - accessor of a row's sequence: a string split at `:separator`, or a sequence of steps; empty steps left out (default `:sequence`).
     - `:value` - accessor of a row's weight, a finite number >= 0 (see [[cljplot2.data.rows/weight]]); identical sequences summed (default 1 per row).
@@ -384,18 +384,19 @@
 
   Returns `{:rows [{:step-1 s1 .. :step-k sk :value v} ..] :hierarchy [:step-1 .. :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order; `:dropped` - rows without steps.
 
-  Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]])."
+  Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]]). Data that are neither rows (a sequence of maps) nor columns throw `{:key :data}` (see [[cljplot2.data.rows/rows]])."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "One sequence per row." :columns {:sequence "The sequence: a string of steps joined by `:separator`, or a sequence of steps; the option `:sequence` names another column." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
+   :cljplot2/arguments [{:name 'rows :description "The data, each row holding one sequence: rows (a sequence of maps) or columns (a map of equal-length sequences)." :columns {:sequence "The sequence: a string of steps joined by `:separator`, or a sequence of steps; the option `:sequence` names another column." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
    :cljplot2/returns "`{:rows :hierarchy :dropped}`: a row per distinct sequence with a column per step (`:step-1` ...) and the summed `:value`, the step keys, and the number of rows without steps."
    :cljplot2/options sequence-levels-options}
   ([rows] (sequence-levels rows {}))
   ([rows {:keys [value separator end] sequence-accessor :sequence :or {sequence-accessor :sequence separator "-" end "end"} :as options}]
    (schema/check-options! sequence-levels-options options)
-   (let [keep-end? (data/option options :keep-end true)
+   (let [rs (data/rows rows)
+         keep-end? (data/option options :keep-end true)
          sequence-of (data/row-accessor :sequence sequence-accessor)
          value-of (if value (data/row-accessor :value value) (constantly nil))
-         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rows)
+         keyed (mapv (fn [row] [(sequence-steps (sequence-of row) separator [end keep-end?]) (data/weight (value-of row))]) rs)
          kept (filter (comp seq first) keyed)
          sums (reduce (fn [acc [steps weight]] (update acc steps (fnil m/+ 0.0) (double weight))) {} kept)
          order (distinct (map first kept))

@@ -7,17 +7,17 @@
 
   Entry properties documenting an option (read by [[cljplot2.describe]], ignored by validation):
 
-  - `:description` - one sentence (an owner migrated to option cards: one or two full sentences, see `CLAUDE.md`).
+  - `:description` - one or two full sentences (capitalised or opening with code, ending with a period), at most 300 characters, saying what the option controls; `:cljplot2/default-doc` reads the same way.
   - `:default` - a constant default of a behaviour option; style options take theme defaults instead.
   - `:cljplot2/default-doc` - the text of a computed default.
   - `:cljplot2/value-meanings` - meanings of literal values, `{value meaning}` (`nil` too, when it isn't the default; also on an `:enum` schema's properties, shared by its entries); `:cljplot2/form-meanings` - meanings of the other accepted forms, `{form meaning}` (a form is a named type's keyword, e.g. `::function`, or a malli type, e.g. `:vector`); `:cljplot2/other-values` - one meaning for the values without their own (a long list).
   - `:cljplot2/example` - the option's example value, printed as code (a form such as `'(r/rng :mersenne 7)` for a value that doesn't print); `:cljplot2/example-context` - other options the example needs to be valid or to act (e.g. `{:band :bootstrap}`).
   - `:cljplot2/fragment` - the shared group of options the entry belongs to, set by [[in-fragment]].
-  - `:cljplot2/entries-fragment` - the shared group documenting the entries of the entry's map (one table for many entries, e.g. text roles).
-  - `:cljplot2/section` - the slice of a long option table the entry belongs to (a keyword; in one map every user entry has one or none has; nested entries inherit it), see [[in-section]].
-  - `:cljplot2/internal` - not a user option (no table row).
+  - `:cljplot2/entries-fragment` - the shared group documenting the entries of the entry's map (documented once for many entries, e.g. text roles).
+  - `:cljplot2/section` - the slice of a long list of options (its own group of cards) the entry belongs to (a keyword; in one map every user entry has one or none has; nested entries inherit it), see [[in-section]].
+  - `:cljplot2/internal` - not a user option (no card).
 
-  Schema properties: `:cljplot2/type-doc` (the type's text in option tables, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/type-name` (its short name on option cards, e.g. a mapping's), `:cljplot2/entries-fragment` (the shared group documenting its keys - its card form links there, e.g. a text style) and `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides). Named types also take `:cljplot2/type-name` (a short name; `:cljplot2/type-plural` when its plural isn't regular) and `:cljplot2/type-meaning` (what it is, with an example) - the schema layer's are [[named-types]], part of the book's registry `cljplot2.describe/documented-types`; `:cljplot2/value-set` (the literal values a predicate type accepts: a set, listed sorted, or a vector, listed in its order) and `:cljplot2/other-types` (the named types of its other values), so its forms can be listed; `:cljplot2/value-meanings` and `:cljplot2/form-meanings` (value and form meanings shared by every entry of the type).
+  Schema properties: `:cljplot2/type-doc` (the type's text in an option row's `:type`, for a large map or composite; named types take it as an argument, see [[named-type]]) and, on a map, `:cljplot2/type-name` (its short name on option cards, e.g. a mapping's), `:cljplot2/entries-fragment` (the shared group documenting its keys - its card form links there, e.g. a text style) and `:cljplot2/merged` (a merged input - theme, render options: every key present after merging, users give partial overrides). Named types also take `:cljplot2/type-name` (a short name; `:cljplot2/type-plural` when its plural isn't regular) and `:cljplot2/type-meaning` (what it is, with an example) - the schema layer's are [[named-types]], part of the book's registry `cljplot2.describe/documented-types`; `:cljplot2/value-set` (the literal values a predicate type accepts: a set, listed sorted, or a vector, listed in its order) and `:cljplot2/other-types` (the named types of its other values), so its forms can be listed; `:cljplot2/value-meanings` and `:cljplot2/form-meanings` (value and form meanings shared by every entry of the type).
 
   Functions and vars:
 
@@ -42,14 +42,14 @@
 ;; named types
 
 (defn named-type
-  "Creates a malli schema type of the values satisfying a predicate, with its own error message and table text.
+  "Creates a malli schema type of the values satisfying a predicate, with its own error message and type text.
 
   Parameters:
 
   - `type-name` (qualified keyword): the type's name, printed in schema forms.
   - `pred` (function): the predicate a valid value satisfies.
   - `message` (string or function): the error message, or a function of the invalid value returning it.
-  - `doc` (string or map, optional): a string is the type's text in option tables (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]); without it the tables take a string `message` without its leading `should be`. A map holds documenting type properties (see the namespace doc): `:cljplot2/type-doc`, `:cljplot2/type-name`, `:cljplot2/type-meaning`, `:cljplot2/value-set`, `:cljplot2/other-types`, `:cljplot2/value-meanings`.
+  - `doc` (string or map, optional): a string is the type's text in option rows (type property `:cljplot2/type-doc`, see [[cljplot2.describe]]); without it the rows take a string `message` without its leading `should be`. A map holds documenting type properties (see the namespace doc): `:cljplot2/type-doc`, `:cljplot2/type-name`, `:cljplot2/type-meaning`, `:cljplot2/value-set`, `:cljplot2/other-types`, `:cljplot2/value-meanings`.
 
   Returns a malli schema (an `IntoSchema` value) usable in any schema form."
   ([type-name pred message] (named-type type-name pred message nil))
@@ -463,18 +463,18 @@
   - `fragment` (keyword): the group, registered in [[cljplot2.describe/fragments]].
   - `entries` (sequence): map entries, `[k props schema]` or `[k schema]`.
 
-  Returns a vector of the entries with `:cljplot2/fragment fragment`; option tables leave them to the group's own table. See also [[in-section]]."
+  Returns a vector of the entries with `:cljplot2/fragment fragment`; option cards leave them to the group's own cards. See also [[in-section]]."
   [fragment entries]
   (with-entry-property :cljplot2/fragment fragment entries))
 
 (defn in-section
-  "Puts map entries in one slice of an option table.
+  "Puts map entries in one slice of a map's options (a group of cards).
 
-  For entries shared by maps sliced differently (e.g. a point style: one table of scatter, a section of cloud).
+  For entries shared by maps sliced differently (e.g. a point style: all of scatter's options, a section of cloud's).
 
   Parameters:
 
-  - `section` (keyword): the table slice.
+  - `section` (keyword): the slice.
   - `entries` (sequence): map entries, `[k props schema]` or `[k schema]`.
 
   Returns a vector of the entries with `:cljplot2/section section`. See also [[in-fragment]]."
@@ -517,7 +517,7 @@
 
   - `message` (string): the error message.
 
-  Returns a `:fn` schema marked `:cljplot2/forbidden`: not an option, no table row (see [[forbidden?]])."
+  Returns a `:fn` schema marked `:cljplot2/forbidden`: not an option, no card (see [[forbidden?]])."
   [message]
   [:fn {:error/message message :cljplot2/forbidden true} (constantly false)])
 

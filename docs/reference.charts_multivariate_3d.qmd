@@ -559,7 +559,7 @@ levels and changes both fades:
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :cloud]</code>, not options</span></div><ul><li><code>:projection-alpha-factor</code> (default <code>0.35</code>) – alpha factor of projected points (their style's colour)</li><li><code>:band-alpha-factor</code> (default <code>0.15</code>) – alpha factor of a projected density band (the chart's colour)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :cloud]</code>, not options</span></div><ul><li><code>:projection-alpha-factor</code> (default <code>0.35</code>) – The alpha factor of the projected points, multiplying their style colour's own alpha.</li><li><code>:band-alpha-factor</code> (default <code>0.15</code>) – The alpha factor of a projected density band, multiplying the chart colour's own alpha.</li></ul></div>
 ```
 
 

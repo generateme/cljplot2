@@ -37,6 +37,8 @@
 
 (nu/data-table visits)
 
+;; The table below holds migration flows between world regions; the chord diagrams use it:
+
 (nu/source-note {:dataset :migration})
 
 (def migration
@@ -48,11 +50,15 @@
 
 (nu/data-table migration)
 
+;; The table below holds the UK energy flows of a 2050 scenario; the large sankey uses it:
+
 (nu/source-note {:dataset :energy})
 
 (def energy (nu/dataset :energy))
 
 (nu/data-table energy)
+
+;; The table below counts the Titanic's passengers and crew by class, sex, age and survival; the alluvial plots use it:
 
 (nu/source-note {:dataset :titanic})
 

@@ -1,7 +1,7 @@
 (ns cljplot2.reference-r4-test
   "Reference part R4 - chart pages: a chart's own rows and shared groups (`describe/own-rows`, `fragment-keys`),
   entries in a section (`schema/in-section`), the shared groups list (`nu/shared-groups`), the sections of the
-  long chart tables; full-turn polar sectors without a seam, parallel axis labels without collisions; contour colours
+  long chart option lists; full-turn polar sectors without a seam, parallel axis labels without collisions; contour colours
   over the value range, the cartesian grid clipped to the panel."
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest testing is]]
@@ -17,7 +17,7 @@
             [notebook-utils :as nu]
             [cljplot2.test-util :refer [error-data]]))
 
-(def ^:private max-table-rows 12)
+(def ^:private max-card-group-rows 12)
 
 (deftest own-rows-test
   (let [rows (describe/options (chart/cloud))
@@ -31,7 +31,7 @@
                                              rows))))
     (testing "boundary: no rows; only group rows; no groups"
       (is (= [] (describe/own-rows [])))
-      (is (= [] (describe/own-rows (describe/fragment-rows :common))) "a group's table: every row in the group")
+      (is (= [] (describe/own-rows (describe/fragment-rows :common))) "a group's rows: every row in the group")
       (is (= [] (describe/own-rows (filter :fragment (describe/options (chart/ecdf))))))
       (is (= (describe/options (chart/image)) (describe/own-rows (describe/options (chart/image))))))))
 
@@ -57,14 +57,14 @@
     (is (= [[:a {:cljplot2/section :t} :int]] (schema/in-section :t [[:a {:cljplot2/section :s} :int]])))))
 
 (deftest chart-sections-test
-  (testing "own options of every chart: one table of at most 12 rows, or every row in a section of at most 12"
+  (testing "own options of every chart: one card group of at most 12 rows, or every row in a section of at most 12"
     (doseq [[kind ctor] (describe/chart-constructors)
             rows [(describe/own-rows (describe/options (ctor))) (describe/mapping (ctor))]
             :let [sections (keep :section rows)]]
       (if (empty? sections)
-        (is (<= (count rows) max-table-rows) kind)
+        (is (<= (count rows) max-card-group-rows) kind)
         (do (is (every? :section rows) kind)
-            (doseq [[s n] (frequencies sections)] (is (<= n max-table-rows) [kind s]))))))
+            (doseq [[s n] (frequencies sections)] (is (<= n max-card-group-rows) [kind s]))))))
   (testing "the point style of scatter is unsliced, a section of cloud / qq / pp"
     (is (every? nil? (map :section (describe/own-rows (describe/options (chart/scatter))))))
     (doseq [c [(chart/cloud) (chart/qq) (chart/pp)]]

@@ -65,12 +65,13 @@
       (is (group-mapped? (plot/bundle edges package-tree)))
       (is (group-mapped? (plot/bundle edges package-tree {:color-by nil})))
       (is (group-mapped? (plot/bundle edges package-tree {:color-by :group}))))
-    (testing ":none - one edge colour, no group mapping"
-      (let [p (plot/bundle edges package-tree {:color-by :none})]
+    (testing ":single - one edge colour, no group mapping"
+      (let [p (plot/bundle edges package-tree {:color-by :single})]
         (is (not (group-mapped? p)))
         (is (some? (edge-color p)))))
-    (testing "other values and the old key are rejected"
+    (testing "other values, the old :none (which would draw nothing by the glossary) and the old key are rejected"
       (is (= :color-by (:key (error #(plot/bundle edges package-tree {:color-by :top})))))
+      (is (= :color-by (:key (error #(plot/bundle edges package-tree {:color-by :none})))))
       (is (some? (error #(plot/bundle edges package-tree {:color-by-group false})))))))
 
 (def ^:private cloud

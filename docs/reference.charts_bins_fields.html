@@ -2541,7 +2541,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <p><img src="reference.charts_bins_fields_files/image1.png" class="img-fluid"></p>
 </div>
 <p>A mapped <code>:size</code> shrinks each cell by its value. With the colour mapped to another variable, the size legend’s keys have no colour of their own: a theme key fills them. The plot below fills them orange:</p>
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – fill of a size legend key without a colour (theme only, not an option)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – The fill of a size legend key without a colour; a theme key, not an option.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> week-hours</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hour</span> <span class="at">:y</span> <span class="at">:day</span> <span class="at">:color</span> <span class="at">:day</span> <span class="at">:size</span> <span class="at">:visits</span>}</span>

@@ -222,7 +222,7 @@
         (is (= 4 (count (:charts p))))
         (is (instance? BufferedImage (plot/render-image p {:width 400 :height 400})))
         (is (= 2 (count (:charts (plot/bundle [{:from :a :to :c}] package-tree {:labels false})))))
-        (is (some? (get-in (plot/bundle [{:from :a :to :c}] package-tree {:color-by :none}) [:charts 0 :options :color])))))))
+        (is (some? (get-in (plot/bundle [{:from :a :to :c}] package-tree {:color-by :single}) [:charts 0 :options :color])))))))
 
 ;; review: text anchored in its own frame, line stroke alpha
 

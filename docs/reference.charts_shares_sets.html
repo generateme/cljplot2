@@ -1024,7 +1024,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <p><img src="reference.charts_shares_sets_files/image13.png" class="img-fluid"></p>
 </div>
 <p>A theme key sets the room between a circle and its set name. The diagram below widens it:</p>
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :venn]</code>, not options</span></div><ul><li><code>:label-gap</code> (default <code>4</code>) – pixels between a circle and its set name (theme only, not an option)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :venn]</code>, not options</span></div><ul><li><code>:label-gap</code> (default <code>4</code>) – The pixels between a circle and its set name; a theme key, not an option.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> memberships</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:set</span> <span class="at">:club</span> <span class="at">:item</span> <span class="at">:member</span>}</span>

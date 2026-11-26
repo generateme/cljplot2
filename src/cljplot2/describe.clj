@@ -1,12 +1,12 @@
 (ns cljplot2.describe
-  "Option tables as data, read from the malli schemas and their documenting entry properties (see [[cljplot2.schema]]: `:description`, `:default`, `:cljplot2/default-doc`, `:cljplot2/fragment`).
+  "Option rows as data, read from the malli schemas and their documenting entry properties (see [[cljplot2.schema]]: `:description`, `:default`, `:cljplot2/default-doc`, `:cljplot2/fragment`).
 
-  The book's reference part renders these rows; nothing here validates. An entry with `:cljplot2/entries-fragment g` isn't flattened: its map's entries are the shared group `g`'s table, its row keeps its value as the default.
+  The book's reference part shows these rows as option cards; nothing here validates. An entry with `:cljplot2/entries-fragment g` isn't flattened: its map's entries are the shared group `g`'s rows, its row keeps its value as the default.
 
   A row: `{:key k :path [k ...] :type text :required bool :default v :default-doc text :description text :fragment kw :section kw}`:
 
   - `:path` - longer than `[k]` for the entries of nested closed maps (each nested map also has its own row).
-  - `:section` - the slice of a long table the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the table of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own table - show a schema's own table with [[top-level-rows]], a nested map's with [[rows-under]].
+  - `:section` - the slice of a long list of options the entry belongs to (`:cljplot2/section`, else its enclosing entry's): a section slices the rows of the map holding the entry, so a flattened nested map with sections of its own (plot `:facets`) slices its own rows - show a schema's own rows with [[top-level-rows]], a nested map's with [[rows-under]].
   - `:default` / `:default-doc` / `:description` / `:fragment` / `:section` - `nil` when absent.
   - `:values` - `[{:value v :meaning m} ...]`, the literal values the entry accepts (enum members, `:=` constants, `true` / `false`, a named type's `:cljplot2/value-set`), `nil` only when documented; `:forms` - `[{:form k :type text :meaning m} ...]`, its other accepted forms (`k` a named type's keyword or a malli type, `text` the short type text - a named type's name, composites spelled from their children's names; `:group` - for a map whose keys a shared group documents, `:cljplot2/entries-fragment` of its properties); `:other-values` - the meaning of the values without their own; meanings from the entry's `:cljplot2/value-meanings` / `:cljplot2/form-meanings`, else the schema's `:cljplot2/value-meanings` (see [[cljplot2.schema]]). Empty for a flattened map's row.
   - `:example` - the entry's own example (`:cljplot2/example`), only when given; [[example]] gives one for every row it can; `:example-context` - options the example needs (`:cljplot2/example-context`), only when given; `:no-example` - true when the entry declines an example (`:cljplot2/no-example`); [[example-options]] - the example's whole options map.
@@ -227,7 +227,7 @@
       nil)))
 
 (defn type-text
-  "Returns the readable type text of a schema, for option tables.
+  "Returns the readable type text of a schema, an option row's `:type`.
 
   Parameters:
 
@@ -338,7 +338,7 @@
 
   Parameters:
 
-  - `s`: a malli schema (the option table's [[type-text]] stays the validation-based text); the rules of [[cljplot2.schema/with-rules]] are left out (see [[without-rules]])."
+  - `s`: a malli schema (an option row's [[type-text]] stays the validation-based text); the rules of [[cljplot2.schema/with-rules]] are left out (see [[without-rules]])."
   [s]
   (let [compiled (without-rules s)
         t (malli/type compiled)
@@ -486,7 +486,7 @@
 (defn- nested-map
   "Gives the closed `:map` of an entry's schema, whose entries get rows of their own - flattened under the entry's row.
 
-  Every such entry is a [[container?]]; not the reverse: a map under validation rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has a table of its own).
+  Every such entry is a [[container?]]; not the reverse: a map under validation rules (`:and`, e.g. a scale spec) or a map of entries isn't flattened (it has rows of its own).
 
   Parameters:
 
@@ -656,7 +656,7 @@
   - `style-name` (keyword): a key of [[cljplot2.theme/named-styles]], e.g. `:network-node`, or a built-in chart kind (a key of [[cljplot2.chart/builtin-styles]]) - its own theme style, e.g. keys a theme sets that aren't chart options.
   - `style-keys` (sequence of keywords, optional): only the rows of these top-level style keys (a map key with its nested rows) - those the builder's marks show (e.g. a line style's colour, width and dash, not its area fill); default every style key of the kind.
 
-  Returns the style keys of its chart kind, each with its default from the default theme - the named style merged over the kind's (see [[cljplot2.theme/chart-style]]); one table, without the sections slicing the kind's own options table.
+  Returns the style keys of its chart kind, each with its default from the default theme - the named style merged over the kind's (see [[cljplot2.theme/chart-style]]); one list, without the sections slicing the kind's own options.
 
   Throws `ex-info {:key :style-name}` for a name that is neither registered nor a chart kind, `{:key :style-keys}` for `style-keys` empty or holding a key that isn't a style key of the kind."
   ([style-name] (style-rows style-name nil))
@@ -704,7 +704,7 @@
   (::container (meta row)))
 
 (defn top-level-rows
-  "Returns the rows for the top-level keys (`:path` of one key) - a schema's own table without its nested maps' entries (those have tables, and sections, of their own).
+  "Returns the rows for the top-level keys (`:path` of one key) - a schema's own rows without its nested maps' entries (those have rows, and sections, of their own).
 
   Parameters:
 
@@ -750,13 +750,13 @@
   (and (m/<= (count root) (count path)) (= root (subvec path 0 (count root)))))
 
 (defn own-rows
-  "Returns the rows outside the shared groups - a chart's or builder's own table.
+  "Returns the rows outside the shared groups - a chart's or builder's own options.
 
   Parameters:
 
   - `rows` (sequence): option rows.
 
-  The rows of entries with a `:fragment` and the rows nested under them are left out (the groups have tables in the Shared options chapter, see [[fragment-keys]])."
+  The rows of entries with a `:fragment` and the rows nested under them are left out (the groups have cards in the Shared options chapter, see [[fragment-keys]])."
   [rows]
   (let [roots (keep #(when (:fragment %) (:path %)) rows)]
     (filterv (fn [{:keys [path]}] (not-any? #(under-path? % path) roots)) rows)))

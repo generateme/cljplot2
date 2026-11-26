@@ -210,7 +210,7 @@ have no colour of their own: a theme key fills them. The plot below fills them o
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – fill of a size legend key without a colour (theme only, not an option)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tile]</code>, not options</span></div><ul><li><code>:size-key-fill</code> (default <code>[180 180 180]</code>) – The fill of a size legend key without a colour; a theme key, not an option.</li></ul></div>
 ```
 
 

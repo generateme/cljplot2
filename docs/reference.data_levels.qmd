@@ -133,7 +133,7 @@ R's `cut` prints it. A missing or non-numeric value gets no bin. Use it to count
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:hp</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its bin under <code>:as</code>: an interval <code>[lo, hi)</code>, the last one closed. A missing, non-numeric or non-finite value, or one outside explicit breaks, gets a <code>nil</code> bin.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (a sequence of maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:hp</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its bin under <code>:as</code>: an interval <code>[lo, hi)</code>, the last one closed. A missing, non-numeric or non-finite value, or one outside explicit breaks, gets a <code>nil</code> bin.</div></div>
 ```
 
 
@@ -236,7 +236,7 @@ scale `:domain` to sort a level axis or a legend.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>level</code> – The accessor of a row's level.</li><li><code>value</code> – The accessor of the value the statistic scores; a level's finite values are scored.</li><li><code>stat</code> – A function of a non-empty sequence of numbers that returns a number, e.g. <code>stats/median</code> or <code>count</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The levels ordered by their statistic; ties keep first-appearance order, and levels without a finite statistic follow. The <code>nil</code> level is left out.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (a sequence of maps) or columns (a map of equal-length sequences).</li><li><code>level</code> – The accessor of a row's level.</li><li><code>value</code> – The accessor of the value the statistic scores; a level's finite values are scored.</li><li><code>stat</code> – A function of a non-empty sequence of numbers that returns a number, e.g. <code>stats/median</code> or <code>count</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The levels ordered by their statistic; ties keep first-appearance order, and levels without a finite statistic follow. The <code>nil</code> level is left out.</div></div>
 ```
 
 
@@ -312,7 +312,7 @@ chart: a line through the ranks on a reversed y axis.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>x</code> – The accessor of a row's x: the function ranks the rows sharing an x together.</li><li><code>value</code> – The accessor of the ranked value.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its rank under <code>:as</code>, 1 the first; a row without a finite value or a valid x gets <code>nil</code>.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (a sequence of maps) or columns (a map of equal-length sequences).</li><li><code>x</code> – The accessor of a row's x: the function ranks the rows sharing an x together.</li><li><code>value</code> – The accessor of the ranked value.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its rank under <code>:as</code>, 1 the first; a row without a finite value or a valid x gets <code>nil</code>.</div></div>
 ```
 
 
@@ -376,7 +376,7 @@ interval holding its value. Use it to condition a plot on a continuous variable,
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:wt</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The rows repeated once per interval holding their value, the interval under <code>:as</code>; the function leaves out rows whose value is missing, not finite or in no interval.</div></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (a sequence of maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:wt</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The rows repeated once per interval holding their value, the interval under <code>:as</code>; the function leaves out rows whose value is missing, not finite or in no interval.</div></div>
 ```
 
 

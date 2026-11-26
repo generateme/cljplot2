@@ -224,7 +224,7 @@
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]), a bad accessor (see [[check-accessor!]]) or non-numeric values (`{:key :shingle}`)."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (a sequence of maps) or columns (a map of equal-length sequences)."}
                          {:name 'value :description "The accessor of a row's numeric value, e.g. `:wt`."}]
    :cljplot2/returns "The rows repeated once per interval holding their value, the interval under `:as`; the function leaves out rows whose value is missing, not finite or in no interval."
    :cljplot2/options shingle-options}

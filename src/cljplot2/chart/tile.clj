@@ -55,7 +55,7 @@
   "Schemas of the tile chart: `:style` (theme `[:chart :tile]`), `:options`, `:mapping` (merged)."
   {:style (-> [:map {:closed true}]
              (into cell-draw/style-entries)
-             (conj (schema/optional :size-key-fill {:description "fill of a size legend key without a colour (theme only, not an option)"}
+             (conj (schema/optional :size-key-fill {:description "The fill of a size legend key without a colour; a theme key, not an option."}
                                     schema/color)))
    :options (-> [:map {:closed true}]
                 (into cell-draw/style-entries)

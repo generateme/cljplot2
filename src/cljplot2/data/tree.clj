@@ -130,23 +130,23 @@
 
   Parameters:
 
-  - `rows` (sequence of maps): the data rows.
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]).
   - `options` (map, optional): `:hierarchy` - level accessors, outer level first (none - a root without children).
 
   Returns the root group `{:name nil :value n :height h :children [..]}` (also over a single top-level group): every other node's `:name` is its level value and `:value` the number of rows under it; a leaf is the end of a row path - one per distinct path, not per row - `{:name v :value n :color nil :height 0.0}`. A path cut short by a missing level ends at its last level's node when that node has no other children, else in a leaf `{:name nil ...}` under it. Rows without a first level are left out; no such rows - `{:name nil :height 0.0 :children []}` (no `:value`).
 
-  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[from-levels-options]]).
+  Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[from-levels-options]]). Data that are neither rows (a sequence of maps) nor columns throw `{:key :data}` (see [[cljplot2.data.rows/rows]]).
 
   See also [[from-parents]], [[from-hclust]], [[layout]]."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "The data rows, a level column for each accessor of `:hierarchy`."}]
+   :cljplot2/arguments [{:name 'rows :description "The data, a level column for each accessor of `:hierarchy`: rows (a sequence of maps) or columns (a map of equal-length sequences)."}]
    :cljplot2/returns "The root group: every node with its level value under `:name` and its number of rows under `:value`, a leaf per distinct level path."
    :cljplot2/options from-levels-options}
   ([rows] (from-levels rows {}))
   ([rows {:keys [hierarchy] :as options}]
    (schema/check-options! from-levels-options options)
    (let [accessors (hierarchy/level-accessors hierarchy)
-         entries (keep (fn [row] (let [p (hierarchy/path-of accessors row)] (when (seq p) {:path p :value 1.0}))) rows)]
+         entries (keep (fn [row] (let [p (hierarchy/path-of accessors row)] (when (seq p) {:path p :value 1.0}))) (data/rows rows))]
      (if (empty? entries)
        {:name nil :height 0.0 :children []}
        (let [root (hierarchy/root entries)]
@@ -168,7 +168,7 @@
 
   Parameters:
 
-  - `rows` (sequence of maps): one row per node; the root has no parent id.
+  - `rows`: rows or columns (see [[cljplot2.data.rows/rows]]), one row per node; the root has no parent id.
   - `options` (map, optional):
     - `:id` - accessor of a row's node id (default `:id`).
     - `:parent` - accessor of a row's parent id (default `:parent`).
@@ -176,36 +176,37 @@
 
   Returns the root node: each node its row with `:id`, `:name`, `:height` and `:children` (in row order, absent for a leaf).
 
-  Throws `ex-info {:key :parent}` for no root or several roots, a parent id that isn't a row's id, a repeated id, or a cycle; `{:key k}` for an invalid option `k` (checked first, see [[from-parents-options]]).
+  Throws `ex-info {:key :parent}` for no root or several roots, a parent id that isn't a row's id, a repeated id, or a cycle; `{:key k}` for an invalid option `k` (checked first, see [[from-parents-options]]). Data that are neither rows (a sequence of maps) nor columns throw `{:key :data}` (see [[cljplot2.data.rows/rows]]).
 
   See also [[from-levels]], [[from-hclust]], [[leaf-key]]."
   {:cljplot2/api true
-   :cljplot2/arguments [{:name 'rows :description "One row per node." :columns {:id "The node's id; the option `:id` names another column." :parent "The parent's id, `nil` for the root; the option `:parent` names another column."}}]
+   :cljplot2/arguments [{:name 'rows :description "The nodes, a row each: rows (a sequence of maps) or columns (a map of equal-length sequences)." :columns {:id "The node's id; the option `:id` names another column." :parent "The parent's id, `nil` for the root; the option `:parent` names another column."}}]
    :cljplot2/returns "The root node: each node is its row with `:id`, `:name` and `:height`, a group also with its `:children` in row order."
    :cljplot2/options from-parents-options}
   ([rows] (from-parents rows {}))
   ([rows {:keys [id parent] name-accessor :name :or {id :id parent :parent} :as options}]
    (schema/check-options! from-parents-options options)
-   (let [id-of (data/row-accessor :id id)
+   (let [rs (data/rows rows)
+         id-of (data/row-accessor :id id)
          parent-of (data/row-accessor :parent parent)
          name-of (if name-accessor (data/row-accessor :name name-accessor) id-of)
-         ids (map id-of rows)
+         ids (map id-of rs)
          known (set ids)
-         _ (when-not (= (count known) (count rows))
+         _ (when-not (= (count known) (count rs))
              (schema/fail! "Node ids should be unique." {:key :parent}))
-         roots (filter #(nil? (parent-of %)) rows)
+         roots (filter #(nil? (parent-of %)) rs)
          _ (when-not (= 1 (count roots))
              (schema/fail! "A tree needs exactly one root (a row without a parent)." {:key :parent :value (count roots)}))
-         _ (when-let [p (some #(let [p (parent-of %)] (when (and (some? p) (not (known p))) p)) rows)]
+         _ (when-let [p (some #(let [p (parent-of %)] (when (and (some? p) (not (known p))) p)) rs)]
              (schema/fail! "A parent id isn't a node id." {:key :parent :value p}))
-         children-of (group-by parent-of rows)
+         children-of (group-by parent-of rs)
          build (fn build [row seen]
                  (let [k (id-of row)]
                    (when (seen k) (schema/fail! "The parents form a cycle." {:key :parent :value k}))
                    (let [kids (mapv #(build % (conj seen k)) (get children-of k))]
                      (cond-> (assoc row :id k :name (name-of row)) (seq kids) (assoc :children kids)))))
          root (build (first roots) #{})]
-     (when-not (= (count rows) (count (tree-seq :children :children root)))
+     (when-not (= (count rs) (count (tree-seq :children :children root)))
        (schema/fail! "The parents form a cycle (some rows don't reach the root)." {:key :parent}))
      (with-heights root 0 (depth-of root)))))
 

@@ -51,7 +51,7 @@
   "Schemas of the Venn diagram: `:style` (theme `[:chart :venn]`), `:options`, `:mapping` (merged)."
   {:style (-> [:map {:closed true}]
              (into style-entries)
-             (conj (schema/optional :label-gap {:description "pixels between a circle and its set name (theme only, not an option)"} schema/non-neg)))
+             (conj (schema/optional :label-gap {:description "The pixels between a circle and its set name; a theme key, not an option."} schema/non-neg)))
    :options (-> [:map {:closed true}]
                 (into style-entries)
                 (into data/common-options)

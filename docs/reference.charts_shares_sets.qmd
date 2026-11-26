@@ -574,7 +574,7 @@ A theme key sets the room between a circle and its set name. The diagram below w
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :venn]</code>, not options</span></div><ul><li><code>:label-gap</code> (default <code>4</code>) – pixels between a circle and its set name (theme only, not an option)</li></ul></div>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :venn]</code>, not options</span></div><ul><li><code>:label-gap</code> (default <code>4</code>) – The pixels between a circle and its set name; a theme key, not an option.</li></ul></div>
 ```
 
 

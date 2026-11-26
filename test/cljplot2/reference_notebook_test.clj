@@ -1,12 +1,12 @@
 (ns cljplot2.reference-notebook-test
   "Reference part notebooks (`notebooks/reference/`): the part's chapters in the book; every non-chart schema, shared
-  group and theme section shown by options tables - a sliced table (rows with `:section`) one slice at a time, every
-  slice shown, no table longer than [[max-table-rows]]; tables and Markdown through `notebook-utils` (code hidden);
-  the notebook conventions (image size, seeded rng, dataset credits); every chart kind on its chart page (R4) - a
-  heading, its mapping table, its own options table and its shared groups. Notebooks are read as forms, their
-  aliases resolved - a page names an item by calling or referring to it; a table's rows form is evaluated here.
-  Builders and user-facing data functions (R5) likewise: a heading, their options table, called, every option shown;
-  the Specific cases chapter calls every internal namespace it shows (spec 7.2)."
+  group and theme section shown by option cards - sliced rows (with `:section`) one slice at a time, every slice
+  shown, no card group longer than [[max-card-group-rows]]; option calls and Markdown through `notebook-utils` (code
+  hidden); the notebook conventions (image size, seeded rng, dataset credits); every chart kind on its chart page
+  (R4) - a heading, its mapping list, its own option cards and its shared groups. Notebooks are read as forms, their
+  aliases resolved - a page names an item by calling or referring to it; an option call's rows form is evaluated
+  here. Builders and user-facing data functions (R5) likewise: a heading, their option cards, called, every option
+  shown; the Specific cases chapter calls every internal namespace it shows (spec 7.2)."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -25,7 +25,6 @@
             [cljplot2.theme]
             [cljplot2.scale.position]
             [cljplot2.notebook-forms :refer [resolved-forms calls]]
-            [cljplot2.test-util :refer [migrated-groups]]
             [notebook-utils]))
 
 (def ^:private concept-chapters
@@ -100,38 +99,36 @@
   (into {} (map (fn [p] [(second (re-find #"([^/]+)\.clj$" p)) (resolved-forms (str "notebooks/" p))]))
         (reference-paths)))
 
-(def ^:private options-table 'notebook-utils/options-table)
-
 (def ^:private option-cards
-  "Option cards: `(option-cards call rows [section])` - the readable form of an options table (pages migrated)."
+  "Option cards: `(option-cards call rows [section])` - a card per option row."
   'notebook-utils/option-cards)
 
-(def ^:private table-heads
-  "Calls showing option rows: options tables, option cards and mapping lists (a chart's, the plot's)."
-  #{options-table option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
+(def ^:private option-call-heads
+  "Option calls - calls showing option rows: option cards and mapping lists (a chart's, the plot's)."
+  #{option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
 
-(defn- table-call?
-  "Tests whether `form` is a call showing option rows (see [[table-heads]])."
+(defn- option-call?
+  "Tests whether `form` is a call showing option rows (see [[option-call-heads]])."
   [form]
-  (and (seq? form) (contains? table-heads (first form))))
+  (and (seq? form) (contains? option-call-heads (first form))))
 
-(defn- table-rows-form
-  "The rows form of a table call: option cards take the call first."
+(defn- option-call-rows
+  "The rows form of an option call: option cards take the call first."
   [form]
   (if (= option-cards (first form)) (nth form 2) (second form)))
 
-(defn- table-section
-  "The section of a table call, `nil` for the whole rows."
+(defn- option-call-section
+  "The section of an option call, `nil` for the whole rows."
   [form]
   (nth form (if (= option-cards (first form)) 3 2) nil))
 
-(defn- all-table-calls
-  "Every table call (see [[table-heads]]) anywhere in `forms`."
+(defn- all-option-calls
+  "Every option call (see [[option-call-heads]]) anywhere in `forms`."
   [forms]
-  (mapcat #(calls forms %) table-heads))
+  (mapcat #(calls forms %) option-call-heads))
 
-(def ^:private max-table-rows
-  "The most rows a table shows - longer ones are sliced into sections."
+(def ^:private max-card-group-rows
+  "The most rows an option call shows - an option call with more rows is sliced into sections."
   12)
 
 (defn- normalized
@@ -143,21 +140,21 @@
                     %)
                  form))
 
-(defn- table-calls
-  "Every options table of the pages: `{:page p :rows-form f :section s}` (`s` nil - the whole rows)."
+(defn- option-calls
+  "Every option call of the pages: `{:page p :rows-form f :section s}` (`s` nil - the whole rows)."
   []
   (for [[page forms] (notebook-forms)
-        call (all-table-calls forms)]
-    {:page page :rows-form (normalized (table-rows-form call)) :section (table-section call)}))
+        call (all-option-calls forms)]
+    {:page page :rows-form (normalized (option-call-rows call)) :section (option-call-section call)}))
 
 (defn- eval-rows-arg
-  "The value of a (resolved) form of a table's rows or of their source."
+  "The value of a (resolved) form of an option call's rows or of their source."
   [form]
   (binding [*ns* (the-ns 'cljplot2.reference-notebook-test)]
     (eval form)))
 
 (defn- eval-rows
-  "The rows of a table's (resolved) rows form."
+  "The rows of an option call's (resolved) rows form."
   [form]
   (vec (eval-rows-arg form)))
 
@@ -166,11 +163,11 @@
   [row]
   (not (describe/container-row? row)))
 
-(defn- options-table-args
-  "The arguments of every `describe/options` call inside an options table anywhere in `forms`."
+(defn- described-args
+  "The arguments of every `describe/options` call inside an option call anywhere in `forms`."
   [forms]
-  (set (for [table (all-table-calls forms)
-             call (calls table 'cljplot2.describe/options)]
+  (set (for [option-call (all-option-calls forms)
+             call (calls option-call 'cljplot2.describe/options)]
          (second call))))
 
 (deftest chapters-test
@@ -192,17 +189,17 @@
       (is (not (re-find #"^;; # (Reference$|Reference\n|Charts: |Builders: |Data functions: )" (slurp (io/file "notebooks" p)))) p))))
 
 (def ^:private schemas-shown-elsewhere
-  "Plot-level schemas without a `describe/options` table of their own: the theme (tables per key, `theme-rows`) and the
-  coord (a choice of maps - the polar one has the table)."
+  "Plot-level schemas without `describe/options` cards of their own: the theme (cards per key, `theme-rows`) and the
+  coord (a choice of maps - the polar one has the cards)."
   #{:theme :coord})
 
-(deftest schema-tables-test
-  (let [shown (set (map #(describe/options (eval-rows-arg %)) (options-table-args (vals (notebook-forms)))))]
-    (testing "every plot-level schema (describe/plot-level-schemas) has an options table"
+(deftest schema-cards-test
+  (let [shown (set (map #(describe/options (eval-rows-arg %)) (described-args (vals (notebook-forms)))))]
+    (testing "every plot-level schema (describe/plot-level-schemas) has option cards"
       (is (= #{} (into (sorted-set)
                        (keep (fn [[n s]] (when-not (shown (describe/options s)) n)))
                        (apply dissoc describe/plot-level-schemas schemas-shown-elsewhere)))))
-    (testing "the builders of the concept chapters (arrange, pairs) have options tables"
+    (testing "the builders of the concept chapters (arrange, pairs) have option cards"
       (is (every? #(shown (describe/options %)) [#'cljplot2.core/arrange #'cljplot2.core/pairs])))))
 
 (defn- dim-sections
@@ -213,9 +210,9 @@
               (if (and (seq? arg) (= 'cljplot2.scale.aesthetic/scale-spec-schema (first arg)))
                 (update acc (second arg) (fnil conj #{}) section)
                 acc)))
-          {} (table-calls)))
+          {} (option-calls)))
 
-(deftest aesthetic-scale-tables-test
+(deftest aesthetic-scale-cards-test
   (testing "the colour scale spec: every section but the size-only one; size: its :range and :size; the other dimensions: their :range (the rest is the colour's)"
     (let [shown (dim-sections)]
       (is (= (set aesthetic/dims) (set (keys shown))))
@@ -229,46 +226,61 @@
   (let [arg (and (seq? form) (second form))]
     (and (seq? arg) (= 'cljplot2.scale.aesthetic/scale-spec-schema (first arg)))))
 
-(defn- migrated-group-slice
-  "The shared group with option cards (`test-util/migrated-groups`) every row of `section` among option `rows` belongs to
-  - a nested row by its top-level entry - or `nil`. Such a section links to the group's cards on Shared options instead
-  of a table of its own."
+(defn- unowned-group-slice
+  "The registered shared group (`describe/fragments`) no data function owns every row of `section` among option
+  `rows` belongs to - a nested row by its top-level entry - or `nil`. Such a section links to the group's cards on
+  Shared options instead of cards of its own."
   [rows section]
   (let [by-path (into {} (map (juxt :path identity)) rows)
         group-of (fn [{:keys [path]}] (:fragment (by-path (subvec path 0 1))))
-        groups (set (map group-of (filter #(= section (:section %)) rows)))]
-    (when (and (= 1 (count groups)) (contains? migrated-groups (first groups)))
-      (first groups))))
+        groups (set (map group-of (filter #(= section (:section %)) rows)))
+        group (first groups)]
+    (when (and (= 1 (count groups)) (contains? describe/fragments group) (not (:owner (describe/fragments group))))
+      group)))
 
-(deftest sliced-tables-test
-  (let [by-form (group-by :rows-form (table-calls))]
-    (doseq [[form tables] by-form
+(deftest unowned-group-slice-test
+  (let [row (fn [k fragment section] {:path [k] :fragment fragment :section section})
+        owned (some (fn [[g {:keys [owner]}]] (when owner g)) describe/fragments)]
+    (testing "boundary: one unowned group's section; an owned group, two groups, no group, an unregistered group - none"
+      (is (= :line-style (unowned-group-slice [(row :a :line-style :s) (row :b :line-style :s)] :s)))
+      (is (some? owned))
+      (is (nil? (unowned-group-slice [(row :a owned :s)] :s)))
+      (is (nil? (unowned-group-slice [(row :a :line-style :s) (row :b :curve :s)] :s)))
+      (is (nil? (unowned-group-slice [(row :a nil :s)] :s)))
+      (is (nil? (unowned-group-slice [(row :a :no-such-group :s)] :s)))
+      (is (nil? (unowned-group-slice [(row :a :line-style :s)] :other)) "a section without rows"))
+    (testing "a nested row belongs to its top-level entry's group"
+      (is (= :line-style (unowned-group-slice [(row :a :line-style nil) {:path [:a :b] :section :s}] :s))))))
+
+(deftest sliced-cards-test
+  (let [by-form (group-by :rows-form (option-calls))]
+    (doseq [[form option-calls] by-form
             :let [rows (eval-rows form)
                   sections (set (keep :section rows))
-                  pages (set (map :page tables))]]
-      (testing (str pages " " (pr-str form) ": a table of rows")
+                  pages (set (map :page option-calls))]]
+      (testing (str pages " " (pr-str form) ": some rows")
         (is (seq rows)))
       (if (<= (count sections) 1)
-        (testing (str pages " " (pr-str form) ": rows of one slice - one whole table, at most " max-table-rows " rows")
-          (is (= [nil] (distinct (map :section tables))))
-          (is (<= (count rows) max-table-rows) (count rows)))
-        (testing (str pages " " (pr-str form) ": sliced rows - every option in a section, tables by section")
+        (testing (str pages " " (pr-str form) ": rows of one slice - shown whole, at most " max-card-group-rows " rows")
+          (is (= [nil] (distinct (map :section option-calls))))
+          (is (<= (count rows) max-card-group-rows) (count rows)))
+        (testing (str pages " " (pr-str form) ": sliced rows - every option in a section, shown by section")
           (is (every? :section (filter leaf-row? rows)))
-          (is (not-any? nil? (map :section tables)))
+          (is (not-any? nil? (map :section option-calls)))
           (when-not (aesthetic-rows-form? form)
-            (is (= (set (if (= 'cljplot2.describe/fragment-rows (first form)) sections (remove #(migrated-group-slice rows %) sections)))
-                   (set (map :section tables)))
-                "every section a table, but a section of one migrated group's rows - a link to its cards")
+            (is (= (set (if (= 'cljplot2.describe/fragment-rows (first form)) sections (remove #(unowned-group-slice rows %) sections)))
+                   (set (map :section option-calls)))
+                "every section shown, but a section of one unowned group's rows - a link to its cards")
             (when-not (= 'cljplot2.describe/fragment-rows (first form))
               (doseq [section sections
-                      :let [g (migrated-group-slice rows section)]
+                      :let [g (unowned-group-slice rows section)]
                       :when g
                       page pages]
                 (is (str/includes? (slurp (str "notebooks/reference/" page ".clj"))
                                    (str "reference.shared_options.html#" (#'notebook-utils/heading-anchor (:title (describe/fragments g)))))
-                    (str page " links the " g " cards in place of its " section " table")))))
-          (doseq [section (map :section tables)]
-            (is (<= (count (filter #(= section (:section %)) rows)) max-table-rows) section)))))))
+                    (str page " links the " g " cards in place of its " section " cards")))))
+          (doseq [section (map :section option-calls)]
+            (is (<= (count (filter #(= section (:section %)) rows)) max-card-group-rows) section)))))))
 
 (deftest owned-group-links-test
   (testing "an owned group's link goes to the page of its owner function (data-chapters)"
@@ -305,14 +317,14 @@
 
 (def ^:private setup-heads
   "Heads of top-level forms that show nothing of an option: namespace, definitions, source notes, wadogo kind docs,
-  data tables, option tables and shared group lists."
+  data tables, option calls and shared group lists."
   #{'ns 'def 'defn 'notebook-utils/source-note 'notebook-utils/scale-kind-doc 'notebook-utils/data-table
-    'notebook-utils/shared-groups options-table option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
+    'notebook-utils/shared-groups option-cards 'notebook-utils/mapping-list 'notebook-utils/plot-mapping-list})
 
 (defn- illustration?
   "Is top-level `form` an example - a call rendering a chart or computing a value shown, also a data table of a
   computed value (`(nu/data-table (f ...))`, not of a dataset as read - `(nu/data-table (nu/dataset :k))` shows input,
-  like a data table of a name) - rather than setup (see [[setup-heads]]), a table or a bare literal / symbol (which
+  like a data table of a name) - rather than setup (see [[setup-heads]]), an option call or a bare literal / symbol (which
   show nothing computed)?"
   [form]
   (and (seq? form)
@@ -321,43 +333,44 @@
              (and (= 'notebook-utils/data-table (first form)) (seq? arg)
                   (not= 'notebook-utils/dataset (first arg)))))))
 
-(defn- tables-without-example
-  "Rows forms of the tables in top-level `forms` not followed by an example before the next table or the page end."
+(defn- option-calls-without-example
+  "Rows forms of the option calls in top-level `forms` not followed by an example before the next option call or the
+  page end."
   [forms]
   (loop [[form & more] forms, pending nil, missing []]
     (cond
       (nil? form) (cond-> missing pending (conj pending))
-      (table-call? form) (recur more (table-rows-form form) (cond-> missing pending (conj pending)))
+      (option-call? form) (recur more (option-call-rows form) (cond-> missing pending (conj pending)))
       (illustration? form) (recur more nil missing)
       :else (recur more pending missing))))
 
 (deftest examples-test
   (doseq [[page forms] (notebook-forms)]
-    (testing (str page ": every table is followed by its example (a chart or a value)")
-      (is (= [] (tables-without-example forms))))))
+    (testing (str page ": every option call is followed by its example (a chart or a value)")
+      (is (= [] (option-calls-without-example forms))))))
 
 (deftest examples-rule-test
-  (testing "boundary: a table at the end, two tables in a row, setup between a table and its example"
-    (is (= [:a] (tables-without-example [(list options-table :a)])))
-    (is (= [:a] (tables-without-example [(list options-table :a) (list options-table :b) '(f)])))
-    (is (= [] (tables-without-example [(list options-table :a) '(def x 1) '(notebook-utils/source-note {}) '(f)])))
-    (is (= [] (tables-without-example []))))
+  (testing "boundary: an option call at the end, two in a row, setup between an option call and its example"
+    (is (= [:a] (option-calls-without-example [(list option-cards 'c :a)])))
+    (is (= [:a] (option-calls-without-example [(list option-cards 'c :a) (list option-cards 'c :b) '(f)])))
+    (is (= [] (option-calls-without-example [(list option-cards 'c :a) '(def x 1) '(notebook-utils/source-note {}) '(f)])))
+    (is (= [] (option-calls-without-example []))))
   (testing "boundary: a literal or a bare symbol isn't an example"
-    (is (= [:a] (tables-without-example [(list options-table :a) :kw "text" 42 'sym]))))
+    (is (= [:a] (option-calls-without-example [(list option-cards 'c :a) :kw "text" 42 'sym]))))
   (testing "a data table of a computed value is an example; of a defined name, setup"
-    (is (= [] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (f x))])))
-    (is (= [:b] (tables-without-example [(list option-cards 'c :b) (list 'notebook-utils/mapping-list :c) '(f)]))
-        "option cards and mapping lists are tables too")
-    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table d)])))
-    (is (= [:a] (tables-without-example [(list options-table :a) '(notebook-utils/data-table (notebook-utils/dataset :k))]))
+    (is (= [] (option-calls-without-example [(list option-cards 'c :a) '(notebook-utils/data-table (f x))])))
+    (is (= [:b] (option-calls-without-example [(list option-cards 'c :b) (list 'notebook-utils/mapping-list :c) '(f)]))
+        "mapping lists are option calls too")
+    (is (= [:a] (option-calls-without-example [(list option-cards 'c :a) '(notebook-utils/data-table d)])))
+    (is (= [:a] (option-calls-without-example [(list option-cards 'c :a) '(notebook-utils/data-table (notebook-utils/dataset :k))]))
         "a dataset as read is input, not an example")
-    (is (= [] (tables-without-example [(list options-table :a)
+    (is (= [] (option-calls-without-example [(list option-cards 'c :a)
                                        '(notebook-utils/data-table (remove p (notebook-utils/dataset :k)))]))
         "a computation over a dataset is")))
 
 (deftest conventions-test
   (doseq [[page forms] (notebook-forms)]
-    (testing (str page ": tables and Markdown through notebook-utils (their code hidden)")
+    (testing (str page ": option calls, data tables and Markdown through notebook-utils (their code hidden)")
       (is (empty? (kind-calls forms))))
     (testing (str page ": images at most 1000 x 800, sizes given")
       (doseq [call (calls forms 'cljplot2.core/render-image)
@@ -371,15 +384,15 @@
         (is (= read credited) page)))))
 
 (defn- row-keys
-  "What identifies option `rows` when comparing tables: each row's path and description."
+  "What identifies option `rows` when comparing shown rows: each row's path and description."
   [rows]
   (mapv (juxt :path :description) rows))
 
-(defn- page-tables
-  "Row keys (see [[row-keys]]) of every options table of the page forms `forms`, and of every shared group list
-  (`:groups`)."
+(defn- page-shown-rows
+  "Row keys (see [[row-keys]]) of every option call of the page forms `forms` (`:shown`), and of every shared group
+  list (`:groups`)."
   [forms]
-  {:tables (set (map #(row-keys (eval-rows (normalized (table-rows-form %)))) (all-table-calls forms)))
+  {:shown (set (map #(row-keys (eval-rows (normalized (option-call-rows %)))) (all-option-calls forms)))
    :groups (set (map #(row-keys (eval-rows (second %))) (calls forms 'notebook-utils/shared-groups)))})
 
 (deftest chart-pages-test
@@ -389,16 +402,16 @@
       (is (= (set (keys constructors)) (set (mapcat val chart-chapters))))
       (is (apply distinct? (mapcat val chart-chapters))))
     (doseq [[page kinds] chart-chapters
-            :let [{:keys [tables groups]} (page-tables (get forms page))
+            :let [{:keys [shown groups]} (page-shown-rows (get forms page))
                   text (slurp (str "notebooks/reference/" page ".clj"))]
             kind kinds
             :let [rows (describe/options (@(constructors kind)))
                   mapping (describe/mapping (@(constructors kind)))
                   own (describe/own-rows rows)]]
-      (testing (str page " " kind ": a heading (its concept, see describe/concepts), the mapping table, the own options table, the shared groups")
-        (is (re-find (re-pattern (str "(?m)^;; ## " (java.util.regex.Pattern/quote (get describe/concepts kind (name kind))) "$")) text))
-        (when (seq mapping) (is (tables (row-keys mapping))))
-        (when (seq own) (is (tables (row-keys own))))
+      (testing (str page " " kind ": a heading (its concept, see describe/concepts), the mapping list, the own option cards, the shared groups")
+        (is (re-find (re-pattern (str "(?m)^;; ## " (java.util.regex.Pattern/quote (describe/concepts kind)) "$")) text))
+        (when (seq mapping) (is (shown (row-keys mapping))))
+        (when (seq own) (is (shown (row-keys own))))
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))))))
 
 (deftest shared-group-headings-test
@@ -499,12 +512,6 @@
     (is (= [:a] (enum-values [:maybe [:or [:enum :a] :int]])))
     (is (nil? (enum-values :int)))))
 
-(defn- api-heading
-  "Page heading text of user-facing function `f` (a qualified symbol) without a concept title (`describe/concepts`): its
-  namespace's last segment and name (`font/resolve-font`)."
-  [f]
-  (str (last (str/split (namespace f) #"\.")) "/" (name f)))
-
 (defn- heading?
   "Does the notebook `page` have a `;; ## text` heading?"
   [page text]
@@ -522,23 +529,23 @@
       (is (= (set (for [[sym v] (ns-publics 'cljplot2.core) :when (:cljplot2/options (meta v))] sym))
              (into #{'arrange 'pairs} (mapcat val builder-chapters)))))
     (doseq [[page builders] builder-chapters
-            :let [{:keys [tables groups]} (page-tables (get forms page))]
+            :let [{:keys [shown groups]} (page-shown-rows (get forms page))]
             b builders
             :let [v (ns-resolve 'cljplot2.core b)
                   rows (describe/options v)
                   own (describe/own-rows rows)
                   f (symbol "cljplot2.core" (name b))]]
       (testing (str page " " b ": a heading, its own options, its shared groups, called; every own option shown")
-        (is (heading? page (get describe/concepts b (name b))))
-        (when (seq own) (is (tables (row-keys own))))
+        (is (heading? page (describe/concepts b)))
+        (when (seq own) (is (shown (row-keys own))))
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))
         (is (argument-list? (get forms page) f) "its arguments box")
         (is (seq (calls (get forms page) f)))
         (is (= {:options [] :values []}
                (function-coverage-gaps (get forms page) f v (:cljplot2/options (meta v)) own)))))))
 
-(deftest named-style-tables-test
-  (testing "every named theme style (a builder's) has its table on a builder page"
+(deftest named-style-rows-test
+  (testing "every named theme style (a builder's) has its rows on a builder page"
     (is (= (set (keys cljplot2.theme/named-styles))
            (set (for [page (keys builder-chapters)
                       call (calls (get (notebook-forms) page) 'cljplot2.describe/style-rows)]
@@ -550,14 +557,14 @@
       (is (= (set (map symbol (describe/api-vars))) (set (mapcat val data-chapters))))
       (is (apply distinct? (mapcat val data-chapters))))
     (doseq [[page fs] data-chapters
-            :let [{:keys [tables]} (page-tables (get forms page))]
+            :let [{:keys [shown]} (page-shown-rows (get forms page))]
             f fs
             :let [v (resolve f)
                   rows (describe/options v)]]
-      (testing (str page " " f ": a heading, its options table, called; every option shown")
-        (is (heading? page (get describe/concepts f (api-heading f))) (get describe/concepts f (api-heading f)))
+      (testing (str page " " f ": a heading, its option cards, called; every option shown")
+        (is (heading? page (describe/concepts f)) (describe/concepts f))
         (is (argument-list? (get forms page) f) "its arguments box")
-        (when (seq rows) (is (tables (row-keys rows))))
+        (when (seq rows) (is (shown (row-keys rows))))
         (is (seq (calls (get forms page) f)))
         (when (seq rows)
           (is (= {:options [] :values []}
