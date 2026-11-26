@@ -191,24 +191,70 @@
                         (assoc acc cell (or derived (compute cell))))))
             {} cells)))
 
+(defn- variables-problem
+  "Gives the problem of the variable options of [[matrix-rows]], if any.
+
+  Parameters:
+
+  - `options` (map): options valid for the map schema of [[matrix-rows-options]].
+
+  Returns the error message when neither `:variables` nor both `:x-variables` and `:y-variables` are given, or when both forms are; `nil` otherwise."
+  [{:keys [variables x-variables y-variables]}]
+  (cond
+    (and variables (or x-variables y-variables)) "should be :variables or :x-variables with :y-variables, not both"
+    (not (or variables (and x-variables y-variables))) "should be :variables, or :x-variables with :y-variables"))
+
+(defn- triangle-problem
+  "Gives the problem of a `:lower` or `:upper` `:triangle` of [[matrix-rows]], if any.
+
+  Parameters:
+
+  - `options` (map): options valid for the map schema of [[matrix-rows-options]].
+
+  Returns the error message for a `:lower` or `:upper` triangle of a rectangular matrix or of a statistic that isn't `:symmetric` (a function counts as asymmetric); `nil` otherwise."
+  [{:keys [variables triangle] :as options}]
+  (when (and (#{:lower :upper} triangle)
+             (or (not variables) (not= :symmetric (statistic-symmetry (or (:method options) :pearson)))))
+    "should be :full unless the matrix is square and the statistic symmetric"))
+
 (def matrix-rows-options
-  "Options schema of [[matrix-rows]]."
-  [:map {:closed true}
-   (schema/optional :variables {:description "the variables of a square matrix (x and y both, distinct), in matrix order"}
+  "Options schema of [[matrix-rows]]: the map of options and the rules between them - the variables of one form, a
+  `:lower` or `:upper` triangle only of a square matrix of a symmetric statistic."
+  (schema/with-rules
+   [:map {:closed true}
+   (schema/optional :variables {:description "The distinct variables of a square matrix, both its x and its y, in matrix order; at least 2."
+                                :cljplot2/default-doc "None: give `:x-variables` and `:y-variables` instead."
+                                :cljplot2/example [:a :b :c]}
                     [:and [:sequential {:min 2} keyword?] [:fn {:error/message "should be distinct variables"} #(apply distinct? %)]])
-   (schema/optional :x-variables {:description "the x variables of a rectangular matrix (with :y-variables)"}
+   (schema/optional :x-variables {:description "The x variables of a rectangular matrix, given with `:y-variables`; a variable may be in both lists."
+                                  :cljplot2/default-doc "None: give `:variables` instead."
+                                  :cljplot2/example [:a] :cljplot2/example-context {:y-variables [:b :c]}}
                     [:sequential {:min 1} keyword?])
-   (schema/optional :y-variables {:description "the y variables of a rectangular matrix (with :x-variables)"}
+   (schema/optional :y-variables {:description "The y variables of a rectangular matrix, given with `:x-variables`."
+                                  :cljplot2/default-doc "None: give `:variables` instead."
+                                  :cljplot2/example [:b :c] :cljplot2/example-context {:x-variables [:a]}}
                     [:sequential {:min 1} keyword?])
-   (schema/optional :method {:description "the statistic: a key of pairwise/statistics or a function of two samples" :default :pearson}
+   (schema/optional :method {:description "Which statistic the function computes, of the x sample against the y sample."
+                             :default :pearson :cljplot2/example :spearman :cljplot2/example-context {:variables [:a :b :c]}
+                             :cljplot2/value-meanings (statistic-meanings (keys statistics))
+                             :cljplot2/form-meanings {::schema/function "A function of the two samples `(f xs ys)` that returns a number."}}
                     method-schema)
-   (schema/nilable :label {:description "the statistic's label in the rows"
-                           :cljplot2/default-doc "the statistic's label, value for a function"}
+   (schema/nilable :label {:description "The statistic's name under `:statistic` in every row."
+                           :cljplot2/default-doc "The statistic's label, e.g. `Pearson`; `value` for a function."
+                           :cljplot2/example "r" :cljplot2/example-context {:variables [:a :b :c]}}
                    string?)
-   (schema/optional :self-pairs {:description "rows of a variable with itself (square matrix)" :default false} schema/bool)
-   (schema/optional :triangle {:description "the cells of a square matrix: :full, :lower (y after x in variable order) or :upper; :lower and :upper need a symmetric statistic"
-                               :default :full}
-                    [:enum :full :lower :upper])])
+   (schema/optional :self-pairs {:description "Whether a square matrix has the cells of a variable with itself."
+                                 :default false :cljplot2/example-context {:variables [:a :b :c]}
+                                 :cljplot2/value-meanings {true "The diagonal cells too." false "No diagonal cells."}}
+                    schema/bool)
+   (schema/optional :triangle {:description "Which cells of a square matrix the function returns; `:lower` and `:upper` need a symmetric statistic."
+                               :default :full :cljplot2/example-context {:variables [:a :b :c]}
+                               :cljplot2/value-meanings {:full "Every cell."
+                                                         :lower "The cells with y after x in variable order."
+                                                         :upper "The cells with y before x in variable order."}}
+                    [:enum :full :lower :upper])]
+   [variables-problem [:variables]]
+   [triangle-problem [:triangle]]))
 
 (defn- matrix-cells
   "Gives the `[x y]` variable pairs of a matrix in row order (y outer, x inner).
@@ -260,21 +306,17 @@
 
   Returns a vector of rows `{:x x :y y :value v :n n :statistic label}` in row order (y outer, x inner, in variable order): `v` - the statistic of the x sample against the y sample `(f xs ys)` (see [[cell-values]]), `nil` when it can't be computed (a tile paints it in the NA colour); `n` - the sample size. For a matrix like `pairs` with `chart/tile`, give the axes the variable order (x domain the variables, y domain the variables reversed - the first variable on top): tile orders categories by first appearance with y growing upward.
 
-  Throws `ex-info {:key :variables}` without variables, with both forms, with repeated `:variables` or a variable without numeric values; `{:key :triangle}` for `:lower` / `:upper` of a rectangular matrix or of a statistic that isn't `:symmetric` (a function counts as asymmetric); `{:key k}` for an invalid option `k` (checked first).
+  Throws `ex-info` for invalid options, checked first (see [[matrix-rows-options]]): `{:key :variables}` without variables, with both forms or with repeated `:variables`; `{:key :triangle}` for `:lower` / `:upper` of a rectangular matrix or of a statistic that isn't `:symmetric` (a function counts as asymmetric); `{:key k}` for another invalid option `k`. Throws `{:key :variables}` for a variable without numeric values.
 
   See also [[statistic-samples]], [[statistic-value]]."
-  {:cljplot2/api true :cljplot2/options matrix-rows-options}
-  [rows {:keys [variables x-variables y-variables label triangle] :as options}]
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences), a numeric column per variable of `:variables`, or of `:x-variables` and `:y-variables`."}]
+   :cljplot2/returns "A row per cell `{:x :y :value :n :statistic}`: the statistic of the x sample against the y sample, `nil` when it can't be computed, and the sample size."
+   :cljplot2/options matrix-rows-options}
+  [rows {:keys [variables x-variables y-variables label] :as options}]
   (schema/check-options! matrix-rows-options options)
   (let [method (data/option options :method :pearson)
-        symmetric? (= :symmetric (statistic-symmetry method))
         statistic (statistic-label method label)]
-    (when-not (or variables (and x-variables y-variables))
-      (schema/fail! "Pairwise rows need :variables, or :x-variables with :y-variables." {:key :variables}))
-    (when (and variables (or x-variables y-variables))
-      (schema/fail! "Pairwise rows take :variables or :x-variables with :y-variables, not both." {:key :variables}))
-    (when (and (#{:lower :upper} triangle) (or (not variables) (not symmetric?)))
-      (schema/fail! "A :lower or :upper triangle needs a square matrix of a symmetric statistic." {:key :triangle :value triangle}))
     (let [data-rows (data/rows rows)
           _ (check-numeric-variables! data-rows (distinct (or variables (concat x-variables y-variables))))
           cells (matrix-cells options)

@@ -1,9 +1,10 @@
 ;; # Sets and series
 
-;; Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an
-;; UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise
-;; statistic. The [series builders](reference.builders_series.html) `plot/acf` and `plot/horizon` draw
-;; autocorrelations and horizons directly; `chart/pairwise` draws one statistic per panel.
+;; These functions turn set memberships, time series and variable pairs into rows: the bars and dot matrix of an
+;; UpSet plot, lag pairs, autocorrelations, the folded bands of a horizon chart and the matrix of a pairwise
+;; statistic. Use them to draw these plots with ordinary charts. The [series builders](reference.builders_series.html)
+;; `plot/acf` and `plot/horizon` draw autocorrelations and horizons directly; `chart/pairwise` draws one statistic per
+;; panel.
 
 (ns reference.data-sets-series
   (:require [fastmath.core :as m]
@@ -16,7 +17,8 @@
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
 
-;; Set memberships: one row per item and set it belongs to (an item may be in several).
+;; The table below holds made-up set memberships, a row per item and set it belongs to (an item may be in several);
+;; the UpSet sections use it:
 
 (def members (concat (for [i (range 40)] {:set "coffee" :item i})
                      (for [i (range 25 60)] {:set "tea" :item i})
@@ -25,28 +27,54 @@
 
 (nu/data-table members)
 
-;; An autoregressive series (fastmath `r/ar`, coefficient 0.6) over a weekly sine plus seeded white noise:
+;; The values below form an autoregressive series: fastmath `r/ar` draws 200 values with coefficient 0.6 over a weekly
+;; sine plus seeded white noise. The lag and autocorrelation sections use them:
 
 (def weekly (vec (take 200 (r/ar 0.6 (map (fn [t e] (+ (* 2.0 (m/sin (* m/TWO_PI (/ (double t) 7.0)))) (double e)))
                                            (range) (r/white-noise (r/rng :mersenne 8) 1.0))))))
 
 (nu/data-table weekly)
 
-;; ## sets/upset-rows
+;; The table below holds made-up temperature anomalies of two cities; the horizon sections use it:
 
-;; The bars of an UpSet plot: every combination of sets that holds items exclusively - its sets, size and degree -
-;; by size descending. The mapping names the set and item keys; a third argument chooses (and orders) the sets.
+(def temperatures (for [city ["Oslo" "Rome"] day (range 60)]
+                    {:city city :day day
+                     :anomaly (* (if (= city "Oslo") 4.0 2.5) (m/sin (+ (* 0.12 day) (if (= city "Oslo") 0.0 1.5))))}))
 
-(nu/data-table (sets/upset-rows members {:set :set :item :item}))
+(nu/data-table temperatures)
 
-;; ## sets/membership-rows
+;; The table below holds the iris flowers; the statistic matrix section uses it:
 
-;; The dot matrix under the bars: a row per combination and set, `:member` true where the set is in the combination.
+(nu/source-note {:dataset :iris})
 
-(nu/data-table (sets/membership-rows members {:set :set :item :item}))
+(def iris (nu/dataset :iris))
 
-;; Together, an UpSet plot of two stacked plots - the bars, then the dots of the members over grey dots of every
-;; cell - here with the sets chosen and ordered (tea first):
+(nu/data-table iris)
+
+;; ## UpSet bars
+
+;; `sets/upset-rows` returns the bars of an UpSet plot: every combination of sets that holds items of its own, with its
+;; sets, size and degree, the largest first. Use it with `chart/bar`, a bar per combination.
+
+(nu/argument-list #'sets/upset-rows)
+
+;; The table below holds the bars:
+
+(nu/result-table (sets/upset-rows members {:set :set :item :item}))
+
+;; ## UpSet membership
+
+;; `sets/membership-rows` returns the dot matrix under the bars: a row per combination and set, `:member` true where the
+;; set is in the combination. Use it with `chart/scatter` under the bars.
+
+(nu/argument-list #'sets/membership-rows)
+
+;; The table below holds the matrix:
+
+(nu/result-table (sets/membership-rows members {:set :set :item :item}))
+
+;; The plot below stacks both parts into an UpSet plot: the bars, then the members' dots over grey dots in every cell.
+;; It chooses the sets and puts tea first:
 
 (plot/render-image (plot/arrange [{:data (sets/upset-rows members {:set :set :item :item} ["tea" "coffee" "juice"])
                                    :mapping {:x :combination :y :size}
@@ -63,12 +91,17 @@
                                  {:columns 1 :heights [2 1]})
                    {:width 900 :height 450})
 
-;; ## series/lag-rows
+;; ## Lag pairs
 
-;; Pairs every value `y(t)` with `y(t + k)` - a lag plot shows the correlation at lag k (here the weekly cycle:
-;; strong at 7, negative at 3):
+;; `series/lag-rows` pairs every value `y(t)` with `y(t + k)`. Use it for a lag plot, which shows the correlation at lag
+;; k.
 
-(nu/data-table (series/lag-rows weekly 7))
+(nu/argument-list #'series/lag-rows)
+
+;; The table below pairs the values at lag 7; the plots below show the weekly cycle, strong at lag 7 and negative at lag
+;; 3:
+
+(nu/result-table (series/lag-rows weekly 7))
 
 (plot/render-image (plot/arrange [{:data (series/lag-rows weekly 3)
                                    :mapping {:x :x :y :y}
@@ -81,17 +114,23 @@
                                  {:columns 2})
                    {:width 800 :height 380})
 
-;; ## series/acf-rows
+;; ## Autocorrelation
 
-;; The autocorrelation function: a row per lag with its value, the significance band and whether the value is
-;; outside it; `:partial true` - the partial autocorrelation.
+;; `series/acf-rows` returns the autocorrelation function of a series: a row per lag with its value, the
+;; significance band and whether the value lies outside it. Use it to draw a correlogram of your own.
 
-(nu/options-table (describe/options #'series/acf-rows))
+(nu/argument-list #'series/acf-rows)
 
-(nu/data-table (series/acf-rows weekly {:lags 10}))
+;; These options set the lags, the band's confidence level and the partial autocorrelation. The table below holds
+;; lags 0 to 10:
 
-;; Drawn by hand from the rows - segments to 0, the band as a ribbon, significant lags in red: the autocorrelation
-;; up to lag 21 at the default 95% band (left) and the partial one with a 99% band (right):
+(nu/option-cards '(series/acf-rows values) (describe/options #'series/acf-rows))
+
+(nu/result-table (series/acf-rows weekly {:lags 10}))
+
+;; The plots below draw the rows by hand: segments to 0, the band as a ribbon, the significant lags in red. The left
+;; panel draws the autocorrelation up to lag 21 with the default 95% band, the right one the partial autocorrelation
+;; with a 99% band:
 
 (plot/render-image (plot/arrange [{:data (series/acf-rows weekly {:lags 21 :level 0.95})
                                    :mapping {:x :lag :y :value :ymin :lo :ymax :hi}
@@ -113,25 +152,22 @@
                                  {:columns 2 :widths [1 1.3]})
                    {:width 1000 :height 340})
 
-;; ## series/horizon-rows
+;; ## Horizon bands
 
-;; The bands of a horizon chart: values folded into `:bands` bands of one height, negatives mirrored upward as
-;; negative band numbers; returns `{:rows [...] :band-height h}`.
+;; `series/horizon-rows` returns the bands of a horizon chart: it folds the values into `:bands` bands of one height and
+;; mirrors negative values upward as negative band numbers. Use it to draw a horizon chart of your own.
 
-(nu/options-table (describe/options #'series/horizon-rows))
+(nu/argument-list #'series/horizon-rows)
 
-(def temperatures (for [city ["Oslo" "Rome"] day (range 60)]
-                    {:city city :day day
-                     :anomaly (* (if (= city "Oslo") 4.0 2.5) (m/sin (+ (* 0.12 day) (if (= city "Oslo") 0.0 1.5))))}))
+;; These options name the row keys, set the bands and resample the curve. The table below holds two bands per sign for
+;; each city; the function adds a point where the curve crosses a band edge:
 
-(nu/data-table temperatures)
+(nu/option-cards '(series/horizon-rows rows) (describe/options #'series/horizon-rows))
 
-;; Two bands per sign for each city (the rows of the bands, where the curve crosses a band edge points are added):
+(nu/result-table (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city :bands 2})))
 
-(nu/data-table (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city :bands 2})))
-
-;; The bands drawn as filled lines - default band height (left), and three bands of a fixed height 1 on a
-;; monotone curve resampled 4 points per gap (right); `horizon-bands` orders the colour domain:
+;; The plots below draw the bands as filled lines. The left panel takes the default band height; the right one draws
+;; three bands of height 1 on a monotone curve, resampled 4 points per gap. `horizon-bands` orders the colour domain:
 
 (plot/render-image (plot/arrange [{:data (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city}))
                                    :mapping {:x :x :y :y :color :band :facet :series}
@@ -154,22 +190,31 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 360})
 
-;; ## series/horizon-bands
+;; ## Horizon band labels
 
-;; The band labels of a horizon of n bands in drawing order - positive bands first, then the mirrored negative
-;; ones - the colour domain above:
+;; `series/horizon-bands` returns the band labels of a horizon of n bands in drawing order: the positive bands
+;; first, then the mirrored negative ones. Use it as the colour domain, as above.
+
+(nu/argument-list #'series/horizon-bands)
+
+;; The call below returns the labels of 3 bands per sign:
 
 (series/horizon-bands 3)
 
-;; ## pairwise/matrix-rows
+;; ## Statistic matrices
 
-;; A statistic for every pair of variables, a row per cell: the statistic of the x variable's sample against the y
-;; variable's (`:value`, `nil` when it can't be computed) with the sample size (`:n`). The built-in statistics by
-;; family: `:symmetry` tells how a value changes when the samples swap (`:symmetric` - unchanged, `:antisymmetric` -
-;; negated, `:reciprocal` - inverted, `:complementary` - `1 - v`, `:asymmetric` - otherwise); `:samples` - paired
-;; statistics take the rows where both values are present, independent-sample ones (two groups compared) each
-;; variable's own values; `:signed` - zero is the neutral value (a shaded `pairwise` chart centres its colours on
-;; it):
+;; `pairwise/matrix-rows` computes a statistic for every pair of variables, a row per cell: the statistic of the x
+;; variable's sample against the y variable's. Use it for a matrix of correlations, distances or effect sizes drawn as
+;; tiles.
+
+(nu/argument-list #'pairwise/matrix-rows)
+
+;; The table below lists the built-in statistics by family. `:symmetry` tells how a value changes when the samples
+;; swap: `:symmetric` keeps it, `:antisymmetric` negates it, `:reciprocal` inverts it, `:complementary` turns it into
+;; `1 - v`, and `:asymmetric` changes it otherwise. The `:samples` column says how a statistic reads the data: paired
+;; statistics take the rows where both values are present; independent-sample ones, which compare two groups, take each
+;; variable's own values. For a `:signed` statistic zero is the neutral value, and a shaded `pairwise` chart centres its
+;; colours on it:
 
 (nu/data-table (map (fn [[k {:keys [label family symmetry samples signed description]}]]
                       {:family family :method k :label label :symmetry symmetry :samples samples
@@ -177,30 +222,25 @@
                     (sort-by (fn [[k {:keys [family]}]] [({:error 0 :association 1 :effect-size 2 :distance 3} family) (name k)])
                              pairwise/statistics)))
 
-(nu/options-table (describe/options #'pairwise/matrix-rows))
+;; These options choose the variables, the statistic and the cells. The table below holds the lower triangle of a
+;; symmetric statistic with the diagonal, as `plot/pairs` lays it out:
 
-(nu/source-note {:dataset :iris})
+(nu/option-cards '(pairwise/matrix-rows rows) (describe/options #'pairwise/matrix-rows))
 
-(def iris (nu/dataset :iris))
+(nu/result-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                             :method :spearman :triangle :lower :self-pairs true}))
 
-(nu/data-table iris)
+;; The table below holds the upper triangle of the mean squared error of two variables, a single row:
 
-;; The lower triangle of a symmetric statistic, the diagonal included (lower - the y variable after the x variable
-;; in variable order, as the lower cells of `plot/pairs`):
+(nu/result-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
 
-(nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
-                                           :method :spearman :triangle :lower :self-pairs true}))
-
-;; The upper triangle of the mean squared error of two variables (one row - the pair once):
-
-(nu/data-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
-
-;; A standalone matrix is a [tile](reference.charts_bins_fields.html#heatmaps) per row (`:value-label` writes the
-;; values), two side by side through [`plot/arrange`](reference.facets_arrange.html#arrange). Tiles order the
-;; categories as they first appear and y grows upward, so the scales give both axes the variable order - the first
-;; variable on top, as in `plot/pairs`: Cohen's d of every ordered pair, the diagonal included (left; a signed
-;; statistic on a diverging palette centred on 0), and a rectangular matrix of sepal against petal measurements with
-;; a user function and its label (right):
+;; [`chart/tile`](reference.charts_bins_fields.html#heatmaps) draws a standalone matrix, a tile per row, and its
+;; `:value-label` writes the values; [`plot/arrange`](reference.facets_arrange.html#arrange) puts two side by side
+;; below. Tiles order the
+;; categories as they first appear and y grows upward, so the scales give both axes the variable order, the first
+;; variable on top as in `plot/pairs`. The left panel holds Cohen's d of every ordered pair with the diagonal, a signed
+;; statistic on a diverging palette centred on 0. The right one holds a rectangular matrix of sepal against petal
+;; measurements with a function of your own and its label:
 
 (plot/render-image (plot/arrange [{:data (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                                      :method :cohens-d :self-pairs true})

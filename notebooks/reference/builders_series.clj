@@ -32,6 +32,8 @@
 ;; draws a stem per lag and a significance band around zero, and marks the lags outside the band (but not lag 0, which
 ;; is always 1). Use it to find the lags a series depends on.
 
+(nu/argument-list #'plot/acf)
+
 (nu/shared-groups (describe/options #'plot/acf))
 
 ;; These options choose the correlograms, the band's shape and the colours. The plot below draws both correlograms of
@@ -69,6 +71,8 @@
 
 ;; `plot/horizon` folds each series of rows into bands of equal height: values above the first band draw over it in a
 ;; darker colour, and negative values mirror up in reds. Use it to compare many series in little height.
+
+(nu/argument-list #'plot/horizon)
 
 (nu/shared-groups (describe/options #'plot/horizon))
 

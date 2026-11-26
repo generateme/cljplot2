@@ -63,7 +63,7 @@
 
 ;; ### Ordered violins
 
-;; [`levels/order-levels`](reference.data_levels.html#levelsorder-levels) orders the levels by any statistic of a
+;; [`levels/order-levels`](reference.data_levels.html#level-order) orders the levels by any statistic of a
 ;; value; the result is the scale's `:domain`, its first level at the bottom (y grows upward) - ascending medians put
 ;; the largest on top (setosa, first in the data and at the bottom by default).
 

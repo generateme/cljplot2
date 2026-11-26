@@ -16,6 +16,27 @@
   `option-cards-test` - the builders' switch; `cljplot2.describe/concepts` names their sections by their symbols."
   '#{network chord arc sankey alluvial dendrogram tree clustered-heatmap bundle sequences acf horizon})
 
+(def migrated-functions
+  "User-facing data functions (`:cljplot2/api`, qualified symbols) whose reference sections show option cards and
+  follow the card rules of `option-cards-test` - the data functions' switch; `cljplot2.describe/concepts` names their
+  sections by their qualified symbols. Only functions taking options are listed (every one of them)."
+  '#{cljplot2.data.field/domain-color cljplot2.data.graph/adjacency->edges cljplot2.data.graph/alluvial-graph
+     cljplot2.data.graph/arc-layout cljplot2.data.graph/chord-layout cljplot2.data.graph/graph cljplot2.data.graph/layout
+     cljplot2.data.graph/sankey-layout cljplot2.data.hierarchy/sequence-levels cljplot2.data.levels/bin
+     cljplot2.data.levels/order-levels cljplot2.data.levels/rank-rows cljplot2.data.pairwise/matrix-rows
+     cljplot2.data.series/acf-rows cljplot2.data.series/horizon-rows cljplot2.data.shingle/shingle
+     cljplot2.data.tree/bundle-paths cljplot2.data.tree/from-levels cljplot2.data.tree/from-parents
+     cljplot2.data.tree/layout cljplot2.data.tree/node-link-layout cljplot2.data.vector-field/arrows
+     cljplot2.data.vector-field/traces})
+
+(defn migrated-function-groups
+  "The shared groups whose options the migrated data functions take ([[migrated-functions]]): the functions own them,
+  so their texts read in the card style - also for the builders forwarding them."
+  []
+  (set (for [sym migrated-functions
+             [group] (describe/fragment-keys (describe/options (resolve sym)))]
+         group)))
+
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."
   [f]

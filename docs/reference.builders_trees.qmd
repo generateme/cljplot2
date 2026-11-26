@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -236,6 +238,12 @@ their merge heights and the leaves along one axis. Use it to show how observatio
 
 
 ```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>source</code> – A fastmath <code>hclust</code> result or a tree of <code>tree/from-hclust</code>, <code>tree/from-levels</code> or <code>tree/from-parents</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the dendrogram: an elbow path per branch, optional clusters and leaf labels.</div></div>
+```
+
+
+
+```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
@@ -245,7 +253,7 @@ branches. The plot below cuts the cars' clustering into 3 clusters:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:horizontal</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:horizontal true})</code></div><div class="option-text">Whether the leaves sit on the left with heights growing right; a circular dendrogram ignores it.<ul><li><code>false</code> – Leaves at the bottom, heights growing up.</li><li><code>true</code> – Leaves on the left.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:labels false})</code></div><div class="option-text">Writes the leaf names along the leaf axis, outward around a circular dendrogram.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:group-labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:group-labels true})</code></div><div class="option-text">Writes the names of named groups at their nodes. Only trees built from levels or parents name their groups; an <code>hclust</code> result's groups have no names.<ul><li><code>false</code> – No names.</li><li><code>true</code> – Writes the names.</li></ul></div></dd></div><div class="option-card"><dt><code>:line-style</code><span class="option-default">Default: The theme style <code>[:chart :dendrogram-branch]</code>.</span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:line-style {:line-width 4}})</code></div><div class="option-text">Line options of the branches, merged over the theme style <code>[:chart :dendrogram-branch]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/dendrogram source {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:horizontal</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram source {:horizontal true})</code></div><div class="option-text">Whether the leaves sit on the left with heights growing right; a circular dendrogram ignores it.<ul><li><code>false</code> – Leaves at the bottom, heights growing up.</li><li><code>true</code> – Leaves on the left.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram source {:labels false})</code></div><div class="option-text">Writes the leaf names along the leaf axis, outward around a circular dendrogram.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:group-labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram source {:group-labels true})</code></div><div class="option-text">Writes the names of named groups at their nodes. Only trees built from levels or parents name their groups; an <code>hclust</code> result's groups have no names.<ul><li><code>false</code> – No names.</li><li><code>true</code> – Writes the names.</li></ul></div></dd></div><div class="option-card"><dt><code>:line-style</code><span class="option-default">Default: The theme style <code>[:chart :dendrogram-branch]</code>.</span></dt><dd><div class="option-example"><code>(plot/dendrogram source {:line-style {:line-width 4}})</code></div><div class="option-text">Line options of the branches, merged over the theme style <code>[:chart :dendrogram-branch]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div></dl>
 ```
 
 
@@ -320,6 +328,12 @@ hierarchy's structure.
 
 
 ```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>source</code> – A fastmath <code>hclust</code> result or a tree of <code>tree/from-hclust</code>, <code>tree/from-levels</code> or <code>tree/from-parents</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the node-link tree: the links as lines, the nodes as points, optional labels.</div></div>
+```
+
+
+
+```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
@@ -329,7 +343,7 @@ draws the office tree:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree tree {:labels false})</code></div><div class="option-text">Writes the node names. A cartesian tree writes leaf names right of their nodes and group names left of them; a circular tree writes leaf names outward.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:node-points</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree tree {:node-points false})</code></div><div class="option-text">Whether the plot draws a point per node.<ul><li><code>true</code> – Draws a point per node.</li><li><code>false</code> – Draws no points.</li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No node aesthetics.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:mapping {:color :depth}})</code></div><div class="option-text">Maps node aesthetics (<code>:color</code>, <code>:size</code>, <code>:shape</code>) to accessors of the nodes: their rows' columns, <code>:depth</code>, <code>:leaf</code> or <code>:name</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:node-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-node]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:node-style {:size 14}})</code></div><div class="option-text">Scatter options of the nodes, merged over the theme style <code>[:chart :tree-node]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:link-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-link]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:link-style {:line-width 4}})</code></div><div class="option-text">Line options of the links, merged over the theme style <code>[:chart :tree-link]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree source {:labels false})</code></div><div class="option-text">Writes the node names. A cartesian tree writes leaf names right of their nodes and group names left of them; a circular tree writes leaf names outward.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:node-points</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree source {:node-points false})</code></div><div class="option-text">Whether the plot draws a point per node.<ul><li><code>true</code> – Draws a point per node.</li><li><code>false</code> – Draws no points.</li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No node aesthetics.</span></dt><dd><div class="option-example"><code>(plot/tree source {:mapping {:color :depth}})</code></div><div class="option-text">Maps node aesthetics (<code>:color</code>, <code>:size</code>, <code>:shape</code>) to accessors of the nodes: their rows' columns, <code>:depth</code>, <code>:leaf</code> or <code>:name</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:node-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-node]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree source {:node-style {:size 14}})</code></div><div class="option-text">Scatter options of the nodes, merged over the theme style <code>[:chart :tree-node]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:link-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-link]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree source {:link-style {:line-width 4}})</code></div><div class="option-text">Line options of the links, merged over the theme style <code>[:chart :tree-link]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/tree source {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
 ```
 
 
@@ -426,6 +440,12 @@ The links' theme style has these keys; the plot below draws darker, thicker link
 `plot/clustered-heatmap` draws a tile per row and column of long rows, coloured by a value. Hierarchical clustering
 orders the rows and the columns, and their dendrograms sit beside the tiles. Use it to find groups of similar rows
 and columns.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – Long rows, one per cell.<div>Columns:<ul><li><em>a row column</em> – The cell's heatmap row, named by the option <code>:row</code>.</li><li><em>a column column</em> – The cell's heatmap column, named by the option <code>:col</code>.</li><li><em>a value column</em> – The cell's value, a finite number, named by the option <code>:value</code>; every pair of a heatmap row and column needs one.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – An arrange plot map of the heatmap, its rows and columns ordered by clustering, with their dendrograms beside it unless <code>:row-tree</code> or <code>:col-tree</code> is <code>false</code>.</div></div>
+```
+
 
 
 ```{=html}
@@ -562,8 +582,13 @@ below annotates horsepower with a colour bar and keeps the legend cell beside th
 ## Edge bundles
 
 `plot/bundle` draws edges between the leaves of a tree around a circle, each edge bent along the tree path between
-its ends. An edge names its leaves by node id in a `tree/from-parents` tree, else by leaf name. Use it for many links
-between the members of a hierarchy.
+its ends. Use it for many links between the members of a hierarchy.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – Edge rows between leaves of the tree.<div>Columns:<ul><li><code>:from</code> – The source leaf: a <code>tree/from-parents</code> node's <code>:id</code>, else a leaf's <code>:name</code>; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target leaf; the option <code>:to</code> names another column.</li></ul></div></li><li><code>leaf-tree</code> – A tree of <code>tree/from-hclust</code>, <code>tree/from-levels</code> or <code>tree/from-parents</code> whose leaves the edges join.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the edge bundle: the leaves on a circle and a bundled curve per edge.</div></div>
+```
+
 
 
 ```{=html}
@@ -576,7 +601,7 @@ office tree's cities:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.4</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:alpha 1.0})</code></div><div class="option-text">The opacity of the edges; leaf points and legend keys stay opaque.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color-by</code><span class="option-default">Default: <code>:group</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:color-by :none})</code></div><div class="option-text">How the plot colours the edges and leaves.<ul><li><code>:group</code> – Colours each edge by the top-level group of its source leaf and each leaf by its own group, with a legend.</li><li><code>:none</code> – Edges in <code>:edge-color</code>, leaves in the theme colour, without a legend.</li></ul></div></dd></div><div class="option-card"><dt><code>:edge-color</code><span class="option-default">Default: <code>[0 114 178]</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:color-by :none, :edge-color :darkorange})</code></div><div class="option-text">The colour of the edges with <code>:color-by :none</code>.<ul><li><code>:none</code> – No edges.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:labels false})</code></div><div class="option-text">Writes the leaf names outward around the circle.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.4</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges leaf-tree {:alpha 1.0})</code></div><div class="option-text">The opacity of the edges; leaf points and legend keys stay opaque.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color-by</code><span class="option-default">Default: <code>:group</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges leaf-tree {:color-by :none})</code></div><div class="option-text">How the plot colours the edges and leaves.<ul><li><code>:group</code> – Colours each edge by the top-level group of its source leaf and each leaf by its own group, with a legend.</li><li><code>:none</code> – Edges in <code>:edge-color</code>, leaves in the theme colour, without a legend.</li></ul></div></dd></div><div class="option-card"><dt><code>:edge-color</code><span class="option-default">Default: <code>[0 114 178]</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges leaf-tree {:color-by :none, :edge-color :darkorange})</code></div><div class="option-text">The colour of the edges with <code>:color-by :none</code>.<ul><li><code>:none</code> – No edges.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges leaf-tree {:labels false})</code></div><div class="option-text">Writes the leaf names outward around the circle.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div></dl>
 ```
 
 
@@ -667,6 +692,12 @@ The leaves' theme style has these keys; the plot below draws large square leaves
 `plot/sequences` draws sequences of steps as rings from the centre. A step keeps its name's colour wherever it
 occurs, and the end of a sequence is a step of its own. Use it to show the paths through a process, e.g. visits to
 a website.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – One sequence per row.<div>Columns:<ul><li><code>:sequence</code> – The sequence: a string of steps joined by <code>:separator</code>, or a sequence of steps; the option <code>:sequence</code> names another column.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the sequence sunburst: a ring per step, a sector per sequence prefix.</div></div>
+```
+
 
 
 ```{=html}

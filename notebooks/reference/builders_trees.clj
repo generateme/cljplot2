@@ -84,12 +84,14 @@
 ;; `plot/dendrogram` draws a clustering (an `hclust` result) or a tree of levels or parents. It draws the branches at
 ;; their merge heights and the leaves along one axis. Use it to show how observations join into clusters.
 
+(nu/argument-list #'plot/dendrogram)
+
 (nu/shared-groups (describe/options #'plot/dendrogram))
 
 ;; These options name an `hclust` result's leaves, turn the dendrogram, write leaf and group names and style the
 ;; branches. The plot below cuts the cars' clustering into 3 clusters:
 
-(nu/option-cards '(plot/dendrogram tree) (describe/own-rows (describe/options #'plot/dendrogram)))
+(nu/option-cards '(plot/dendrogram source) (describe/own-rows (describe/options #'plot/dendrogram)))
 
 (plot/render-image (plot/dendrogram car-clustering {:leaf-names car-names :k 3 :title "complete linkage, 3 clusters"})
                    {:width 900 :height 420})
@@ -122,12 +124,14 @@
 ;; options (Node-link tree layout) make it a tidy tree or a cluster, cartesian or circular. Use it to show a
 ;; hierarchy's structure.
 
+(nu/argument-list #'plot/tree)
+
 (nu/shared-groups (describe/options #'plot/tree))
 
 ;; These options write node names, draw node points, map node aesthetics and style the nodes and links. The plot below
 ;; draws the office tree:
 
-(nu/option-cards '(plot/tree tree) (describe/own-rows (describe/options #'plot/tree)))
+(nu/option-cards '(plot/tree source) (describe/own-rows (describe/options #'plot/tree)))
 
 (plot/render-image (plot/tree office-tree) {:width 600 :height 360})
 
@@ -169,6 +173,8 @@
 ;; `plot/clustered-heatmap` draws a tile per row and column of long rows, coloured by a value. Hierarchical clustering
 ;; orders the rows and the columns, and their dendrograms sit beside the tiles. Use it to find groups of similar rows
 ;; and columns.
+
+(nu/argument-list #'plot/clustered-heatmap)
 
 (nu/shared-groups (describe/options #'plot/clustered-heatmap))
 
@@ -241,15 +247,16 @@
 ;; ## Edge bundles
 
 ;; `plot/bundle` draws edges between the leaves of a tree around a circle, each edge bent along the tree path between
-;; its ends. An edge names its leaves by node id in a `tree/from-parents` tree, else by leaf name. Use it for many links
-;; between the members of a hierarchy.
+;; its ends. Use it for many links between the members of a hierarchy.
+
+(nu/argument-list #'plot/bundle)
 
 (nu/shared-groups (describe/options #'plot/bundle))
 
 ;; These options set the edges' opacity and colours and the leaf names. The plot below bundles calls between the
 ;; office tree's cities:
 
-(nu/option-cards '(plot/bundle edges tree) (describe/own-rows (describe/options #'plot/bundle)))
+(nu/option-cards '(plot/bundle edges leaf-tree) (describe/own-rows (describe/options #'plot/bundle)))
 
 (plot/render-image (plot/bundle calls office-tree {}) {:width 500 :height 500})
 
@@ -285,6 +292,8 @@
 ;; `plot/sequences` draws sequences of steps as rings from the centre. A step keeps its name's colour wherever it
 ;; occurs, and the end of a sequence is a step of its own. Use it to show the paths through a process, e.g. visits to
 ;; a website.
+
+(nu/argument-list #'plot/sequences)
 
 (nu/shared-groups (describe/options #'plot/sequences))
 

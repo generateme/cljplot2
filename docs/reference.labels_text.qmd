@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -364,7 +366,13 @@ A text style's `:font` is a family name or a `java.awt.Font`; `resolve-font` tur
 `:bold`, `:italic`, `:bold-italic`) and a size in points into the `java.awt.Font` drawn. Bundled families
 (`"DejaVu Sans Mono"` - the default theme's font, `"Noto Emoji"`) win over installed ones, so plots render alike on
 every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) work too, an unknown name throws
-`{:key :font}`. It takes no options map.
+`{:key :font}`.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>font</code> – A bundled font family name as written, an installed or logical (<code>SansSerif</code>) family name in any case, or a <code>java.awt.Font</code>, whose size and style are replaced.</li><li><code>font-style</code> – A font style: <code>:plain</code>, <code>:bold</code>, <code>:italic</code> or <code>:bold-italic</code>.</li><li><code>size</code> – The size in points, a positive number.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The font, a <code>java.awt.Font</code>.</div></div>
+```
+
 
 
 ::: {.sourceClojure}
@@ -377,7 +385,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x5d640b22 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
+#object[java.awt.Font 0x594d6436 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
 
 ```
 :::
@@ -394,7 +402,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x176ed354 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
+#object[java.awt.Font 0x4f8ed009 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
 
 ```
 :::

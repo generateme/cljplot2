@@ -67,18 +67,26 @@
 
 (def ^:private row-key [:or :keyword :string])
 
+(def ^:private row-key-meanings
+  "Card meanings of the forms of [[row-key]]."
+  {:keyword "A keyword key of the rows, e.g. `:t`." :string "A string key of the rows, e.g. `t` of rows read from CSV with string keys."})
+
 (def acf-rows-entries
   "Option entries of [[acf-rows]] (a shared group, `:series/acf-rows`; [[cljplot2.series-plots/acf]] forwards
   `:lags` and `:level`)."
   (schema/in-fragment
    :series/acf-rows
-   [(schema/nilable :lags {:description "the largest lag, from 1 to n - 1 for n values"
-                           :cljplot2/default-doc "floor(10 log10 n), at most n - 1 (R acf)"}
+   [(schema/nilable :lags {:description "The largest lag, from 1 to n - 1 for n values."
+                           :cljplot2/default-doc "`floor(10 log10 n)`, at most n - 1, as R `acf`."
+                           :cljplot2/example 5}
                     schema/pos-int)
-    (schema/nilable :level {:description "confidence level of the band (0.95 - a 95% band)" :default 0.95}
+    (schema/nilable :level {:description "The confidence level of the significance band: 0.95 gives a 95% band."
+                            :default 0.95 :cljplot2/example 0.8}
                     schema/open-fraction)
-    (schema/nilable :partial {:description "the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation"
-                               :default false}
+    (schema/nilable :partial {:description "Whether the function computes the partial autocorrelation."
+                              :default false
+                              :cljplot2/value-meanings {true "The partial autocorrelation: lags from 1, a band of constant width."
+                                                        false "The autocorrelation: lags from 0, a band widening with the lag."}}
                     schema/bool)]))
 
 (def acf-rows-options
@@ -99,7 +107,10 @@
   Returns a vector of rows `{:lag :value :lo :hi :significant}`: lags 0 to `:lags`, the band `[:lo :hi]` - Bartlett's per lag (fastmath `acf-ci` `:cis`), `:significant` - the value outside the band (lag 0, always 1, isn't). With `:partial true`: lags 1 to `:lags`, the constant band `±ci` (`pacf-ci`).
 
   Throws `ex-info {:key :values}` for a non-finite value, fewer than 2 values or a constant series, `{:key :lags}` for lags outside 1 to n - 1; `{:key k}` for an invalid option `k` (checked first)."
-  {:cljplot2/api true :cljplot2/options acf-rows-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'values :description "The series, a sequence of numbers."}]
+   :cljplot2/returns "A row per lag `{:lag :value :lo :hi :significant}`: the autocorrelation (partial with `:partial`, from lag 1), the significance band and whether the value lies outside it."
+   :cljplot2/options acf-rows-options}
   ([values] (acf-rows values {}))
   ([values {partial? :partial lags-option :lags :as options}]
    (schema/check-options! acf-rows-options options)
@@ -128,7 +139,10 @@
   Returns a vector of `n - k` rows `{:t :x :y}` - `y_t` as `:x`, `y_(t+k)` as `:y`, `t` from 0; none for `k >= n`.
 
   Throws `ex-info {:key :lag}` unless `k` is a positive integer."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'values :description "The series, a sequence of values."}
+                         {:name 'k :description "The lag, a positive integer."}]
+   :cljplot2/returns "`n - k` rows `{:t :x :y}` for n values: the value at t under `:x`, the value at t + k under `:y`; none when k is n or more."}
   [values k]
   (when-not (and (integer? k) (m/pos? (long k)))
     (schema/fail! "Lag should be a positive integer." {:key :lag :value k}))
@@ -207,7 +221,9 @@
   - `n` (long): the count of bands per sign.
 
   Returns `[1 .. n -1 .. -n]`: positive bands, then negative (mirrored) ones - each band under the next, darker one."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'n :description "The number of bands per sign."}]
+   :cljplot2/returns "The band labels in drawing order, `[1 .. n -1 .. -n]`: the positive bands, then the mirrored negative ones."}
   [^long n]
   (let [labels (range 1 (m/long-inc n))]
     (vec (concat labels (map (fn [^long b] (m/- b)) labels)))))
@@ -259,21 +275,28 @@
   forwards them all)."
   (schema/in-fragment
    :series/horizon-rows
-   [(schema/optional :x {:description "row key of the x values (numbers)" :default :x} row-key)
-    (schema/optional :y {:description "row key of the y values (finite numbers, nil breaks the bands)" :default :y} row-key)
-    (schema/nilable :series {:description "row key of the series, one horizon per value in first-appearance order"
-                             :cljplot2/default-doc "none - one series"}
+   [(schema/optional :x {:description "The row key of the numeric x values." :default :x :cljplot2/example :t
+                          :cljplot2/form-meanings row-key-meanings}
+                     row-key)
+    (schema/optional :y {:description "The row key of the y values, finite numbers; a `nil` value breaks the bands." :default :y
+                         :cljplot2/example :v :cljplot2/form-meanings row-key-meanings}
+                     row-key)
+    (schema/nilable :series {:description "The row key of the series: a horizon per value, in order of first appearance."
+                             :cljplot2/default-doc "One series."
+                             :cljplot2/example :s :cljplot2/form-meanings row-key-meanings}
                     row-key)
-    (schema/optional :bands {:description "number of bands each sign of the values is folded into" :default 2}
+    (schema/optional :bands {:description "The number of bands the function folds each sign of the values into." :default 2 :cljplot2/example 3}
                      schema/pos-int)
-    (schema/nilable :band-height {:description "height of one band in y units"
-                                  :cljplot2/default-doc "the largest |y| of all series / :bands (1 when it is 0)"}
+    (schema/nilable :band-height {:description "The height of one band, in y units."
+                                  :cljplot2/default-doc "The largest absolute y of all series divided by `:bands`; 1 when that is 0."
+                                  :cljplot2/example 0.2}
                     schema/finite-pos)
-    (schema/nilable :interpolator {:description "a curve the valid points of every run are resampled on before folding"
-                                   :cljplot2/default-doc "none - straight segments"}
+    (schema/nilable :interpolator {:description "The interpolator the function fits through every run of valid points and resamples before folding, so all bands follow one curve."
+                                   :cljplot2/default-doc "None: straight segments."
+                                   :cljplot2/example :cubic}
                     schema/interpolator)
-    (schema/optional :steps-per-gap {:description "resampled points per gap between consecutive x (with :interpolator)"
-                                     :default 10}
+    (schema/optional :steps-per-gap {:description "The number of resampled points per gap between consecutive x, with `:interpolator`."
+                                     :default 10 :cljplot2/example 3 :cljplot2/example-context {:interpolator :cubic}}
                      schema/pos-int)]))
 
 (def horizon-rows-options
@@ -299,7 +322,10 @@
   Throws `ex-info` for an invalid option (checked first: `{:key :bands}`, `{:key :band-height}`, `{:key :steps-per-gap}` ...), `{:key :x}` for a non-numeric x, `{:key :y}` for a `y` neither `nil` nor a finite number, `{:key :interpolator}` for an unknown method or a repeated x in a run.
 
   See also [[horizon-bands]]."
-  {:cljplot2/api true :cljplot2/options horizon-rows-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The series points, one row each." :columns {:x "The x value, a number; the option `:x` names another key." :y "The y value, a finite number or `nil`, which breaks the bands; the option `:y` names another key." "a series key" "The row's series, named by the option `:series`; optional."}}]
+   :cljplot2/returns "`{:rows :band-height}`: rows `{:x :y :band}` of the folded bands, with `:series` when the option names one, and the height of one band."
+   :cljplot2/options horizon-rows-options}
   ([rows] (horizon-rows rows {}))
   ([rows {:keys [x y series ^long bands band-height interpolator steps-per-gap] :or {x :x y :y bands 2 steps-per-gap 10} :as options}]
    (schema/check-options! horizon-rows-options options)

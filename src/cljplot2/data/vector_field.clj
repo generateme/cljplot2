@@ -75,7 +75,10 @@
   Returns a vector of rows `{:x :y :x0 :y0}`: `(x, y)` = f(x0, y0); seeds whose image isn't finite are left out.
 
   Throws `ex-info {:key :seeds}` for bad seeds, `{:key :f}` for a field not returning a pair."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'f :description "A vector field: a function of a point `[x y]` that returns a vector `[u v]`, e.g. a `fastmath.fields` field."}
+                         {:name 'seeds :description "The points `[x y]` to map."}]
+   :cljplot2/returns "A row per seed `{:x :y :x0 :y0}`: its image and the seed; seeds whose image isn't finite are left out."}
   [f seeds]
   (check-seeds! seeds)
   (vec (keep (fn [[x0 y0]]
@@ -86,16 +89,23 @@
 (def arrows-options
   "Options of [[arrows]]."
   [:map {:closed true}
-   [:domain {:description "the domain of the arrow grid {:x [lo hi] :y [lo hi]} (required)"}
+   [:domain {:description "The domain of the arrow grid along x and y."
+             :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}}
     [:map {:closed true}
-     [:x {:description "x domain [lo hi], lo < hi"} schema/finite-interval]
-     [:y {:description "y domain [lo hi], lo < hi"} schema/finite-interval]]]
-   (schema/optional :n {:description "grid cells per axis, or [nx ny]" :default 20}
+     [:x {:description "The x domain `[lo hi]`." :cljplot2/example [-2 2]} schema/finite-interval]
+     [:y {:description "The y domain `[lo hi]`." :cljplot2/example [-2 2]} schema/finite-interval]]]
+   (schema/optional :n {:description "The number of grid cells per axis." :default 20 :cljplot2/example 5
+                        :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}
+                        :cljplot2/form-meanings {::schema/pos-int "The same count along both axes."
+                                                 :tuple "The counts `[nx ny]` along x and y."}}
                     [:or schema/pos-int [:tuple schema/pos-int schema/pos-int]])
-   (schema/optional :grid {:description "arrow starts: cell centres (:square) or every second row moved half a cell along x (:shifted)"
-                           :default :square}
+   (schema/optional :grid {:description "Where the arrows start."
+                           :default :square :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}
+                           :cljplot2/value-meanings {:square "At the cell centres."
+                                                     :shifted "At the cell centres, every second row moved half a cell along x."}}
                     [:enum :square :shifted])
-   (schema/optional :length-scale {:description "arrow length factor: an arrow is length-scale * cell * (1 - e^-|f|) long" :default 1.0}
+   (schema/optional :length-scale {:description "The arrow length factor: an arrow is `length-scale * cell * (1 - e^-|f|)` long, where `cell` is the smaller cell side."
+                                   :default 1.0 :cljplot2/example 0.5 :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}}
                     schema/finite-pos)])
 
 (defn- grid-counts
@@ -157,7 +167,10 @@
   Throws `ex-info` for bad options, `{:key :f}` for a field not returning a pair.
 
   See also `grid-points`, [[traces]]."
-  {:cljplot2/api true :cljplot2/options arrows-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'f :description "A vector field: a function of a point `[x y]` that returns a vector `[u v]`, e.g. a `fastmath.fields` field."}]
+   :cljplot2/returns "A row per arrow `{:x :y :xend :yend :magnitude}`, from a grid point along the field; zero and non-finite vectors are left out."
+   :cljplot2/options arrows-options}
   [f {:keys [domain n grid ^double length-scale] :or {n 20 grid :square length-scale 1.0} :as options}]
   (schema/check-options! arrows-options options)
   (let [{:keys [points cell]} (grid-points domain (grid-counts n) (= grid :shifted))]
@@ -186,8 +199,9 @@
 (def traces-options
   "Options of [[traces]]."
   [:map {:closed true}
-   (schema/optional :steps {:description "the number of steps of every trace" :default 100} schema/pos-int)
-   (schema/optional :step {:description "the step factor: each step moves p by f(p) * (1 - e^-|f(p)|) * step" :default 0.01}
+   (schema/optional :steps {:description "The number of steps of every trace." :default 100 :cljplot2/example 10} schema/pos-int)
+   (schema/optional :step {:description "The step factor: each step moves a point `p` by `f(p) * (1 - e^-|f(p)|) * step`."
+                           :default 0.01 :cljplot2/example 0.05}
                     schema/finite-pos)])
 
 (defn traces
@@ -206,7 +220,11 @@
   Throws `ex-info` for bad options, `{:key :seeds}` for bad seeds, `{:key :f}` for a field not returning a pair.
 
   See also [[arrows]], [[mapped-points]]."
-  {:cljplot2/api true :cljplot2/options traces-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'f :description "A vector field: a function of a point `[x y]` that returns a vector `[u v]`, e.g. a `fastmath.fields` field."}
+                         {:name 'seeds :description "The start points `[x y]` of the paths."}]
+   :cljplot2/returns "Rows `{:id :i :x :y}`: the seed's index, the step (0 at the seed) and the point; a path ends before a non-finite point."
+   :cljplot2/options traces-options}
   ([f seeds] (traces f seeds {}))
   ([f seeds {:keys [^long steps ^double step] :or {steps 100 step 0.01} :as options}]
    (schema/check-options! traces-options options)

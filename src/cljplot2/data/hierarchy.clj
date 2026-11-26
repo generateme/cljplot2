@@ -344,17 +344,22 @@
   forwards them)."
   (schema/in-fragment
    :hierarchy/sequence-levels
-   [(schema/optional :sequence {:description "accessor of a row's sequence: a string split at :separator or a sequence of steps"
-                                :default :sequence}
+   [(schema/optional :sequence {:description "The accessor of a row's sequence: a string the function splits at `:separator`, or a sequence of steps."
+                                :default :sequence :cljplot2/example :path}
                      schema/accessor)
-    (schema/nilable :value {:description "accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)"
-                            :cljplot2/default-doc "1 per row"}
+    (schema/nilable :value {:description "The accessor of a row's weight, a finite number zero or greater; a `nil` weight counts as 1. The function sums the weights of identical sequences."
+                            :cljplot2/default-doc "Every row weighs 1."
+                            :cljplot2/example :n}
                     schema/accessor)
-    (schema/optional :separator {:description "literal text splitting a string sequence into steps" :default "-"} :string)
-    (schema/optional :end {:description "the end marker (nil - none): a final step equal to it is removed unless :keep-end" :default "end"}
-                      any?)
-    (schema/nilable :keep-end {:description "keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)"
-                               :default true}
+    (schema/optional :separator {:description "The literal text that splits a string sequence into steps." :default "-" :cljplot2/example "-b-"}
+                     :string)
+    (schema/optional :end {:description "The text of a final step that marks a sequence's end; it acts only with `:keep-end false`, which removes it. `nil` means no end marker."
+                           :default "end" :cljplot2/example "c" :cljplot2/example-context {:keep-end false}}
+                     any?)
+    (schema/nilable :keep-end {:description "Whether a final end marker stays a step of its own."
+                               :default true
+                               :cljplot2/value-meanings {true "The marker stays a step: a sequence ending before others continue gets a leaf of its own."
+                                                         false "The function removes the marker: a sequence ending before others continue is its group's unnamed leaf."}}
                     schema/bool)]))
 
 (def sequence-levels-options
@@ -377,7 +382,10 @@
   Returns `{:rows [{:step-1 s1 .. :step-k sk :value v} ..] :hierarchy [:step-1 .. :step-k] :dropped n}` - `k` the longest sequence, shorter ones padded with `nil`, rows in first-appearance order; `:dropped` - rows without steps.
 
   Throws `ex-info {:key :value}` for an invalid weight; `{:key k}` for an invalid option `k` (checked first, see [[sequence-levels-options]])."
-  {:cljplot2/api true :cljplot2/options sequence-levels-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "One sequence per row." :columns {:sequence "The sequence: a string of steps joined by `:separator`, or a sequence of steps; the option `:sequence` names another column." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
+   :cljplot2/returns "`{:rows :hierarchy :dropped}`: a row per distinct sequence with a column per step (`:step-1` ...) and the summed `:value`, the step keys, and the number of rows without steps."
+   :cljplot2/options sequence-levels-options}
   ([rows] (sequence-levels rows {}))
   ([rows {:keys [value separator end] sequence-accessor :sequence :or {sequence-accessor :sequence separator "-" end "end"} :as options}]
    (schema/check-options! sequence-levels-options options)

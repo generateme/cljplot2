@@ -62,9 +62,10 @@
 
 ;; ## Networks
 
-;; `plot/network` draws a node-link diagram of edge rows (`:from`, `:to`, optional `:value`). A force-directed, circle
-;; or random layout places the nodes, and segments join them, with arrows in a directed graph. Use it to show who links
-;; to whom.
+;; `plot/network` draws a node-link diagram of edge rows. A force-directed, circle or random layout places the nodes,
+;; and segments join them, with arrows in a directed graph. Use it to show who links to whom.
+
+(nu/argument-list #'plot/network)
 
 (nu/shared-groups (describe/options #'plot/network))
 
@@ -124,6 +125,8 @@
 ;; flow of a directed graph, or per pair of an undirected one. Use it for flows in both directions between a few
 ;; groups.
 
+(nu/argument-list #'plot/chord)
+
 (nu/shared-groups (describe/options #'plot/chord))
 
 ;; These options set the ribbons' opacity and the node names. The left panel below draws directed migration between
@@ -141,6 +144,8 @@
 
 ;; `plot/arc` draws the nodes on a line and the links as arcs above it. Use it for a compact view of a graph whose node
 ;; order matters.
+
+(nu/argument-list #'plot/arc)
 
 (nu/shared-groups (describe/options #'plot/arc))
 
@@ -190,6 +195,8 @@
 ;; `plot/sankey` draws flows through layered nodes: the nodes as bars in columns, the links as bands as wide as their
 ;; flows. Use it to follow quantities through stages.
 
+(nu/argument-list #'plot/sankey)
+
 (nu/shared-groups (describe/options #'plot/sankey))
 
 ;; These options colour the nodes and the flow bands, set the bands' opacity and write the node names. The plot below
@@ -230,6 +237,8 @@
 ;; `plot/alluvial` draws a column per categorical variable of wide rows, with a stratum per level. Strands join
 ;; neighbouring columns; a value weights them and one variable colours them all the way through. Use it to follow how
 ;; groups split across several categories.
+
+(nu/argument-list #'plot/alluvial)
 
 (nu/shared-groups (describe/options #'plot/alluvial))
 

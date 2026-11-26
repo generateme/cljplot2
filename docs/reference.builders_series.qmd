@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -107,6 +109,12 @@ The table below holds three made-up series of growing waves, `:t` and `:v` per s
 `plot/acf` draws the autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag. It
 draws a stem per lag and a significance band around zero, and marks the lags outside the band (but not lag 0, which
 is always 1). Use it to find the lags a series depends on.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>values</code> – The series, a sequence of numbers.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the correlograms: a stem per lag and the significance band.</div></div>
+```
+
 
 
 ```{=html}
@@ -202,6 +210,12 @@ The plot below draws larger triangle points through the theme:
 
 `plot/horizon` folds each series of rows into bands of equal height: values above the first band draw over it in a
 darker colour, and negative values mirror up in reds. Use it to compare many series in little height.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The series points, one row each.<div>Columns:<ul><li><code>:x</code> – The x value, a number; the option <code>:x</code> names another key.</li><li><code>:y</code> – The y value, a finite number or <code>nil</code>, which breaks the bands; the option <code>:y</code> names another key.</li><li><em>a series key</em> – The row's series, named by the option <code>:series</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the horizon chart: a row of folded bands per series.</div></div>
+```
+
 
 
 ```{=html}

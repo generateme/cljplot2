@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -188,9 +190,14 @@ Data: Titanic passengers and crew by class, sex, age and survival, R datasets pa
 
 ## Networks
 
-`plot/network` draws a node-link diagram of edge rows (`:from`, `:to`, optional `:value`). A force-directed, circle
-or random layout places the nodes, and segments join them, with arrows in a directed graph. Use it to show who links
-to whom.
+`plot/network` draws a node-link diagram of edge rows. A force-directed, circle or random layout places the nodes,
+and segments join them, with arrows in a directed graph. Use it to show who links to whom.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – The edge rows, one per edge.<div>Columns:<ul><li><code>:from</code> – The source node's id; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target node's id; the option <code>:to</code> names another column.</li><li><code>:value</code> – The weight, a finite number zero or greater; the option <code>:value</code> names another column. Optional: a missing weight counts as 1.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the network: the edges as segments, the nodes as points, optional labels.</div></div>
+```
+
 
 
 ```{=html}
@@ -313,6 +320,12 @@ groups.
 
 
 ```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – The flow rows, one per flow.<div>Columns:<ul><li><code>:from</code> – The source node's id; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target node's id; the option <code>:to</code> names another column.</li><li><code>:value</code> – The weight, a finite number zero or greater; the option <code>:value</code> names another column. Optional: a missing weight counts as 1.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the chord diagram: a ring sector per node and the ribbons between them.</div></div>
+```
+
+
+
+```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#chord-layout">Chord layout</a> – <code>:order</code> <code>:gap-angle</code> <code>:inner-radius</code> <code>:min-value</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
@@ -348,6 +361,12 @@ world regions without flows under 0.1; the right one draws opaque ribbons withou
 
 `plot/arc` draws the nodes on a line and the links as arcs above it. Use it for a compact view of a graph whose node
 order matters.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – The edge rows, one per edge.<div>Columns:<ul><li><code>:from</code> – The source node's id; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target node's id; the option <code>:to</code> names another column.</li><li><code>:value</code> – The weight, a finite number zero or greater; the option <code>:value</code> names another column. Optional: a missing weight counts as 1.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the arc diagram: the nodes on a line and an arc per edge above it.</div></div>
+```
+
 
 
 ```{=html}
@@ -460,6 +479,12 @@ flows. Use it to follow quantities through stages.
 
 
 ```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – The flow rows, one per flow.<div>Columns:<ul><li><code>:from</code> – The source node's id; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target node's id; the option <code>:to</code> names another column.</li><li><code>:value</code> – The weight, a finite number zero or greater; the option <code>:value</code> names another column. Optional: a missing weight counts as 1.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the sankey diagram: the nodes as bars in columns and a band per flow.</div></div>
+```
+
+
+
+```{=html}
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code></li><li><a href="reference.shared_options.html#sankey-layout">Sankey layout</a> – <code>:align</code> <code>:layer</code> <code>:node-width</code> <code>:gap</code> <code>:iterations</code> <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
@@ -544,6 +569,12 @@ The plot below draws grey bands outlined in white and larger names:
 `plot/alluvial` draws a column per categorical variable of wide rows, with a stratum per level. Strands join
 neighbouring columns; a value weights them and one variable colours them all the way through. Use it to follow how
 groups split across several categories.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – Wide rows, one per observation or group of observations.<div>Columns:<ul><li><em>a column per variable</em> – A categorical level, read by an accessor of <code>:variables</code>.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map of the alluvial diagram: a column of strata per variable and the strands between them.</div></div>
+```
+
 
 
 ```{=html}

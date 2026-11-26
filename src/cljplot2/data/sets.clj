@@ -116,7 +116,11 @@
   Returns `[{:combination c :sets [..] :size n :degree k} ..]` - one row per exact combination (see [[intersections]]), `c` its sets joined with ` & `, `k` the count of its sets; sorted by size descending, then degree, then set order.
 
   See also [[membership-rows]]."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "Set membership rows, one per item and set it belongs to; repeated rows count once."}
+                         {:name 'mapping :description "The accessors of the rows' set and item." :keys {:set "The accessor of a row's set." :item "The accessor of a row's item."}}
+                         {:name 'sets :optional true :description "The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance."}]
+   :cljplot2/returns "A bar per combination of sets that holds items of its own, `{:combination :sets :size :degree}`, the largest first."}
   ([rows mapping] (upset-rows rows mapping nil))
   ([rows mapping sets]
    (let [{order :sets} (memberships rows mapping sets)
@@ -134,7 +138,11 @@
   - `rows`, `mapping`, `sets` (optional): as in [[memberships]].
 
   Returns a vector of `{:combination c :set s :member bool}` for every combination of [[upset-rows]] (in its order) and every chosen set (in set order); `:member` - whether `s` is in the combination."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "Set membership rows, one per item and set it belongs to; repeated rows count once."}
+                         {:name 'mapping :description "The accessors of the rows' set and item." :keys {:set "The accessor of a row's set." :item "The accessor of a row's item."}}
+                         {:name 'sets :optional true :description "The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance."}]
+   :cljplot2/returns "A row `{:combination :set :member}` per combination of `upset-rows` and chosen set; `:member` tells whether the set is in the combination."}
   ([rows mapping] (membership-rows rows mapping nil))
   ([rows mapping sets]
    (let [{order :sets} (memberships rows mapping sets)]

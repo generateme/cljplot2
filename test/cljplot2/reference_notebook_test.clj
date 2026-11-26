@@ -465,8 +465,8 @@
     (is (nil? (enum-values :int)))))
 
 (defn- api-heading
-  "Page heading text of user-facing function `f` (a qualified symbol): its namespace's last segment and name
-  (`graph/layout`, `tree/layout`)."
+  "Page heading text of user-facing function `f` (a qualified symbol) without a concept title (`describe/concepts`): its
+  namespace's last segment and name (`font/resolve-font`)."
   [f]
   (str (last (str/split (namespace f) #"\.")) "/" (name f)))
 
@@ -475,6 +475,11 @@
   [page text]
   (boolean (re-find (re-pattern (str "(?m)^;; ## " (java.util.regex.Pattern/quote text) "$"))
                     (slurp (str "notebooks/reference/" page ".clj")))))
+
+(defn- argument-list?
+  "Do the page forms `forms` show the arguments box (`nu/argument-list`) of function `f` (a qualified symbol)?"
+  [forms f]
+  (some #(= (list 'var f) (second %)) (calls forms 'notebook-utils/argument-list)))
 
 (deftest builder-pages-test
   (let [forms (notebook-forms)]
@@ -492,6 +497,7 @@
         (is (heading? page (get describe/concepts b (name b))))
         (when (seq own) (is (tables (row-keys own))))
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))
+        (is (argument-list? (get forms page) f) "its arguments box")
         (is (seq (calls (get forms page) f)))
         (is (= {:options [] :values []}
                (function-coverage-gaps (get forms page) f v (:cljplot2/options (meta v)) own)))))))
@@ -514,7 +520,8 @@
             :let [v (resolve f)
                   rows (describe/options v)]]
       (testing (str page " " f ": a heading, its options table, called; every option shown")
-        (is (heading? page (api-heading f)) (api-heading f))
+        (is (heading? page (get describe/concepts f (api-heading f))) (get describe/concepts f (api-heading f)))
+        (is (argument-list? (get forms page) f) "its arguments box")
         (when (seq rows) (is (tables (row-keys rows))))
         (is (seq (calls (get forms page) f)))
         (when (seq rows)

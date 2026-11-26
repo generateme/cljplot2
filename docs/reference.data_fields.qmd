@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -49,9 +51,9 @@ code-block-background: true
 
 # Fields
 
-Functions turning functions of the plane into something to draw: a colour per pixel of a complex function, the
-level lines of a gridded field, and the rows of a vector field - arrows, traces (streamlines) and points mapped
-through it - drawn with ordinary charts (`field`, `line`, `segment`, `scatter`).
+These functions turn functions of the plane into something to draw: a colour per pixel of a complex function, the
+level lines of a gridded field, and the rows of a vector field (arrows, traces and points mapped through it). Use
+them with ordinary charts: `field`, `line`, `segment` and `scatter`.
 
 
 ::: {.sourceClojure}
@@ -73,22 +75,70 @@ through it - drawn with ordinary charts (`field`, `line`, `segment`, `scatter`).
 :::
 
 
+The grid below holds a field `sin x + cos 1.3y` over [-3 3]²: axis coordinates `:xs` and `:ys`, their counts `:nx`
+and `:ny`, and `:values` row by row, x fastest; the isolines section uses it. The table below holds its axis
+coordinates, the same along x and y:
 
-## field/domain-color
 
-A `:pixel-color` function for `chart/field` colouring a complex function by domain colouring: the hue is the
-argument of f(x + iy), the brightness its magnitude wrapped into [0 1] by `:wrap`, in a hue-first `:colorspace`.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:wrap</td><td>one of :exp :frac :log10 :log2 :sigmoid :sin</td><td>:log2</td><td>how the magnitude of f is wrapped into [0 1] for the brightness (see cljplot2.data.field/wrap)</td></tr><tr><td>:colorspace</td><td>one of :HCL :HSB :HSI :HSL :HSV :HWB</td><td>:HSI</td><td>the hue-first colour space of the colours (:HSI - old cljplot's example)</td></tr></tbody></table>
+::: {.sourceClojure}
+```clojure
+(def grid-xs (range -3.0 3.01 0.25))
 ```
-
 :::
 
 
-log(z) / sin(z) with the defaults (`:log2` wrap, `:HSI`), then every other `:wrap`:
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>-3.0</td></tr><tr><td>-2.75</td></tr><tr><td>-2.5</td></tr><tr><td>-2.25</td></tr><tr><td>-2.0</td></tr><tr><td>-1.75</td></tr><tr><td>-1.5</td></tr><tr><td>-1.25</td></tr><tr><td>-1.0</td></tr><tr><td>-0.75</td></tr><tr><td>-0.5</td></tr><tr><td>-0.25</td></tr><tr><td>0.0</td></tr><tr><td>0.25</td></tr><tr><td>0.5</td></tr><tr><td>0.75</td></tr><tr><td>1.0</td></tr><tr><td>1.25</td></tr><tr><td>1.5</td></tr><tr><td>1.75</td></tr><tr><td>2.0</td></tr><tr><td>2.25</td></tr><tr><td>2.5</td></tr><tr><td>2.75</td></tr><tr><td>3.0</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def grid {:xs (double-array grid-xs) :ys (double-array grid-xs) :nx (count grid-xs) :ny (count grid-xs)
+           :values (double-array (for [y grid-xs x grid-xs] (m/+ (m/sin x) (m/cos (m/* 1.3 y)))))})
+```
+:::
+
+
+The points below form a grid of seeds over [-2 2]²; the trace and mapped point sections use them:
+
+
+::: {.sourceClojure}
+```clojure
+(def seeds (for [x (range -2.0 2.01 0.5) y (range -2.0 2.01 0.5)] [x y]))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>[-2.0 -2.0]</td></tr><tr><td>[-2.0 -1.5]</td></tr><tr><td>[-2.0 -1.0]</td></tr><tr><td>[-2.0 -0.5]</td></tr><tr><td>[-2.0 0.0]</td></tr><tr><td>[-2.0 0.5]</td></tr><tr><td>[-2.0 1.0]</td></tr><tr><td>[-2.0 1.5]</td></tr><tr><td>[-2.0 2.0]</td></tr><tr><td>[-1.5 -2.0]</td></tr><tr><td>[-1.5 -1.5]</td></tr><tr><td>[-1.5 -1.0]</td></tr><tr><td>[-1.5 -0.5]</td></tr><tr><td>[-1.5 0.0]</td></tr><tr><td>[-1.5 0.5]</td></tr><tr><td>[-1.5 1.0]</td></tr><tr><td>[-1.5 1.5]</td></tr><tr><td>[-1.5 2.0]</td></tr><tr><td>[-1.0 -2.0]</td></tr><tr><td>[-1.0 -1.5]</td></tr><tr><td>[-1.0 -1.0]</td></tr><tr><td>[-1.0 -0.5]</td></tr><tr><td>[-1.0 0.0]</td></tr><tr><td>[-1.0 0.5]</td></tr><tr><td>[-1.0 1.0]</td></tr><tr><td>[-1.0 1.5]</td></tr><tr><td>[-1.0 2.0]</td></tr><tr><td>[-0.5 -2.0]</td></tr><tr><td>[-0.5 -1.5]</td></tr><tr><td>[-0.5 -1.0]</td></tr><tr><td>[-0.5 -0.5]</td></tr><tr><td>[-0.5 0.0]</td></tr><tr><td>[-0.5 0.5]</td></tr><tr><td>[-0.5 1.0]</td></tr><tr><td>[-0.5 1.5]</td></tr><tr><td>[-0.5 2.0]</td></tr><tr><td>[0.0 -2.0]</td></tr><tr><td>[0.0 -1.5]</td></tr><tr><td>[0.0 -1.0]</td></tr><tr><td>[0.0 -0.5]</td></tr><tr><td>[0.0 0.0]</td></tr><tr><td>[0.0 0.5]</td></tr><tr><td>[0.0 1.0]</td></tr><tr><td>[0.0 1.5]</td></tr><tr><td>[0.0 2.0]</td></tr><tr><td>[0.5 -2.0]</td></tr><tr><td>[0.5 -1.5]</td></tr><tr><td>[0.5 -1.0]</td></tr><tr><td>[0.5 -0.5]</td></tr><tr><td>[0.5 0.0]</td></tr><tr><td>[0.5 0.5]</td></tr><tr><td>[0.5 1.0]</td></tr><tr><td>[0.5 1.5]</td></tr><tr><td>[0.5 2.0]</td></tr><tr><td>[1.0 -2.0]</td></tr><tr><td>[1.0 -1.5]</td></tr><tr><td>[1.0 -1.0]</td></tr><tr><td>[1.0 -0.5]</td></tr><tr><td>[1.0 0.0]</td></tr><tr><td>[1.0 0.5]</td></tr><tr><td>[1.0 1.0]</td></tr><tr><td>[1.0 1.5]</td></tr><tr><td>[1.0 2.0]</td></tr><tr><td>[1.5 -2.0]</td></tr><tr><td>[1.5 -1.5]</td></tr><tr><td>[1.5 -1.0]</td></tr><tr><td>[1.5 -0.5]</td></tr><tr><td>[1.5 0.0]</td></tr><tr><td>[1.5 0.5]</td></tr><tr><td>[1.5 1.0]</td></tr><tr><td>[1.5 1.5]</td></tr><tr><td>[1.5 2.0]</td></tr><tr><td>[2.0 -2.0]</td></tr><tr><td>[2.0 -1.5]</td></tr><tr><td>[2.0 -1.0]</td></tr><tr><td>[2.0 -0.5]</td></tr><tr><td>[2.0 0.0]</td></tr><tr><td>[2.0 0.5]</td></tr><tr><td>[2.0 1.0]</td></tr><tr><td>[2.0 1.5]</td></tr><tr><td>[2.0 2.0]</td></tr></tbody></table></div>
+```
+
+
+
+## Domain colouring
+
+`field/domain-color` returns a `:pixel-color` function for `chart/field` that colours a complex function by domain
+colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1], in a hue-first
+colour space. Use it to see the zeros, poles and phase of a complex function.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A complex function of <code>fastmath.complex</code> from <code>Vec2</code> to <code>Vec2</code>, e.g. <code>cx/log</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A <code>:pixel-color</code> function of a point <code>[x y]</code> that returns the colour of f(x + iy).</div></div>
+```
+
+
+These options set how the magnitude wraps and the colour space. The panels below draw log(z) / sin(z) with the
+defaults, then with every other `:wrap`:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:wrap</code><span class="option-default">Default: <code>:log2</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:wrap :exp})</code></div><div class="option-text">How the function wraps the magnitude of <code>f</code> into [0 1] for the brightness.<ul><li><code>:log2</code> – The fractional part of <code>log2(v + 1)</code>: bands where the magnitude plus 1 doubles.</li><li><code>:exp</code> – <code>1 - e^-v</code>: dark at zeros, bright towards poles.</li><li><code>:frac</code> – The fractional part of <code>v</code>: a band per unit of magnitude.</li><li><code>:log10</code> – The fractional part of <code>log10(v + 1)</code>: bands where the magnitude plus 1 grows tenfold.</li><li><code>:sigmoid</code> – The logistic function of <code>v</code>.</li><li><code>:sin</code> – <code>sin v</code> scaled to [0 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:colorspace</code><span class="option-default">Default: <code>:HSI</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:colorspace :HCL})</code></div><div class="option-text">The hue-first colour space the function builds the colours in; <code>:HSI</code> matches the old cljplot.<ul><li><code>:HSI</code> – Hue, saturation, intensity.</li><li><code>:HCL</code> – Hue, chroma, luminance.</li><li><code>:HSB</code> – Hue, saturation, brightness.</li><li><code>:HSL</code> – Hue, saturation, lightness.</li><li><code>:HSV</code> – Hue, saturation, value.</li><li><code>:HWB</code> – Hue, whiteness, blackness.</li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
@@ -127,7 +177,7 @@ log(z) / sin(z) with the defaults (`:log2` wrap, `:HSI`), then every other `:wra
 :::
 
 
-The colour spaces (here with z³ - 1, its three zeros where all hues meet):
+The panels below draw z³ - 1 in each colour space; all hues meet at its three zeros:
 
 
 ::: {.sourceClojure}
@@ -168,36 +218,28 @@ The colour spaces (here with z³ - 1, its three zeros where all hues meet):
 
 
 
-## contour/isolines
+## Isolines
 
-The lines of a gridded field at one level (marching squares) - what `chart/contour` draws - as point vectors, each
-open or closed. The grid: `:xs` / `:ys` (axis coordinates), `:nx` / `:ny` and `:values` (row by row, x fastest):
-
-
-::: {.sourceClojure}
-```clojure
-(def grid-xs (range -3.0 3.01 0.25))
-```
-:::
-
+`contour/isolines` traces the lines of a gridded field at one level by marching squares and returns them as point
+vectors, each open or closed; `chart/contour` draws them. Use it for level lines of your own.
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>-3.0</td></tr><tr><td>-2.75</td></tr><tr><td>-2.5</td></tr><tr><td>-2.25</td></tr><tr><td>-2.0</td></tr><tr><td>-1.75</td></tr><tr><td>-1.5</td></tr><tr><td>-1.25</td></tr><tr><td>-1.0</td></tr><tr><td>-0.75</td></tr><tr><td>-0.5</td></tr><tr><td>-0.25</td></tr><tr><td>0.0</td></tr><tr><td>0.25</td></tr><tr><td>0.5</td></tr><tr><td>0.75</td></tr><tr><td>1.0</td></tr><tr><td>1.25</td></tr><tr><td>1.5</td></tr><tr><td>1.75</td></tr><tr><td>2.0</td></tr><tr><td>2.25</td></tr><tr><td>2.5</td></tr><tr><td>2.75</td></tr><tr><td>3.0</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>grid</code> – A sampled field <code>{:xs :ys :nx :ny :values}</code>: double arrays of the axis coordinates, their counts, and a double array of the values row by row, x fastest.</li><li><code>level</code> – The contour level; a value equal to it counts as above.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A vector of lines <code>{:points :closed}</code>, open lines first; empty when the field doesn't cross the level.</div></div>
 ```
 
+
+The table below counts the points of the lines at levels 1 and 1.5: an open line that leaves the grid and a closed
+ring around the field's peak:
 
 
 ::: {.sourceClojure}
 ```clojure
-(def grid {:xs (double-array grid-xs) :ys (double-array grid-xs) :nx (count grid-xs) :ny (count grid-xs)
-           :values (double-array (for [y grid-xs x grid-xs] (m/+ (m/sin x) (m/cos (m/* 1.3 y)))))})
+(nu/result-table (for [level [1.0 1.5] line (contour/isolines grid level)]
+                   (assoc (update line :points count) :level level)))
 ```
 :::
 
-
-The lines at levels 1 and 1.5 (their number of points) - an open line leaving the grid and a closed ring around
-the field's peak:
 
 
 ```{=html}
@@ -205,8 +247,8 @@ the field's peak:
 ```
 
 
-Drawn as lines - every point row with its level and line number, a closed line's first point repeated at its
-end - for six levels:
+The plot below draws the lines of six levels from a row per point, with its level and line number; a closed line
+repeats its first point at its end:
 
 
 ::: {.sourceClojure}
@@ -230,17 +272,31 @@ end - for six levels:
 
 
 
-## vector-field/arrows
+## Vector field arrows
 
-Arrows of a vector field `f` (a function of a point `[x y]` returning a vector) on a grid over `:domain` - rows
-`{:x :y :xend :yend :magnitude}` for `chart/segment` with arrowheads.
+`vector-field/arrows` returns the arrows of a vector field on a grid over `:domain`. Use it with `chart/segment` and
+arrowheads.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:domain (required)</td><td>map</td><td></td><td>the domain of the arrow grid {:x [lo hi] :y [lo hi]} (required)</td></tr><tr><td>:domain :x (required)</td><td>[lo hi], finite numbers, lo < hi</td><td></td><td>x domain [lo hi], lo < hi</td></tr><tr><td>:domain :y (required)</td><td>[lo hi], finite numbers, lo < hi</td><td></td><td>y domain [lo hi], lo < hi</td></tr><tr><td>:n</td><td>a positive integer or [a positive integer, a positive integer]</td><td>20</td><td>grid cells per axis, or [nx ny]</td></tr><tr><td>:grid</td><td>one of :square :shifted</td><td>:square</td><td>arrow starts: cell centres (:square) or every second row moved half a cell along x (:shifted)</td></tr><tr><td>:length-scale</td><td>a positive finite number</td><td>1.0</td><td>arrow length factor: an arrow is length-scale * cell * (1 - e^-|f|) long</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per arrow <code>{:x :y :xend :yend :magnitude}</code>, from a grid point along the field; zero and non-finite vectors are left out.</div></div>
 ```
 
+
+These options set the domain, the grid and the arrow length. The table below holds the arrows of a rotation on a
+4 × 4 grid:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:domain</code></dt><dd><div class="option-text">The domain of the arrow grid along x and y.</div></dd></div><div class="option-card"><dt><code>:domain :x</code></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-2 2], :y [-1 1]}})</code></div><div class="option-text">The x domain <code>[lo hi]</code>.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain :y</code></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-2 2]}})</code></div><div class="option-text">The y domain <code>[lo hi]</code>.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>20</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :n 5})</code></div><div class="option-text">The number of grid cells per axis.<ul><li><a href="reference.types.html#positive-integer">positive integer</a> – The same count along both axes.</li><li><span>pair of positive integers</span> – The counts <code>[nx ny]</code> along x and y.</li></ul></div></dd></div><div class="option-card"><dt><code>:grid</code><span class="option-default">Default: <code>:square</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :grid :shifted})</code></div><div class="option-text">Where the arrows start.<ul><li><code>:square</code> – At the cell centres.</li><li><code>:shifted</code> – At the cell centres, every second row moved half a cell along x.</li></ul></div></dd></div><div class="option-card"><dt><code>:length-scale</code><span class="option-default">Default: <code>1.0</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :length-scale 0.5})</code></div><div class="option-text">The arrow length factor: an arrow is <code>length-scale * cell * (1 - e^-|f|)</code> long, where <code>cell</code> is the smaller cell side.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (vf/arrows (fn [[x y]] (v/vec2 (- y) x)) {:domain {:x [-2 2] :y [-2 2]} :n 4}))
+```
 :::
 
 
@@ -250,8 +306,8 @@ Arrows of a vector field `f` (a function of a point `[x y]` returning a vector) 
 ```
 
 
-A rotation on the default square grid (left), on a shifted grid with longer arrows (middle), and a fastmath field
-(`fastmath.fields`) with the arrows coloured by magnitude (right):
+The left panel below draws the rotation on the default square grid, the middle one on a shifted grid with longer
+arrows. The right one draws a fastmath field (`fastmath.fields`) and colours the arrows by magnitude:
 
 
 ::: {.sourceClojure}
@@ -285,32 +341,31 @@ A rotation on the default square grid (left), on a shifted grid with longer arro
 
 
 
-## vector-field/traces
+## Streamlines
 
-Paths following the field from seed points - rows `{:id :i :x :y}` (seed index, step); each step moves a point
-along f, `:steps` times by a factor `:step`.
+`vector-field/traces` returns paths that follow the field from seed points. Use it for streamlines.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:steps</td><td>a positive integer</td><td>100</td><td>the number of steps of every trace</td></tr><tr><td>:step</td><td>a positive finite number</td><td>0.01</td><td>the step factor: each step moves p by f(p) * (1 - e^-|f(p)|) * step</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li><li><code>seeds</code> – The start points <code>[x y]</code> of the paths.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Rows <code>{:id :i :x :y}</code>: the seed's index, the step (0 at the seed) and the point; a path ends before a non-finite point.</div></div>
 ```
 
-:::
+
+These options set the number of steps and their length. The table below holds the first rows of five steps from
+every seed:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:steps</code><span class="option-default">Default: <code>100</code></span></dt><dd><div class="option-example"><code>(vf/traces f seeds {:steps 10})</code></div><div class="option-text">The number of steps of every trace.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:step</code><span class="option-default">Default: <code>0.01</code></span></dt><dd><div class="option-example"><code>(vf/traces f seeds {:step 0.05})</code></div><div class="option-text">The step factor: each step moves a point <code>p</code> by <code>f(p) * (1 - e^-|f(p)|) * step</code>.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def seeds (for [x (range -2.0 2.01 0.5) y (range -2.0 2.01 0.5)] [x y]))
+(nu/result-table (vf/traces (fn [[x y]] (v/vec2 (- y (* 0.3 x)) (- (- x) (* 0.3 y)))) seeds {:steps 5 :step 0.1}))
 ```
 :::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>value</th></tr></thead><tbody><tr><td>[-2.0 -2.0]</td></tr><tr><td>[-2.0 -1.5]</td></tr><tr><td>[-2.0 -1.0]</td></tr><tr><td>[-2.0 -0.5]</td></tr><tr><td>[-2.0 0.0]</td></tr><tr><td>[-2.0 0.5]</td></tr><tr><td>[-2.0 1.0]</td></tr><tr><td>[-2.0 1.5]</td></tr><tr><td>[-2.0 2.0]</td></tr><tr><td>[-1.5 -2.0]</td></tr><tr><td>[-1.5 -1.5]</td></tr><tr><td>[-1.5 -1.0]</td></tr><tr><td>[-1.5 -0.5]</td></tr><tr><td>[-1.5 0.0]</td></tr><tr><td>[-1.5 0.5]</td></tr><tr><td>[-1.5 1.0]</td></tr><tr><td>[-1.5 1.5]</td></tr><tr><td>[-1.5 2.0]</td></tr><tr><td>[-1.0 -2.0]</td></tr><tr><td>[-1.0 -1.5]</td></tr><tr><td>[-1.0 -1.0]</td></tr><tr><td>[-1.0 -0.5]</td></tr><tr><td>[-1.0 0.0]</td></tr><tr><td>[-1.0 0.5]</td></tr><tr><td>[-1.0 1.0]</td></tr><tr><td>[-1.0 1.5]</td></tr><tr><td>[-1.0 2.0]</td></tr><tr><td>[-0.5 -2.0]</td></tr><tr><td>[-0.5 -1.5]</td></tr><tr><td>[-0.5 -1.0]</td></tr><tr><td>[-0.5 -0.5]</td></tr><tr><td>[-0.5 0.0]</td></tr><tr><td>[-0.5 0.5]</td></tr><tr><td>[-0.5 1.0]</td></tr><tr><td>[-0.5 1.5]</td></tr><tr><td>[-0.5 2.0]</td></tr><tr><td>[0.0 -2.0]</td></tr><tr><td>[0.0 -1.5]</td></tr><tr><td>[0.0 -1.0]</td></tr><tr><td>[0.0 -0.5]</td></tr><tr><td>[0.0 0.0]</td></tr><tr><td>[0.0 0.5]</td></tr><tr><td>[0.0 1.0]</td></tr><tr><td>[0.0 1.5]</td></tr><tr><td>[0.0 2.0]</td></tr><tr><td>[0.5 -2.0]</td></tr><tr><td>[0.5 -1.5]</td></tr><tr><td>[0.5 -1.0]</td></tr><tr><td>[0.5 -0.5]</td></tr><tr><td>[0.5 0.0]</td></tr><tr><td>[0.5 0.5]</td></tr><tr><td>[0.5 1.0]</td></tr><tr><td>[0.5 1.5]</td></tr><tr><td>[0.5 2.0]</td></tr><tr><td>[1.0 -2.0]</td></tr><tr><td>[1.0 -1.5]</td></tr><tr><td>[1.0 -1.0]</td></tr><tr><td>[1.0 -0.5]</td></tr><tr><td>[1.0 0.0]</td></tr><tr><td>[1.0 0.5]</td></tr><tr><td>[1.0 1.0]</td></tr><tr><td>[1.0 1.5]</td></tr><tr><td>[1.0 2.0]</td></tr><tr><td>[1.5 -2.0]</td></tr><tr><td>[1.5 -1.5]</td></tr><tr><td>[1.5 -1.0]</td></tr><tr><td>[1.5 -0.5]</td></tr><tr><td>[1.5 0.0]</td></tr><tr><td>[1.5 0.5]</td></tr><tr><td>[1.5 1.0]</td></tr><tr><td>[1.5 1.5]</td></tr><tr><td>[1.5 2.0]</td></tr><tr><td>[2.0 -2.0]</td></tr><tr><td>[2.0 -1.5]</td></tr><tr><td>[2.0 -1.0]</td></tr><tr><td>[2.0 -0.5]</td></tr><tr><td>[2.0 0.0]</td></tr><tr><td>[2.0 0.5]</td></tr><tr><td>[2.0 1.0]</td></tr><tr><td>[2.0 1.5]</td></tr><tr><td>[2.0 2.0]</td></tr></tbody></table></div>
-```
 
 
 
@@ -319,9 +374,10 @@ along f, `:steps` times by a factor `:step`.
 ```
 
 
-Streamlines of a damped rotation from the seed grid - short (left) and long (middle; the spirals stop short of
-the centre after 400 steps) - and traces of a cellular flow `[sin y, sin x]` from 300 seeded random points as faint
-lines (right; cells turning in alternate directions, traces leaving the panel are cut):
+The left and middle panels below draw streamlines of a damped rotation from the seed grid, short and long; after
+400 steps the spirals stop short of the centre. The right one draws traces of a cellular flow `[sin y, sin x]` from
+300 seeded random points as faint lines: the cells turn in alternate directions, and the panel cuts the traces that
+leave it:
 
 
 ::: {.sourceClojure}
@@ -360,9 +416,25 @@ lines (right; cells turning in alternate directions, traces leaving the panel ar
 
 
 
-## vector-field/mapped-points
+## Mapped points
 
-Seed points mapped once through the field: rows `{:x :y :x0 :y0}` - the image f(x0, y0) and its seed.
+`vector-field/mapped-points` maps seed points once through the field. Use it to draw the image of a region.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li><li><code>seeds</code> – The points <code>[x y]</code> to map.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per seed <code>{:x :y :x0 :y0}</code>: its image and the seed; seeds whose image isn't finite are left out.</div></div>
+```
+
+
+The table below maps the first 20 seeds through a sinusoidal field:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (vf/mapped-points (f/field :sinusoidal) (take 20 seeds)))
+```
+:::
+
 
 
 ```{=html}
@@ -370,8 +442,8 @@ Seed points mapped once through the field: rows `{:x :y :x0 :y0}` - the image f(
 ```
 
 
-100 000 seeded random points through two fastmath fields, coloured by the seed's x (the field's image of the
-square [-3 3]²):
+The plots below map 100 000 seeded random points of the square [-3 3]² through two fastmath fields and colour them
+by the seed's x:
 
 
 ::: {.sourceClojure}

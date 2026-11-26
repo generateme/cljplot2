@@ -9,7 +9,8 @@
             [cljplot2.content.label :as label]
             [cljplot2.core :as plot]
             [cljplot2.data.pairwise :as pw]
-            [cljplot2.test-util :refer [error-data]]))
+            [cljplot2.test-util :refer [error-data]]
+            [malli.core :as malli]))
 
 (def ^:private size {:width 300 :height 240})
 
@@ -141,6 +142,11 @@
               v (fn [x y] (:value (first (filter #(= [x y] [(:x %) (:y %)]) rs))))]
           (is (= 3 @calls))
           (is (= (v :a :b) (- (double (v :b :a)))))))))
+  (testing "the variable and triangle relations are rules of the options schema: checked without the data"
+    (is (not (malli/validate pw/matrix-rows-options {})))
+    (is (not (malli/validate pw/matrix-rows-options {:x-variables [:a] :y-variables [:b] :triangle :lower})))
+    (is (malli/validate pw/matrix-rows-options {:x-variables [:a] :y-variables [:b] :triangle :full}))
+    (is (malli/validate pw/matrix-rows-options {:variables [:a :b] :method :mse :triangle :upper}) "a symmetric statistic"))
   (testing "errors: variables, triangle, method, options"
     (is (= :variables (:key (error-data #(pw/matrix-rows rows {})))))
     (is (= :variables (:key (error-data #(pw/matrix-rows rows {:variables [:a :b] :x-variables [:a]})))))

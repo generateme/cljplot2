@@ -178,7 +178,10 @@
   Returns a vector of `{:points [[x y] ...] :closed bool}` - open lines first, then closed ones; `[]` when the field doesn't cross the level.
 
   See also [[level-rings]], [[levels]]."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'grid :description "A sampled field `{:xs :ys :nx :ny :values}`: double arrays of the axis coordinates, their counts, and a double array of the values row by row, x fastest."}
+                         {:name 'level :description "The contour level; a value equal to it counts as above."}]
+   :cljplot2/returns "A vector of lines `{:points :closed}`, open lines first; empty when the field doesn't cross the level."}
   [grid ^double level]
   (mapv (fn [{:keys [edges closed]}]
           {:points (mapv #(apply crossing level (edge-ends grid %)) edges) :closed closed})

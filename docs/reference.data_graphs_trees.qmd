@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -49,9 +51,9 @@ code-block-background: true
 
 # Graphs and trees
 
-Functions turning edges, adjacency matrices, parent links, level columns or clusterings into graphs and trees,
-and laying them out as rows - node positions, edge paths, ring sectors, bands - that ordinary charts draw (the
-graph and tree builders are made of them). Options are checked against the table shown.
+These functions build graphs and trees from edges, adjacency matrices, parent links, level columns or clusterings,
+and lay them out as rows: node positions, edge paths, ring sectors and bands. Use them to draw graphs and trees
+with ordinary charts; the graph and tree builders call them.
 
 
 ::: {.sourceClojure}
@@ -71,7 +73,8 @@ graph and tree builders are made of them). Options are checked against the table
 :::
 
 
-Flights between airports (counts), the airports as node rows, and the same flows as a matrix:
+The tables below hold made-up flight counts between airports, and the airports as node rows; the graph sections
+use them:
 
 
 ::: {.sourceClojure}
@@ -104,22 +107,197 @@ Flights between airports (counts), the airports as node rows, and the same flows
 ```
 
 
+The matrix below holds made-up counts of projects four teams share; the adjacency section uses it:
 
-## graph/graph
 
-The graph of edge rows: nodes (the given node rows first, then ids seen only in edges) with their degrees, and
-edges with numeric weights. Undirected by default; directed graphs split degrees into in and out.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source node id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target node id</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one</td><td>:value</td><td>accessor of an edge row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:nodes</td><td>sequential of map or nil</td><td></td><td>node rows (each with an id), placed first in their order; ids seen only in edges follow</td></tr><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a node row's id</td></tr><tr><td>:directed</td><td>true or false or nil</td><td>false</td><td>a directed graph: degrees split into :in and :out</td></tr></tbody></table>
+::: {.sourceClojure}
+```clojure
+(def shared-projects [[0 3 1 0] [3 0 2 4] [1 2 0 0] [0 4 0 0]])
 ```
-
 :::
 
 
-The flights as a directed graph with the airports as nodes - Krakow has no flights (degree 0):
+The table below holds made-up stages of a web shop with their columns; the sankey section uses it:
+
+
+::: {.sourceClojure}
+```clojure
+(def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>stage</th></tr></thead><tbody><tr><td>visit</td><td>0</td></tr><tr><td>search</td><td>1</td></tr><tr><td>browse</td><td>1</td></tr><tr><td>cart</td><td>2</td></tr><tr><td>buy</td><td>3</td></tr></tbody></table></div>
+```
+
+
+The table below holds made-up passenger counts by class, sex and survival; the alluvial section uses it:
+
+
+::: {.sourceClojure}
+```clojure
+(def passengers [{:class "1st" :sex "f" :survived "yes" :n 140} {:class "1st" :sex "m" :survived "no" :n 118}
+                 {:class "2nd" :sex "f" :survived "yes" :n 80} {:class "2nd" :sex "m" :survived "no" :n 154}
+                 {:class "3rd" :sex "f" :survived "no" :n 106} {:class "3rd" :sex "m" :survived "no" :n 422}
+                 {:class "3rd" :sex "f" :survived "yes" :n 90} {:class "1st" :sex "m" :survived "yes" :n 62}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>class</th><th>sex</th><th>survived</th><th>n</th></tr></thead><tbody><tr><td>1st</td><td>f</td><td>yes</td><td>140</td></tr><tr><td>1st</td><td>m</td><td>no</td><td>118</td></tr><tr><td>2nd</td><td>f</td><td>yes</td><td>80</td></tr><tr><td>2nd</td><td>m</td><td>no</td><td>154</td></tr><tr><td>3rd</td><td>f</td><td>no</td><td>106</td></tr><tr><td>3rd</td><td>m</td><td>no</td><td>422</td></tr><tr><td>3rd</td><td>f</td><td>yes</td><td>90</td></tr><tr><td>1st</td><td>m</td><td>yes</td><td>62</td></tr></tbody></table></div>
+```
+
+
+The table below holds twelve mtcars cars; the clustering sections use it:
+
+Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def mtcars (take 12 (nu/dataset :mtcars)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr></tbody></table></div>
+```
+
+
+The vectors defined below hold the twelve cars standardized on four variables; the clustering sections use them:
+
+
+::: {.sourceClojure}
+```clojure
+(def car-features (let [cols (for [k [:mpg :hp :wt :qsec]] (stats/standardize (map k mtcars)))]
+                    (apply mapv vector cols)))
+```
+:::
+
+
+The table below holds made-up offices by region and country; the level and node-link sections use it:
+
+
+::: {.sourceClojure}
+```clojure
+(def offices [{:region "Europe" :country "Poland" :city "Warsaw"} {:region "Europe" :country "Poland" :city "Krakow"}
+              {:region "Europe" :country "Czechia" :city "Prague"} {:region "Asia" :country "Japan" :city "Tokyo"}
+              {:region "Asia" :country "Japan" :city "Osaka"} {:region "Asia" :country "India" :city "Pune"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>region</th><th>country</th><th>city</th></tr></thead><tbody><tr><td>Europe</td><td>Poland</td><td>Warsaw</td></tr><tr><td>Europe</td><td>Poland</td><td>Krakow</td></tr><tr><td>Europe</td><td>Czechia</td><td>Prague</td></tr><tr><td>Asia</td><td>Japan</td><td>Tokyo</td></tr><tr><td>Asia</td><td>Japan</td><td>Osaka</td></tr><tr><td>Asia</td><td>India</td><td>Pune</td></tr></tbody></table></div>
+```
+
+
+The table below holds a made-up company's employees with their bosses; the parent sections use it:
+
+
+::: {.sourceClojure}
+```clojure
+(def org [{:emp 1 :boss nil :who "CEO"} {:emp 2 :boss 1 :who "CTO"} {:emp 3 :boss 1 :who "CFO"}
+          {:emp 4 :boss 2 :who "dev lead"} {:emp 5 :boss 2 :who "ops lead"} {:emp 6 :boss 4 :who "developer"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>emp</th><th>boss</th><th>who</th></tr></thead><tbody><tr><td>1</td><td></td><td>CEO</td></tr><tr><td>2</td><td>1</td><td>CTO</td></tr><tr><td>3</td><td>1</td><td>CFO</td></tr><tr><td>4</td><td>2</td><td>dev lead</td></tr><tr><td>5</td><td>2</td><td>ops lead</td></tr><tr><td>6</td><td>4</td><td>developer</td></tr></tbody></table></div>
+```
+
+
+The tables below hold a made-up program's modules with their parents, and the modules' imports; the bundling
+section uses them:
+
+
+::: {.sourceClojure}
+```clojure
+(def modules [{:id "app"} {:id "ui" :parent "app"} {:id "core" :parent "app"} {:id "io" :parent "app"}
+              {:id "button" :parent "ui"} {:id "form" :parent "ui"} {:id "menu" :parent "ui"}
+              {:id "model" :parent "core"} {:id "rules" :parent "core"} {:id "cache" :parent "core"}
+              {:id "file" :parent "io"} {:id "net" :parent "io"} {:id "db" :parent "io"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>parent</th></tr></thead><tbody><tr><td>app</td><td></td></tr><tr><td>ui</td><td>app</td></tr><tr><td>core</td><td>app</td></tr><tr><td>io</td><td>app</td></tr><tr><td>button</td><td>ui</td></tr><tr><td>form</td><td>ui</td></tr><tr><td>menu</td><td>ui</td></tr><tr><td>model</td><td>core</td></tr><tr><td>rules</td><td>core</td></tr><tr><td>cache</td><td>core</td></tr><tr><td>file</td><td>io</td></tr><tr><td>net</td><td>io</td></tr><tr><td>db</td><td>io</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def imports [{:module "button" :uses "model"} {:module "form" :uses "rules"} {:module "form" :uses "model"}
+              {:module "menu" :uses "cache"} {:module "model" :uses "db"} {:module "rules" :uses "file"}
+              {:module "cache" :uses "net"} {:module "button" :uses "net"} {:module "menu" :uses "db"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>module</th><th>uses</th></tr></thead><tbody><tr><td>button</td><td>model</td></tr><tr><td>form</td><td>rules</td></tr><tr><td>form</td><td>model</td></tr><tr><td>menu</td><td>cache</td></tr><tr><td>model</td><td>db</td></tr><tr><td>rules</td><td>file</td></tr><tr><td>cache</td><td>net</td></tr><tr><td>button</td><td>net</td></tr><tr><td>menu</td><td>db</td></tr></tbody></table></div>
+```
+
+
+The table below holds made-up visits to a web shop, as page sequences with counts; the sequence section uses it:
+
+
+::: {.sourceClojure}
+```clojure
+(def visits [{:path "home>search>product>end" :n 30} {:path "home>search>end" :n 12}
+             {:path "home>product>cart>end" :n 18} {:path "home>search>product>cart" :n 9}
+             {:path "search>product>end" :n 7}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>path</th><th>n</th></tr></thead><tbody><tr><td>home>search>product>end</td><td>30</td></tr><tr><td>home>search>end</td><td>12</td></tr><tr><td>home>product>cart>end</td><td>18</td></tr><tr><td>home>search>product>cart</td><td>9</td></tr><tr><td>search>product>end</td><td>7</td></tr></tbody></table></div>
+```
+
+
+
+## Graphs
+
+`graph/graph` builds the graph of edge rows: the nodes with their degrees, the given node rows first, and the edges
+with numeric weights. Use it as the input of the graph layouts.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – The edge rows, one per edge.<div>Columns:<ul><li><code>:from</code> – The source node's id; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target node's id; the option <code>:to</code> names another column.</li><li><code>:value</code> – The weight, a finite number zero or greater; the option <code>:value</code> names another column. Optional: a missing weight counts as 1.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A graph <code>{:nodes :edges :loops :directed :dropped}</code>: the nodes with their degrees (<code>:degree</code>, <code>:in</code>, <code>:out</code>), the edges with numeric weights, self-loops under <code>:loops</code>, and the number of edges with a missing end.</div></div>
+```
+
+
+These options name the edge and node columns and set the direction. The table below holds the nodes of the flights
+as a directed graph with the airports as node rows; Krakow has no flights, so its degree is 0:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:from</code><span class="option-default">Default: <code>:from</code></span></dt><dd><div class="option-example"><code>(graph/graph edges {:from :source})</code></div><div class="option-text">The accessor of an edge row's source node id.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:to</code><span class="option-default">Default: <code>:to</code></span></dt><dd><div class="option-example"><code>(graph/graph edges {:to :target})</code></div><div class="option-text">The accessor of an edge row's target node id.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:value</code><span class="option-default">Default: <code>:value</code></span></dt><dd><div class="option-example"><code>(graph/graph edges {:value :weight})</code></div><div class="option-text">The accessor of an edge row's weight, a finite number zero or greater; a <code>nil</code> weight counts as 1.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:nodes</code><span class="option-default">Default: No node rows: the nodes are the edge ends, in order of first appearance.</span></dt><dd><div class="option-example"><code>(graph/graph edges {:nodes [{:id "c", :team "red"}]})</code></div><div class="option-text">Node rows, each with an id. Their nodes come first in row order and keep the rows' columns; ids found only in edges follow.<ul><li><span>sequence of maps</span></li></ul></div></dd></div><div class="option-card"><dt><code>:id</code><span class="option-default">Default: <code>:id</code></span></dt><dd><div class="option-example"><code>(graph/graph edges {:nodes [{:id "c", :code "e", :team "red"}], :id :code})</code></div><div class="option-text">The accessor of a node row's id.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:directed</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(graph/graph edges {:directed true})</code></div><div class="option-text">Whether the edges have a direction.<ul><li><code>false</code> – An undirected graph: <code>:in</code> and <code>:out</code> both equal the node's degree.</li><li><code>true</code> – A directed graph: a node's <code>:in</code> and <code>:out</code> count its incoming and outgoing edges.</li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed true})))
+```
+:::
+
 
 
 ```{=html}
@@ -127,7 +305,15 @@ The flights as a directed graph with the airports as nodes - Krakow has no fligh
 ```
 
 
-The edges of the flights as an undirected graph, the weights from `:n` as numbers (`:value`):
+The next table holds the edges of the flights as an undirected graph, the weights from `:n` under `:value`:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed false})))
+```
+:::
+
 
 
 ```{=html}
@@ -135,7 +321,15 @@ The edges of the flights as an undirected graph, the weights from `:n` as number
 ```
 
 
-Without a `:value` accessor every edge weighs 1:
+Without a `:value` column every edge weighs 1:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:edges (graph/graph flights {:from :src :to :dst})))
+```
+:::
+
 
 
 ```{=html}
@@ -144,21 +338,34 @@ Without a `:value` accessor every edge weighs 1:
 
 
 
-## graph/layout
+## Network layouts
 
-Node positions in the unit square: a force-directed layout (each connected component on its own, packed), a
-circle or random places. Edges get the positions of both ends - segments to draw.
+`graph/layout` places the nodes of a graph in the unit square and gives every edge the positions of both ends. Use
+it to draw a network: segments for the edges, points for the nodes.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :circle :force :random</td><td>:force</td><td>node placement: :force (Fruchterman-Reingold), :circle or :random</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>500</td><td>steps of the force layout</td></tr><tr><td>:gravity</td><td>a non-negative finite number</td><td>1.0</td><td>pull of the force layout to each component's centroid, in units of the ideal edge length (0 - none)</td></tr><tr><td>:rng</td><td>a fastmath random generator or nil</td><td>a fresh unseeded generator every call</td><td>fastmath random generator of the force and random layouts, copied per call (seeded - the same layout every time)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>g</code> – A graph of <code>graph/graph</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The graph with <code>:x</code> and <code>:y</code> on its nodes and <code>:x :y :xend :yend</code> on its edges and loops, in the unit square.</div></div>
 ```
 
+
+These options choose the placement and tune the force layout. The table below holds the placed nodes, `:x` and `:y`
+added:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:layout</code><span class="option-default">Default: <code>:force</code></span></dt><dd><div class="option-example"><code>(graph/layout g {:layout :circle})</code></div><div class="option-text">How the function places the nodes.<ul><li><code>:force</code> – By Fruchterman-Reingold forces: linked nodes pull together and all nodes push apart. The function lays out each connected component alone and packs the components in rows.</li><li><code>:circle</code> – On a circle, clockwise from the top in node order.</li><li><code>:random</code> – At random points.</li></ul></div></dd></div><div class="option-card"><dt><code>:iterations</code><span class="option-default">Default: <code>500</code></span></dt><dd><div class="option-example"><code>(graph/layout g {:iterations 20})</code></div><div class="option-text">The number of steps of the force layout.<ul><li><span>integer at least 0</span></li></ul></div></dd></div><div class="option-card"><dt><code>:gravity</code><span class="option-default">Default: <code>1.0</code></span></dt><dd><div class="option-example"><code>(graph/layout g {:gravity 0})</code></div><div class="option-text">The force layout's pull of the nodes towards their component's centre, in ideal edge lengths: 0 turns the pull off, a larger value draws a tighter layout.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:rng</code><span class="option-default">Default: A fresh unseeded generator on every call, so layouts differ.</span></dt><dd><div class="option-example"><code>(graph/layout g {:rng (r/rng :mersenne 7)})</code></div><div class="option-text">The fastmath random generator of the force and random layouts; the function copies it, so a seeded generator gives the same layout on every call.<ul><li><a href="reference.types.html#random-generator">random generator</a></li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:nodes (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
+                                       {:rng (r/rng :mersenne 3)})))
+```
 :::
 
-
-The laid-out nodes (`:x`, `:y` added):
 
 
 ```{=html}
@@ -166,8 +373,9 @@ The laid-out nodes (`:x`, `:y` added):
 ```
 
 
-The edges as segments, the nodes as points: the force layout (seeded, the same every build), a weaker pull to
-the centre after few iterations, a circle and random places:
+The panels below draw the edges as segments and the nodes as points. The first one takes the seeded force layout,
+the same on every build; the second one stops after 20 iterations with a weaker pull to the centre; the last two
+place the nodes on a circle and at random:
 
 
 ::: {.sourceClojure}
@@ -202,27 +410,30 @@ the centre after few iterations, a circle and random places:
 
 
 
-## graph/adjacency->edges
+## Adjacency matrices
 
-Edge rows of a square matrix of weights between named nodes; a zero or missing cell is no edge. Undirected, only
-the upper triangle (and the diagonal) is read.
+`graph/adjacency->edges` turns a square matrix of weights between named nodes into edge rows; a zero or missing
+cell is no edge. Use it for graphs stored as matrices.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:whole-matrix</td><td>true or false</td><td>true</td><td>read the whole matrix (false - only the upper triangle and the diagonal)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>matrix</code> – A square matrix of weights, a sequence of rows: row i, column j holds the weight from node i to node j.</li><li><code>names</code> – The node names, a vector with one per row and column, in order.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Edge rows <code>{:from :to :value}</code> for <code>graph/graph</code>, row by row; a zero, missing or non-finite cell is no edge.</div></div>
 ```
 
-:::
+
+This option chooses which cells the function reads. The first table below reads the shared projects whole, each pair twice; the
+second one reads only the upper triangle, each pair once:
 
 
-A symmetric matrix of shared projects between four teams: read whole (each pair twice, directed) and as an
-undirected graph (each pair once):
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:whole-matrix</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(graph/adjacency->edges matrix names {:whole-matrix false})</code></div><div class="option-text">Whether the function reads the whole matrix.<ul><li><code>true</code> – Every cell: a pair gets an edge in each direction.</li><li><code>false</code> – Only the upper triangle and the diagonal, as for the symmetric matrix of an undirected graph.</li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
 ```clojure
-(def shared-projects [[0 3 1 0] [3 0 2 4] [1 2 0 0] [0 4 0 0]])
+(nu/result-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"]))
 ```
 :::
 
@@ -234,27 +445,47 @@ undirected graph (each pair once):
 
 
 
+::: {.sourceClojure}
+```clojure
+(nu/result-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"] {:whole-matrix false}))
+```
+:::
+
+
+
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>design</td><td>backend</td><td>3</td></tr><tr><td>design</td><td>data</td><td>1</td></tr><tr><td>backend</td><td>data</td><td>2</td></tr><tr><td>backend</td><td>ops</td><td>4</td></tr></tbody></table></div>
 ```
 
 
 
-## graph/arc-layout
+## Arc layouts
 
-An arc diagram as rows: nodes on a line at 0, 1, ... in node order, each edge a semicircle between its ends
-(rows sampled along it).
+`graph/arc-layout` lays out an arc diagram: the nodes on a line at 0, 1, ... in node order, and every edge as rows
+along a semicircle between its ends. Use it to draw an arc diagram of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>g</code> – A graph of <code>graph/graph</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:nodes :arcs}</code>: the nodes with <code>:x</code> and <code>:y</code> on a line, and the arcs as rows <code>{:edge :from :to :value :x :y}</code> along each edge's semicircle.</div></div>
 ```
 
+
+This option sets the node order. The table below holds the arcs: rows along each edge's semicircle, with the edge's
+index under `:edge`:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:order</code><span class="option-default">Default: The nodes' input order.</span></dt><dd><div class="option-example"><code>(graph/arc-layout g {:order :cluster})</code></div><div class="option-text">The order of the nodes around the ring of a chord diagram or along the line of an arc diagram.<ul><li><code>:cluster</code> – Nodes linked to the same others side by side.</li><li><span>sequence of any values</span> – Ids placed first, in this order; the other nodes follow in input order.</li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:arcs (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+```
 :::
 
-
-The arcs (rows of each edge's semicircle, `:edge` its index):
 
 
 ```{=html}
@@ -262,8 +493,8 @@ The arcs (rows of each edge's semicircle, `:edge` its index):
 ```
 
 
-Drawn as lines through the arc rows over the nodes: the input order, an order given by ids (those first) and
-the clustered order (nodes linked to the same others side by side):
+The panels below draw lines through the arc rows over the nodes. The left one keeps the input order, the middle one
+puts the given ids first, and the right one puts nodes linked to the same others side by side:
 
 
 ::: {.sourceClojure}
@@ -294,21 +525,34 @@ the clustered order (nodes linked to the same others side by side):
 
 
 
-## graph/chord-layout
+## Chord layouts
 
-A chord diagram as polygon rows in the unit circle: a ring sector per node (its angle by the node's flow) and a
-ribbon per linked pair (undirected) or edge (directed) through the centre.
+`graph/chord-layout` lays out a chord diagram as polygon rows in the unit circle: a ring sector per node, its angle
+by the node's flow, and a ribbon through the centre per linked pair of an undirected graph or per edge of a directed
+one. Use it to draw a chord diagram of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:order</td><td>:cluster or sequential of any value or nil</td><td>the nodes' input order</td><td>node order: a sequence of ids (those first, the rest after them in input order) or :cluster (nodes linked to the same others side by side)</td></tr><tr><td>:gap-angle</td><td>a non-negative finite number</td><td>2.0</td><td>gap after every ring sector in degrees (must leave room for the sectors)</td></tr><tr><td>:inner-radius</td><td>a number in (0 1)</td><td>0.92</td><td>inner radius of the ring, where the ribbons end (the outer one is 1)</td></tr><tr><td>:min-value</td><td>a non-negative finite number or nil</td><td></td><td>flows of a pair (summed) below it are left out and counted in :dropped (nil - none)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>g</code> – A graph of <code>graph/graph</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:groups :arcs :ribbons :dropped}</code>: a ring sector per node with its angles in degrees, and the sectors and ribbons as polygon rows in the unit circle.</div></div>
 ```
 
+
+These options set the node order, the ring and the smallest flow. The table below holds the ring sectors, `:start`
+and `:end` in degrees clockwise from the top:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:order</code><span class="option-default">Default: The nodes' input order.</span></dt><dd><div class="option-example"><code>(graph/chord-layout g {:order :cluster})</code></div><div class="option-text">The order of the nodes around the ring of a chord diagram or along the line of an arc diagram.<ul><li><code>:cluster</code> – Nodes linked to the same others side by side.</li><li><span>sequence of any values</span> – Ids placed first, in this order; the other nodes follow in input order.</li></ul></div></dd></div><div class="option-card"><dt><code>:gap-angle</code><span class="option-default">Default: <code>2.0</code></span></dt><dd><div class="option-example"><code>(graph/chord-layout g {:gap-angle 10})</code></div><div class="option-text">The gap after every ring sector, in degrees; the gaps must leave room for the sectors.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:inner-radius</code><span class="option-default">Default: <code>0.92</code></span></dt><dd><div class="option-example"><code>(graph/chord-layout g {:inner-radius 0.8})</code></div><div class="option-text">The ring's inner radius, where the ribbons end; the outer radius is 1.<ul><li><a href="reference.types.html#open-fraction">open fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:min-value</code><span class="option-default">Default: No limit: every flow is kept.</span></dt><dd><div class="option-example"><code>(graph/chord-layout g {:min-value 2})</code></div><div class="option-text">The smallest flow kept: the function leaves out a flow whose summed weight is below it - one direction of a pair in a directed graph, both directions in an undirected one - and counts its edges in <code>:dropped</code>.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:groups (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+```
 :::
 
-
-The ring sectors (`:start` / `:end` in degrees, clockwise from the top):
 
 
 ```{=html}
@@ -316,8 +560,10 @@ The ring sectors (`:start` / `:end` in degrees, clockwise from the top):
 ```
 
 
-Ribbons coloured by their source, sectors by node: the default ring, wide gaps and a thin ring, and the directed
-graph (a ribbon per edge) in clustered order without flows under 4 (their edges are dropped):
+The panels below colour the ribbons by their `:from` end and the sectors by node; an undirected ribbon's `:from` is
+its end earlier in the ring. The left one draws the default ring, the middle one wide gaps and a thin ring. The
+right one draws the directed graph, a ribbon per edge coloured by its source, in clustered order and leaves out the
+flows under 4:
 
 
 ::: {.sourceClojure}
@@ -348,21 +594,37 @@ graph (a ribbon per edge) in clustered order without flows under 4 (their edges 
 
 
 
-## graph/sankey-layout
+## Sankey layouts
 
-A sankey diagram as rows in the unit square: nodes in columns as rectangles, every edge a band as thick as its
-flow from its source's right side to its target's left side (edges are flows, whatever the graph's direction).
+`graph/sankey-layout` lays out a sankey diagram as rows in the unit square: the nodes as rectangles in columns, every
+edge a band as thick as its flow from its source's right side to its target's left side. Use it to draw a sankey
+diagram of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:align</td><td>one of :center :justify :left :right</td><td>:justify</td><td>the column of a node: :justify (sinks in the last column), :left, :right (by the longest path to a sink) or :center</td></tr><tr><td>:layer</td><td>a keyword, a function or a categorical marker of one or nil</td><td>columns from :align</td><td>accessor of the node rows giving the column (integers >= 0, every edge to a later one; wins over :align)</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.03</td><td>node width, a fraction of the unit square's width</td></tr><tr><td>:gap</td><td>a non-negative finite number</td><td>0.02</td><td>least gap between the nodes of a column, a fraction of the unit square's height</td></tr><tr><td>:iterations</td><td>integer (at least 0)</td><td>6</td><td>relaxation sweeps moving the nodes towards their links' ends (0 - spread in the start order)</td></tr><tr><td>:order</td><td>one of :relaxed :input or nil</td><td>:relaxed</td><td>node order in a column: :relaxed - relaxation reorders it, :input - the input order kept</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>g</code> – A graph of <code>graph/graph</code> or <code>graph/alluvial-graph</code>; its edges are flows.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:nodes :links :rects :bands :dropped}</code>: the nodes with their columns and rectangles, the links with their band widths, and the rectangles and bands as polygon rows in the unit square.</div></div>
 ```
 
+
+These options set the columns, the node size and gaps, and the relaxation. The table below holds the nodes with
+their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:align</code><span class="option-default">Default: <code>:justify</code></span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:align :center})</code></div><div class="option-text">Which column the function puts a node in, by the longest paths through it.<ul><li><code>:justify</code> – The node's depth (its longest path from a source); every sink moves to the last column.</li><li><code>:center</code> – The node's depth; a source moves to the column before its nearest target.</li><li><code>:left</code> – The node's depth; a sink stays where its longest path ends.</li><li><code>:right</code> – The last column minus the node's longest path to a sink.</li></ul></div></dd></div><div class="option-card"><dt><code>:layer</code><span class="option-default">Default: Columns from <code>:align</code>.</span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:layer :col})</code></div><div class="option-text">The accessor of a node row's column, an integer zero or greater; every edge must go to a later column. It wins over <code>:align</code>.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:node-width</code><span class="option-default">Default: <code>0.03</code></span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:node-width 0.1})</code></div><div class="option-text">The width of a node, a fraction of the unit square's width.<ul><li><a href="reference.types.html#open-fraction">open fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:gap</code><span class="option-default">Default: <code>0.02</code></span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:gap 0.1})</code></div><div class="option-text">The least gap between the nodes of a column, a fraction of the unit square's height.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:iterations</code><span class="option-default">Default: <code>6</code></span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:iterations 0})</code></div><div class="option-text">The number of relaxation sweeps, which move the nodes towards their links' other ends; 0 keeps the nodes in their start order.<ul><li><span>integer at least 0</span></li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:relaxed</code></span></dt><dd><div class="option-example"><code>(graph/sankey-layout g {:order :input})</code></div><div class="option-text">How the function orders the nodes of a column.<ul><li><code>:relaxed</code> – The relaxation sweeps reorder a column's nodes by their positions.</li><li><code>:input</code> – A column's nodes keep the input order.</li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:nodes (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                           {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                           {:from "BER" :to "VIE" :value 3} {:from "BUD" :to "VIE" :value 7}]
+                                                          {:directed true}))))
+```
 :::
 
-
-The nodes with their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
 
 
 ```{=html}
@@ -370,9 +632,9 @@ The nodes with their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
 ```
 
 
-Bands (polygons grouped by `:link`) under the node rectangles (grouped by `:rect`), for each column alignment -
-Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) or right after Warsaw (`:left`,
-`:center`); Budapest starts in the first column only with `:left` and `:justify`:
+For each column alignment, the panels below draw the bands as polygons grouped by `:link`, and over them the node
+rectangles grouped by `:rect`. Krakow, a dead end after Warsaw, sits in the last column with `:justify` and `:right`, and right
+after Warsaw with `:left` and `:center`. Budapest starts in the first column only with `:left` and `:justify`:
 
 
 ::: {.sourceClojure}
@@ -413,23 +675,9 @@ Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) 
 :::
 
 
-Columns given by a node column (`:layer :stage`, winning over `:align`), wide nodes (`:node-width 0.08`) far apart
-(`:gap 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
-relaxation sweeps moving the nodes towards their links' ends (right):
-
-
-::: {.sourceClojure}
-```clojure
-(def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>stage</th></tr></thead><tbody><tr><td>visit</td><td>0</td></tr><tr><td>search</td><td>1</td></tr><tr><td>browse</td><td>1</td></tr><tr><td>cart</td><td>2</td></tr><tr><td>buy</td><td>3</td></tr></tbody></table></div>
-```
-
+The left panel below takes the columns from the stages' node column (`:layer :stage`) and draws wide nodes far
+apart, without relaxation, in input order. The right one keeps the defaults: columns from
+`:align` and six relaxation sweeps:
 
 
 ::: {.sourceClojure}
@@ -463,38 +711,34 @@ relaxation sweeps moving the nodes towards their links' ends (right):
 
 
 
-## graph/alluvial-graph
+## Alluvial graphs
 
-The directed graph of an alluvial diagram: a node per level of every axis (a column each), an edge per pair of
-levels of consecutive axes and fill level, with the summed weight - for `sankey-layout` with fixed columns.
+`graph/alluvial-graph` builds the directed graph of an alluvial diagram: a node per level of every variable, a
+column per variable, and, for each strand level, an edge per pair of levels of neighbouring variables, weighted by
+the summed weight. Use it with `sankey-layout` and fixed columns.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables (required)</td><td>sequential of a keyword, a function or a categorical marker of one (at least 2)</td><td></td><td>accessors of the categorical variables (one column each), in order (at least 2)</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1)</td></tr><tr><td>:strand-color</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the first column</td><td>accessor of the level the strands are grouped (and coloured) by</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – Wide rows, one per observation or group of observations.<div>Columns:<ul><li><em>a column per variable</em> – A categorical level, read by an accessor of <code>:variables</code>.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A directed graph of <code>graph/graph</code> for <code>sankey-layout</code>: a node per level of every variable, its column under <code>:layer</code>, and an edge with the summed weight per pair of levels of neighbouring variables and strand level.</div></div>
 ```
 
-:::
+
+These options name the variables, the weight and the strand level. The table below holds the edges of the
+passengers, weighted by `:n` and grouped by survival:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:variables</code></dt><dd><div class="option-example"><code>(graph/alluvial-graph rows {:variables [:class :sex]})</code></div><div class="option-text">The accessors of the categorical variables, one column each, in order; at least 2.<ul><li><span>sequence of accessors</span></li></ul></div></dd></div><div class="option-card"><dt><code>:value</code><span class="option-default">Default: Every row weighs 1.</span></dt><dd><div class="option-example"><code>(graph/alluvial-graph rows {:variables [:class :sex], :value :n})</code></div><div class="option-text">The accessor of a row's weight, a finite number zero or greater; a <code>nil</code> weight counts as 1.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:strand-color</code><span class="option-default">Default: The first variable.</span></dt><dd><div class="option-example"><code>(graph/alluvial-graph rows {:variables [:class :sex], :strand-color :sex})</code></div><div class="option-text">The accessor of the level that groups the strands; <code>plot/alluvial</code> colours the strands by it.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div></dl>
+```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def passengers [{:class "1st" :sex "f" :survived "yes" :n 140} {:class "1st" :sex "m" :survived "no" :n 118}
-                 {:class "2nd" :sex "f" :survived "yes" :n 80} {:class "2nd" :sex "m" :survived "no" :n 154}
-                 {:class "3rd" :sex "f" :survived "no" :n 106} {:class "3rd" :sex "m" :survived "no" :n 422}
-                 {:class "3rd" :sex "f" :survived "yes" :n 90} {:class "1st" :sex "m" :survived "yes" :n 62}])
+(nu/result-table (:edges (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>class</th><th>sex</th><th>survived</th><th>n</th></tr></thead><tbody><tr><td>1st</td><td>f</td><td>yes</td><td>140</td></tr><tr><td>1st</td><td>m</td><td>no</td><td>118</td></tr><tr><td>2nd</td><td>f</td><td>yes</td><td>80</td></tr><tr><td>2nd</td><td>m</td><td>no</td><td>154</td></tr><tr><td>3rd</td><td>f</td><td>no</td><td>106</td></tr><tr><td>3rd</td><td>m</td><td>no</td><td>422</td></tr><tr><td>3rd</td><td>f</td><td>yes</td><td>90</td></tr><tr><td>1st</td><td>m</td><td>yes</td><td>62</td></tr></tbody></table></div>
-```
-
-
-The edges, weighted by `:n` and grouped by the survival level:
 
 
 ```{=html}
@@ -502,8 +746,8 @@ The edges, weighted by `:n` and grouped by the survival level:
 ```
 
 
-Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their
-`:strand-color` level - by survival (left) and by class, the default first column (right):
+The panels below lay the graphs out with `sankey-layout`, the variables as columns in input order, and colour the
+strands by their strand level: by survival on the left and by class (the first variable) on the right:
 
 
 ::: {.sourceClojure}
@@ -532,37 +776,18 @@ Laid out by `sankey-layout` with the axes as columns and the input order kept, s
 
 
 
-## tree/from-hclust
+## Trees from clusterings
 
-A tree of a fastmath hierarchical clustering (`fastmath.ml.clustering/hclust`): groups with their merge
-heights, leaves named by the given labels. It takes no options.
-
-Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
-
-
-::: {.sourceClojure}
-```clojure
-(def mtcars (take 12 (nu/dataset :mtcars)))
-```
-:::
-
+`tree/from-hclust` builds the tree of a fastmath hierarchical clustering (`fastmath.ml.clustering/hclust`): groups
+with their merge heights, leaves named by the given labels. Use it to draw a dendrogram of a clustering.
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>model</th><th>mpg</th><th>cyl</th><th>disp</th><th>hp</th><th>drat</th><th>wt</th><th>qsec</th><th>vs</th><th>am</th><th>gear</th><th>carb</th></tr></thead><tbody><tr><td>Mazda RX4</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.62</td><td>16.46</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Mazda RX4 Wag</td><td>21</td><td>6</td><td>160</td><td>110</td><td>3.9</td><td>2.875</td><td>17.02</td><td>0</td><td>1</td><td>4</td><td>4</td></tr><tr><td>Datsun 710</td><td>22.8</td><td>4</td><td>108</td><td>93</td><td>3.85</td><td>2.32</td><td>18.61</td><td>1</td><td>1</td><td>4</td><td>1</td></tr><tr><td>Hornet 4 Drive</td><td>21.4</td><td>6</td><td>258</td><td>110</td><td>3.08</td><td>3.215</td><td>19.44</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Hornet Sportabout</td><td>18.7</td><td>8</td><td>360</td><td>175</td><td>3.15</td><td>3.44</td><td>17.02</td><td>0</td><td>0</td><td>3</td><td>2</td></tr><tr><td>Valiant</td><td>18.1</td><td>6</td><td>225</td><td>105</td><td>2.76</td><td>3.46</td><td>20.22</td><td>1</td><td>0</td><td>3</td><td>1</td></tr><tr><td>Duster 360</td><td>14.3</td><td>8</td><td>360</td><td>245</td><td>3.21</td><td>3.57</td><td>15.84</td><td>0</td><td>0</td><td>3</td><td>4</td></tr><tr><td>Merc 240D</td><td>24.4</td><td>4</td><td>146.7</td><td>62</td><td>3.69</td><td>3.19</td><td>20</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 230</td><td>22.8</td><td>4</td><td>140.8</td><td>95</td><td>3.92</td><td>3.15</td><td>22.9</td><td>1</td><td>0</td><td>4</td><td>2</td></tr><tr><td>Merc 280</td><td>19.2</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.3</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 280C</td><td>17.8</td><td>6</td><td>167.6</td><td>123</td><td>3.92</td><td>3.44</td><td>18.9</td><td>1</td><td>0</td><td>4</td><td>4</td></tr><tr><td>Merc 450SE</td><td>16.4</td><td>8</td><td>275.8</td><td>180</td><td>3.07</td><td>4.07</td><td>17.4</td><td>0</td><td>0</td><td>3</td><td>3</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>result</code> – A fastmath <code>hclust</code> result.</li><li><code>leaf-names</code> <span class="required">optional</span> – The observations' names, one per observation. Without them the leaves are named by their indices.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The root node: groups <code>{:height :children}</code> and leaves <code>{:name :index :height}</code>.</div></div>
 ```
 
 
-The cars standardized on four variables, clustered with complete linkage; the tree's leaves in order:
-
-
-::: {.sourceClojure}
-```clojure
-(def car-features (let [cols (for [k [:mpg :hp :wt :qsec]] (stats/standardize (map k mtcars)))]
-                    (apply mapv vector cols)))
-```
-:::
-
+The call below clusters the cars with complete linkage and returns the tree's leaves in order:
 
 
 ::: {.sourceClojure}
@@ -592,8 +817,9 @@ The cars standardized on four variables, clustered with complete linkage; the tr
 :::
 
 
-The linkage methods of `hclust` (`:method`): `:single`, `:complete` (default), `:average`, `:weighted`,
-`:centroid`, `:median`, `:ward`, `:ward-d` and the divisive `:diana`. Their trees of the same cars:
+The panels below draw the trees of every linkage method of `hclust` (`:method`) on the same cars: `:single`,
+`:complete` (the default), `:average`, `:weighted`, `:centroid`, `:median`, `:ward`, `:ward-d` and the divisive
+`:diana`:
 
 
 ::: {.sourceClojure}
@@ -613,38 +839,25 @@ The linkage methods of `hclust` (`:method`): `:single`, `:complete` (default), `
 
 
 
-## tree/from-levels
+## Trees from level columns
 
-A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per innermost level
-path (its `:value` the number of its rows).
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:hierarchy</td><td>sequential of a keyword, a function or a categorical marker of one or nil</td><td></td><td>level accessors, outer level first (none - a root without children)</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def offices [{:region "Europe" :country "Poland" :city "Warsaw"} {:region "Europe" :country "Poland" :city "Krakow"}
-              {:region "Europe" :country "Czechia" :city "Prague"} {:region "Asia" :country "Japan" :city "Tokyo"}
-              {:region "Asia" :country "Japan" :city "Osaka"} {:region "Asia" :country "India" :city "Pune"}])
-```
-:::
-
+`tree/from-levels` builds the tree of rows grouped by level columns: a group per level path, a leaf per innermost
+path with its number of rows as `:value`. Use it for hierarchies stored as columns.
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>region</th><th>country</th><th>city</th></tr></thead><tbody><tr><td>Europe</td><td>Poland</td><td>Warsaw</td></tr><tr><td>Europe</td><td>Poland</td><td>Krakow</td></tr><tr><td>Europe</td><td>Czechia</td><td>Prague</td></tr><tr><td>Asia</td><td>Japan</td><td>Tokyo</td></tr><tr><td>Asia</td><td>Japan</td><td>Osaka</td></tr><tr><td>Asia</td><td>India</td><td>Pune</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data rows, a level column for each accessor of <code>:hierarchy</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The root group: every node with its level value under <code>:name</code> and its number of rows under <code>:value</code>, a leaf per distinct level path.</div></div>
 ```
 
 
-Its leaves - the countries, each with its number of offices - in tree order (with the cities as a third level,
-the tree is drawn by `tree/node-link-layout` below):
+This option names the level columns. The call below returns the leaves of the offices, the countries with their
+numbers of offices, in tree order; the node-link section draws the tree with the cities as a third level:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:hierarchy</code><span class="option-default">Default: No levels: a root without children.</span></dt><dd><div class="option-example"><code>(tree/from-levels rows {:hierarchy [:region :country]})</code></div><div class="option-text">The accessors of the level columns, outer level first.<ul><li><span>sequence of accessors</span></li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
@@ -664,32 +877,22 @@ the tree is drawn by `tree/node-link-layout` below):
 
 
 
-## tree/from-parents
+## Trees from parent links
 
-A tree of rows with ids and parent ids (as d3 `stratify`): the row without a parent is the root, children in row
-order, names from a column (the id by default).
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:id</td><td>a keyword, a function or a categorical marker of one</td><td>:id</td><td>accessor of a row's node id</td></tr><tr><td>:parent</td><td>a keyword, a function or a categorical marker of one</td><td>:parent</td><td>accessor of a row's parent id (nil - the root)</td></tr><tr><td>:name</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the id accessor</td><td>accessor of a node's name</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def org [{:emp 1 :boss nil :who "CEO"} {:emp 2 :boss 1 :who "CTO"} {:emp 3 :boss 1 :who "CFO"}
-          {:emp 4 :boss 2 :who "dev lead"} {:emp 5 :boss 2 :who "ops lead"} {:emp 6 :boss 4 :who "developer"}])
-```
-:::
-
+`tree/from-parents` builds the tree of rows with ids and parent ids, as d3 `stratify`: the row without a parent is
+the root, and children keep the row order. Use it for hierarchies stored as parent links.
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>emp</th><th>boss</th><th>who</th></tr></thead><tbody><tr><td>1</td><td></td><td>CEO</td></tr><tr><td>2</td><td>1</td><td>CTO</td></tr><tr><td>3</td><td>1</td><td>CFO</td></tr><tr><td>4</td><td>2</td><td>dev lead</td></tr><tr><td>5</td><td>2</td><td>ops lead</td></tr><tr><td>6</td><td>4</td><td>developer</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – One row per node.<div>Columns:<ul><li><code>:id</code> – The node's id; the option <code>:id</code> names another column.</li><li><code>:parent</code> – The parent's id, <code>nil</code> for the root; the option <code>:parent</code> names another column.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – The root node: each node is its row with <code>:id</code>, <code>:name</code> and <code>:height</code>, a group also with its <code>:children</code> in row order.</div></div>
+```
+
+
+These options name the id, parent and name columns. The call below returns the leaves of the company:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:id</code><span class="option-default">Default: <code>:id</code></span></dt><dd><div class="option-example"><code>(tree/from-parents rows {:id :key})</code></div><div class="option-text">The accessor of a row's node id.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:parent</code><span class="option-default">Default: <code>:parent</code></span></dt><dd><div class="option-example"><code>(tree/from-parents rows {:parent :up})</code></div><div class="option-text">The accessor of a row's parent id; the root's is <code>nil</code>.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:name</code><span class="option-default">Default: The id accessor.</span></dt><dd><div class="option-example"><code>(tree/from-parents rows {:name :label})</code></div><div class="option-text">The accessor of a node's name.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div></dl>
 ```
 
 
@@ -711,10 +914,18 @@ order, names from a column (the id by default).
 
 
 
-## tree/leaves
+## Leaves
 
-The leaves under a node, in order (it takes no options) - above the leaves of a clustering, of level groups and
-of parent links; here of one subtree, the CTO's:
+`tree/leaves` returns the leaves under a node in order; the sections above call it on whole trees. Use it to list a
+subtree's leaves.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>node</code> – A tree node, usually the root.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The leaves under the node in order; a leaf returns itself.</div></div>
+```
+
+
+The call below returns the leaves under the CTO:
 
 
 ::: {.sourceClojure}
@@ -734,21 +945,33 @@ of parent links; here of one subtree, the CTO's:
 
 
 
-## tree/layout
+## Dendrogram layouts
 
-A dendrogram layout: nodes at their heights, leaves one step apart, an elbow path per branch; optionally cut into
-coloured clusters or bent around a circle.
+`tree/layout` lays out a tree as a dendrogram: the nodes at their heights, the leaves one step apart, an elbow path
+per branch. Use it to draw a dendrogram of your own, cut into clusters or bent around a circle.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:k</td><td>a positive integer or nil</td><td>no clusters (every :cluster nil)</td><td>cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>root</code> – The root of a tree of <code>tree/from-hclust</code>, <code>tree/from-levels</code> or <code>tree/from-parents</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:nodes :paths}</code>: the nodes with their positions and clusters, and an elbow path per branch as rows <code>{:id :x :y :cluster}</code>.</div></div>
 ```
 
+
+These options cut the clusters and bend the layout. The table below holds the elbow paths, rows grouped by the
+branch's node `:id`, with `:cluster` from a cut into 3:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:k</code><span class="option-default">Default: No clusters: every <code>:cluster</code> is <code>nil</code>.</span></dt><dd><div class="option-example"><code>(tree/layout root {:k 2})</code></div><div class="option-text">The number of clusters, at most the leaf count: cutting the k - 1 highest groups leaves k subtrees, numbered 1 to k in leaf order under <code>:cluster</code>.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:circular</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(tree/layout root {:circular true})</code></div><div class="option-text">Whether the layout is radial.<ul><li><code>false</code> – Along the axes.</li><li><code>true</code> – Radial: the breadth as the angle over <code>:span</code> degrees, the height or depth as the radius; points in [-1, 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:span</code><span class="option-default">Default: <code>360.0</code></span></dt><dd><div class="option-example"><code>(tree/layout root {:circular true, :span 180})</code></div><div class="option-text">The degrees a circular layout covers, clockwise from the top.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:paths (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {:k 3})))
+```
 :::
 
-
-The elbow paths (rows grouped by `:id`, the branch's node; `:cluster` from the cut):
 
 
 ```{=html}
@@ -756,8 +979,8 @@ The elbow paths (rows grouped by `:id`, the branch's node; `:cluster` from the c
 ```
 
 
-Drawn as lines: plain, cut into 3 clusters, and (also cut) circular - around the whole circle and over
-`:span 180` degrees:
+The panels below draw the paths as lines: plain, cut into 3 clusters, and circular with the cut, around the whole
+circle and over 180 degrees:
 
 
 ::: {.sourceClojure}
@@ -789,21 +1012,33 @@ Drawn as lines: plain, cut into 3 clusters, and (also cut) circular - around the
 
 
 
-## tree/node-link-layout
+## Node-link layouts
 
-A node-link layout (d3 `tree` / `cluster`): nodes at their depth, one link path per child; tidy or with the
-leaves aligned, curved or straight links, optionally around a circle.
+`tree/node-link-layout` lays out a tree as nodes and links, like d3 `tree` and `cluster`: the nodes by depth, a link
+path per child. Use it to draw a node-link tree of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:layout</td><td>one of :tidy :cluster</td><td>:tidy</td><td>node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)</td></tr><tr><td>:links</td><td>one of :diagonal :line</td><td>:diagonal</td><td>link shape: :diagonal (curves along the depth axis) or :line</td></tr><tr><td>:circular</td><td>true or false or nil</td><td>false</td><td>radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]</td></tr><tr><td>:span</td><td>a positive finite number</td><td>360.0</td><td>degrees a circular layout covers, clockwise from the top</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>root</code> – The root of a tree of <code>tree/from-hclust</code>, <code>tree/from-levels</code> or <code>tree/from-parents</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:nodes :links}</code>: the nodes with their depth, breadth and position, and a link path per node but the root as rows <code>{:id :x :y}</code>.</div></div>
 ```
 
+
+These options choose the placement and the link shape, and bend the layout around a circle. The table below holds the nodes with
+`:depth`, `:breadth`, `:x` and `:y`:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:layout</code><span class="option-default">Default: <code>:tidy</code></span></dt><dd><div class="option-example"><code>(tree/node-link-layout root {:layout :cluster})</code></div><div class="option-text">How the function places the nodes.<ul><li><code>:tidy</code> – Every node at its depth, as d3 <code>tree</code>.</li><li><code>:cluster</code> – Every leaf at the deepest depth, a group at the mean position of its children, as d3 <code>cluster</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:links</code><span class="option-default">Default: <code>:diagonal</code></span></dt><dd><div class="option-example"><code>(tree/node-link-layout root {:links :line})</code></div><div class="option-text">The shape of the links.<ul><li><code>:diagonal</code> – Curves that leave and enter the nodes along the depth axis.</li><li><code>:line</code> – Straight lines.</li></ul></div></dd></div><div class="option-card"><dt><code>:circular</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(tree/node-link-layout root {:circular true})</code></div><div class="option-text">Whether the layout is radial.<ul><li><code>false</code> – Along the axes.</li><li><code>true</code> – Radial: the breadth as the angle over <code>:span</code> degrees, the height or depth as the radius; points in [-1, 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:span</code><span class="option-default">Default: <code>360.0</code></span></dt><dd><div class="option-example"><code>(tree/node-link-layout root {:circular true, :span 180})</code></div><div class="option-text">The degrees a circular layout covers, clockwise from the top.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:nodes (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]}) {})))
+```
 :::
 
-
-The nodes (`:depth`, `:breadth`, `:x`, `:y`):
 
 
 ```{=html}
@@ -811,8 +1046,8 @@ The nodes (`:depth`, `:breadth`, `:x`, `:y`):
 ```
 
 
-Links as lines under the nodes - tidy with curved links, the leaves aligned with straight links, and circular
-(tidy, curved) over a full turn and `:span 180` degrees:
+The panels below draw the links as lines under the nodes: tidy with curved links, then the leaves aligned with
+straight links; the last two bend a tidy, curved layout around a circle, over a full turn and over 180 degrees:
 
 
 ::: {.sourceClojure}
@@ -849,54 +1084,34 @@ Links as lines under the nodes - tidy with curved links, the leaves aligned with
 
 
 
-## tree/bundle-paths
+## Edge bundling
 
-Hierarchical edge bundling: edges between leaves of a circular tree layout, each a B-spline through the tree
-path between its ends, straightened by `:beta`.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:from</td><td>a keyword, a function or a categorical marker of one</td><td>:from</td><td>accessor of an edge row's source leaf id</td></tr><tr><td>:to</td><td>a keyword, a function or a categorical marker of one</td><td>:to</td><td>accessor of an edge row's target leaf id</td></tr><tr><td>:beta</td><td>a number in [0 1]</td><td>0.85</td><td>bundling strength: 1 - along the tree path, 0 - a straight line</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def modules [{:id "app"} {:id "ui" :parent "app"} {:id "core" :parent "app"} {:id "io" :parent "app"}
-              {:id "button" :parent "ui"} {:id "form" :parent "ui"} {:id "menu" :parent "ui"}
-              {:id "model" :parent "core"} {:id "rules" :parent "core"} {:id "cache" :parent "core"}
-              {:id "file" :parent "io"} {:id "net" :parent "io"} {:id "db" :parent "io"}])
-```
-:::
-
+`tree/bundle-paths` routes edges between the leaves of a laid-out tree by hierarchical edge bundling: each edge is a
+B-spline through the tree path between its ends. Use it to draw an edge bundle of your own.
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>parent</th></tr></thead><tbody><tr><td>app</td><td></td></tr><tr><td>ui</td><td>app</td></tr><tr><td>core</td><td>app</td></tr><tr><td>io</td><td>app</td></tr><tr><td>button</td><td>ui</td></tr><tr><td>form</td><td>ui</td></tr><tr><td>menu</td><td>ui</td></tr><tr><td>model</td><td>core</td></tr><tr><td>rules</td><td>core</td></tr><tr><td>cache</td><td>core</td></tr><tr><td>file</td><td>io</td></tr><tr><td>net</td><td>io</td></tr><tr><td>db</td><td>io</td></tr></tbody></table></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>edges</code> – Edge rows between leaves of the tree.<div>Columns:<ul><li><code>:from</code> – The source leaf: a <code>tree/from-parents</code> node's <code>:id</code>, else a leaf's <code>:name</code>; the option <code>:from</code> names another column.</li><li><code>:to</code> – The target leaf; the option <code>:to</code> names another column.</li></ul></div></li><li><code>laid</code> – The tree's layout of <code>tree/layout</code>, usually circular.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:paths :dropped}</code>: a path per edge as rows <code>{:id :x :y}</code> with the edge's columns; the function drops and counts edges whose end isn't a leaf or that join a leaf to itself.</div></div>
+```
+
+
+These options name the edge ends and set the bundling strength. The table below holds the paths of the imports,
+rows grouped by the edge's index `:id`:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:from</code><span class="option-default">Default: <code>:from</code></span></dt><dd><div class="option-example"><code>(tree/bundle-paths edges laid {:from :source})</code></div><div class="option-text">The accessor of an edge row's source leaf key.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:to</code><span class="option-default">Default: <code>:to</code></span></dt><dd><div class="option-example"><code>(tree/bundle-paths edges laid {:to :target})</code></div><div class="option-text">The accessor of an edge row's target leaf key.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:beta</code><span class="option-default">Default: <code>0.85</code></span></dt><dd><div class="option-example"><code>(tree/bundle-paths edges laid {:beta 0.3})</code></div><div class="option-text">The bundling strength: 1 routes an edge along its tree path, 0 draws a straight line.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div></dl>
 ```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def imports [{:module "button" :uses "model"} {:module "form" :uses "rules"} {:module "form" :uses "model"}
-              {:module "menu" :uses "cache"} {:module "model" :uses "db"} {:module "rules" :uses "file"}
-              {:module "cache" :uses "net"} {:module "button" :uses "net"} {:module "menu" :uses "db"}])
+(nu/result-table (:paths (tree/bundle-paths imports (tree/layout (tree/from-parents modules {}) {:circular true})
+                                            {:from :module :to :uses})))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>module</th><th>uses</th></tr></thead><tbody><tr><td>button</td><td>model</td></tr><tr><td>form</td><td>rules</td></tr><tr><td>form</td><td>model</td></tr><tr><td>menu</td><td>cache</td></tr><tr><td>model</td><td>db</td></tr><tr><td>rules</td><td>file</td></tr><tr><td>cache</td><td>net</td></tr><tr><td>button</td><td>net</td></tr><tr><td>menu</td><td>db</td></tr></tbody></table></div>
-```
-
-
-The paths (rows grouped by `:id`, the edge's index):
 
 
 ```{=html}
@@ -904,7 +1119,7 @@ The paths (rows grouped by `:id`, the edge's index):
 ```
 
 
-Bundled along the tree (`:beta 1`), the default 0.85, and straight lines (`:beta 0`):
+The panels below bundle the imports fully along the tree, at the default strength 0.85, and not at all:
 
 
 ::: {.sourceClojure}
@@ -932,37 +1147,33 @@ Bundled along the tree (`:beta 1`), the default 0.85, and straight lines (`:beta
 
 
 
-## hierarchy/sequence-levels
+## Sequence levels
 
-Hierarchy rows of sequences (e.g. visited pages) for a flow sunburst: a step column per position, identical
-sequences summed; a final end marker is removed (or kept as a step).
+`hierarchy/sequence-levels` turns sequences, such as visited pages, into hierarchy rows: a step column per position,
+identical sequences summed. Use it for a flow sunburst.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:sequence</td><td>a keyword, a function or a categorical marker of one</td><td>:sequence</td><td>accessor of a row's sequence: a string split at :separator or a sequence of steps</td></tr><tr><td>:value</td><td>a keyword, a function or a categorical marker of one or nil</td><td>1 per row</td><td>accessor of a row's weight, a finite number >= 0 (nil - 1; identical sequences summed)</td></tr><tr><td>:separator</td><td>string</td><td>"-"</td><td>literal text splitting a string sequence into steps</td></tr><tr><td>:end</td><td>any value</td><td>"end"</td><td>the end marker (nil - none): a final step equal to it is removed unless :keep-end</td></tr><tr><td>:keep-end</td><td>true or false or nil</td><td>true</td><td>keep a final end marker as a step of its own (false - a sequence ending before others continue is its group's unnamed leaf)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – One sequence per row.<div>Columns:<ul><li><code>:sequence</code> – The sequence: a string of steps joined by <code>:separator</code>, or a sequence of steps; the option <code>:sequence</code> names another column.</li><li><em>a weight column</em> – The row's weight, named by the option <code>:value</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :hierarchy :dropped}</code>: a row per distinct sequence with a column per step (<code>:step-1</code> ...) and the summed <code>:value</code>, the step keys, and the number of rows without steps.</div></div>
 ```
 
-:::
+
+These options read the sequences and their weights and handle the end marker. The first table below drops the end
+marker with `:keep-end false`, the second one keeps it as a step, the default:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:sequence</code><span class="option-default">Default: <code>:sequence</code></span></dt><dd><div class="option-example"><code>(hierarchy/sequence-levels rows {:sequence :path})</code></div><div class="option-text">The accessor of a row's sequence: a string the function splits at <code>:separator</code>, or a sequence of steps.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:value</code><span class="option-default">Default: Every row weighs 1.</span></dt><dd><div class="option-example"><code>(hierarchy/sequence-levels rows {:value :n})</code></div><div class="option-text">The accessor of a row's weight, a finite number zero or greater; a <code>nil</code> weight counts as 1. The function sums the weights of identical sequences.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:separator</code><span class="option-default">Default: <code>"-"</code></span></dt><dd><div class="option-example"><code>(hierarchy/sequence-levels rows {:separator "-b-"})</code></div><div class="option-text">The literal text that splits a string sequence into steps.<ul><li><span>string</span></li></ul></div></dd></div><div class="option-card"><dt><code>:end</code><span class="option-default">Default: <code>"end"</code></span></dt><dd><div class="option-example"><code>(hierarchy/sequence-levels rows {:keep-end false, :end "c"})</code></div><div class="option-text">The text of a final step that marks a sequence's end; it acts only with <code>:keep-end false</code>, which removes it. <code>nil</code> means no end marker.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:keep-end</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(hierarchy/sequence-levels rows {:keep-end false})</code></div><div class="option-text">Whether a final end marker stays a step of its own.<ul><li><code>true</code> – The marker stays a step: a sequence ending before others continue gets a leaf of its own.</li><li><code>false</code> – The function removes the marker: a sequence ending before others continue is its group's unnamed leaf.</li></ul></div></dd></div></dl>
+```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def visits [{:path "home>search>product>end" :n 30} {:path "home>search>end" :n 12}
-             {:path "home>product>cart>end" :n 18} {:path "home>search>product>cart" :n 9}
-             {:path "search>product>end" :n 7}])
+(nu/result-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end false})))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>path</th><th>n</th></tr></thead><tbody><tr><td>home>search>product>end</td><td>30</td></tr><tr><td>home>search>end</td><td>12</td></tr><tr><td>home>product>cart>end</td><td>18</td></tr><tr><td>home>search>product>cart</td><td>9</td></tr><tr><td>search>product>end</td><td>7</td></tr></tbody></table></div>
-```
-
-
-The step rows - the end marker dropped with `:keep-end false` (first table), kept as a step by default (second):
 
 
 ```{=html}
@@ -971,12 +1182,21 @@ The step rows - the end marker dropped with `:keep-end false` (first table), kep
 
 
 
+::: {.sourceClojure}
+```clojure
+(nu/result-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end"})))
+```
+:::
+
+
+
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>step-1</th><th>step-2</th><th>step-3</th><th>step-4</th><th>value</th></tr></thead><tbody><tr><td>home</td><td>search</td><td>product</td><td>end</td><td>30.0</td></tr><tr><td>home</td><td>search</td><td>end</td><td></td><td>12.0</td></tr><tr><td>home</td><td>product</td><td>cart</td><td>end</td><td>18.0</td></tr><tr><td>home</td><td>search</td><td>product</td><td>cart</td><td>9.0</td></tr><tr><td>search</td><td>product</td><td>end</td><td></td><td>7.0</td></tr></tbody></table></div>
 ```
 
 
-The rows as a sunburst - `chart/partition` under polar, the steps as its hierarchy:
+The plot below draws the rows as a sunburst: `chart/partition` under polar coordinates, the steps as its
+hierarchy:
 
 
 ::: {.sourceClojure}

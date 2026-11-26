@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -49,10 +51,11 @@ code-block-background: true
 
 # Sets and series
 
-Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an
-UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise
-statistic. The [series builders](reference.builders_series.html) `plot/acf` and `plot/horizon` draw
-autocorrelations and horizons directly; `chart/pairwise` draws one statistic per panel.
+These functions turn set memberships, time series and variable pairs into rows: the bars and dot matrix of an
+UpSet plot, lag pairs, autocorrelations, the folded bands of a horizon chart and the matrix of a pairwise
+statistic. Use them to draw these plots with ordinary charts. The [series builders](reference.builders_series.html)
+`plot/acf` and `plot/horizon` draw autocorrelations and horizons directly; `chart/pairwise` draws one statistic per
+panel.
 
 
 ::: {.sourceClojure}
@@ -71,7 +74,8 @@ autocorrelations and horizons directly; `chart/pairwise` draws one statistic per
 :::
 
 
-Set memberships: one row per item and set it belongs to (an item may be in several).
+The table below holds made-up set memberships, a row per item and set it belongs to (an item may be in several);
+the UpSet sections use it:
 
 
 ::: {.sourceClojure}
@@ -90,7 +94,8 @@ Set memberships: one row per item and set it belongs to (an item may be in sever
 ```
 
 
-An autoregressive series (fastmath `r/ar`, coefficient 0.6) over a weekly sine plus seeded white noise:
+The values below form an autoregressive series: fastmath `r/ar` draws 200 values with coefficient 0.6 over a weekly
+sine plus seeded white noise. The lag and autocorrelation sections use them:
 
 
 ::: {.sourceClojure}
@@ -107,11 +112,63 @@ An autoregressive series (fastmath `r/ar`, coefficient 0.6) over a weekly sine p
 ```
 
 
+The table below holds made-up temperature anomalies of two cities; the horizon sections use it:
 
-## sets/upset-rows
 
-The bars of an UpSet plot: every combination of sets that holds items exclusively - its sets, size and degree -
-by size descending. The mapping names the set and item keys; a third argument chooses (and orders) the sets.
+::: {.sourceClojure}
+```clojure
+(def temperatures (for [city ["Oslo" "Rome"] day (range 60)]
+                    {:city city :day day
+                     :anomaly (* (if (= city "Oslo") 4.0 2.5) (m/sin (+ (* 0.12 day) (if (= city "Oslo") 0.0 1.5))))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>city</th><th>day</th><th>anomaly</th></tr></thead><tbody><tr><td>Oslo</td><td>0</td><td>0.0</td></tr><tr><td>Oslo</td><td>1</td><td>0.47884882915567745</td></tr><tr><td>Oslo</td><td>2</td><td>0.9508105057085383</td></tr><tr><td>Oslo</td><td>3</td><td>1.4090969331003598</td></tr><tr><td>Oslo</td><td>4</td><td>1.8471167021659316</td></tr><tr><td>Oslo</td><td>5</td><td>2.2585698935801415</td></tr><tr><td>Oslo</td><td>6</td><td>2.6375386878858924</td></tr><tr><td>Oslo</td><td>7</td><td>2.978572479883437</td></tr><tr><td>Oslo</td><td>8</td><td>3.276766273203993</td></tr><tr><td>Oslo</td><td>9</td><td>3.52783122753979</td></tr><tr><td>Oslo</td><td>10</td><td>3.728156343868905</td></tr><tr><td>Oslo</td><td>11</td><td>3.874860400473061</td></tr><tr><td>Oslo</td><td>12</td><td>3.9658333927667457</td></tr><tr><td>Oslo</td><td>13</td><td>3.999766880919865</td></tr><tr><td>Oslo</td><td>14</td><td>3.976172808792304</td></tr><tr><td>Oslo</td><td>15</td><td>3.895390523512781</td></tr><tr><td>Oslo</td><td>16</td><td>3.7585818947412997</td></tr><tr><td>Oslo</td><td>17</td><td>3.5677146038135183</td></tr><tr><td>Oslo</td><td>18</td><td>3.3255338431147323</td></tr><tr><td>Oslo</td><td>19</td><td>3.035522832723688</td></tr><tr><td>Oslo</td><td>20</td><td>2.701852722204604</td></tr><tr><td>Oslo</td><td>21</td><td>2.3293225980963275</td></tr><tr><td>Oslo</td><td>22</td><td>1.9232904599545946</td></tr><tr><td>Oslo</td><td>23</td><td>1.4895961577002228</td></tr><tr><td>Oslo</td><td>24</td><td>1.0344773986444433</td></tr><tr><td>Oslo</td><td>25</td><td>0.5644800322394689</td></tr><tr><td>Oslo</td><td>26</td><td>0.08636390290438384</td></tr><tr><td>Oslo</td><td>27</td><td>-0.392994374980433</td></tr><tr><td>Oslo</td><td>28</td><td>-0.8667003215495185</td></tr><tr><td>Oslo</td><td>29</td><td>-1.3279407528829363</td></tr><tr><td>Oslo</td><td>30</td><td>-1.7700817731794083</td></tr><tr><td>Oslo</td><td>31</td><td>-2.1867641882771474</td></tr><tr><td>Oslo</td><td>32</td><td>-2.5719949682156353</td></tr><tr><td>Oslo</td><td>33</td><td>-2.920233443357198</td></tr><tr><td>Oslo</td><td>34</td><td>-3.226470994332962</td></tr><tr><td>Oslo</td><td>35</td><td>-3.4863030896543528</td></tr><tr><td>Oslo</td><td>36</td><td>-3.6959926348927516</td></tr><tr><td>Oslo</td><td>37</td><td>-3.852523722293266</td></tr><tr><td>Oslo</td><td>38</td><td>-3.953645007756522</td></tr><tr><td>Oslo</td><td>39</td><td>-3.997902091309136</td></tr><tr><td>Oslo</td><td>40</td><td>-3.9846584353433627</td></tr><tr><td>Oslo</td><td>41</td><td>-3.914104519764554</td></tr><tr><td>Oslo</td><td>42</td><td>-3.7872551023704357</td></tr><tr><td>Oslo</td><td>43</td><td>-3.6059346238654193</td></tr><tr><td>Oslo</td><td>44</td><td>-3.372750967425669</td></tr><tr><td>Oslo</td><td>45</td><td>-3.091057950223951</td></tr><tr><td>Oslo</td><td>46</td><td>-2.7649070863885084</td></tr><tr><td>Oslo</td><td>47</td><td>-2.398989315176175</td></tr><tr><td>Oslo</td><td>48</td><td>-1.9985675324676098</td></tr><tr><td>Oslo</td><td>49</td><td>-1.5694008959658154</td></tr><tr><td>Oslo</td><td>50</td><td>-1.1176619927957034</td></tr><tr><td>Oslo</td><td>51</td><td>-0.6498480608606167</td></tr><tr><td>Oslo</td><td>52</td><td>-0.17268754083491472</td></tr><tr><td>Oslo</td><td>53</td><td>0.3069566971700721</td></tr><tr><td>Oslo</td><td>54</td><td>0.7821860604021735</td></tr><tr><td>Oslo</td><td>55</td><td>1.2461654540535114</td></tr><tr><td>Oslo</td><td>56</td><td>1.6922215885719873</td></tr><tr><td>Oslo</td><td>57</td><td>2.113938959771723</td></tr><tr><td>Oslo</td><td>58</td><td>2.5052521212866234</td></tr><tr><td>Oslo</td><td>59</td><td>2.8605329222374314</td></tr><tr><td>Rome</td><td>0</td><td>2.493737466510136</td></tr><tr><td>Rome</td><td>1</td><td>2.49697435867631</td></tr><tr><td>Rome</td><td>2</td><td>2.464297947088884</td></tr><tr><td>Rome</td><td>3</td><td>2.3961782076972855</td></tr><tr><td>Rome</td><td>4</td><td>2.2935948882045247</td></tr><tr><td>Rome</td><td>5</td><td>2.1580234166221843</td></tr><tr><td>Rome</td><td>6</td><td>1.991413680590217</td></tr><tr><td>Rome</td><td>7</td><td>1.7961619826728157</td></tr><tr><td>Rome</td><td>8</td><td>1.5750765749897306</td></tr><tr><td>Rome</td><td>9</td><td>1.3313372688890528</td></tr><tr><td>Rome</td><td>10</td><td>1.0684497005845746</td></tr><tr><td>Rome</td><td>11</td><td>0.7901949105426345</td></tr><tr><td>Rome</td><td>12</td><td>0.5005749618044263</td></tr><tr><td>Rome</td><td>13</td><td>0.2037553794006728</td></tr><tr><td>Rome</td><td>14</td><td>-0.09599476126308734</td></tr><tr><td>Rome</td><td>15</td><td>-0.39436423535812054</td></tr><tr><td>Rome</td><td>16</td><td>-0.6870616758078101</td></tr><tr><td>Rome</td><td>17</td><td>-0.9698772948543257</td></tr><tr><td>Rome</td><td>18</td><td>-1.2387434322921123</td></tr><tr><td>Rome</td><td>19</td><td>-1.4897930595194098</td></tr><tr><td>Rome</td><td>20</td><td>-1.7194153979599345</td></tr><tr><td>Rome</td><td>21</td><td>-1.9243078519100596</td></tr><tr><td>Rome</td><td>22</td><td>-2.1015235088754864</td></tr><tr><td>Rome</td><td>23</td><td>-2.248513524212944</td></tr><tr><td>Rome</td><td>24</td><td>-2.3631637804701584</td></tr><tr><td>Rome</td><td>25</td><td>-2.4438252941627425</td></tr><tr><td>Rome</td><td>26</td><td>-2.4893379326556135</td></tr><tr><td>Rome</td><td>27</td><td>-2.4990471000354635</td></tr><tr><td>Rome</td><td>28</td><td>-2.4728131519859247</td></tr><tr><td>Rome</td><td>29</td><td>-2.411013404253826</td></tr><tr><td>Rome</td><td>30</td><td>-2.3145367058193314</td></tr><tr><td>Rome</td><td>31</td><td>-2.184770654822556</td></tr><tr><td>Rome</td><td>32</td><td>-2.0235816411165484</td></tr><tr><td>Rome</td><td>33</td><td>-1.8332880024891414</td></tr><tr><td>Rome</td><td>34</td><td>-1.6166266806404586</td></tr><tr><td>Rome</td><td>35</td><td>-1.376713856494094</td></tr><tr><td>Rome</td><td>36</td><td>-1.117000131013575</td></tr><tr><td>Rome</td><td>37</td><td>-0.8412208961462626</td></tr><tr><td>Rome</td><td>38</td><td>-0.5533426096958989</td></tr><tr><td>Rome</td><td>39</td><td>-0.25750574683774463</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+The table below holds the iris flowers; the statistic matrix section uses it:
+
+Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
+
+
+::: {.sourceClojure}
+```clojure
+(def iris (nu/dataset :iris))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.7</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.7</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.6</td><td>1</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.3</td><td>1.7</td><td>0.5</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.9</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.6</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>3.5</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5.2</td><td>3.4</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.1</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>4.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.5</td><td>4.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.2</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.5</td><td>3.5</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.6</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.4</td><td>3</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.5</td><td>2.3</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.4</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.6</td><td>0.6</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.9</td><td>0.4</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.3</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>7</td><td>3.2</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.4</td><td>3.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.9</td><td>3.1</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.3</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.5</td><td>2.8</td><td>4.6</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.5</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>3.3</td><td>4.7</td><td>1.6</td><td>versicolor</td></tr><tr><td>4.9</td><td>2.4</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>6.6</td><td>2.9</td><td>4.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.2</td><td>2.7</td><td>3.9</td><td>1.4</td><td>versicolor</td></tr><tr><td>5</td><td>2</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3</td><td>4.2</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>2.2</td><td>4</td><td>1</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.9</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.9</td><td>3.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>4.1</td><td>1</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.5</td><td>3.9</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3.2</td><td>4.8</td><td>1.8</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.5</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4.7</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.4</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.6</td><td>3</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.8</td><td>2.8</td><td>4.8</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.7</td><td>3</td><td>5</td><td>1.7</td><td>versicolor</td></tr><tr><td>6</td><td>2.9</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.6</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.8</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.7</td><td>1</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>3.9</td><td>1.2</td><td>versicolor</td></tr><tr><td>6</td><td>2.7</td><td>5.1</td><td>1.6</td><td>versicolor</td></tr><tr><td>5.4</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>3.4</td><td>4.5</td><td>1.6</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.7</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.3</td><td>4.4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.5</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.6</td><td>4.4</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.1</td><td>3</td><td>4.6</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.6</td><td>4</td><td>1.2</td><td>versicolor</td></tr><tr><td>5</td><td>2.3</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.7</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.7</td><td>3</td><td>4.2</td><td>1.2</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.9</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.1</td><td>2.5</td><td>3</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+
+## UpSet bars
+
+`sets/upset-rows` returns the bars of an UpSet plot: every combination of sets that holds items of its own, with its
+sets, size and degree, the largest first. Use it with `chart/bar`, a bar per combination.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A bar per combination of sets that holds items of its own, <code>{:combination :sets :size :degree}</code>, the largest first.</div></div>
+```
+
+
+The table below holds the bars:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (sets/upset-rows members {:set :set :item :item}))
+```
+:::
+
 
 
 ```{=html}
@@ -120,9 +177,26 @@ by size descending. The mapping names the set and item keys; a third argument ch
 
 
 
-## sets/membership-rows
+## UpSet membership
 
-The dot matrix under the bars: a row per combination and set, `:member` true where the set is in the combination.
+`sets/membership-rows` returns the dot matrix under the bars: a row per combination and set, `:member` true where the
+set is in the combination. Use it with `chart/scatter` under the bars.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row <code>{:combination :set :member}</code> per combination of <code>upset-rows</code> and chosen set; <code>:member</code> tells whether the set is in the combination.</div></div>
+```
+
+
+The table below holds the matrix:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (sets/membership-rows members {:set :set :item :item}))
+```
+:::
+
 
 
 ```{=html}
@@ -130,8 +204,8 @@ The dot matrix under the bars: a row per combination and set, `:member` true whe
 ```
 
 
-Together, an UpSet plot of two stacked plots - the bars, then the dots of the members over grey dots of every
-cell - here with the sets chosen and ordered (tea first):
+The plot below stacks both parts into an UpSet plot: the bars, then the members' dots over grey dots in every cell.
+It chooses the sets and puts tea first:
 
 
 ::: {.sourceClojure}
@@ -160,10 +234,27 @@ cell - here with the sets chosen and ordered (tea first):
 
 
 
-## series/lag-rows
+## Lag pairs
 
-Pairs every value `y(t)` with `y(t + k)` - a lag plot shows the correlation at lag k (here the weekly cycle:
-strong at 7, negative at 3):
+`series/lag-rows` pairs every value `y(t)` with `y(t + k)`. Use it for a lag plot, which shows the correlation at lag
+k.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>values</code> – The series, a sequence of values.</li><li><code>k</code> – The lag, a positive integer.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>n - k</code> rows <code>{:t :x :y}</code> for n values: the value at t under <code>:x</code>, the value at t + k under <code>:y</code>; none when k is n or more.</div></div>
+```
+
+
+The table below pairs the values at lag 7; the plots below show the weekly cycle, strong at lag 7 and negative at lag
+3:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (series/lag-rows weekly 7))
+```
+:::
+
 
 
 ```{=html}
@@ -194,17 +285,31 @@ strong at 7, negative at 3):
 
 
 
-## series/acf-rows
+## Autocorrelation
 
-The autocorrelation function: a row per lag with its value, the significance band and whether the value is
-outside it; `:partial true` - the partial autocorrelation.
+`series/acf-rows` returns the autocorrelation function of a series: a row per lag with its value, the
+significance band and whether the value lies outside it. Use it to draw a correlogram of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:lags</td><td>a positive integer or nil</td><td>floor(10 log10 n), at most n - 1 (R acf)</td><td>the largest lag, from 1 to n - 1 for n values</td></tr><tr><td>:level</td><td>a number in (0 1) or nil</td><td>0.95</td><td>confidence level of the band (0.95 - a 95% band)</td></tr><tr><td>:partial</td><td>true or false or nil</td><td>false</td><td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>values</code> – The series, a sequence of numbers.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per lag <code>{:lag :value :lo :hi :significant}</code>: the autocorrelation (partial with <code>:partial</code>, from lag 1), the significance band and whether the value lies outside it.</div></div>
 ```
 
+
+These options set the lags, the band's confidence level and the partial autocorrelation. The table below holds
+lags 0 to 10:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:lags</code><span class="option-default">Default: <code>floor(10 log10 n)</code>, at most n - 1, as R <code>acf</code>.</span></dt><dd><div class="option-example"><code>(series/acf-rows values {:lags 5})</code></div><div class="option-text">The largest lag, from 1 to n - 1 for n values.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:level</code><span class="option-default">Default: <code>0.95</code></span></dt><dd><div class="option-example"><code>(series/acf-rows values {:level 0.8})</code></div><div class="option-text">The confidence level of the significance band: 0.95 gives a 95% band.<ul><li><a href="reference.types.html#open-fraction">open fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:partial</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(series/acf-rows values {:partial true})</code></div><div class="option-text">Whether the function computes the partial autocorrelation.<ul><li><code>false</code> – The autocorrelation: lags from 0, a band widening with the lag.</li><li><code>true</code> – The partial autocorrelation: lags from 1, a band of constant width.</li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (series/acf-rows weekly {:lags 10}))
+```
 :::
 
 
@@ -214,8 +319,9 @@ outside it; `:partial true` - the partial autocorrelation.
 ```
 
 
-Drawn by hand from the rows - segments to 0, the band as a ribbon, significant lags in red: the autocorrelation
-up to lag 21 at the default 95% band (left) and the partial one with a 99% band (right):
+The plots below draw the rows by hand: segments to 0, the band as a ribbon, the significant lags in red. The left
+panel draws the autocorrelation up to lag 21 with the default 95% band, the right one the partial autocorrelation
+with a 99% band:
 
 
 ::: {.sourceClojure}
@@ -249,37 +355,33 @@ up to lag 21 at the default 95% band (left) and the partial one with a 99% band 
 
 
 
-## series/horizon-rows
+## Horizon bands
 
-The bands of a horizon chart: values folded into `:bands` bands of one height, negatives mirrored upward as
-negative band numbers; returns `{:rows [...] :band-height h}`.
+`series/horizon-rows` returns the bands of a horizon chart: it folds the values into `:bands` bands of one height and
+mirrors negative values upward as negative band numbers. Use it to draw a horizon chart of your own.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>keyword or string</td><td>:x</td><td>row key of the x values (numbers)</td></tr><tr><td>:y</td><td>keyword or string</td><td>:y</td><td>row key of the y values (finite numbers, nil breaks the bands)</td></tr><tr><td>:series</td><td>keyword or string or nil</td><td>none - one series</td><td>row key of the series, one horizon per value in first-appearance order</td></tr><tr><td>:bands</td><td>a positive integer</td><td>2</td><td>number of bands each sign of the values is folded into</td></tr><tr><td>:band-height</td><td>a positive finite number or nil</td><td>the largest |y| of all series / :bands (1 when it is 0)</td><td>height of one band in y units</td></tr><tr><td>:interpolator</td><td>a fastmath 1D interpolation method keyword or a function (fn [xs ys & params] f) or nil</td><td>none - straight segments</td><td>a curve the valid points of every run are resampled on before folding</td></tr><tr><td>:steps-per-gap</td><td>a positive integer</td><td>10</td><td>resampled points per gap between consecutive x (with :interpolator)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The series points, one row each.<div>Columns:<ul><li><code>:x</code> – The x value, a number; the option <code>:x</code> names another key.</li><li><code>:y</code> – The y value, a finite number or <code>nil</code>, which breaks the bands; the option <code>:y</code> names another key.</li><li><em>a series key</em> – The row's series, named by the option <code>:series</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :band-height}</code>: rows <code>{:x :y :band}</code> of the folded bands, with <code>:series</code> when the option names one, and the height of one band.</div></div>
 ```
 
-:::
+
+These options name the row keys, set the bands and resample the curve. The table below holds two bands per sign for
+each city; the function adds a point where the curve crosses a band edge:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:x</code><span class="option-default">Default: <code>:x</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:x :t})</code></div><div class="option-text">The row key of the numeric x values.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: <code>:y</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:y :v})</code></div><div class="option-text">The row key of the y values, finite numbers; a <code>nil</code> value breaks the bands.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:series</code><span class="option-default">Default: One series.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:series :s})</code></div><div class="option-text">The row key of the series: a horizon per value, in order of first appearance.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:bands</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:bands 3})</code></div><div class="option-text">The number of bands the function folds each sign of the values into.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:band-height</code><span class="option-default">Default: The largest absolute y of all series divided by <code>:bands</code>; 1 when that is 0.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:band-height 0.2})</code></div><div class="option-text">The height of one band, in y units.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:interpolator</code><span class="option-default">Default: None: straight segments.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:interpolator :cubic})</code></div><div class="option-text">The interpolator the function fits through every run of valid points and resamples before folding, so all bands follow one curve.<ul><li><a href="reference.types.html#interpolator">interpolator</a></li></ul></div></dd></div><div class="option-card"><dt><code>:steps-per-gap</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:interpolator :cubic, :steps-per-gap 3})</code></div><div class="option-text">The number of resampled points per gap between consecutive x, with <code>:interpolator</code>.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div></dl>
+```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def temperatures (for [city ["Oslo" "Rome"] day (range 60)]
-                    {:city city :day day
-                     :anomaly (* (if (= city "Oslo") 4.0 2.5) (m/sin (+ (* 0.12 day) (if (= city "Oslo") 0.0 1.5))))}))
+(nu/result-table (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city :bands 2})))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>city</th><th>day</th><th>anomaly</th></tr></thead><tbody><tr><td>Oslo</td><td>0</td><td>0.0</td></tr><tr><td>Oslo</td><td>1</td><td>0.47884882915567745</td></tr><tr><td>Oslo</td><td>2</td><td>0.9508105057085383</td></tr><tr><td>Oslo</td><td>3</td><td>1.4090969331003598</td></tr><tr><td>Oslo</td><td>4</td><td>1.8471167021659316</td></tr><tr><td>Oslo</td><td>5</td><td>2.2585698935801415</td></tr><tr><td>Oslo</td><td>6</td><td>2.6375386878858924</td></tr><tr><td>Oslo</td><td>7</td><td>2.978572479883437</td></tr><tr><td>Oslo</td><td>8</td><td>3.276766273203993</td></tr><tr><td>Oslo</td><td>9</td><td>3.52783122753979</td></tr><tr><td>Oslo</td><td>10</td><td>3.728156343868905</td></tr><tr><td>Oslo</td><td>11</td><td>3.874860400473061</td></tr><tr><td>Oslo</td><td>12</td><td>3.9658333927667457</td></tr><tr><td>Oslo</td><td>13</td><td>3.999766880919865</td></tr><tr><td>Oslo</td><td>14</td><td>3.976172808792304</td></tr><tr><td>Oslo</td><td>15</td><td>3.895390523512781</td></tr><tr><td>Oslo</td><td>16</td><td>3.7585818947412997</td></tr><tr><td>Oslo</td><td>17</td><td>3.5677146038135183</td></tr><tr><td>Oslo</td><td>18</td><td>3.3255338431147323</td></tr><tr><td>Oslo</td><td>19</td><td>3.035522832723688</td></tr><tr><td>Oslo</td><td>20</td><td>2.701852722204604</td></tr><tr><td>Oslo</td><td>21</td><td>2.3293225980963275</td></tr><tr><td>Oslo</td><td>22</td><td>1.9232904599545946</td></tr><tr><td>Oslo</td><td>23</td><td>1.4895961577002228</td></tr><tr><td>Oslo</td><td>24</td><td>1.0344773986444433</td></tr><tr><td>Oslo</td><td>25</td><td>0.5644800322394689</td></tr><tr><td>Oslo</td><td>26</td><td>0.08636390290438384</td></tr><tr><td>Oslo</td><td>27</td><td>-0.392994374980433</td></tr><tr><td>Oslo</td><td>28</td><td>-0.8667003215495185</td></tr><tr><td>Oslo</td><td>29</td><td>-1.3279407528829363</td></tr><tr><td>Oslo</td><td>30</td><td>-1.7700817731794083</td></tr><tr><td>Oslo</td><td>31</td><td>-2.1867641882771474</td></tr><tr><td>Oslo</td><td>32</td><td>-2.5719949682156353</td></tr><tr><td>Oslo</td><td>33</td><td>-2.920233443357198</td></tr><tr><td>Oslo</td><td>34</td><td>-3.226470994332962</td></tr><tr><td>Oslo</td><td>35</td><td>-3.4863030896543528</td></tr><tr><td>Oslo</td><td>36</td><td>-3.6959926348927516</td></tr><tr><td>Oslo</td><td>37</td><td>-3.852523722293266</td></tr><tr><td>Oslo</td><td>38</td><td>-3.953645007756522</td></tr><tr><td>Oslo</td><td>39</td><td>-3.997902091309136</td></tr><tr><td>Oslo</td><td>40</td><td>-3.9846584353433627</td></tr><tr><td>Oslo</td><td>41</td><td>-3.914104519764554</td></tr><tr><td>Oslo</td><td>42</td><td>-3.7872551023704357</td></tr><tr><td>Oslo</td><td>43</td><td>-3.6059346238654193</td></tr><tr><td>Oslo</td><td>44</td><td>-3.372750967425669</td></tr><tr><td>Oslo</td><td>45</td><td>-3.091057950223951</td></tr><tr><td>Oslo</td><td>46</td><td>-2.7649070863885084</td></tr><tr><td>Oslo</td><td>47</td><td>-2.398989315176175</td></tr><tr><td>Oslo</td><td>48</td><td>-1.9985675324676098</td></tr><tr><td>Oslo</td><td>49</td><td>-1.5694008959658154</td></tr><tr><td>Oslo</td><td>50</td><td>-1.1176619927957034</td></tr><tr><td>Oslo</td><td>51</td><td>-0.6498480608606167</td></tr><tr><td>Oslo</td><td>52</td><td>-0.17268754083491472</td></tr><tr><td>Oslo</td><td>53</td><td>0.3069566971700721</td></tr><tr><td>Oslo</td><td>54</td><td>0.7821860604021735</td></tr><tr><td>Oslo</td><td>55</td><td>1.2461654540535114</td></tr><tr><td>Oslo</td><td>56</td><td>1.6922215885719873</td></tr><tr><td>Oslo</td><td>57</td><td>2.113938959771723</td></tr><tr><td>Oslo</td><td>58</td><td>2.5052521212866234</td></tr><tr><td>Oslo</td><td>59</td><td>2.8605329222374314</td></tr><tr><td>Rome</td><td>0</td><td>2.493737466510136</td></tr><tr><td>Rome</td><td>1</td><td>2.49697435867631</td></tr><tr><td>Rome</td><td>2</td><td>2.464297947088884</td></tr><tr><td>Rome</td><td>3</td><td>2.3961782076972855</td></tr><tr><td>Rome</td><td>4</td><td>2.2935948882045247</td></tr><tr><td>Rome</td><td>5</td><td>2.1580234166221843</td></tr><tr><td>Rome</td><td>6</td><td>1.991413680590217</td></tr><tr><td>Rome</td><td>7</td><td>1.7961619826728157</td></tr><tr><td>Rome</td><td>8</td><td>1.5750765749897306</td></tr><tr><td>Rome</td><td>9</td><td>1.3313372688890528</td></tr><tr><td>Rome</td><td>10</td><td>1.0684497005845746</td></tr><tr><td>Rome</td><td>11</td><td>0.7901949105426345</td></tr><tr><td>Rome</td><td>12</td><td>0.5005749618044263</td></tr><tr><td>Rome</td><td>13</td><td>0.2037553794006728</td></tr><tr><td>Rome</td><td>14</td><td>-0.09599476126308734</td></tr><tr><td>Rome</td><td>15</td><td>-0.39436423535812054</td></tr><tr><td>Rome</td><td>16</td><td>-0.6870616758078101</td></tr><tr><td>Rome</td><td>17</td><td>-0.9698772948543257</td></tr><tr><td>Rome</td><td>18</td><td>-1.2387434322921123</td></tr><tr><td>Rome</td><td>19</td><td>-1.4897930595194098</td></tr><tr><td>Rome</td><td>20</td><td>-1.7194153979599345</td></tr><tr><td>Rome</td><td>21</td><td>-1.9243078519100596</td></tr><tr><td>Rome</td><td>22</td><td>-2.1015235088754864</td></tr><tr><td>Rome</td><td>23</td><td>-2.248513524212944</td></tr><tr><td>Rome</td><td>24</td><td>-2.3631637804701584</td></tr><tr><td>Rome</td><td>25</td><td>-2.4438252941627425</td></tr><tr><td>Rome</td><td>26</td><td>-2.4893379326556135</td></tr><tr><td>Rome</td><td>27</td><td>-2.4990471000354635</td></tr><tr><td>Rome</td><td>28</td><td>-2.4728131519859247</td></tr><tr><td>Rome</td><td>29</td><td>-2.411013404253826</td></tr><tr><td>Rome</td><td>30</td><td>-2.3145367058193314</td></tr><tr><td>Rome</td><td>31</td><td>-2.184770654822556</td></tr><tr><td>Rome</td><td>32</td><td>-2.0235816411165484</td></tr><tr><td>Rome</td><td>33</td><td>-1.8332880024891414</td></tr><tr><td>Rome</td><td>34</td><td>-1.6166266806404586</td></tr><tr><td>Rome</td><td>35</td><td>-1.376713856494094</td></tr><tr><td>Rome</td><td>36</td><td>-1.117000131013575</td></tr><tr><td>Rome</td><td>37</td><td>-0.8412208961462626</td></tr><tr><td>Rome</td><td>38</td><td>-0.5533426096958989</td></tr><tr><td>Rome</td><td>39</td><td>-0.25750574683774463</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
-```
-
-
-Two bands per sign for each city (the rows of the bands, where the curve crosses a band edge points are added):
 
 
 ```{=html}
@@ -287,8 +389,8 @@ Two bands per sign for each city (the rows of the bands, where the curve crosses
 ```
 
 
-The bands drawn as filled lines - default band height (left), and three bands of a fixed height 1 on a
-monotone curve resampled 4 points per gap (right); `horizon-bands` orders the colour domain:
+The plots below draw the bands as filled lines. The left panel takes the default band height; the right one draws
+three bands of height 1 on a monotone curve, resampled 4 points per gap. `horizon-bands` orders the colour domain:
 
 
 ::: {.sourceClojure}
@@ -323,10 +425,18 @@ monotone curve resampled 4 points per gap (right); `horizon-bands` orders the co
 
 
 
-## series/horizon-bands
+## Horizon band labels
 
-The band labels of a horizon of n bands in drawing order - positive bands first, then the mirrored negative
-ones - the colour domain above:
+`series/horizon-bands` returns the band labels of a horizon of n bands in drawing order: the positive bands
+first, then the mirrored negative ones. Use it as the colour domain, as above.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>n</code> – The number of bands per sign.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The band labels in drawing order, <code>[1 .. n -1 .. -n]</code>: the positive bands, then the mirrored negative ones.</div></div>
+```
+
+
+The call below returns the labels of 3 bands per sign:
 
 
 ::: {.sourceClojure}
@@ -346,15 +456,24 @@ ones - the colour domain above:
 
 
 
-## pairwise/matrix-rows
+## Statistic matrices
 
-A statistic for every pair of variables, a row per cell: the statistic of the x variable's sample against the y
-variable's (`:value`, `nil` when it can't be computed) with the sample size (`:n`). The built-in statistics by
-family: `:symmetry` tells how a value changes when the samples swap (`:symmetric` - unchanged, `:antisymmetric` -
-negated, `:reciprocal` - inverted, `:complementary` - `1 - v`, `:asymmetric` - otherwise); `:samples` - paired
-statistics take the rows where both values are present, independent-sample ones (two groups compared) each
-variable's own values; `:signed` - zero is the neutral value (a shaded `pairwise` chart centres its colours on
-it):
+`pairwise/matrix-rows` computes a statistic for every pair of variables, a row per cell: the statistic of the x
+variable's sample against the y variable's. Use it for a matrix of correlations, distances or effect sizes drawn as
+tiles.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences), a numeric column per variable of <code>:variables</code>, or of <code>:x-variables</code> and <code>:y-variables</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per cell <code>{:x :y :value :n :statistic}</code>: the statistic of the x sample against the y sample, <code>nil</code> when it can't be computed, and the sample size.</div></div>
+```
+
+
+The table below lists the built-in statistics by family. `:symmetry` tells how a value changes when the samples
+swap: `:symmetric` keeps it, `:antisymmetric` negates it, `:reciprocal` inverts it, `:complementary` turns it into
+`1 - v`, and `:asymmetric` changes it otherwise. The `:samples` column says how a statistic reads the data: paired
+statistics take the rows where both values are present; independent-sample ones, which compare two groups, take each
+variable's own values. For a `:signed` statistic zero is the neutral value, and a shaded `pairwise` chart centres its
+colours on it:
 
 
 ```{=html}
@@ -362,33 +481,23 @@ it):
 ```
 
 
-::: {.clay-table}
+These options choose the variables, the statistic and the cells. The table below holds the lower triangle of a
+symmetric statistic with the diagonal, as `plot/pairs` lays it out:
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:variables</td><td>sequential of keyword (at least 2)</td><td></td><td>the variables of a square matrix (x and y both, distinct), in matrix order</td></tr><tr><td>:x-variables</td><td>sequential of keyword (at least 1)</td><td></td><td>the x variables of a rectangular matrix (with :y-variables)</td></tr><tr><td>:y-variables</td><td>sequential of keyword (at least 1)</td><td></td><td>the y variables of a rectangular matrix (with :x-variables)</td></tr><tr><td>:method</td><td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td><td>:pearson</td><td>the statistic: a key of pairwise/statistics or a function of two samples</td></tr><tr><td>:label</td><td>string or nil</td><td>the statistic's label, value for a function</td><td>the statistic's label in the rows</td></tr><tr><td>:self-pairs</td><td>true or false</td><td>false</td><td>rows of a variable with itself (square matrix)</td></tr><tr><td>:triangle</td><td>one of :full :lower :upper</td><td>:full</td><td>the cells of a square matrix: :full, :lower (y after x in variable order) or :upper; :lower and :upper need a symmetric statistic</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:variables</code><span class="option-default">Default: None: give <code>:x-variables</code> and <code>:y-variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c]})</code></div><div class="option-text">The distinct variables of a square matrix, both its x and its y, in matrix order; at least 2.<ul><li><span>sequence of keywords, distinct variables</span></li></ul></div></dd></div><div class="option-card"><dt><code>:x-variables</code><span class="option-default">Default: None: give <code>:variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:y-variables [:b :c], :x-variables [:a]})</code></div><div class="option-text">The x variables of a rectangular matrix, given with <code>:y-variables</code>; a variable may be in both lists.<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:y-variables</code><span class="option-default">Default: None: give <code>:variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:x-variables [:a], :y-variables [:b :c]})</code></div><div class="option-text">The y variables of a rectangular matrix, given with <code>:x-variables</code>.<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:pearson</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :method :spearman})</code></div><div class="option-text">Which statistic the function computes, of the x sample against the y sample.<ul><li><code>:pearson</code> – Pearson correlation.</li><li><code>:ameasure</code> – Vargha-Delaney A, P(x > y) (ties count half).</li><li><code>:canberra</code> – Canberra distance.</li><li><code>:chebyshev</code> – Chebyshev distance.</li><li><code>:cliffs-delta</code> – P(x > y) - P(x < y), non-parametric.</li><li><code>:cohens-d</code> – Standardised mean difference over the pooled standard deviation.</li><li><code>:cosine</code> – Cosine similarity.</li><li><code>:covariance</code> – Sample covariance.</li><li><code>:euclidean</code> – Euclidean distance.</li><li><code>:glass-delta</code> – Mean difference over the standard deviation of ys.</li><li><code>:hedges-g</code> – Cohen's d corrected for small-sample bias.</li><li><code>:kendall</code> – Kendall rank correlation (tau).</li><li><code>:mae</code> – Mean absolute error.</li><li><code>:manhattan</code> – Manhattan distance.</li><li><code>:mape</code> – Mean absolute percentage error, relative to xs.</li><li><code>:me</code> – Mean error, mean of xs - ys.</li><li><code>:means-ratio</code> – Mean of xs over mean of ys.</li><li><code>:mse</code> – Mean squared error.</li><li><code>:r2</code> – Coefficient of determination of ys predicting xs.</li><li><code>:rmse</code> – Root mean squared error.</li><li><code>:spearman</code> – Spearman rank correlation.</li><li><a href="reference.types.html#function">function</a> – A function of the two samples <code>(f xs ys)</code> that returns a number.</li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: The statistic's label, e.g. <code>Pearson</code>; <code>value</code> for a function.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :label "r"})</code></div><div class="option-text">The statistic's name under <code>:statistic</code> in every row.<ul><li><span>string</span></li></ul></div></dd></div><div class="option-card"><dt><code>:self-pairs</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :self-pairs true})</code></div><div class="option-text">Whether a square matrix has the cells of a variable with itself.<ul><li><code>false</code> – No diagonal cells.</li><li><code>true</code> – The diagonal cells too.</li></ul></div></dd></div><div class="option-card"><dt><code>:triangle</code><span class="option-default">Default: <code>:full</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :triangle :lower})</code></div><div class="option-text">Which cells of a square matrix the function returns; <code>:lower</code> and <code>:upper</code> need a symmetric statistic.<ul><li><code>:full</code> – Every cell.</li><li><code>:lower</code> – The cells with y after x in variable order.</li><li><code>:upper</code> – The cells with y before x in variable order.</li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
 
 ::: {.sourceClojure}
 ```clojure
-(def iris (nu/dataset :iris))
+(nu/result-table (pairwise/matrix-rows iris {:variables [:sepal-length :sepal-width :petal-length :petal-width]
+                                             :method :spearman :triangle :lower :self-pairs true}))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>sepal-length</th><th>sepal-width</th><th>petal-length</th><th>petal-width</th><th>species</th></tr></thead><tbody><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.6</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.7</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.4</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.4</td><td>2.9</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.4</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.3</td><td>3</td><td>1.1</td><td>0.1</td><td>setosa</td></tr><tr><td>5.8</td><td>4</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.7</td><td>4.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.4</td><td>3.9</td><td>1.3</td><td>0.4</td><td>setosa</td></tr><tr><td>5.1</td><td>3.5</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.7</td><td>3.8</td><td>1.7</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.5</td><td>0.3</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.7</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.7</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>4.6</td><td>3.6</td><td>1</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.3</td><td>1.7</td><td>0.5</td><td>setosa</td></tr><tr><td>4.8</td><td>3.4</td><td>1.9</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.4</td><td>1.6</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>3.5</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5.2</td><td>3.4</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.7</td><td>3.2</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.8</td><td>3.1</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>5.4</td><td>3.4</td><td>1.5</td><td>0.4</td><td>setosa</td></tr><tr><td>5.2</td><td>4.1</td><td>1.5</td><td>0.1</td><td>setosa</td></tr><tr><td>5.5</td><td>4.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.1</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.2</td><td>1.2</td><td>0.2</td><td>setosa</td></tr><tr><td>5.5</td><td>3.5</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>4.9</td><td>3.6</td><td>1.4</td><td>0.1</td><td>setosa</td></tr><tr><td>4.4</td><td>3</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5.1</td><td>3.4</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.5</td><td>2.3</td><td>1.3</td><td>0.3</td><td>setosa</td></tr><tr><td>4.4</td><td>3.2</td><td>1.3</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.5</td><td>1.6</td><td>0.6</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.9</td><td>0.4</td><td>setosa</td></tr><tr><td>4.8</td><td>3</td><td>1.4</td><td>0.3</td><td>setosa</td></tr><tr><td>5.1</td><td>3.8</td><td>1.6</td><td>0.2</td><td>setosa</td></tr><tr><td>4.6</td><td>3.2</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>5.3</td><td>3.7</td><td>1.5</td><td>0.2</td><td>setosa</td></tr><tr><td>5</td><td>3.3</td><td>1.4</td><td>0.2</td><td>setosa</td></tr><tr><td>7</td><td>3.2</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.4</td><td>3.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.9</td><td>3.1</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.3</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.5</td><td>2.8</td><td>4.6</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.5</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>3.3</td><td>4.7</td><td>1.6</td><td>versicolor</td></tr><tr><td>4.9</td><td>2.4</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>6.6</td><td>2.9</td><td>4.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.2</td><td>2.7</td><td>3.9</td><td>1.4</td><td>versicolor</td></tr><tr><td>5</td><td>2</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3</td><td>4.2</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>2.2</td><td>4</td><td>1</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.9</td><td>4.7</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.9</td><td>3.6</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>4.1</td><td>1</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.2</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.5</td><td>3.9</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.9</td><td>3.2</td><td>4.8</td><td>1.8</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.5</td><td>4.9</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.1</td><td>2.8</td><td>4.7</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.4</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.6</td><td>3</td><td>4.4</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.8</td><td>2.8</td><td>4.8</td><td>1.4</td><td>versicolor</td></tr><tr><td>6.7</td><td>3</td><td>5</td><td>1.7</td><td>versicolor</td></tr><tr><td>6</td><td>2.9</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.6</td><td>3.5</td><td>1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.8</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.4</td><td>3.7</td><td>1</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.7</td><td>3.9</td><td>1.2</td><td>versicolor</td></tr><tr><td>6</td><td>2.7</td><td>5.1</td><td>1.6</td><td>versicolor</td></tr><tr><td>5.4</td><td>3</td><td>4.5</td><td>1.5</td><td>versicolor</td></tr><tr><td>6</td><td>3.4</td><td>4.5</td><td>1.6</td><td>versicolor</td></tr><tr><td>6.7</td><td>3.1</td><td>4.7</td><td>1.5</td><td>versicolor</td></tr><tr><td>6.3</td><td>2.3</td><td>4.4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.6</td><td>3</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.5</td><td>4</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.5</td><td>2.6</td><td>4.4</td><td>1.2</td><td>versicolor</td></tr><tr><td>6.1</td><td>3</td><td>4.6</td><td>1.4</td><td>versicolor</td></tr><tr><td>5.8</td><td>2.6</td><td>4</td><td>1.2</td><td>versicolor</td></tr><tr><td>5</td><td>2.3</td><td>3.3</td><td>1</td><td>versicolor</td></tr><tr><td>5.6</td><td>2.7</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.7</td><td>3</td><td>4.2</td><td>1.2</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.9</td><td>4.2</td><td>1.3</td><td>versicolor</td></tr><tr><td>6.2</td><td>2.9</td><td>4.3</td><td>1.3</td><td>versicolor</td></tr><tr><td>5.1</td><td>2.5</td><td>3</td><td>1.1</td><td>versicolor</td></tr><tr><td>5.7</td><td>2.8</td><td>4.1</td><td>1.3</td><td>versicolor</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
-```
-
-
-The lower triangle of a symmetric statistic, the diagonal included (lower - the y variable after the x variable
-in variable order, as the lower cells of `plot/pairs`):
 
 
 ```{=html}
@@ -396,7 +505,15 @@ in variable order, as the lower cells of `plot/pairs`):
 ```
 
 
-The upper triangle of the mean squared error of two variables (one row - the pair once):
+The table below holds the upper triangle of the mean squared error of two variables, a single row:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (pairwise/matrix-rows iris {:variables [:sepal-length :petal-length] :method :mse :triangle :upper}))
+```
+:::
+
 
 
 ```{=html}
@@ -404,12 +521,13 @@ The upper triangle of the mean squared error of two variables (one row - the pai
 ```
 
 
-A standalone matrix is a [tile](reference.charts_bins_fields.html#heatmaps) per row (`:value-label` writes the
-values), two side by side through [`plot/arrange`](reference.facets_arrange.html#arrange). Tiles order the
-categories as they first appear and y grows upward, so the scales give both axes the variable order - the first
-variable on top, as in `plot/pairs`: Cohen's d of every ordered pair, the diagonal included (left; a signed
-statistic on a diverging palette centred on 0), and a rectangular matrix of sepal against petal measurements with
-a user function and its label (right):
+[`chart/tile`](reference.charts_bins_fields.html#heatmaps) draws a standalone matrix, a tile per row, and its
+`:value-label` writes the values; [`plot/arrange`](reference.facets_arrange.html#arrange) puts two side by side
+below. Tiles order the
+categories as they first appear and y grows upward, so the scales give both axes the variable order, the first
+variable on top as in `plot/pairs`. The left panel holds Cohen's d of every ordered pair with the diagonal, a signed
+statistic on a diverging palette centred on 0. The right one holds a rectangular matrix of sepal against petal
+measurements with a function of your own and its label:
 
 
 ::: {.sourceClojure}

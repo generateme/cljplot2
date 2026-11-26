@@ -90,7 +90,9 @@
   - `options` (map, optional): graph, layout, aesthetics and style options.
 
   See [[cljplot2.graphs/network]]."
-  {:cljplot2/options graphs/network-options}
+  {:cljplot2/arguments [{:name 'edges :description "The edge rows, one per edge." :columns {:from "The source node's id; the option `:from` names another column." :to "The target node's id; the option `:to` names another column." :value "The weight, a finite number zero or greater; the option `:value` names another column. Optional: a missing weight counts as 1."}}]
+   :cljplot2/returns "A plot map of the network: the edges as segments, the nodes as points, optional labels."
+   :cljplot2/options graphs/network-options}
   ([edges] (graphs/network edges {}))
   ([edges options] (graphs/network edges options)))
 
@@ -103,7 +105,9 @@
   - `options` (map, optional): labels, clusters, orientation and style options.
 
   See [[cljplot2.graphs/dendrogram]]."
-  {:cljplot2/options graphs/dendrogram-options}
+  {:cljplot2/arguments [{:name 'source :description "A fastmath `hclust` result or a tree of `tree/from-hclust`, `tree/from-levels` or `tree/from-parents`."}]
+   :cljplot2/returns "A plot map of the dendrogram: an elbow path per branch, optional clusters and leaf labels."
+   :cljplot2/options graphs/dendrogram-options}
   ([source] (graphs/dendrogram source {}))
   ([source options] (graphs/dendrogram source options)))
 
@@ -116,7 +120,9 @@
   - `options` (map, optional): layout, labels, aesthetics and style options.
 
   See [[cljplot2.graphs/tree]]."
-  {:cljplot2/options graphs/tree-options}
+  {:cljplot2/arguments [{:name 'source :description "A fastmath `hclust` result or a tree of `tree/from-hclust`, `tree/from-levels` or `tree/from-parents`."}]
+   :cljplot2/returns "A plot map of the node-link tree: the links as lines, the nodes as points, optional labels."
+   :cljplot2/options graphs/tree-options}
   ([source] (graphs/tree source {}))
   ([source options] (graphs/tree source options)))
 
@@ -129,7 +135,9 @@
   - `options` (map): row, column and value accessors, clustering method and distance, tree sizes.
 
   See [[cljplot2.graphs/clustered-heatmap]]."
-  {:cljplot2/options graphs/clustered-heatmap-options}
+  {:cljplot2/arguments [{:name 'rows :description "Long rows, one per cell." :columns {"a row column" "The cell's heatmap row, named by the option `:row`." "a column column" "The cell's heatmap column, named by the option `:col`." "a value column" "The cell's value, a finite number, named by the option `:value`; every pair of a heatmap row and column needs one."}}]
+   :cljplot2/returns "An arrange plot map of the heatmap, its rows and columns ordered by clustering, with their dendrograms beside it unless `:row-tree` or `:col-tree` is `false`."
+   :cljplot2/options graphs/clustered-heatmap-options}
   [rows options]
   (graphs/clustered-heatmap rows options))
 
@@ -143,7 +151,10 @@
   - `options` (map, optional): bundling strength, colours, labels.
 
   See [[cljplot2.graphs/bundle]]."
-  {:cljplot2/options graphs/bundle-options}
+  {:cljplot2/arguments [{:name 'edges :description "Edge rows between leaves of the tree." :columns {:from "The source leaf: a `tree/from-parents` node's `:id`, else a leaf's `:name`; the option `:from` names another column." :to "The target leaf; the option `:to` names another column."}}
+                       {:name 'leaf-tree :description "A tree of `tree/from-hclust`, `tree/from-levels` or `tree/from-parents` whose leaves the edges join."}]
+   :cljplot2/returns "A plot map of the edge bundle: the leaves on a circle and a bundled curve per edge."
+   :cljplot2/options graphs/bundle-options}
   ([edges leaf-tree] (graphs/bundle edges leaf-tree {}))
   ([edges leaf-tree options] (graphs/bundle edges leaf-tree options)))
 
@@ -156,7 +167,9 @@
   - `options` (map, optional): graph and layout options, ribbon opacity, labels.
 
   See [[cljplot2.graphs/chord]]."
-  {:cljplot2/options graphs/chord-options}
+  {:cljplot2/arguments [{:name 'edges :description "The flow rows, one per flow." :columns {:from "The source node's id; the option `:from` names another column." :to "The target node's id; the option `:to` names another column." :value "The weight, a finite number zero or greater; the option `:value` names another column. Optional: a missing weight counts as 1."}}]
+   :cljplot2/returns "A plot map of the chord diagram: a ring sector per node and the ribbons between them."
+   :cljplot2/options graphs/chord-options}
   ([edges] (graphs/chord edges {}))
   ([edges options] (graphs/chord edges options)))
 
@@ -169,7 +182,9 @@
   - `options` (map, optional): node order, aesthetics, style options, labels.
 
   See [[cljplot2.graphs/arc]]."
-  {:cljplot2/options graphs/arc-options}
+  {:cljplot2/arguments [{:name 'edges :description "The edge rows, one per edge." :columns {:from "The source node's id; the option `:from` names another column." :to "The target node's id; the option `:to` names another column." :value "The weight, a finite number zero or greater; the option `:value` names another column. Optional: a missing weight counts as 1."}}]
+   :cljplot2/returns "A plot map of the arc diagram: the nodes on a line and an arc per edge above it."
+   :cljplot2/options graphs/arc-options}
   ([edges] (graphs/arc edges {}))
   ([edges options] (graphs/arc edges options)))
 
@@ -182,7 +197,9 @@
   - `options` (map, optional): graph and layout options, band colour and opacity, labels.
 
   See [[cljplot2.graphs/sankey]]."
-  {:cljplot2/options graphs/sankey-options}
+  {:cljplot2/arguments [{:name 'edges :description "The flow rows, one per flow." :columns {:from "The source node's id; the option `:from` names another column." :to "The target node's id; the option `:to` names another column." :value "The weight, a finite number zero or greater; the option `:value` names another column. Optional: a missing weight counts as 1."}}]
+   :cljplot2/returns "A plot map of the sankey diagram: the nodes as bars in columns and a band per flow."
+   :cljplot2/options graphs/sankey-options}
   ([edges] (graphs/sankey edges {}))
   ([edges options] (graphs/sankey edges options)))
 
@@ -197,7 +214,9 @@
   Returns a plot map.
 
   See [[cljplot2.graphs/alluvial]]."
-  {:cljplot2/options graphs/alluvial-options}
+  {:cljplot2/arguments [{:name 'rows :description "Wide rows, one per observation or group of observations." :columns {"a column per variable" "A categorical level, read by an accessor of `:variables`." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
+   :cljplot2/returns "A plot map of the alluvial diagram: a column of strata per variable and the strands between them."
+   :cljplot2/options graphs/alluvial-options}
   [rows options]
   (graphs/alluvial rows options))
 
@@ -210,7 +229,9 @@
   - `options` (map, optional): sequence and value accessors, separator, end marker, centre hole, labels.
 
   See [[cljplot2.graphs/sequences]]."
-  {:cljplot2/options graphs/sequences-options}
+  {:cljplot2/arguments [{:name 'rows :description "One sequence per row." :columns {:sequence "The sequence: a string of steps joined by `:separator`, or a sequence of steps; the option `:sequence` names another column." "a weight column" "The row's weight, named by the option `:value`; optional."}}]
+   :cljplot2/returns "A plot map of the sequence sunburst: a ring per step, a sector per sequence prefix."
+   :cljplot2/options graphs/sequences-options}
   ([rows] (graphs/sequences rows {}))
   ([rows options] (graphs/sequences rows options)))
 
@@ -223,7 +244,9 @@
   - `options` (map, optional): lags, significance level, kinds drawn, band shape, colours.
 
   See [[cljplot2.series-plots/acf]]."
-  {:cljplot2/options series-plots/acf-options}
+  {:cljplot2/arguments [{:name 'values :description "The series, a sequence of numbers."}]
+   :cljplot2/returns "A plot map of the correlograms: a stem per lag and the significance band."
+   :cljplot2/options series-plots/acf-options}
   ([values] (series-plots/acf values {}))
   ([values options] (series-plots/acf values options)))
 
@@ -236,7 +259,9 @@
   - `options` (map, optional): row keys, band count and height, colours, opacity.
 
   See [[cljplot2.series-plots/horizon]]."
-  {:cljplot2/options series-plots/horizon-options}
+  {:cljplot2/arguments [{:name 'rows :description "The series points, one row each." :columns {:x "The x value, a number; the option `:x` names another key." :y "The y value, a finite number or `nil`, which breaks the bands; the option `:y` names another key." "a series key" "The row's series, named by the option `:series`; optional."}}]
+   :cljplot2/returns "A plot map of the horizon chart: a row of folded bands per series."
+   :cljplot2/options series-plots/horizon-options}
   ([rows] (series-plots/horizon rows {}))
   ([rows options] (series-plots/horizon rows options)))
 

@@ -58,6 +58,10 @@
 ;; data shown
 
 (def ^:private data-table 'notebook-utils/data-table)
+
+(def ^:private table-calls
+  "The calls showing data as a table: `nu/data-table` (code hidden) and `nu/result-table` (a call's result, code shown)."
+  #{data-table 'notebook-utils/result-table})
 (def ^:private dataset 'notebook-utils/dataset)
 
 (def ^{:private true :const true :tag 'long} min-column-rows
@@ -123,12 +127,12 @@
 
 (defn datasets-unshown
   "Dataset keys the top-level `forms` read that no data table shows, sorted: a dataset is shown by a top-level
-  `(nu/data-table x)` whose argument reads it, or whose argument is a var defined (top-level `def`) by a form
-  reading it."
+  `(nu/data-table x)` or `(nu/result-table x)` whose argument reads it, or whose argument is a var defined (top-level
+  `def`) by a form reading it."
   [forms]
   (let [def-reads (into {} (keep #(when (and (seq? %) (= 'def (first %))) [(second %) (datasets-read %)])) forms)
         shown (set (mapcat (fn [form]
-                             (when (and (seq? form) (= data-table (first form)))
+                             (when (and (seq? form) (table-calls (first form)))
                                (let [arg (second form)]
                                  (if (symbol? arg) (def-reads arg) (datasets-read arg)))))
                            forms))]

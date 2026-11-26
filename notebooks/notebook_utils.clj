@@ -403,6 +403,34 @@
      (key-box "Mapping" [[:span {:class "mapping-hint"} " – the row values the chart reads, under " [:code ":mapping"]]] shown
               (fn [{:keys [required]}] (when required [" " [:span {:class "required"} "required"]]))))))
 
+(defn- keyed-items
+  "Hiccup list items of `entries` - key -> meaning: a keyword key as code, a string key (a column the options name) as
+  text."
+  [entries]
+  (for [[k meaning] entries]
+    (into [:li (if (keyword? k) [:code (pr-str k)] [:em k]) " – "] (rich-text meaning))))
+
+(defn argument-list
+  "The positional arguments of a builder or user-facing data function and what it returns, in a titled box (class
+  `mapping`), its code hidden: each argument (`:cljplot2/arguments` var metadata, in order), `optional` when the call
+  may leave it out, its description and - for rows - the columns they hold or - for a map - its keys, then the return
+  value (`:cljplot2/returns`). `v` - the var. Throws `ex-info {:key :arguments}` for a var without arguments."
+  [v]
+  (let [{:cljplot2/keys [arguments returns options]} (meta v)]
+    (when (empty? arguments)
+      (throw (ex-info "An argument list needs :cljplot2/arguments." {:key :arguments :value v})))
+    (kindly/hide-code
+     (kind/hiccup [:div {:class "mapping"}
+                   [:div {:class "mapping-title"} "Arguments"
+                    [:span {:class "mapping-hint"} (if options " – what the call takes before its options map" " – what the call takes")]]
+                   (into [:ul]
+                         (for [{arg :name :keys [description optional columns] map-keys :keys} arguments]
+                           (cond-> (into [:li [:code (str arg)]]
+                                         (concat (when optional [" " [:span {:class "required"} "optional"]]) [" – "] (rich-text description)))
+                             columns (conj [:div "Columns:" (into [:ul] (keyed-items columns))])
+                             map-keys (conj [:div "Keys:" (into [:ul] (keyed-items map-keys))]))))
+                   (into [:div {:class "mapping-returns"} [:strong "Returns"] " – "] (rich-text returns))]))))
+
 (defn theme-key-list
   "The theme-only style keys of a chart kind in a titled box, its code hidden: each key with its default theme value
   (readable: a colour as its channels) and its description - keys a theme sets that aren't chart options. `kind` -
@@ -475,12 +503,11 @@
   `clay.edn`, `:include-in-header`, under the same class name); option tables keep the book's table style."
   "data-table")
 
-(defn data-table
-  "The first 100 rows ([[data-table-rows]]) of `data` - rows (maps), columns (a map of equal-length sequences) or a
-  sample of numbers or number vectors (one `value` column) - as a table in a box of class [[data-table-class]], its
-  code hidden: a column per key of the shown rows (first-appearance order), cells as [[cell-text]]; longer data gets
-  a last row of [[truncation-mark]] cells (the data is cut there). Throws `ex-info {:key :data}` for empty data or
-  data that is none of these."
+(defn- table-box
+  "The table of [[data-table]] and [[result-table]]: the first 100 rows ([[data-table-rows]]) of `data` in a box of
+  class [[data-table-class]], a column per key of the shown rows (first-appearance order), cells as [[cell-text]];
+  longer data gets a last row of [[truncation-mark]] cells. Throws `ex-info {:key :data}` for empty data or data that
+  is none of the shapes of [[data-table]]."
   [data]
   (let [taken (some->> (data-rows data) (take (inc (long data-table-rows))) vec)
         rows (vec (take data-table-rows taken))
@@ -488,9 +515,24 @@
     (when (empty? rows)
       (throw (ex-info "data-table needs rows (maps), columns (a map of sequences) or a sample (numbers or number vectors)." {:key :data :value data})))
     (let [ks (vec (distinct (mapcat keys rows)))]
-      (kindly/hide-code
-       (kind/hiccup
-        [:div {:class data-table-class}
-         (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
-                      :row-vectors (cond-> (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)
-                                     truncated? (conj (vec (repeat (count ks) truncation-mark))))})])))))
+      (kind/hiccup
+       [:div {:class data-table-class}
+        (kind/table {:column-names (mapv #(if (keyword? %) (name %) (str %)) ks)
+                     :row-vectors (cond-> (mapv (fn [row] (mapv #(cell-text (get row %)) ks)) rows)
+                                    truncated? (conj (vec (repeat (count ks) truncation-mark))))})]))))
+
+(defn data-table
+  "The first 100 rows ([[data-table-rows]]) of `data` - rows (maps), columns (a map of equal-length sequences) or a
+  sample of numbers or number vectors (one `value` column) - as a table in a box of class [[data-table-class]], its
+  code hidden: a column per key of the shown rows (first-appearance order), cells as [[cell-text]]; longer data gets
+  a last row of [[truncation-mark]] cells (the data is cut there). Shows a dataset or data a page defines; a function's
+  result shows its call with [[result-table]]. Throws `ex-info {:key :data}` for empty data or data that is none of
+  these."
+  [data]
+  (kindly/hide-code (table-box data)))
+
+(defn result-table
+  "The table of [[data-table]] for the result of a call, its code shown: the reader sees the call that returned
+  `data`, e.g. `(nu/result-table (levels/bin mtcars :hp {:as :bin}))`. Throws as [[data-table]]."
+  [data]
+  (table-box data))

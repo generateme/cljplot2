@@ -495,11 +495,20 @@
 (def ^:private domain-color-options
   "Options of [[domain-color]]."
   [:map {:closed true}
-   (schema/optional :wrap {:description "how the magnitude of f is wrapped into [0 1] for the brightness (see cljplot2.data.field/wrap)"
-                           :default :log2}
+   (schema/optional :wrap {:description "How the function wraps the magnitude of `f` into [0 1] for the brightness."
+                           :default :log2
+                           :cljplot2/value-meanings {:log2 "The fractional part of `log2(v + 1)`: bands where the magnitude plus 1 doubles."
+                                                     :log10 "The fractional part of `log10(v + 1)`: bands where the magnitude plus 1 grows tenfold."
+                                                     :sin "`sin v` scaled to [0 1]."
+                                                     :exp "`1 - e^-v`: dark at zeros, bright towards poles."
+                                                     :sigmoid "The logistic function of `v`."
+                                                     :frac "The fractional part of `v`: a band per unit of magnitude."}}
                     (into [:enum] (sort wrap-methods)))
-   (schema/optional :colorspace {:description "the hue-first colour space of the colours (:HSI - old cljplot's example)"
-                                 :default :HSI}
+   (schema/optional :colorspace {:description "The hue-first colour space the function builds the colours in; `:HSI` matches the old cljplot."
+                                 :default :HSI
+                                 :cljplot2/value-meanings {:HSI "Hue, saturation, intensity." :HSB "Hue, saturation, brightness."
+                                                           :HSV "Hue, saturation, value." :HSL "Hue, saturation, lightness."
+                                                           :HCL "Hue, chroma, luminance." :HWB "Hue, whiteness, blackness."}}
                     (into [:enum] (sort hue-colorspaces)))])
 
 (defn domain-color
@@ -513,7 +522,10 @@
   Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, brightness - its wrapped magnitude. Zeros and poles get a colour.
 
   Throws `ex-info` for bad options ([[domain-color-options]])."
-  {:cljplot2/api true :cljplot2/options domain-color-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'f :description "A complex function of `fastmath.complex` from `Vec2` to `Vec2`, e.g. `cx/log`."}]
+   :cljplot2/returns "A `:pixel-color` function of a point `[x y]` that returns the colour of f(x + iy)."
+   :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
   ([f {wrap-method :wrap colorspace :colorspace :or {wrap-method :log2 colorspace :HSI} :as options}]
    (schema/check-options! domain-color-options options)

@@ -164,7 +164,9 @@
 ;; `:bold`, `:italic`, `:bold-italic`) and a size in points into the `java.awt.Font` drawn. Bundled families
 ;; (`"DejaVu Sans Mono"` - the default theme's font, `"Noto Emoji"`) win over installed ones, so plots render alike on
 ;; every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) work too, an unknown name throws
-;; `{:key :font}`. It takes no options map.
+;; `{:key :font}`.
+
+(nu/argument-list #'font/resolve-font)
 
 (font/resolve-font "DejaVu Sans Mono" :bold 14)
 

@@ -1,9 +1,9 @@
 ;; # Levels
 
-;; Functions turning values into levels before plotting: numbers binned into intervals, numbers or dates read as
-;; levels, levels ordered by a statistic, rows ranked within each x, and overlapping intervals (shingles) for
-;; conditioning. Each returns rows, a vector of levels (`order-levels`) or a mapping marker (`categorical`) for an
-;; ordinary plot; options are checked against the table shown.
+;; These functions turn values into levels before plotting: they bin numbers into intervals, read numbers or dates as
+;; levels, order levels by a statistic, rank rows within each x and cut overlapping intervals (shingles). Use them to
+;; prepare categorical data for an ordinary plot. Most return rows; `order-levels` returns a vector of levels and
+;; `categorical` a mapping marker.
 
 (ns reference.data-levels
   (:require [fastmath.stats :as stats]
@@ -13,6 +13,8 @@
             [cljplot2.data.shingle :as shingle]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+
+;; The tables below hold the mtcars cars and the iris flowers; the sections use them:
 
 (nu/source-note {:dataset :mtcars})
 
@@ -26,21 +28,31 @@
 
 (nu/data-table iris)
 
-;; ## levels/bin
+;; The table below holds made-up yearly sales of three products; the ranking section uses it:
 
-;; Adds the bin of a numeric value to every row - an interval `[lo, hi)` (the last one closed), printed like R's
-;; `cut`; a missing or non-numeric value gets no bin.
+(def sales (for [[year amounts] [[2020 [5 9 7]] [2021 [8 9 4]] [2022 [9 6 6]] [2023 [7 10 5]]]
+                 [product amount] (map vector ["apples" "pears" "plums"] amounts)]
+             {:year year :product product :amount amount}))
 
-(nu/options-table (describe/options #'levels/bin))
+(nu/data-table sales)
 
-;; The bins of the cars' horsepower - five equal-width bins, bounds printed with 2 significant digits - as a new
-;; column:
+;; ## Binning
 
-(nu/data-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
+;; `levels/bin` adds the bin of a numeric value to every row: an interval `[lo, hi)`, the last one closed, printed as
+;; R's `cut` prints it. A missing or non-numeric value gets no bin. Use it to count or colour by ranges of a number.
 
-;; Bins are levels: counted by a [bar](reference.charts_bars.html#bar-charts) chart (`:stat :count`), in interval
-;; order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin
-;; (right):
+(nu/argument-list #'levels/bin)
+
+;; These options name the bin column, choose the bins and set how their bounds print. The table below adds five
+;; equal-width bins of the cars' horsepower, their bounds printed with 2 significant digits:
+
+(nu/option-cards '(levels/bin rows :x) (describe/options #'levels/bin))
+
+(nu/result-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
+
+;; Bins are levels, so a [bar](reference.charts_bars.html#bar-charts) chart with `:stat :count` counts them in
+;; interval order. The left panel below cuts at explicit breaks, the middle one into quantile bins of about equal counts; the
+;; right one prints the series name in every bin:
 
 (plot/render-image (plot/arrange [{:data (levels/bin mtcars :hp {:as :bin :bins [50 100 150 200 350]})
                                    :mapping {:x :bin}
@@ -58,10 +70,15 @@
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 320})
 
-;; ## levels/categorical
+;; ## Categorical mapping
 
-;; A mapping marker: the accessor reads its values as usual, and its dimension is declared categorical - numbers or
-;; dates become levels (bands on a position axis, an ordinal legend for an aesthetic). It takes no options.
+;; `levels/categorical` wraps an accessor as a mapping marker: the accessor reads its values as usual, and the mapping
+;; treats its dimension as categorical. Use it to show numbers or dates as levels: bands on a position axis, an ordinal
+;; legend for an aesthetic.
+
+(nu/argument-list #'levels/categorical)
+
+;; The left panel below maps the cylinder counts as numbers, the right one as levels:
 
 (plot/render-image (plot/arrange [{:data mtcars
                                    :mapping {:x :cyl :y :mpg}
@@ -74,19 +91,24 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 900 :height 320})
 
-;; ## levels/order-levels
+;; ## Level order
 
-;; The levels of a column ordered by a statistic of a value in each level - for a scale `:domain`.
+;; `levels/order-levels` returns the levels of a column ordered by a statistic of a value in each level. Use it as a
+;; scale `:domain` to sort a level axis or a legend.
 
-(nu/options-table (describe/options #'levels/order-levels))
+(nu/argument-list #'levels/order-levels)
 
-;; Iris species by their median petal length, ascending and descending:
+;; This option sets the direction. The calls below order the iris species by their median petal length, ascending,
+;; then descending:
+
+(nu/option-cards '(levels/order-levels rows :level :value stats/mean) (describe/options #'levels/order-levels))
 
 (levels/order-levels iris :species :petal-length stats/median)
 
 (levels/order-levels iris :species :petal-length stats/median {:descending true})
 
-;; The descending order as the domain of the level axis - the cars' carburettor counts, highest median mpg first:
+;; The plot below takes the descending order as the domain of its level axis, so the carburettor count with the
+;; highest median mpg comes first:
 
 (plot/render-image {:data mtcars
                     :mapping {:x (levels/categorical :carb) :y :mpg}
@@ -95,26 +117,23 @@
                     :labels {:title "carburettors by median mpg"}}
                    {:width 600 :height 320})
 
-;; ## levels/rank-rows
+;; ## Ranks
 
-;; Ranks the rows sharing an x by a value - rank 1 the highest by default - e.g. for a bump chart (a line through
-;; the ranks on a reversed y domain).
+;; `levels/rank-rows` ranks the rows sharing an x by a value; by default the highest value ranks 1. Use it for a bump
+;; chart: a line through the ranks on a reversed y axis.
 
-(nu/options-table (describe/options #'levels/rank-rows))
+(nu/argument-list #'levels/rank-rows)
 
-(def sales (for [[year amounts] [[2020 [5 9 7]] [2021 [8 9 4]] [2022 [9 6 6]] [2023 [7 10 5]]]
-                 [product amount] (map vector ["apples" "pears" "plums"] amounts)]
-             {:year year :product product :amount amount}))
+;; These options name the rank column and set the direction and the ties. The table below ranks the sales per year
+;; under `:place`; a tie takes the lowest rank, so pears and plums share rank 2 in 2022:
 
-(nu/data-table sales)
+(nu/option-cards '(levels/rank-rows rows :x :value) (describe/options #'levels/rank-rows))
 
-;; The ranks under `:place`, ties taking the lowest rank (2022: pears and plums share 2):
+(nu/result-table (levels/rank-rows sales :year :amount {:as :place :ties :min}))
 
-(nu/data-table (levels/rank-rows sales :year :amount {:as :place :ties :min}))
-
-;; A bump chart of the ranks (left; rank 1 on top with the y scale's `:reverse true`, see
-;; [Order and direction](reference.scales_axes_coords.html#order-and-direction)), and ranks counted from the lowest
-;; amount with average ties (right):
+;; The left panel below draws a bump chart of the ranks, rank 1 on top through the y scale's `:reverse true` (see
+;; [Order and direction](reference.scales_axes_coords.html#order-and-direction)). The right one counts the ranks
+;; from the lowest amount and averages the ties:
 
 (plot/render-image (plot/arrange [{:data (levels/rank-rows sales :year :amount)
                                    :mapping {:x :year :y :rank :color :product}
@@ -130,22 +149,24 @@
                                  {:columns 2 :widths [1 1.25]})
                    {:width 900 :height 320})
 
-;; ## shingle/shingle
+;; ## Shingles
 
-;; Repeats every row once per interval containing its value - overlapping intervals (a lattice shingle) to
-;; condition on a continuous variable, typically as a facet.
+;; `shingle/shingle` cuts a numeric column into overlapping intervals, a lattice shingle, and repeats every row once per
+;; interval holding its value. Use it to condition a plot on a continuous variable, usually as a facet.
 
-(nu/options-table (describe/options #'shingle/shingle))
+(nu/argument-list #'shingle/shingle)
 
-;; Equal-count intervals of the cars' weight - 3 of them, neighbours sharing a quarter of their points - as a facet
-;; of mpg against horsepower ([facets](reference.data_mapping.html#facets)); the series name is printed in every
-;; strip:
+;; These options name the interval column, choose the intervals and set the series name. The plot below cuts the
+;; cars' weight into 3 equal-count intervals, neighbours sharing a quarter of their points, and facets mpg against
+;; horsepower by them ([facets](reference.data_mapping.html#facets)); every strip prints the series name:
+
+(nu/option-cards '(shingle/shingle rows :x) (describe/options #'shingle/shingle))
 
 (plot/render-image {:data (shingle/shingle mtcars :wt {:as :weight :n 3 :overlap 0.25 :label true})
                     :mapping {:x :hp :y :mpg :facet-col :weight}
                     :charts [(chart/scatter)]}
                    {:width 900 :height 300})
 
-;; Explicit intervals instead, here overlapping by hand:
+;; The table below takes explicit intervals instead; neighbours overlap by 0.5:
 
-(nu/data-table (shingle/shingle mtcars :wt {:as :weight :intervals [[1.5 3.0] [2.5 4.0] [3.5 5.5]]}))
+(nu/result-table (shingle/shingle mtcars :wt {:as :weight :intervals [[1.5 3.0] [2.5 4.0] [3.5 5.5]]}))

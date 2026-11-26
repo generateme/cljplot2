@@ -223,18 +223,24 @@
   "Options of [[bin]]: `:as` (required, the bin column), `:bins` (see [[bins]]), `:digits` (significant digits of the
   printed bounds), `:label`."
   [:map {:closed true}
-   [:as {:description "the key of the bin column added to every row (required)"}
+   [:as {:description "The key of the bin column the function adds to every row." :cljplot2/example :bin}
     [:fn {:error/message "should be the key of the bin column"} some?]]
-   (schema/optional :bins {:description (str "the bins: a fastmath bin-estimation method, a bin count, a vector of "
-                                             "increasing breaks or quantile bins {:quantiles q :estimation e}")
-                           :default :sturges}
+   (schema/optional :bins {:description "How the function cuts the finite values into bins."
+                           :default :sturges :cljplot2/example 4 :cljplot2/example-context {:as :bin}
+                           :cljplot2/other-values "Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error."
+                           :cljplot2/form-meanings {::schema/pos-int "That many equal-width bins over the values' range."
+                                                    ::breaks "The bin edges; a value outside them gets a `nil` bin."
+                                                    ::quantile-bins "Bins with edges at quantiles of the values."}}
                     bins)
-   (schema/optional :digits {:description (str "the fewest significant digits of the printed bounds (more when "
-                                               "needed to keep the printed breaks distinct)")
-                             :default 3}
+   (schema/optional :digits {:description "The fewest significant digits of the printed bounds; the function prints more when fewer would make two breaks look the same."
+                             :default 3 :cljplot2/example 1 :cljplot2/example-context {:as :bin}}
                     schema/pos-int)
-   (schema/nilable :label {:description (str "the series name printed in every bin: a string, or true for the "
-                                             "accessor's name (keyword accessors only); none when absent")}
+   (schema/nilable :label {:description "The series name printed in every bin."
+                           :cljplot2/default-doc "No series name."
+                           :cljplot2/example true :cljplot2/example-context {:as :bin}
+                           :cljplot2/value-meanings {true "The accessor's name, e.g. `x` for `:x`; only for a keyword accessor."
+                                                     false "No series name."}
+                           :cljplot2/form-meanings {'string? "This name."}}
                    [:or string? boolean?])])
 
 (defn bin
@@ -253,7 +259,11 @@
   Returns a vector of every row with its bin under `:as`: a `Interval` (see [[cljplot2.data.shingle/interval]]) `[lo, hi)` (`:closed :left`), the last bin `[lo, hi]`; a `nil`, non-numeric or non-finite value, or one outside explicit breaks, gets a `nil` bin (NA). The result's metadata holds `{:na n}` - the count of `nil` bins.
 
   Throws `ex-info` for bad options (see [[cljplot2.schema]]) or a bad accessor."
-  {:cljplot2/api true :cljplot2/options bin-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+                         {:name 'value :description "The accessor of a row's numeric value, e.g. `:hp`."}]
+   :cljplot2/returns "Every row with its bin under `:as`: an interval `[lo, hi)`, the last one closed. A missing, non-numeric or non-finite value, or one outside explicit breaks, gets a `nil` bin."
+   :cljplot2/options bin-options}
   [rows value {:keys [as label] :as options}]
   (schema/check-options! bin-options options)
   (shingle/check-accessor! value label)
@@ -287,7 +297,9 @@
   Returns a [[cljplot2.data.accessor/->CategoricalAccessor]], callable on a row.
 
   See also [[cljplot2.data.accessor]]."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'wrapped-accessor :description "The accessor whose values the mapping treats as levels, e.g. `:cyl`."}]
+   :cljplot2/returns "A mapping marker: an accessor that reads the same values and makes its dimension categorical."}
   [wrapped-accessor]
   (accessor/->CategoricalAccessor wrapped-accessor))
 
@@ -333,7 +345,8 @@
 (def order-levels-options
   "Options of [[order-levels]]."
   [:map {:closed true}
-   (schema/optional :descending {:description "order the levels by the statistic descending" :default false}
+   (schema/optional :descending {:description "Whether the largest statistic comes first." :default false
+                                 :cljplot2/value-meanings {true "The level of the largest statistic first." false "The level of the smallest statistic first."}}
                     schema/bool)])
 
 (defn order-levels
@@ -350,7 +363,13 @@
   Returns a vector of the levels ordered by `(stat values)`; ties keep first-appearance order (ascending and descending); levels without a finite value follow the ordered ones (natural order), as do levels whose statistic isn't a finite number. The `nil` (NA) level is left out: a domain lists values, the NA level is placed by the scale.
 
   Throws `ex-info` for bad options."
-  {:cljplot2/api true :cljplot2/options order-levels-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+                         {:name 'level :description "The accessor of a row's level."}
+                         {:name 'value :description "The accessor of the value the statistic scores; a level's finite values are scored."}
+                         {:name 'stat :description "A function of a non-empty sequence of numbers that returns a number, e.g. `stats/median` or `count`."}]
+   :cljplot2/returns "The levels ordered by their statistic; ties keep first-appearance order, and levels without a finite statistic follow. The `nil` level is left out."
+   :cljplot2/options order-levels-options}
   ([rows level value stat] (order-levels rows level value stat {}))
   ([rows level value stat {:keys [descending] :as options}]
    (schema/check-options! order-levels-options options)
@@ -369,11 +388,20 @@
 (def rank-rows-options
   "Options of [[rank-rows]]."
   [:map {:closed true}
-   (schema/optional :as {:description "the key of the rank column added to every row" :default :rank}
+   (schema/optional :as {:description "The key of the rank column the function adds to every row." :default :rank :cljplot2/example :place}
                     [:fn {:error/message "should be the key of the rank column"} some?])
-   (schema/optional :descending {:description "rank the highest value first (rank 1)" :default true} schema/bool)
-   (schema/optional :ties {:description "the fastmath.core/rank tie strategy (:min gives 1, 1, 3; :average gives doubles)"
-                           :default :min}
+   (schema/optional :descending {:description "Whether the highest value gets rank 1." :default true
+                                 :cljplot2/value-meanings {true "The highest value ranks 1." false "The lowest value ranks 1."}}
+                    schema/bool)
+   (schema/optional :ties {:description "How the function ranks equal values, by `fastmath.core/rank`."
+                           :default :min
+                           :cljplot2/value-meanings {:min "The lowest rank of the tie for each: 1, 1, 3."
+                                                     :max "The highest rank of the tie for each: 2, 2, 3."
+                                                     :average "The mean rank of the tie, a double: 1.5, 1.5, 3."
+                                                     :dense "The lowest rank, without gaps after a tie: 1, 1, 2."
+                                                     :first "Consecutive ranks in row order: 1, 2, 3."
+                                                     :last "Consecutive ranks in reverse row order: 2, 1, 3."
+                                                     :random "Consecutive ranks in random order."}}
                     (into [:enum] (sort rank-ties)))])
 
 (defn rank-rows
@@ -394,7 +422,12 @@
   Returns a vector of every row with its 1-based rank under `:as`; a row without a finite value or a valid x gets `nil` and isn't ranked.
 
   Throws `ex-info` for bad options."
-  {:cljplot2/api true :cljplot2/options rank-rows-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The data: rows (maps) or columns (a map of equal-length sequences)."}
+                         {:name 'x :description "The accessor of a row's x: the function ranks the rows sharing an x together."}
+                         {:name 'value :description "The accessor of the ranked value."}]
+   :cljplot2/returns "Every row with its rank under `:as`, 1 the first; a row without a finite value or a valid x gets `nil`."
+   :cljplot2/options rank-rows-options}
   ([rows x value] (rank-rows rows x value {}))
   ([rows x value {:keys [ties descending] rank-key :as :or {ties :min descending true rank-key :rank} :as options}]
    (schema/check-options! rank-rows-options options)

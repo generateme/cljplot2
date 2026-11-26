@@ -62,7 +62,7 @@
             [cljplot2.data.graph :as graph]
             [cljplot2.data.series :as series]
             [cljplot2.data.sets]
-            [cljplot2.data.shingle]
+            [cljplot2.data.shingle :as shingle]
             [cljplot2.data.tree :as tree]
             [cljplot2.data.vector-field]
             [cljplot2.graphics.font]))
@@ -71,7 +71,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def concepts
-  "Section titles of the reference part: chart kind (a keyword) or builder (a symbol of `cljplot2.core`) -> the concept its section is named after (the heading `## title`; the first sentence names the function). Entries without a title keep their name (pages not yet rewritten)."
+  "Section titles of the reference part: chart kind (a keyword), builder (a symbol of `cljplot2.core`) or user-facing data function (a qualified symbol) -> the concept its section is named after (the heading `## title`; the first sentence names the function). Entries without a title keep their name (pages not yet rewritten)."
   {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
    :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
    :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
@@ -82,7 +82,24 @@
    :partition "Icicles and sunbursts" :pack "Circle packing" :waffle "Waffle charts" :venn "Venn diagrams"
    'network "Networks" 'chord "Chord diagrams" 'arc "Arc diagrams" 'sankey "Sankey diagrams" 'alluvial "Alluvial diagrams"
    'dendrogram "Dendrograms" 'tree "Node-link trees" 'clustered-heatmap "Clustered heatmaps" 'bundle "Edge bundles"
-   'sequences "Sequence sunbursts" 'acf "Autocorrelation plots" 'horizon "Horizon charts"})
+   'sequences "Sequence sunbursts" 'acf "Autocorrelation plots" 'horizon "Horizon charts"
+   'cljplot2.data.levels/bin "Binning" 'cljplot2.data.levels/categorical "Categorical mapping"
+   'cljplot2.data.levels/order-levels "Level order" 'cljplot2.data.levels/rank-rows "Ranks" 'cljplot2.data.shingle/shingle "Shingles"
+   'cljplot2.data.graph/graph "Graphs" 'cljplot2.data.graph/layout "Network layouts"
+   'cljplot2.data.graph/adjacency->edges "Adjacency matrices" 'cljplot2.data.graph/arc-layout "Arc layouts"
+   'cljplot2.data.graph/chord-layout "Chord layouts" 'cljplot2.data.graph/sankey-layout "Sankey layouts"
+   'cljplot2.data.graph/alluvial-graph "Alluvial graphs" 'cljplot2.data.tree/from-hclust "Trees from clusterings"
+   'cljplot2.data.tree/from-levels "Trees from level columns" 'cljplot2.data.tree/from-parents "Trees from parent links"
+   'cljplot2.data.tree/leaves "Leaves" 'cljplot2.data.tree/layout "Dendrogram layouts"
+   'cljplot2.data.tree/node-link-layout "Node-link layouts" 'cljplot2.data.tree/bundle-paths "Edge bundling"
+   'cljplot2.data.hierarchy/sequence-levels "Sequence levels"
+   'cljplot2.data.sets/upset-rows "UpSet bars" 'cljplot2.data.sets/membership-rows "UpSet membership"
+   'cljplot2.data.series/lag-rows "Lag pairs" 'cljplot2.data.series/acf-rows "Autocorrelation"
+   'cljplot2.data.series/horizon-rows "Horizon bands" 'cljplot2.data.series/horizon-bands "Horizon band labels"
+   'cljplot2.data.pairwise/matrix-rows "Statistic matrices"
+   'cljplot2.data.field/domain-color "Domain colouring" 'cljplot2.data.contour/isolines "Isolines"
+   'cljplot2.data.vector-field/arrows "Vector field arrows" 'cljplot2.data.vector-field/traces "Streamlines"
+   'cljplot2.data.vector-field/mapped-points "Mapped points"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -234,13 +251,13 @@
   #{:boolean 'boolean? :cljplot2.schema/boolean})
 
 (def documented-types
-  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule). Option cards link a form of these types to its explanation."
+  "The named types the book's Types page explains, across layers: type keyword -> schema - [[cljplot2.schema/named-types]] and the named types of higher layers carrying `:cljplot2/type-name` and `:cljplot2/type-meaning` (random generator, gradient, position, sample step, panel position, functions, span, quantile range, density kernel, bandwidth rule, overlap fraction ...). Option cards link a form of these types to its explanation."
   (merge schema/named-types
          (into {} (map (fn [s] [(malli/type s) s]))
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
                 kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
-                probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema])))
+                probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema shingle/overlap-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."

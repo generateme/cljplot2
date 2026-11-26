@@ -83,7 +83,7 @@
 ;; `chart/pairwise` draws a statistic of two variables as one cell filling the panel: an error, an association, an
 ;; effect size, a distance or a function of the two samples, always of the x sample against the y sample. Use it as
 ;; the cell of a `plot/pairs` matrix; by default it writes the value, a line per group. Unlike r the values have no fixed
-;; range. The [`pairwise/matrix-rows`](reference.data_sets_series.html#pairwisematrix-rows) section lists the built-in
+;; range. The [`pairwise/matrix-rows`](reference.data_sets_series.html#statistic-matrices) section lists the built-in
 ;; statistics.
 
 (nu/shared-groups (describe/options (chart/pairwise)))

@@ -128,6 +128,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .mapping ul { margin: 0; padding-left: 1.25rem; }
 .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.mapping-returns { margin-top: 0.25rem; }
+.mapping code { white-space: pre-wrap; }
 .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
 .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
 .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -1988,18 +1990,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="fontresolve-font" class="level2" data-number="8.7">
 <h2 data-number="8.7" class="anchored" data-anchor-id="fontresolve-font"><span class="header-section-number">8.7</span> font/resolve-font</h2>
-<p>A text style’s <code>:font</code> is a family name or a <code>java.awt.Font</code>; <code>resolve-font</code> turns a name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>. It takes no options map.</p>
+<p>A text style’s <code>:font</code> is a family name or a <code>java.awt.Font</code>; <code>resolve-font</code> turns a name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>font</code> – A bundled font family name as written, an installed or logical (<code>SansSerif</code>) family name in any case, or a <code>java.awt.Font</code>, whose size and style are replaced.</li><li><code>font-style</code> – A font style: <code>:plain</code>, <code>:bold</code>, <code>:italic</code> or <code>:bold-italic</code>.</li><li><code>size</code> – The size in points, a positive number.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The font, a <code>java.awt.Font</code>.</div></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x5d640b22</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x594d6436</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x176ed354</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x4f8ed009</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
 <div class="sourceClojure">

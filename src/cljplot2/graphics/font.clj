@@ -94,7 +94,11 @@
   - `size` (positive number): points.
 
   Returns the font. Throws `ex-info` - `{:key :font}` for an unknown family (unless the platform can't list its fonts) or a value that isn't a font, `{:key :font-style}`, `{:key :size}` for invalid ones."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'font :description "A bundled font family name as written, an installed or logical (`SansSerif`) family name in any case, or a `java.awt.Font`, whose size and style are replaced."}
+                         {:name 'font-style :description "A font style: `:plain`, `:bold`, `:italic` or `:bold-italic`."}
+                         {:name 'size :description "The size in points, a positive number."}]
+   :cljplot2/returns "The font, a `java.awt.Font`."}
   ^Font [font font-style size]
   (let [style (font-styles font-style)]
     (when-not style

@@ -247,7 +247,7 @@
 ;; ### Bump chart
 
 ;; Ranks over time: the months ranked by passengers within each year
-;; ([`levels/rank-rows`](reference.data_levels.html#levelsrank-rows), 1 - the busiest; ties by data order with
+;; ([`levels/rank-rows`](reference.data_levels.html#ranks), 1 - the busiest; ties by data order with
 ;; `:ties :first`). July and August trade the top two places every year; June overtakes September for third and May
 ;; climbs, while March falls; November stays near the bottom.
 

@@ -128,6 +128,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .mapping ul { margin: 0; padding-left: 1.25rem; }
 .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.mapping-returns { margin-top: 0.25rem; }
+.mapping code { white-space: pre-wrap; }
 .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
 .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
 .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -500,13 +502,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#setsupset-rows" id="toc-setsupset-rows" class="nav-link active" data-scroll-target="#setsupset-rows"><span class="header-section-number">29.1</span> sets/upset-rows</a></li>
-  <li><a href="#setsmembership-rows" id="toc-setsmembership-rows" class="nav-link" data-scroll-target="#setsmembership-rows"><span class="header-section-number">29.2</span> sets/membership-rows</a></li>
-  <li><a href="#serieslag-rows" id="toc-serieslag-rows" class="nav-link" data-scroll-target="#serieslag-rows"><span class="header-section-number">29.3</span> series/lag-rows</a></li>
-  <li><a href="#seriesacf-rows" id="toc-seriesacf-rows" class="nav-link" data-scroll-target="#seriesacf-rows"><span class="header-section-number">29.4</span> series/acf-rows</a></li>
-  <li><a href="#serieshorizon-rows" id="toc-serieshorizon-rows" class="nav-link" data-scroll-target="#serieshorizon-rows"><span class="header-section-number">29.5</span> series/horizon-rows</a></li>
-  <li><a href="#serieshorizon-bands" id="toc-serieshorizon-bands" class="nav-link" data-scroll-target="#serieshorizon-bands"><span class="header-section-number">29.6</span> series/horizon-bands</a></li>
-  <li><a href="#pairwisematrix-rows" id="toc-pairwisematrix-rows" class="nav-link" data-scroll-target="#pairwisematrix-rows"><span class="header-section-number">29.7</span> pairwise/matrix-rows</a></li>
+  <li><a href="#upset-bars" id="toc-upset-bars" class="nav-link active" data-scroll-target="#upset-bars"><span class="header-section-number">29.1</span> UpSet bars</a></li>
+  <li><a href="#upset-membership" id="toc-upset-membership" class="nav-link" data-scroll-target="#upset-membership"><span class="header-section-number">29.2</span> UpSet membership</a></li>
+  <li><a href="#lag-pairs" id="toc-lag-pairs" class="nav-link" data-scroll-target="#lag-pairs"><span class="header-section-number">29.3</span> Lag pairs</a></li>
+  <li><a href="#autocorrelation" id="toc-autocorrelation" class="nav-link" data-scroll-target="#autocorrelation"><span class="header-section-number">29.4</span> Autocorrelation</a></li>
+  <li><a href="#horizon-bands" id="toc-horizon-bands" class="nav-link" data-scroll-target="#horizon-bands"><span class="header-section-number">29.5</span> Horizon bands</a></li>
+  <li><a href="#horizon-band-labels" id="toc-horizon-band-labels" class="nav-link" data-scroll-target="#horizon-band-labels"><span class="header-section-number">29.6</span> Horizon band labels</a></li>
+  <li><a href="#statistic-matrices" id="toc-statistic-matrices" class="nav-link" data-scroll-target="#statistic-matrices"><span class="header-section-number">29.7</span> Statistic matrices</a></li>
   </ul>
 </nav>
     </div>
@@ -544,7 +546,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Functions turning set memberships and time series into rows for ordinary plots: the bars and dot matrix of an UpSet plot, lag pairs, autocorrelation rows, the folded bands of a horizon chart and the matrix of a pairwise statistic. The <a href="reference.builders_series.html">series builders</a> <code>plot/acf</code> and <code>plot/horizon</code> draw autocorrelations and horizons directly; <code>chart/pairwise</code> draws one statistic per panel.</p>
+<p>These functions turn set memberships, time series and variable pairs into rows: the bars and dot matrix of an UpSet plot, lag pairs, autocorrelations, the folded bands of a horizon chart and the matrix of a pairwise statistic. Use them to draw these plots with ordinary charts. The <a href="reference.builders_series.html">series builders</a> <code>plot/acf</code> and <code>plot/horizon</code> draw autocorrelations and horizons directly; <code>chart/pairwise</code> draws one statistic per panel.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.data-sets-series</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -557,7 +559,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Set memberships: one row per item and set it belongs to (an item may be in several).</p>
+<p>The table below holds made-up set memberships, a row per item and set it belongs to (an item may be in several); the UpSet sections use it:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> members </span>(<span class="kw">concat</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">40</span>)] {<span class="at">:set</span> <span class="st">"coffee"</span> <span class="at">:item</span> i})</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                     (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">25</span> <span class="dv">60</span>)] {<span class="at">:set</span> <span class="st">"tea"</span> <span class="at">:item</span> i})</span>
@@ -982,7 +984,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>An autoregressive series (fastmath <code>r/ar</code>, coefficient 0.6) over a weekly sine plus seeded white noise:</p>
+<p>The values below form an autoregressive series: fastmath <code>r/ar</code> draws 200 values with coefficient 0.6 over a weekly sine plus seeded white noise. The lag and autocorrelation sections use them:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> weekly </span>(<span class="kw">vec</span> (<span class="kw">take</span> <span class="dv">200</span> (r/ar <span class="fl">0.6</span> (<span class="kw">map</span> (<span class="kw">fn</span> [t <span class="kw">e</span>] (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">2.0</span> (m/sin (<span class="kw">*</span> m/TWO_PI (<span class="kw">/</span> (<span class="kw">double</span> t) <span class="fl">7.0</span>)))) (<span class="kw">double</span> <span class="kw">e</span>)))</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                                           (<span class="kw">range</span>) (r/white-noise (r/rng <span class="at">:mersenne</span> <span class="dv">8</span>) <span class="fl">1.0</span>))))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1303,952 +1305,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="setsupset-rows" class="level2" data-number="29.1">
-<h2 data-number="29.1" class="anchored" data-anchor-id="setsupset-rows"><span class="header-section-number">29.1</span> sets/upset-rows</h2>
-<p>The bars of an UpSet plot: every combination of sets that holds items exclusively - its sets, size and degree - by size descending. The mapping names the set and item keys; a third argument chooses (and orders) the sets.</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">combination</th>
-<th data-quarto-table-cell-role="th">sets</th>
-<th data-quarto-table-cell-role="th">size</th>
-<th data-quarto-table-cell-role="th">degree</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>coffee</td>
-<td>["coffee"]</td>
-<td>25</td>
-<td>1</td>
-</tr>
-<tr class="even">
-<td>tea</td>
-<td>["tea"]</td>
-<td>10</td>
-<td>1</td>
-</tr>
-<tr class="odd">
-<td>juice</td>
-<td>["juice"]</td>
-<td>10</td>
-<td>1</td>
-</tr>
-<tr class="even">
-<td>tea &amp; juice</td>
-<td>["tea" "juice"]</td>
-<td>10</td>
-<td>2</td>
-</tr>
-<tr class="odd">
-<td>coffee &amp; tea &amp; juice</td>
-<td>["coffee" "tea" "juice"]</td>
-<td>10</td>
-<td>3</td>
-</tr>
-<tr class="even">
-<td>coffee &amp; tea</td>
-<td>["coffee" "tea"]</td>
-<td>5</td>
-<td>2</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</section>
-<section id="setsmembership-rows" class="level2" data-number="29.2">
-<h2 data-number="29.2" class="anchored" data-anchor-id="setsmembership-rows"><span class="header-section-number">29.2</span> sets/membership-rows</h2>
-<p>The dot matrix under the bars: a row per combination and set, <code>:member</code> true where the set is in the combination.</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">combination</th>
-<th data-quarto-table-cell-role="th">set</th>
-<th data-quarto-table-cell-role="th">member</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>coffee</td>
-<td>coffee</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>coffee</td>
-<td>tea</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>coffee</td>
-<td>juice</td>
-<td>false</td>
-</tr>
-<tr class="even">
-<td>tea</td>
-<td>coffee</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>tea</td>
-<td>tea</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>tea</td>
-<td>juice</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>juice</td>
-<td>coffee</td>
-<td>false</td>
-</tr>
-<tr class="even">
-<td>juice</td>
-<td>tea</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>juice</td>
-<td>juice</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>tea &amp; juice</td>
-<td>coffee</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>tea &amp; juice</td>
-<td>tea</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>tea &amp; juice</td>
-<td>juice</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>coffee &amp; tea &amp; juice</td>
-<td>coffee</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>coffee &amp; tea &amp; juice</td>
-<td>tea</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>coffee &amp; tea &amp; juice</td>
-<td>juice</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>coffee &amp; tea</td>
-<td>coffee</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>coffee &amp; tea</td>
-<td>tea</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>coffee &amp; tea</td>
-<td>juice</td>
-<td>false</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Together, an UpSet plot of two stacked plots - the bars, then the dots of the members over grey dots of every cell - here with the sets chosen and ordered (tea first):</p>
+<p>The table below holds made-up temperature anomalies of two cities; the horizon sections use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (sets/upset-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:size</span>}</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"items"</span>}}</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:set</span>}</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> [<span class="dv">210</span> <span class="dv">210</span> <span class="dv">210</span>]})</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:data</span> (<span class="kw">filter</span> <span class="at">:member</span> (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>}</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                                                                                                         [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>]))</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">1</span> <span class="at">:heights</span> [<span class="dv">2</span> <span class="dv">1</span>]})</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_sets_series_files/image0.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="serieslag-rows" class="level2" data-number="29.3">
-<h2 data-number="29.3" class="anchored" data-anchor-id="serieslag-rows"><span class="header-section-number">29.3</span> series/lag-rows</h2>
-<p>Pairs every value <code>y(t)</code> with <code>y(t + k)</code> - a lag plot shows the correlation at lag k (here the weekly cycle: strong at 7, negative at 3):</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">t</th>
-<th data-quarto-table-cell-role="th">x</th>
-<th data-quarto-table-cell-role="th">y</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>0</td>
-<td>1.4695303373637327</td>
-<td>2.352348185115162</td>
-</tr>
-<tr class="even">
-<td>1</td>
-<td>3.7937692943647656</td>
-<td>1.483553983061273</td>
-</tr>
-<tr class="odd">
-<td>2</td>
-<td>2.4013952834270835</td>
-<td>-0.44745742427932933</td>
-</tr>
-<tr class="even">
-<td>3</td>
-<td>-1.261504316599897</td>
-<td>-0.15922210131239506</td>
-</tr>
-<tr class="odd">
-<td>4</td>
-<td>-4.03772534292625</td>
-<td>-2.3941380185956604</td>
-</tr>
-<tr class="even">
-<td>5</td>
-<td>-2.309647723994776</td>
-<td>0.09868919741240556</td>
-</tr>
-<tr class="odd">
-<td>6</td>
-<td>-0.0942748434952343</td>
-<td>3.024195320500766</td>
-</tr>
-<tr class="even">
-<td>7</td>
-<td>2.352348185115162</td>
-<td>4.805666195745328</td>
-</tr>
-<tr class="odd">
-<td>8</td>
-<td>1.483553983061273</td>
-<td>4.5272384195306055</td>
-</tr>
-<tr class="even">
-<td>9</td>
-<td>-0.44745742427932933</td>
-<td>1.1865693687053867</td>
-</tr>
-<tr class="odd">
-<td>10</td>
-<td>-0.15922210131239506</td>
-<td>-0.7701774085208245</td>
-</tr>
-<tr class="even">
-<td>11</td>
-<td>-2.3941380185956604</td>
-<td>-2.6060679864758804</td>
-</tr>
-<tr class="odd">
-<td>12</td>
-<td>0.09868919741240556</td>
-<td>-1.929009126160534</td>
-</tr>
-<tr class="even">
-<td>13</td>
-<td>3.024195320500766</td>
-<td>0.434230490757167</td>
-</tr>
-<tr class="odd">
-<td>14</td>
-<td>4.805666195745328</td>
-<td>2.433417614970744</td>
-</tr>
-<tr class="even">
-<td>15</td>
-<td>4.5272384195306055</td>
-<td>1.2470710572055763</td>
-</tr>
-<tr class="odd">
-<td>16</td>
-<td>1.1865693687053867</td>
-<td>-0.35936629788175345</td>
-</tr>
-<tr class="even">
-<td>17</td>
-<td>-0.7701774085208245</td>
-<td>-1.3695978080065405</td>
-</tr>
-<tr class="odd">
-<td>18</td>
-<td>-2.6060679864758804</td>
-<td>-2.096800426513368</td>
-</tr>
-<tr class="even">
-<td>19</td>
-<td>-1.929009126160534</td>
-<td>-1.0778261669502014</td>
-</tr>
-<tr class="odd">
-<td>20</td>
-<td>0.434230490757167</td>
-<td>0.6053934958999472</td>
-</tr>
-<tr class="even">
-<td>21</td>
-<td>2.433417614970744</td>
-<td>2.5911894419648216</td>
-</tr>
-<tr class="odd">
-<td>22</td>
-<td>1.2470710572055763</td>
-<td>2.682180349490924</td>
-</tr>
-<tr class="even">
-<td>23</td>
-<td>-0.35936629788175345</td>
-<td>0.17349745220848933</td>
-</tr>
-<tr class="odd">
-<td>24</td>
-<td>-1.3695978080065405</td>
-<td>-0.5693070693372042</td>
-</tr>
-<tr class="even">
-<td>25</td>
-<td>-2.096800426513368</td>
-<td>-1.7620184480470467</td>
-</tr>
-<tr class="odd">
-<td>26</td>
-<td>-1.0778261669502014</td>
-<td>-0.782715055453843</td>
-</tr>
-<tr class="even">
-<td>27</td>
-<td>0.6053934958999472</td>
-<td>1.502901529541258</td>
-</tr>
-<tr class="odd">
-<td>28</td>
-<td>2.5911894419648216</td>
-<td>2.546266188414661</td>
-</tr>
-<tr class="even">
-<td>29</td>
-<td>2.682180349490924</td>
-<td>2.1329135956098964</td>
-</tr>
-<tr class="odd">
-<td>30</td>
-<td>0.17349745220848933</td>
-<td>1.9428523318336546</td>
-</tr>
-<tr class="even">
-<td>31</td>
-<td>-0.5693070693372042</td>
-<td>-0.08196961280058535</td>
-</tr>
-<tr class="odd">
-<td>32</td>
-<td>-1.7620184480470467</td>
-<td>-2.241391331571816</td>
-</tr>
-<tr class="even">
-<td>33</td>
-<td>-0.782715055453843</td>
-<td>-2.6503317649800606</td>
-</tr>
-<tr class="odd">
-<td>34</td>
-<td>1.502901529541258</td>
-<td>-1.1314281887124207</td>
-</tr>
-<tr class="even">
-<td>35</td>
-<td>2.546266188414661</td>
-<td>0.6523587785261217</td>
-</tr>
-<tr class="odd">
-<td>36</td>
-<td>2.1329135956098964</td>
-<td>3.0030470253120143</td>
-</tr>
-<tr class="even">
-<td>37</td>
-<td>1.9428523318336546</td>
-<td>0.5081624459762246</td>
-</tr>
-<tr class="odd">
-<td>38</td>
-<td>-0.08196961280058535</td>
-<td>-1.670157893927876</td>
-</tr>
-<tr class="even">
-<td>39</td>
-<td>-2.241391331571816</td>
-<td>-1.762818398820877</td>
-</tr>
-<tr class="odd">
-<td>40</td>
-<td>-2.6503317649800606</td>
-<td>-0.4696182773595039</td>
-</tr>
-<tr class="even">
-<td>41</td>
-<td>-1.1314281887124207</td>
-<td>0.9017373651333499</td>
-</tr>
-<tr class="odd">
-<td>42</td>
-<td>0.6523587785261217</td>
-<td>2.416493612303356</td>
-</tr>
-<tr class="even">
-<td>43</td>
-<td>3.0030470253120143</td>
-<td>3.883250273715099</td>
-</tr>
-<tr class="odd">
-<td>44</td>
-<td>0.5081624459762246</td>
-<td>1.0359337481237936</td>
-</tr>
-<tr class="even">
-<td>45</td>
-<td>-1.670157893927876</td>
-<td>-2.4667692826948504</td>
-</tr>
-<tr class="odd">
-<td>46</td>
-<td>-1.762818398820877</td>
-<td>-2.7816041458153675</td>
-</tr>
-<tr class="even">
-<td>47</td>
-<td>-0.4696182773595039</td>
-<td>-1.1957381990211724</td>
-</tr>
-<tr class="odd">
-<td>48</td>
-<td>0.9017373651333499</td>
-<td>0.42457303630004883</td>
-</tr>
-<tr class="even">
-<td>49</td>
-<td>2.416493612303356</td>
-<td>1.8720989783515307</td>
-</tr>
-<tr class="odd">
-<td>50</td>
-<td>3.883250273715099</td>
-<td>1.628968443305892</td>
-</tr>
-<tr class="even">
-<td>51</td>
-<td>1.0359337481237936</td>
-<td>1.2317244274995969</td>
-</tr>
-<tr class="odd">
-<td>52</td>
-<td>-2.4667692826948504</td>
-<td>-0.8870245032146717</td>
-</tr>
-<tr class="even">
-<td>53</td>
-<td>-2.7816041458153675</td>
-<td>-3.4663278688038393</td>
-</tr>
-<tr class="odd">
-<td>54</td>
-<td>-1.1957381990211724</td>
-<td>-1.8364355656670792</td>
-</tr>
-<tr class="even">
-<td>55</td>
-<td>0.42457303630004883</td>
-<td>0.6921610701041505</td>
-</tr>
-<tr class="odd">
-<td>56</td>
-<td>1.8720989783515307</td>
-<td>0.06335080526871695</td>
-</tr>
-<tr class="even">
-<td>57</td>
-<td>1.628968443305892</td>
-<td>0.6785326068490192</td>
-</tr>
-<tr class="odd">
-<td>58</td>
-<td>1.2317244274995969</td>
-<td>-1.3955921256415116</td>
-</tr>
-<tr class="even">
-<td>59</td>
-<td>-0.8870245032146717</td>
-<td>-3.5002146804475562</td>
-</tr>
-<tr class="odd">
-<td>60</td>
-<td>-3.4663278688038393</td>
-<td>-2.631476090063159</td>
-</tr>
-<tr class="even">
-<td>61</td>
-<td>-1.8364355656670792</td>
-<td>-1.073095703812805</td>
-</tr>
-<tr class="odd">
-<td>62</td>
-<td>0.6921610701041505</td>
-<td>-0.9516003743149682</td>
-</tr>
-<tr class="even">
-<td>63</td>
-<td>0.06335080526871695</td>
-<td>2.579022975711122</td>
-</tr>
-<tr class="odd">
-<td>64</td>
-<td>0.6785326068490192</td>
-<td>3.6079196479426985</td>
-</tr>
-<tr class="even">
-<td>65</td>
-<td>-1.3955921256415116</td>
-<td>0.7507207324775327</td>
-</tr>
-<tr class="odd">
-<td>66</td>
-<td>-3.5002146804475562</td>
-<td>-2.500506492866095</td>
-</tr>
-<tr class="even">
-<td>67</td>
-<td>-2.631476090063159</td>
-<td>-3.5611141903197003</td>
-</tr>
-<tr class="odd">
-<td>68</td>
-<td>-1.073095703812805</td>
-<td>-0.6602279233620318</td>
-</tr>
-<tr class="even">
-<td>69</td>
-<td>-0.9516003743149682</td>
-<td>1.0055699292783984</td>
-</tr>
-<tr class="odd">
-<td>70</td>
-<td>2.579022975711122</td>
-<td>4.4082735070393175</td>
-</tr>
-<tr class="even">
-<td>71</td>
-<td>3.6079196479426985</td>
-<td>5.2466328062783685</td>
-</tr>
-<tr class="odd">
-<td>72</td>
-<td>0.7507207324775327</td>
-<td>1.5099790544061578</td>
-</tr>
-<tr class="even">
-<td>73</td>
-<td>-2.500506492866095</td>
-<td>-2.242422602149419</td>
-</tr>
-<tr class="odd">
-<td>74</td>
-<td>-3.5611141903197003</td>
-<td>-3.181338300930388</td>
-</tr>
-<tr class="even">
-<td>75</td>
-<td>-0.6602279233620318</td>
-<td>-2.5020416957104183</td>
-</tr>
-<tr class="odd">
-<td>76</td>
-<td>1.0055699292783984</td>
-<td>-0.06047379640043293</td>
-</tr>
-<tr class="even">
-<td>77</td>
-<td>4.4082735070393175</td>
-<td>0.9847821511311047</td>
-</tr>
-<tr class="odd">
-<td>78</td>
-<td>5.2466328062783685</td>
-<td>0.8712826716599518</td>
-</tr>
-<tr class="even">
-<td>79</td>
-<td>1.5099790544061578</td>
-<td>-0.9828824041729943</td>
-</tr>
-<tr class="odd">
-<td>80</td>
-<td>-2.242422602149419</td>
-<td>-2.929507540470157</td>
-</tr>
-<tr class="even">
-<td>81</td>
-<td>-3.181338300930388</td>
-<td>-5.0560587068500515</td>
-</tr>
-<tr class="odd">
-<td>82</td>
-<td>-2.5020416957104183</td>
-<td>-3.4927080397333765</td>
-</tr>
-<tr class="even">
-<td>83</td>
-<td>-0.06047379640043293</td>
-<td>-0.5314267214026165</td>
-</tr>
-<tr class="odd">
-<td>84</td>
-<td>0.9847821511311047</td>
-<td>0.7573658898115421</td>
-</tr>
-<tr class="even">
-<td>85</td>
-<td>0.8712826716599518</td>
-<td>-0.1761585508269814</td>
-</tr>
-<tr class="odd">
-<td>86</td>
-<td>-0.9828824041729943</td>
-<td>-0.9555652149242746</td>
-</tr>
-<tr class="even">
-<td>87</td>
-<td>-2.929507540470157</td>
-<td>-3.085782095909218</td>
-</tr>
-<tr class="odd">
-<td>88</td>
-<td>-5.0560587068500515</td>
-<td>-2.514463298996155</td>
-</tr>
-<tr class="even">
-<td>89</td>
-<td>-3.4927080397333765</td>
-<td>-1.155813322630999</td>
-</tr>
-<tr class="odd">
-<td>90</td>
-<td>-0.5314267214026165</td>
-<td>1.804528608093851</td>
-</tr>
-<tr class="even">
-<td>91</td>
-<td>0.7573658898115421</td>
-<td>2.255268321247743</td>
-</tr>
-<tr class="odd">
-<td>92</td>
-<td>-0.1761585508269814</td>
-<td>0.9597454496792562</td>
-</tr>
-<tr class="even">
-<td>93</td>
-<td>-0.9555652149242746</td>
-<td>-0.5718480318343854</td>
-</tr>
-<tr class="odd">
-<td>94</td>
-<td>-3.085782095909218</td>
-<td>-3.966034829737947</td>
-</tr>
-<tr class="even">
-<td>95</td>
-<td>-2.514463298996155</td>
-<td>-2.754148550186165</td>
-</tr>
-<tr class="odd">
-<td>96</td>
-<td>-1.155813322630999</td>
-<td>-3.439080717694422</td>
-</tr>
-<tr class="even">
-<td>97</td>
-<td>1.804528608093851</td>
-<td>-0.7374941389811622</td>
-</tr>
-<tr class="odd">
-<td>98</td>
-<td>2.255268321247743</td>
-<td>0.5990756954718726</td>
-</tr>
-<tr class="even">
-<td>99</td>
-<td>0.9597454496792562</td>
-<td>0.9528677892206775</td>
-</tr>
-<tr class="odd">
-<td>…</td>
-<td>…</td>
-<td>…</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/lag-rows weekly <span class="dv">3</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 3"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+3)"</span>}}</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/lag-rows weekly <span class="dv">7</span>)</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 7"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+7)"</span>}}]</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_sets_series_files/image1.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="seriesacf-rows" class="level2" data-number="29.4">
-<h2 data-number="29.4" class="anchored" data-anchor-id="seriesacf-rows"><span class="header-section-number">29.4</span> series/acf-rows</h2>
-<p>The autocorrelation function: a row per lag with its value, the significance band and whether the value is outside it; <code>:partial true</code> - the partial autocorrelation.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:lags</td>
-<td>a positive integer or nil</td>
-<td>floor(10 log10 n), at most n - 1 (R acf)</td>
-<td>the largest lag, from 1 to n - 1 for n values</td>
-</tr>
-<tr class="even">
-<td>:level</td>
-<td>a number in (0 1) or nil</td>
-<td>0.95</td>
-<td>confidence level of the band (0.95 - a 95% band)</td>
-</tr>
-<tr class="odd">
-<td>:partial</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>the partial autocorrelation (lags from 1, a constant band) instead of the autocorrelation</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">lag</th>
-<th data-quarto-table-cell-role="th">value</th>
-<th data-quarto-table-cell-role="th">lo</th>
-<th data-quarto-table-cell-role="th">hi</th>
-<th data-quarto-table-cell-role="th">significant</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>0</td>
-<td>1.0</td>
-<td>-0.13859038243496777</td>
-<td>0.13859038243496777</td>
-<td>false</td>
-</tr>
-<tr class="even">
-<td>1</td>
-<td>0.613798406729208</td>
-<td>-0.18352093062615174</td>
-<td>0.18352093062615174</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>2</td>
-<td>-0.03860835544259042</td>
-<td>-0.18367687105176822</td>
-<td>0.18367687105176822</td>
-<td>false</td>
-</tr>
-<tr class="even">
-<td>3</td>
-<td>-0.5125128000388975</td>
-<td>-0.20935025352341957</td>
-<td>0.20935025352341957</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>4</td>
-<td>-0.5123127501992347</td>
-<td>-0.23218524657883102</td>
-<td>0.23218524657883102</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>5</td>
-<td>-0.07307915047959221</td>
-<td>-0.23262661977494464</td>
-<td>0.23262661977494464</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>6</td>
-<td>0.45497352676667446</td>
-<td>-0.24913249275491195</td>
-<td>0.24913249275491195</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>7</td>
-<td>0.6719254671465706</td>
-<td>-0.28179880143186165</td>
-<td>0.28179880143186165</td>
-<td>true</td>
-</tr>
-<tr class="odd">
-<td>8</td>
-<td>0.4097001105164687</td>
-<td>-0.2930164051949182</td>
-<td>0.2930164051949182</td>
-<td>true</td>
-</tr>
-<tr class="even">
-<td>9</td>
-<td>-0.14302792673090048</td>
-<td>-0.29435431112284044</td>
-<td>0.29435431112284044</td>
-<td>false</td>
-</tr>
-<tr class="odd">
-<td>10</td>
-<td>-0.5759697824503263</td>
-<td>-0.31525888043495076</td>
-<td>0.31525888043495076</td>
-<td>true</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Drawn by hand from the rows - segments to 0, the band as a ribbon, significant lags in red: the autocorrelation up to lag 21 at the default 95% band (left) and the partial one with a 99% band (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:level</span> <span class="fl">0.95</span>})</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:line-width</span> <span class="dv">2</span>})</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span> <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"ACF, 95% band"</span>}</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:level</span> <span class="fl">0.99</span> <span class="at">:partial</span> <span class="va">true</span>})</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:line-width</span> <span class="dv">2</span>})</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span> <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"PACF, :level 0.99"</span>}}]</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">340</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_sets_series_files/image2.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="serieshorizon-rows" class="level2" data-number="29.5">
-<h2 data-number="29.5" class="anchored" data-anchor-id="serieshorizon-rows"><span class="header-section-number">29.5</span> series/horizon-rows</h2>
-<p>The bands of a horizon chart: values folded into <code>:bands</code> bands of one height, negatives mirrored upward as negative band numbers; returns <code>{:rows [...] :band-height h}</code>.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x</td>
-<td>keyword or string</td>
-<td>:x</td>
-<td>row key of the x values (numbers)</td>
-</tr>
-<tr class="even">
-<td>:y</td>
-<td>keyword or string</td>
-<td>:y</td>
-<td>row key of the y values (finite numbers, nil breaks the bands)</td>
-</tr>
-<tr class="odd">
-<td>:series</td>
-<td>keyword or string or nil</td>
-<td>none - one series</td>
-<td>row key of the series, one horizon per value in first-appearance order</td>
-</tr>
-<tr class="even">
-<td>:bands</td>
-<td>a positive integer</td>
-<td>2</td>
-<td>number of bands each sign of the values is folded into</td>
-</tr>
-<tr class="odd">
-<td>:band-height</td>
-<td>a positive finite number or nil</td>
-<td>the largest |y| of all series / :bands (1 when it is 0)</td>
-<td>height of one band in y units</td>
-</tr>
-<tr class="even">
-<td>:interpolator</td>
-<td>a fastmath 1D interpolation method keyword or a function (fn [xs ys &amp; params] f) or nil</td>
-<td>none - straight segments</td>
-<td>a curve the valid points of every run are resampled on before folding</td>
-</tr>
-<tr class="odd">
-<td>:steps-per-gap</td>
-<td>a positive integer</td>
-<td>10</td>
-<td>resampled points per gap between consecutive x (with :interpolator)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> temperatures </span>(<span class="kw">for</span> [city [<span class="st">"Oslo"</span> <span class="st">"Rome"</span>] day (<span class="kw">range</span> <span class="dv">60</span>)]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:city</span> city <span class="at">:day</span> day</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:anomaly</span> (<span class="kw">*</span> (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">4.0</span> <span class="fl">2.5</span>) (m/sin (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.12</span> day) (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">0.0</span> <span class="fl">1.5</span>))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> temperatures </span>(<span class="kw">for</span> [city [<span class="st">"Oslo"</span> <span class="st">"Rome"</span>] day (<span class="kw">range</span> <span class="dv">60</span>)]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:city</span> city <span class="at">:day</span> day</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">:anomaly</span> (<span class="kw">*</span> (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">4.0</span> <span class="fl">2.5</span>) (m/sin (<span class="kw">+</span> (<span class="kw">*</span> <span class="fl">0.12</span> day) (<span class="kw">if</span> (<span class="kw">=</span> city <span class="st">"Oslo"</span>) <span class="fl">0.0</span> <span class="fl">1.5</span>))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2770,938 +1831,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Two bands per sign for each city (the rows of the bands, where the curve crosses a band edge points are added):</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">x</th>
-<th data-quarto-table-cell-role="th">y</th>
-<th data-quarto-table-cell-role="th">band</th>
-<th data-quarto-table-cell-role="th">series</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>0.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>1.0</td>
-<td>0.47884882915567745</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>2.0</td>
-<td>0.9508105057085383</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>3.0</td>
-<td>1.4090969331003598</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>4.0</td>
-<td>1.8471167021659316</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>4.371285826630546</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>5.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>6.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>7.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>8.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>9.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>10.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>11.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>12.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>13.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>14.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>15.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>16.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>17.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>18.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>19.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>20.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>21.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>21.811362270839258</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>22.0</td>
-<td>1.9232904599545946</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>23.0</td>
-<td>1.4895961577002228</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>24.0</td>
-<td>1.0344773986444433</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>25.0</td>
-<td>0.5644800322394689</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>26.0</td>
-<td>0.08636390290438384</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>26.18016566499168</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>27.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>28.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>29.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>30.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>30.55150315673058</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>31.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>32.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>33.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>34.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>35.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>36.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>37.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>38.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>39.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>40.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>41.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>42.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>43.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>44.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>45.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>46.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>47.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>47.99671369528545</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>48.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>49.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>50.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>51.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>52.0</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>52.36003255569833</td>
-<td>0.0</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>53.0</td>
-<td>0.3069566971700721</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>54.0</td>
-<td>0.7821860604021735</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>55.0</td>
-<td>1.2461654540535114</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>56.0</td>
-<td>1.6922215885719873</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>56.72954512405473</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>57.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>58.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>59.0</td>
-<td>1.9998834404599326</td>
-<td>1</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>0.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>1.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>2.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>3.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>4.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>4.371285826630546</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>5.0</td>
-<td>0.2586864531202089</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>6.0</td>
-<td>0.6376552474259598</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>7.0</td>
-<td>0.9786890394235046</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>8.0</td>
-<td>1.2768828327440604</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>9.0</td>
-<td>1.5279477870798575</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>10.0</td>
-<td>1.7282729034089725</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>11.0</td>
-<td>1.8749769600131283</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>12.0</td>
-<td>1.9659499523068131</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>13.0</td>
-<td>1.9998834404599326</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>14.0</td>
-<td>1.9762893683323712</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>15.0</td>
-<td>1.8955070830528484</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>16.0</td>
-<td>1.758698454281367</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>17.0</td>
-<td>1.5678311633535857</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>18.0</td>
-<td>1.3256504026547997</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>19.0</td>
-<td>1.0356393922637555</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>20.0</td>
-<td>0.7019692817446712</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>21.0</td>
-<td>0.32943915763639486</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>21.811362270839258</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>22.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>23.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>24.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>25.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>26.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>26.18016566499168</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>27.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>28.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="even">
-<td>29.0</td>
-<td>0.0</td>
-<td>2</td>
-<td>Oslo</td>
-</tr>
-<tr class="odd">
-<td>…</td>
-<td>…</td>
-<td>…</td>
-<td>…</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>The bands drawn as filled lines - default band height (left), and three bands of a fixed height 1 on a monotone curve resampled 4 points per gap (right); <code>horizon-bands</code> orders the colour domain:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span>}))</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:line-width</span> <span class="dv">0</span>})]</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">2</span>)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">158</span> <span class="dv">202</span> <span class="dv">225</span>] [<span class="dv">8</span> <span class="dv">69</span> <span class="dv">148</span>] [<span class="dv">252</span> <span class="dv">174</span> <span class="dv">145</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"2 bands"</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span> <span class="at">:bands</span> <span class="dv">3</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:band-height</span> <span class="fl">1.0</span> <span class="at">:interpolator</span> <span class="at">:monotone</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:steps-per-gap</span> <span class="dv">4</span>}))</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:line-width</span> <span class="dv">0</span>})]</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">3</span>)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">198</span> <span class="dv">219</span> <span class="dv">239</span>] [<span class="dv">107</span> <span class="dv">174</span> <span class="dv">214</span>] [<span class="dv">8</span> <span class="dv">81</span> <span class="dv">156</span>]</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                                                            [<span class="dv">252</span> <span class="dv">187</span> <span class="dv">161</span>] [<span class="dv">251</span> <span class="dv">106</span> <span class="dv">74</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"3 bands of height 1, :monotone"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_sets_series_files/image3.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="serieshorizon-bands" class="level2" data-number="29.6">
-<h2 data-number="29.6" class="anchored" data-anchor-id="serieshorizon-bands"><span class="header-section-number">29.6</span> series/horizon-bands</h2>
-<p>The band labels of a horizon of n bands in drawing order - positive bands first, then the mirrored negative ones - the colour domain above:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(series/horizon-bands <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> -<span class="dv">1</span> -<span class="dv">2</span> -<span class="dv">3</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</section>
-<section id="pairwisematrix-rows" class="level2" data-number="29.7">
-<h2 data-number="29.7" class="anchored" data-anchor-id="pairwisematrix-rows"><span class="header-section-number">29.7</span> pairwise/matrix-rows</h2>
-<p>A statistic for every pair of variables, a row per cell: the statistic of the x variable’s sample against the y variable’s (<code>:value</code>, <code>nil</code> when it can’t be computed) with the sample size (<code>:n</code>). The built-in statistics by family: <code>:symmetry</code> tells how a value changes when the samples swap (<code>:symmetric</code> - unchanged, <code>:antisymmetric</code> - negated, <code>:reciprocal</code> - inverted, <code>:complementary</code> - <code>1 - v</code>, <code>:asymmetric</code> - otherwise); <code>:samples</code> - paired statistics take the rows where both values are present, independent-sample ones (two groups compared) each variable’s own values; <code>:signed</code> - zero is the neutral value (a shaded <code>pairwise</code> chart centres its colours on it):</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">family</th>
-<th data-quarto-table-cell-role="th">method</th>
-<th data-quarto-table-cell-role="th">label</th>
-<th data-quarto-table-cell-role="th">symmetry</th>
-<th data-quarto-table-cell-role="th">samples</th>
-<th data-quarto-table-cell-role="th">signed</th>
-<th data-quarto-table-cell-role="th">description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:error</td>
-<td>:mae</td>
-<td>MAE</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>mean absolute error</td>
-</tr>
-<tr class="even">
-<td>:error</td>
-<td>:mape</td>
-<td>MAPE</td>
-<td>:asymmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>mean absolute percentage error, relative to xs</td>
-</tr>
-<tr class="odd">
-<td>:error</td>
-<td>:me</td>
-<td>ME</td>
-<td>:antisymmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>mean error, mean of xs - ys</td>
-</tr>
-<tr class="even">
-<td>:error</td>
-<td>:mse</td>
-<td>MSE</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>mean squared error</td>
-</tr>
-<tr class="odd">
-<td>:error</td>
-<td>:r2</td>
-<td>R²</td>
-<td>:asymmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>coefficient of determination of ys predicting xs</td>
-</tr>
-<tr class="even">
-<td>:error</td>
-<td>:rmse</td>
-<td>RMSE</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>root mean squared error</td>
-</tr>
-<tr class="odd">
-<td>:association</td>
-<td>:covariance</td>
-<td>Cov</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>sample covariance</td>
-</tr>
-<tr class="even">
-<td>:association</td>
-<td>:kendall</td>
-<td>Kendall</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>Kendall rank correlation (tau)</td>
-</tr>
-<tr class="odd">
-<td>:association</td>
-<td>:pearson</td>
-<td>Pearson</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>Pearson correlation</td>
-</tr>
-<tr class="even">
-<td>:association</td>
-<td>:spearman</td>
-<td>Spearman</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>Spearman rank correlation</td>
-</tr>
-<tr class="odd">
-<td>:effect-size</td>
-<td>:ameasure</td>
-<td>A</td>
-<td>:complementary</td>
-<td>:independent</td>
-<td>false</td>
-<td>Vargha-Delaney A, P(x &gt; y) (ties count half)</td>
-</tr>
-<tr class="even">
-<td>:effect-size</td>
-<td>:cliffs-delta</td>
-<td>Cliff's δ</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>true</td>
-<td>P(x &gt; y) - P(x &lt; y), non-parametric</td>
-</tr>
-<tr class="odd">
-<td>:effect-size</td>
-<td>:cohens-d</td>
-<td>Cohen's d</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>true</td>
-<td>standardised mean difference over the pooled standard deviation</td>
-</tr>
-<tr class="even">
-<td>:effect-size</td>
-<td>:glass-delta</td>
-<td>Glass's Δ</td>
-<td>:asymmetric</td>
-<td>:independent</td>
-<td>true</td>
-<td>mean difference over the standard deviation of ys</td>
-</tr>
-<tr class="odd">
-<td>:effect-size</td>
-<td>:hedges-g</td>
-<td>Hedges' g</td>
-<td>:antisymmetric</td>
-<td>:independent</td>
-<td>true</td>
-<td>Cohen's d corrected for small-sample bias</td>
-</tr>
-<tr class="even">
-<td>:effect-size</td>
-<td>:means-ratio</td>
-<td>Means ratio</td>
-<td>:reciprocal</td>
-<td>:independent</td>
-<td>false</td>
-<td>mean of xs over mean of ys</td>
-</tr>
-<tr class="odd">
-<td>:distance</td>
-<td>:canberra</td>
-<td>Canberra</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>Canberra distance</td>
-</tr>
-<tr class="even">
-<td>:distance</td>
-<td>:chebyshev</td>
-<td>Chebyshev</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>Chebyshev distance</td>
-</tr>
-<tr class="odd">
-<td>:distance</td>
-<td>:cosine</td>
-<td>Cosine</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>true</td>
-<td>cosine similarity</td>
-</tr>
-<tr class="even">
-<td>:distance</td>
-<td>:euclidean</td>
-<td>Euclidean</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>Euclidean distance</td>
-</tr>
-<tr class="odd">
-<td>:distance</td>
-<td>:manhattan</td>
-<td>Manhattan</td>
-<td>:symmetric</td>
-<td>:paired</td>
-<td>false</td>
-<td>Manhattan distance</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:variables</td>
-<td>sequential of keyword (at least 2)</td>
-<td></td>
-<td>the variables of a square matrix (x and y both, distinct), in matrix order</td>
-</tr>
-<tr class="even">
-<td>:x-variables</td>
-<td>sequential of keyword (at least 1)</td>
-<td></td>
-<td>the x variables of a rectangular matrix (with :y-variables)</td>
-</tr>
-<tr class="odd">
-<td>:y-variables</td>
-<td>sequential of keyword (at least 1)</td>
-<td></td>
-<td>the y variables of a rectangular matrix (with :x-variables)</td>
-</tr>
-<tr class="even">
-<td>:method</td>
-<td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td>
-<td>:pearson</td>
-<td>the statistic: a key of pairwise/statistics or a function of two samples</td>
-</tr>
-<tr class="odd">
-<td>:label</td>
-<td>string or nil</td>
-<td>the statistic's label, value for a function</td>
-<td>the statistic's label in the rows</td>
-</tr>
-<tr class="even">
-<td>:self-pairs</td>
-<td>true or false</td>
-<td>false</td>
-<td>rows of a variable with itself (square matrix)</td>
-</tr>
-<tr class="odd">
-<td>:triangle</td>
-<td>one of :full :lower :upper</td>
-<td>:full</td>
-<td>the cells of a square matrix: :full, :lower (y after x in variable order) or :upper; :lower and :upper need a symmetric statistic</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds the iris flowers; the statistic matrix section uses it:</p>
 <p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -4427,7 +2560,1763 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The lower triangle of a symmetric statistic, the diagonal included (lower - the y variable after the x variable in variable order, as the lower cells of <code>plot/pairs</code>):</p>
+<section id="upset-bars" class="level2" data-number="29.1">
+<h2 data-number="29.1" class="anchored" data-anchor-id="upset-bars"><span class="header-section-number">29.1</span> UpSet bars</h2>
+<p><code>sets/upset-rows</code> returns the bars of an UpSet plot: every combination of sets that holds items of its own, with its sets, size and degree, the largest first. Use it with <code>chart/bar</code>, a bar per combination.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A bar per combination of sets that holds items of its own, <code>{:combination :sets :size :degree}</code>, the largest first.</div></div>
+<p>The table below holds the bars:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (sets/upset-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">combination</th>
+<th data-quarto-table-cell-role="th">sets</th>
+<th data-quarto-table-cell-role="th">size</th>
+<th data-quarto-table-cell-role="th">degree</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coffee</td>
+<td>["coffee"]</td>
+<td>25</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>["tea"]</td>
+<td>10</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>["juice"]</td>
+<td>10</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>["tea" "juice"]</td>
+<td>10</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>["coffee" "tea" "juice"]</td>
+<td>10</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>["coffee" "tea"]</td>
+<td>5</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="upset-membership" class="level2" data-number="29.2">
+<h2 data-number="29.2" class="anchored" data-anchor-id="upset-membership"><span class="header-section-number">29.2</span> UpSet membership</h2>
+<p><code>sets/membership-rows</code> returns the dot matrix under the bars: a row per combination and set, <code>:member</code> true where the set is in the combination. Use it with <code>chart/scatter</code> under the bars.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>rows</code> – Set membership rows, one per item and set it belongs to; repeated rows count once.</li><li><code>mapping</code> – The accessors of the rows' set and item.<div>Keys:<ul><li><code>:set</code> – The accessor of a row's set.</li><li><code>:item</code> – The accessor of a row's item.</li></ul></div></li><li><code>sets</code> <span class="required">optional</span> – The chosen sets in order; rows of other sets are left out. Without it every set, in order of first appearance.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row <code>{:combination :set :member}</code> per combination of <code>upset-rows</code> and chosen set; <code>:member</code> tells whether the set is in the combination.</div></div>
+<p>The table below holds the matrix:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">combination</th>
+<th data-quarto-table-cell-role="th">set</th>
+<th data-quarto-table-cell-role="th">member</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>coffee</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee</td>
+<td>tea</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>coffee</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>tea</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>juice</td>
+<td>tea</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>coffee</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>tea &amp; juice</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>tea &amp; juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea &amp; juice</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea &amp; juice</td>
+<td>juice</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>coffee</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>coffee &amp; tea</td>
+<td>tea</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>coffee &amp; tea</td>
+<td>juice</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The plot below stacks both parts into an UpSet plot: the bars, then the members’ dots over grey dots in every cell. It chooses the sets and puts tea first:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (sets/upset-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:size</span>}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/bar {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="st">"items"</span>}}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>} [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>])</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:combination</span> <span class="at">:y</span> <span class="at">:set</span>}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> [<span class="dv">210</span> <span class="dv">210</span> <span class="dv">210</span>]})</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:data</span> (<span class="kw">filter</span> <span class="at">:member</span> (sets/membership-rows members {<span class="at">:set</span> <span class="at">:set</span> <span class="at">:item</span> <span class="at">:item</span>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                                                                                         [<span class="st">"tea"</span> <span class="st">"coffee"</span> <span class="st">"juice"</span>]))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:size</span> <span class="dv">12</span> <span class="at">:color</span> <span class="at">:black</span>})]</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:reverse</span> <span class="va">true</span>}}</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:x</span> <span class="va">nil</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">1</span> <span class="at">:heights</span> [<span class="dv">2</span> <span class="dv">1</span>]})</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="lag-pairs" class="level2" data-number="29.3">
+<h2 data-number="29.3" class="anchored" data-anchor-id="lag-pairs"><span class="header-section-number">29.3</span> Lag pairs</h2>
+<p><code>series/lag-rows</code> pairs every value <code>y(t)</code> with <code>y(t + k)</code>. Use it for a lag plot, which shows the correlation at lag k.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>values</code> – The series, a sequence of values.</li><li><code>k</code> – The lag, a positive integer.</li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>n - k</code> rows <code>{:t :x :y}</code> for n values: the value at t under <code>:x</code>, the value at t + k under <code>:y</code>; none when k is n or more.</div></div>
+<p>The table below pairs the values at lag 7; the plots below show the weekly cycle, strong at lag 7 and negative at lag 3:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (series/lag-rows weekly <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">t</th>
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1.4695303373637327</td>
+<td>2.352348185115162</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>3.7937692943647656</td>
+<td>1.483553983061273</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>2.4013952834270835</td>
+<td>-0.44745742427932933</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>-1.261504316599897</td>
+<td>-0.15922210131239506</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>-4.03772534292625</td>
+<td>-2.3941380185956604</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>-2.309647723994776</td>
+<td>0.09868919741240556</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>-0.0942748434952343</td>
+<td>3.024195320500766</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>2.352348185115162</td>
+<td>4.805666195745328</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>1.483553983061273</td>
+<td>4.5272384195306055</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>-0.44745742427932933</td>
+<td>1.1865693687053867</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>-0.15922210131239506</td>
+<td>-0.7701774085208245</td>
+</tr>
+<tr class="even">
+<td>11</td>
+<td>-2.3941380185956604</td>
+<td>-2.6060679864758804</td>
+</tr>
+<tr class="odd">
+<td>12</td>
+<td>0.09868919741240556</td>
+<td>-1.929009126160534</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>3.024195320500766</td>
+<td>0.434230490757167</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>4.805666195745328</td>
+<td>2.433417614970744</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>4.5272384195306055</td>
+<td>1.2470710572055763</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>1.1865693687053867</td>
+<td>-0.35936629788175345</td>
+</tr>
+<tr class="even">
+<td>17</td>
+<td>-0.7701774085208245</td>
+<td>-1.3695978080065405</td>
+</tr>
+<tr class="odd">
+<td>18</td>
+<td>-2.6060679864758804</td>
+<td>-2.096800426513368</td>
+</tr>
+<tr class="even">
+<td>19</td>
+<td>-1.929009126160534</td>
+<td>-1.0778261669502014</td>
+</tr>
+<tr class="odd">
+<td>20</td>
+<td>0.434230490757167</td>
+<td>0.6053934958999472</td>
+</tr>
+<tr class="even">
+<td>21</td>
+<td>2.433417614970744</td>
+<td>2.5911894419648216</td>
+</tr>
+<tr class="odd">
+<td>22</td>
+<td>1.2470710572055763</td>
+<td>2.682180349490924</td>
+</tr>
+<tr class="even">
+<td>23</td>
+<td>-0.35936629788175345</td>
+<td>0.17349745220848933</td>
+</tr>
+<tr class="odd">
+<td>24</td>
+<td>-1.3695978080065405</td>
+<td>-0.5693070693372042</td>
+</tr>
+<tr class="even">
+<td>25</td>
+<td>-2.096800426513368</td>
+<td>-1.7620184480470467</td>
+</tr>
+<tr class="odd">
+<td>26</td>
+<td>-1.0778261669502014</td>
+<td>-0.782715055453843</td>
+</tr>
+<tr class="even">
+<td>27</td>
+<td>0.6053934958999472</td>
+<td>1.502901529541258</td>
+</tr>
+<tr class="odd">
+<td>28</td>
+<td>2.5911894419648216</td>
+<td>2.546266188414661</td>
+</tr>
+<tr class="even">
+<td>29</td>
+<td>2.682180349490924</td>
+<td>2.1329135956098964</td>
+</tr>
+<tr class="odd">
+<td>30</td>
+<td>0.17349745220848933</td>
+<td>1.9428523318336546</td>
+</tr>
+<tr class="even">
+<td>31</td>
+<td>-0.5693070693372042</td>
+<td>-0.08196961280058535</td>
+</tr>
+<tr class="odd">
+<td>32</td>
+<td>-1.7620184480470467</td>
+<td>-2.241391331571816</td>
+</tr>
+<tr class="even">
+<td>33</td>
+<td>-0.782715055453843</td>
+<td>-2.6503317649800606</td>
+</tr>
+<tr class="odd">
+<td>34</td>
+<td>1.502901529541258</td>
+<td>-1.1314281887124207</td>
+</tr>
+<tr class="even">
+<td>35</td>
+<td>2.546266188414661</td>
+<td>0.6523587785261217</td>
+</tr>
+<tr class="odd">
+<td>36</td>
+<td>2.1329135956098964</td>
+<td>3.0030470253120143</td>
+</tr>
+<tr class="even">
+<td>37</td>
+<td>1.9428523318336546</td>
+<td>0.5081624459762246</td>
+</tr>
+<tr class="odd">
+<td>38</td>
+<td>-0.08196961280058535</td>
+<td>-1.670157893927876</td>
+</tr>
+<tr class="even">
+<td>39</td>
+<td>-2.241391331571816</td>
+<td>-1.762818398820877</td>
+</tr>
+<tr class="odd">
+<td>40</td>
+<td>-2.6503317649800606</td>
+<td>-0.4696182773595039</td>
+</tr>
+<tr class="even">
+<td>41</td>
+<td>-1.1314281887124207</td>
+<td>0.9017373651333499</td>
+</tr>
+<tr class="odd">
+<td>42</td>
+<td>0.6523587785261217</td>
+<td>2.416493612303356</td>
+</tr>
+<tr class="even">
+<td>43</td>
+<td>3.0030470253120143</td>
+<td>3.883250273715099</td>
+</tr>
+<tr class="odd">
+<td>44</td>
+<td>0.5081624459762246</td>
+<td>1.0359337481237936</td>
+</tr>
+<tr class="even">
+<td>45</td>
+<td>-1.670157893927876</td>
+<td>-2.4667692826948504</td>
+</tr>
+<tr class="odd">
+<td>46</td>
+<td>-1.762818398820877</td>
+<td>-2.7816041458153675</td>
+</tr>
+<tr class="even">
+<td>47</td>
+<td>-0.4696182773595039</td>
+<td>-1.1957381990211724</td>
+</tr>
+<tr class="odd">
+<td>48</td>
+<td>0.9017373651333499</td>
+<td>0.42457303630004883</td>
+</tr>
+<tr class="even">
+<td>49</td>
+<td>2.416493612303356</td>
+<td>1.8720989783515307</td>
+</tr>
+<tr class="odd">
+<td>50</td>
+<td>3.883250273715099</td>
+<td>1.628968443305892</td>
+</tr>
+<tr class="even">
+<td>51</td>
+<td>1.0359337481237936</td>
+<td>1.2317244274995969</td>
+</tr>
+<tr class="odd">
+<td>52</td>
+<td>-2.4667692826948504</td>
+<td>-0.8870245032146717</td>
+</tr>
+<tr class="even">
+<td>53</td>
+<td>-2.7816041458153675</td>
+<td>-3.4663278688038393</td>
+</tr>
+<tr class="odd">
+<td>54</td>
+<td>-1.1957381990211724</td>
+<td>-1.8364355656670792</td>
+</tr>
+<tr class="even">
+<td>55</td>
+<td>0.42457303630004883</td>
+<td>0.6921610701041505</td>
+</tr>
+<tr class="odd">
+<td>56</td>
+<td>1.8720989783515307</td>
+<td>0.06335080526871695</td>
+</tr>
+<tr class="even">
+<td>57</td>
+<td>1.628968443305892</td>
+<td>0.6785326068490192</td>
+</tr>
+<tr class="odd">
+<td>58</td>
+<td>1.2317244274995969</td>
+<td>-1.3955921256415116</td>
+</tr>
+<tr class="even">
+<td>59</td>
+<td>-0.8870245032146717</td>
+<td>-3.5002146804475562</td>
+</tr>
+<tr class="odd">
+<td>60</td>
+<td>-3.4663278688038393</td>
+<td>-2.631476090063159</td>
+</tr>
+<tr class="even">
+<td>61</td>
+<td>-1.8364355656670792</td>
+<td>-1.073095703812805</td>
+</tr>
+<tr class="odd">
+<td>62</td>
+<td>0.6921610701041505</td>
+<td>-0.9516003743149682</td>
+</tr>
+<tr class="even">
+<td>63</td>
+<td>0.06335080526871695</td>
+<td>2.579022975711122</td>
+</tr>
+<tr class="odd">
+<td>64</td>
+<td>0.6785326068490192</td>
+<td>3.6079196479426985</td>
+</tr>
+<tr class="even">
+<td>65</td>
+<td>-1.3955921256415116</td>
+<td>0.7507207324775327</td>
+</tr>
+<tr class="odd">
+<td>66</td>
+<td>-3.5002146804475562</td>
+<td>-2.500506492866095</td>
+</tr>
+<tr class="even">
+<td>67</td>
+<td>-2.631476090063159</td>
+<td>-3.5611141903197003</td>
+</tr>
+<tr class="odd">
+<td>68</td>
+<td>-1.073095703812805</td>
+<td>-0.6602279233620318</td>
+</tr>
+<tr class="even">
+<td>69</td>
+<td>-0.9516003743149682</td>
+<td>1.0055699292783984</td>
+</tr>
+<tr class="odd">
+<td>70</td>
+<td>2.579022975711122</td>
+<td>4.4082735070393175</td>
+</tr>
+<tr class="even">
+<td>71</td>
+<td>3.6079196479426985</td>
+<td>5.2466328062783685</td>
+</tr>
+<tr class="odd">
+<td>72</td>
+<td>0.7507207324775327</td>
+<td>1.5099790544061578</td>
+</tr>
+<tr class="even">
+<td>73</td>
+<td>-2.500506492866095</td>
+<td>-2.242422602149419</td>
+</tr>
+<tr class="odd">
+<td>74</td>
+<td>-3.5611141903197003</td>
+<td>-3.181338300930388</td>
+</tr>
+<tr class="even">
+<td>75</td>
+<td>-0.6602279233620318</td>
+<td>-2.5020416957104183</td>
+</tr>
+<tr class="odd">
+<td>76</td>
+<td>1.0055699292783984</td>
+<td>-0.06047379640043293</td>
+</tr>
+<tr class="even">
+<td>77</td>
+<td>4.4082735070393175</td>
+<td>0.9847821511311047</td>
+</tr>
+<tr class="odd">
+<td>78</td>
+<td>5.2466328062783685</td>
+<td>0.8712826716599518</td>
+</tr>
+<tr class="even">
+<td>79</td>
+<td>1.5099790544061578</td>
+<td>-0.9828824041729943</td>
+</tr>
+<tr class="odd">
+<td>80</td>
+<td>-2.242422602149419</td>
+<td>-2.929507540470157</td>
+</tr>
+<tr class="even">
+<td>81</td>
+<td>-3.181338300930388</td>
+<td>-5.0560587068500515</td>
+</tr>
+<tr class="odd">
+<td>82</td>
+<td>-2.5020416957104183</td>
+<td>-3.4927080397333765</td>
+</tr>
+<tr class="even">
+<td>83</td>
+<td>-0.06047379640043293</td>
+<td>-0.5314267214026165</td>
+</tr>
+<tr class="odd">
+<td>84</td>
+<td>0.9847821511311047</td>
+<td>0.7573658898115421</td>
+</tr>
+<tr class="even">
+<td>85</td>
+<td>0.8712826716599518</td>
+<td>-0.1761585508269814</td>
+</tr>
+<tr class="odd">
+<td>86</td>
+<td>-0.9828824041729943</td>
+<td>-0.9555652149242746</td>
+</tr>
+<tr class="even">
+<td>87</td>
+<td>-2.929507540470157</td>
+<td>-3.085782095909218</td>
+</tr>
+<tr class="odd">
+<td>88</td>
+<td>-5.0560587068500515</td>
+<td>-2.514463298996155</td>
+</tr>
+<tr class="even">
+<td>89</td>
+<td>-3.4927080397333765</td>
+<td>-1.155813322630999</td>
+</tr>
+<tr class="odd">
+<td>90</td>
+<td>-0.5314267214026165</td>
+<td>1.804528608093851</td>
+</tr>
+<tr class="even">
+<td>91</td>
+<td>0.7573658898115421</td>
+<td>2.255268321247743</td>
+</tr>
+<tr class="odd">
+<td>92</td>
+<td>-0.1761585508269814</td>
+<td>0.9597454496792562</td>
+</tr>
+<tr class="even">
+<td>93</td>
+<td>-0.9555652149242746</td>
+<td>-0.5718480318343854</td>
+</tr>
+<tr class="odd">
+<td>94</td>
+<td>-3.085782095909218</td>
+<td>-3.966034829737947</td>
+</tr>
+<tr class="even">
+<td>95</td>
+<td>-2.514463298996155</td>
+<td>-2.754148550186165</td>
+</tr>
+<tr class="odd">
+<td>96</td>
+<td>-1.155813322630999</td>
+<td>-3.439080717694422</td>
+</tr>
+<tr class="even">
+<td>97</td>
+<td>1.804528608093851</td>
+<td>-0.7374941389811622</td>
+</tr>
+<tr class="odd">
+<td>98</td>
+<td>2.255268321247743</td>
+<td>0.5990756954718726</td>
+</tr>
+<tr class="even">
+<td>99</td>
+<td>0.9597454496792562</td>
+<td>0.9528677892206775</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/lag-rows weekly <span class="dv">3</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 3"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+3)"</span>}}</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/lag-rows weekly <span class="dv">7</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">5</span>})]</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"lag 7"</span> <span class="at">:x</span> <span class="st">"y(t)"</span> <span class="at">:y</span> <span class="st">"y(t+7)"</span>}}]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="autocorrelation" class="level2" data-number="29.4">
+<h2 data-number="29.4" class="anchored" data-anchor-id="autocorrelation"><span class="header-section-number">29.4</span> Autocorrelation</h2>
+<p><code>series/acf-rows</code> returns the autocorrelation function of a series: a row per lag with its value, the significance band and whether the value lies outside it. Use it to draw a correlogram of your own.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>values</code> – The series, a sequence of numbers.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per lag <code>{:lag :value :lo :hi :significant}</code>: the autocorrelation (partial with <code>:partial</code>, from lag 1), the significance band and whether the value lies outside it.</div></div>
+<p>These options set the lags, the band’s confidence level and the partial autocorrelation. The table below holds lags 0 to 10:</p>
+<dl class="options"><div class="option-card"><dt><code>:lags</code><span class="option-default">Default: <code>floor(10 log10 n)</code>, at most n - 1, as R <code>acf</code>.</span></dt><dd><div class="option-example"><code>(series/acf-rows values {:lags 5})</code></div><div class="option-text">The largest lag, from 1 to n - 1 for n values.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:level</code><span class="option-default">Default: <code>0.95</code></span></dt><dd><div class="option-example"><code>(series/acf-rows values {:level 0.8})</code></div><div class="option-text">The confidence level of the significance band: 0.95 gives a 95% band.<ul><li><a href="reference.types.html#open-fraction">open fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:partial</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(series/acf-rows values {:partial true})</code></div><div class="option-text">Whether the function computes the partial autocorrelation.<ul><li><code>false</code> – The autocorrelation: lags from 0, a band widening with the lag.</li><li><code>true</code> – The partial autocorrelation: lags from 1, a band of constant width.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">10</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">lag</th>
+<th data-quarto-table-cell-role="th">value</th>
+<th data-quarto-table-cell-role="th">lo</th>
+<th data-quarto-table-cell-role="th">hi</th>
+<th data-quarto-table-cell-role="th">significant</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>1.0</td>
+<td>-0.13859038243496777</td>
+<td>0.13859038243496777</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>0.613798406729208</td>
+<td>-0.18352093062615174</td>
+<td>0.18352093062615174</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>-0.03860835544259042</td>
+<td>-0.18367687105176822</td>
+<td>0.18367687105176822</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>-0.5125128000388975</td>
+<td>-0.20935025352341957</td>
+<td>0.20935025352341957</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>-0.5123127501992347</td>
+<td>-0.23218524657883102</td>
+<td>0.23218524657883102</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>-0.07307915047959221</td>
+<td>-0.23262661977494464</td>
+<td>0.23262661977494464</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>0.45497352676667446</td>
+<td>-0.24913249275491195</td>
+<td>0.24913249275491195</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>0.6719254671465706</td>
+<td>-0.28179880143186165</td>
+<td>0.28179880143186165</td>
+<td>true</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>0.4097001105164687</td>
+<td>-0.2930164051949182</td>
+<td>0.2930164051949182</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>-0.14302792673090048</td>
+<td>-0.29435431112284044</td>
+<td>0.29435431112284044</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>-0.5759697824503263</td>
+<td>-0.31525888043495076</td>
+<td>0.31525888043495076</td>
+<td>true</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The plots below draw the rows by hand: segments to 0, the band as a ribbon, the significant lags in red. The left panel draws the autocorrelation up to lag 21 with the default 95% band, the right one the partial autocorrelation with a 99% band:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:level</span> <span class="fl">0.95</span>})</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:line-width</span> <span class="dv">2</span>})</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span> <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"ACF, 95% band"</span>}</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (series/acf-rows weekly {<span class="at">:lags</span> <span class="dv">21</span> <span class="at">:level</span> <span class="fl">0.99</span> <span class="at">:partial</span> <span class="va">true</span>})</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:lag</span> <span class="at">:y</span> <span class="at">:value</span> <span class="at">:ymin</span> <span class="at">:lo</span> <span class="at">:ymax</span> <span class="at">:hi</span>}</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/ribbon {<span class="at">:color</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span>] <span class="at">:alpha</span> <span class="fl">0.15</span>})</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                            (chart/segment {<span class="at">:yend</span> <span class="dv">0</span> <span class="at">:line-width</span> <span class="dv">2</span>})</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                                            (chart/scatter {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">if</span> (<span class="at">:significant</span> <span class="va">%</span>) <span class="st">"yes"</span> <span class="st">"no"</span>)}})]</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:domain</span> [<span class="st">"no"</span> <span class="st">"yes"</span>] <span class="at">:range</span> [[<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] [<span class="dv">200</span> <span class="dv">40</span> <span class="dv">40</span>]]</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:title</span> <span class="st">"significant"</span>}}</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"PACF, :level 0.99"</span>}}]</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">340</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="horizon-bands" class="level2" data-number="29.5">
+<h2 data-number="29.5" class="anchored" data-anchor-id="horizon-bands"><span class="header-section-number">29.5</span> Horizon bands</h2>
+<p><code>series/horizon-rows</code> returns the bands of a horizon chart: it folds the values into <code>:bands</code> bands of one height and mirrors negative values upward as negative band numbers. Use it to draw a horizon chart of your own.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The series points, one row each.<div>Columns:<ul><li><code>:x</code> – The x value, a number; the option <code>:x</code> names another key.</li><li><code>:y</code> – The y value, a finite number or <code>nil</code>, which breaks the bands; the option <code>:y</code> names another key.</li><li><em>a series key</em> – The row's series, named by the option <code>:series</code>; optional.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – <code>{:rows :band-height}</code>: rows <code>{:x :y :band}</code> of the folded bands, with <code>:series</code> when the option names one, and the height of one band.</div></div>
+<p>These options name the row keys, set the bands and resample the curve. The table below holds two bands per sign for each city; the function adds a point where the curve crosses a band edge:</p>
+<dl class="options"><div class="option-card"><dt><code>:x</code><span class="option-default">Default: <code>:x</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:x :t})</code></div><div class="option-text">The row key of the numeric x values.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: <code>:y</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:y :v})</code></div><div class="option-text">The row key of the y values, finite numbers; a <code>nil</code> value breaks the bands.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:series</code><span class="option-default">Default: One series.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:series :s})</code></div><div class="option-text">The row key of the series: a horizon per value, in order of first appearance.<ul><li><span>keyword</span> – A keyword key of the rows, e.g. <code>:t</code>.</li><li><span>string</span> – A string key of the rows, e.g. <code>t</code> of rows read from CSV with string keys.</li></ul></div></dd></div><div class="option-card"><dt><code>:bands</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:bands 3})</code></div><div class="option-text">The number of bands the function folds each sign of the values into.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:band-height</code><span class="option-default">Default: The largest absolute y of all series divided by <code>:bands</code>; 1 when that is 0.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:band-height 0.2})</code></div><div class="option-text">The height of one band, in y units.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:interpolator</code><span class="option-default">Default: None: straight segments.</span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:interpolator :cubic})</code></div><div class="option-text">The interpolator the function fits through every run of valid points and resamples before folding, so all bands follow one curve.<ul><li><a href="reference.types.html#interpolator">interpolator</a></li></ul></div></dd></div><div class="option-card"><dt><code>:steps-per-gap</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>(series/horizon-rows rows {:interpolator :cubic, :steps-per-gap 3})</code></div><div class="option-text">The number of resampled points per gap between consecutive x, with <code>:interpolator</code>.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span> <span class="at">:bands</span> <span class="dv">2</span>})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">band</th>
+<th data-quarto-table-cell-role="th">series</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>1.0</td>
+<td>0.47884882915567745</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>2.0</td>
+<td>0.9508105057085383</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>3.0</td>
+<td>1.4090969331003598</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>4.0</td>
+<td>1.8471167021659316</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>4.371285826630546</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>5.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>6.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>7.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>8.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>9.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>10.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>11.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>12.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>13.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>14.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>15.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>16.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>17.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>18.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>19.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>20.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>21.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>21.811362270839258</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>22.0</td>
+<td>1.9232904599545946</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>23.0</td>
+<td>1.4895961577002228</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>24.0</td>
+<td>1.0344773986444433</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>25.0</td>
+<td>0.5644800322394689</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>26.0</td>
+<td>0.08636390290438384</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>26.18016566499168</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>27.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>28.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>29.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>30.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>30.55150315673058</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>31.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>32.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>33.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>34.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>35.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>36.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>37.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>38.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>39.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>40.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>41.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>42.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>43.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>44.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>45.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>46.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>47.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>47.99671369528545</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>48.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>49.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>50.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>51.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>52.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>52.36003255569833</td>
+<td>0.0</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>53.0</td>
+<td>0.3069566971700721</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>54.0</td>
+<td>0.7821860604021735</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>55.0</td>
+<td>1.2461654540535114</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>56.0</td>
+<td>1.6922215885719873</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>56.72954512405473</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>57.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>58.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>59.0</td>
+<td>1.9998834404599326</td>
+<td>1</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>0.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>1.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>2.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>3.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>4.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>4.371285826630546</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>5.0</td>
+<td>0.2586864531202089</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>6.0</td>
+<td>0.6376552474259598</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>7.0</td>
+<td>0.9786890394235046</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>8.0</td>
+<td>1.2768828327440604</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>9.0</td>
+<td>1.5279477870798575</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>10.0</td>
+<td>1.7282729034089725</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>11.0</td>
+<td>1.8749769600131283</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>12.0</td>
+<td>1.9659499523068131</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>13.0</td>
+<td>1.9998834404599326</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>14.0</td>
+<td>1.9762893683323712</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>15.0</td>
+<td>1.8955070830528484</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>16.0</td>
+<td>1.758698454281367</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>17.0</td>
+<td>1.5678311633535857</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>18.0</td>
+<td>1.3256504026547997</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>19.0</td>
+<td>1.0356393922637555</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>20.0</td>
+<td>0.7019692817446712</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>21.0</td>
+<td>0.32943915763639486</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>21.811362270839258</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>22.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>23.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>24.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>25.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>26.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>26.18016566499168</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>27.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>28.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="even">
+<td>29.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>Oslo</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The plots below draw the bands as filled lines. The left panel takes the default band height; the right one draws three bands of height 1 on a monotone curve, resampled 4 points per gap. <code>horizon-bands</code> orders the colour domain:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span>}))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:line-width</span> <span class="dv">0</span>})]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">2</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">158</span> <span class="dv">202</span> <span class="dv">225</span>] [<span class="dv">8</span> <span class="dv">69</span> <span class="dv">148</span>] [<span class="dv">252</span> <span class="dv">174</span> <span class="dv">145</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"2 bands"</span> <span class="at">:y</span> <span class="va">nil</span>}</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="at">:rows</span> (series/horizon-rows temperatures {<span class="at">:x</span> <span class="at">:day</span> <span class="at">:y</span> <span class="at">:anomaly</span> <span class="at">:series</span> <span class="at">:city</span> <span class="at">:bands</span> <span class="dv">3</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:band-height</span> <span class="fl">1.0</span> <span class="at">:interpolator</span> <span class="at">:monotone</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:steps-per-gap</span> <span class="dv">4</span>}))</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:band</span> <span class="at">:facet</span> <span class="at">:series</span>}</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:fill</span> <span class="at">:color</span> <span class="at">:alpha</span> <span class="fl">1.0</span> <span class="at">:line-width</span> <span class="dv">0</span>})]</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:kind</span> <span class="at">:ordinal</span> <span class="at">:domain</span> (series/horizon-bands <span class="dv">3</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:range</span> [[<span class="dv">198</span> <span class="dv">219</span> <span class="dv">239</span>] [<span class="dv">107</span> <span class="dv">174</span> <span class="dv">214</span>] [<span class="dv">8</span> <span class="dv">81</span> <span class="dv">156</span>]</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                                                            [<span class="dv">252</span> <span class="dv">187</span> <span class="dv">161</span>] [<span class="dv">251</span> <span class="dv">106</span> <span class="dv">74</span>] [<span class="dv">165</span> <span class="dv">15</span> <span class="dv">21</span>]]}}</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:facets</span> {<span class="at">:columns</span> <span class="dv">1</span>}</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"3 bands of height 1, :monotone"</span> <span class="at">:y</span> <span class="va">nil</span>}}]</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_sets_series_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="horizon-band-labels" class="level2" data-number="29.6">
+<h2 data-number="29.6" class="anchored" data-anchor-id="horizon-band-labels"><span class="header-section-number">29.6</span> Horizon band labels</h2>
+<p><code>series/horizon-bands</code> returns the band labels of a horizon of n bands in drawing order: the positive bands first, then the mirrored negative ones. Use it as the colour domain, as above.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>n</code> – The number of bands per sign.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The band labels in drawing order, <code>[1 .. n -1 .. -n]</code>: the positive bands, then the mirrored negative ones.</div></div>
+<p>The call below returns the labels of 3 bands per sign:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(series/horizon-bands <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="printedClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> -<span class="dv">1</span> -<span class="dv">2</span> -<span class="dv">3</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="statistic-matrices" class="level2" data-number="29.7">
+<h2 data-number="29.7" class="anchored" data-anchor-id="statistic-matrices"><span class="header-section-number">29.7</span> Statistic matrices</h2>
+<p><code>pairwise/matrix-rows</code> computes a statistic for every pair of variables, a row per cell: the statistic of the x variable’s sample against the y variable’s. Use it for a matrix of correlations, distances or effect sizes drawn as tiles.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences), a numeric column per variable of <code>:variables</code>, or of <code>:x-variables</code> and <code>:y-variables</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per cell <code>{:x :y :value :n :statistic}</code>: the statistic of the x sample against the y sample, <code>nil</code> when it can't be computed, and the sample size.</div></div>
+<p>The table below lists the built-in statistics by family. <code>:symmetry</code> tells how a value changes when the samples swap: <code>:symmetric</code> keeps it, <code>:antisymmetric</code> negates it, <code>:reciprocal</code> inverts it, <code>:complementary</code> turns it into <code>1 - v</code>, and <code>:asymmetric</code> changes it otherwise. The <code>:samples</code> column says how a statistic reads the data: paired statistics take the rows where both values are present; independent-sample ones, which compare two groups, take each variable’s own values. For a <code>:signed</code> statistic zero is the neutral value, and a shaded <code>pairwise</code> chart centres its colours on it:</p>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">family</th>
+<th data-quarto-table-cell-role="th">method</th>
+<th data-quarto-table-cell-role="th">label</th>
+<th data-quarto-table-cell-role="th">symmetry</th>
+<th data-quarto-table-cell-role="th">samples</th>
+<th data-quarto-table-cell-role="th">signed</th>
+<th data-quarto-table-cell-role="th">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>:error</td>
+<td>:mae</td>
+<td>MAE</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>mean absolute error</td>
+</tr>
+<tr class="even">
+<td>:error</td>
+<td>:mape</td>
+<td>MAPE</td>
+<td>:asymmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>mean absolute percentage error, relative to xs</td>
+</tr>
+<tr class="odd">
+<td>:error</td>
+<td>:me</td>
+<td>ME</td>
+<td>:antisymmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>mean error, mean of xs - ys</td>
+</tr>
+<tr class="even">
+<td>:error</td>
+<td>:mse</td>
+<td>MSE</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>mean squared error</td>
+</tr>
+<tr class="odd">
+<td>:error</td>
+<td>:r2</td>
+<td>R²</td>
+<td>:asymmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>coefficient of determination of ys predicting xs</td>
+</tr>
+<tr class="even">
+<td>:error</td>
+<td>:rmse</td>
+<td>RMSE</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>root mean squared error</td>
+</tr>
+<tr class="odd">
+<td>:association</td>
+<td>:covariance</td>
+<td>Cov</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>sample covariance</td>
+</tr>
+<tr class="even">
+<td>:association</td>
+<td>:kendall</td>
+<td>Kendall</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>Kendall rank correlation (tau)</td>
+</tr>
+<tr class="odd">
+<td>:association</td>
+<td>:pearson</td>
+<td>Pearson</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>Pearson correlation</td>
+</tr>
+<tr class="even">
+<td>:association</td>
+<td>:spearman</td>
+<td>Spearman</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>Spearman rank correlation</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:ameasure</td>
+<td>A</td>
+<td>:complementary</td>
+<td>:independent</td>
+<td>false</td>
+<td>Vargha-Delaney A, P(x &gt; y) (ties count half)</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:cliffs-delta</td>
+<td>Cliff's δ</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>P(x &gt; y) - P(x &lt; y), non-parametric</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:cohens-d</td>
+<td>Cohen's d</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>standardised mean difference over the pooled standard deviation</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:glass-delta</td>
+<td>Glass's Δ</td>
+<td>:asymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>mean difference over the standard deviation of ys</td>
+</tr>
+<tr class="odd">
+<td>:effect-size</td>
+<td>:hedges-g</td>
+<td>Hedges' g</td>
+<td>:antisymmetric</td>
+<td>:independent</td>
+<td>true</td>
+<td>Cohen's d corrected for small-sample bias</td>
+</tr>
+<tr class="even">
+<td>:effect-size</td>
+<td>:means-ratio</td>
+<td>Means ratio</td>
+<td>:reciprocal</td>
+<td>:independent</td>
+<td>false</td>
+<td>mean of xs over mean of ys</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:canberra</td>
+<td>Canberra</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Canberra distance</td>
+</tr>
+<tr class="even">
+<td>:distance</td>
+<td>:chebyshev</td>
+<td>Chebyshev</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Chebyshev distance</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:cosine</td>
+<td>Cosine</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>true</td>
+<td>cosine similarity</td>
+</tr>
+<tr class="even">
+<td>:distance</td>
+<td>:euclidean</td>
+<td>Euclidean</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Euclidean distance</td>
+</tr>
+<tr class="odd">
+<td>:distance</td>
+<td>:manhattan</td>
+<td>Manhattan</td>
+<td>:symmetric</td>
+<td>:paired</td>
+<td>false</td>
+<td>Manhattan distance</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>These options choose the variables, the statistic and the cells. The table below holds the lower triangle of a symmetric statistic with the diagonal, as <code>plot/pairs</code> lays it out:</p>
+<dl class="options"><div class="option-card"><dt><code>:variables</code><span class="option-default">Default: None: give <code>:x-variables</code> and <code>:y-variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c]})</code></div><div class="option-text">The distinct variables of a square matrix, both its x and its y, in matrix order; at least 2.<ul><li><span>sequence of keywords, distinct variables</span></li></ul></div></dd></div><div class="option-card"><dt><code>:x-variables</code><span class="option-default">Default: None: give <code>:variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:y-variables [:b :c], :x-variables [:a]})</code></div><div class="option-text">The x variables of a rectangular matrix, given with <code>:y-variables</code>; a variable may be in both lists.<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:y-variables</code><span class="option-default">Default: None: give <code>:variables</code> instead.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:x-variables [:a], :y-variables [:b :c]})</code></div><div class="option-text">The y variables of a rectangular matrix, given with <code>:x-variables</code>.<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:pearson</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :method :spearman})</code></div><div class="option-text">Which statistic the function computes, of the x sample against the y sample.<ul><li><code>:pearson</code> – Pearson correlation.</li><li><code>:ameasure</code> – Vargha-Delaney A, P(x &gt; y) (ties count half).</li><li><code>:canberra</code> – Canberra distance.</li><li><code>:chebyshev</code> – Chebyshev distance.</li><li><code>:cliffs-delta</code> – P(x &gt; y) - P(x &lt; y), non-parametric.</li><li><code>:cohens-d</code> – Standardised mean difference over the pooled standard deviation.</li><li><code>:cosine</code> – Cosine similarity.</li><li><code>:covariance</code> – Sample covariance.</li><li><code>:euclidean</code> – Euclidean distance.</li><li><code>:glass-delta</code> – Mean difference over the standard deviation of ys.</li><li><code>:hedges-g</code> – Cohen's d corrected for small-sample bias.</li><li><code>:kendall</code> – Kendall rank correlation (tau).</li><li><code>:mae</code> – Mean absolute error.</li><li><code>:manhattan</code> – Manhattan distance.</li><li><code>:mape</code> – Mean absolute percentage error, relative to xs.</li><li><code>:me</code> – Mean error, mean of xs - ys.</li><li><code>:means-ratio</code> – Mean of xs over mean of ys.</li><li><code>:mse</code> – Mean squared error.</li><li><code>:r2</code> – Coefficient of determination of ys predicting xs.</li><li><code>:rmse</code> – Root mean squared error.</li><li><code>:spearman</code> – Spearman rank correlation.</li><li><a href="reference.types.html#function">function</a> – A function of the two samples <code>(f xs ys)</code> that returns a number.</li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: The statistic's label, e.g. <code>Pearson</code>; <code>value</code> for a function.</span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :label "r"})</code></div><div class="option-text">The statistic's name under <code>:statistic</code> in every row.<ul><li><span>string</span></li></ul></div></dd></div><div class="option-card"><dt><code>:self-pairs</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :self-pairs true})</code></div><div class="option-text">Whether a square matrix has the cells of a variable with itself.<ul><li><code>false</code> – No diagonal cells.</li><li><code>true</code> – The diagonal cells too.</li></ul></div></dd></div><div class="option-card"><dt><code>:triangle</code><span class="option-default">Default: <code>:full</code></span></dt><dd><div class="option-example"><code>(pairwise/matrix-rows rows {:variables [:a :b :c], :triangle :lower})</code></div><div class="option-text">Which cells of a square matrix the function returns; <code>:lower</code> and <code>:upper</code> need a symmetric statistic.<ul><li><code>:full</code> – Every cell.</li><li><code>:lower</code> – The cells with y after x in variable order.</li><li><code>:upper</code> – The cells with y before x in variable order.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (pairwise/matrix-rows iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">:method</span> <span class="at">:spearman</span> <span class="at">:triangle</span> <span class="at">:lower</span> <span class="at">:self-pairs</span> <span class="va">true</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -4515,7 +4404,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>The upper triangle of the mean squared error of two variables (one row - the pair once):</p>
+<p>The table below holds the upper triangle of the mean squared error of two variables, a single row:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (pairwise/matrix-rows iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:petal-length</span>] <span class="at">:method</span> <span class="at">:mse</span> <span class="at">:triangle</span> <span class="at">:upper</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -4540,24 +4432,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>A standalone matrix is a <a href="reference.charts_bins_fields.html#heatmaps">tile</a> per row (<code>:value-label</code> writes the values), two side by side through <a href="reference.facets_arrange.html#arrange"><code>plot/arrange</code></a>. Tiles order the categories as they first appear and y grows upward, so the scales give both axes the variable order - the first variable on top, as in <code>plot/pairs</code>: Cohen’s d of every ordered pair, the diagonal included (left; a signed statistic on a diverging palette centred on 0), and a rectangular matrix of sepal against petal measurements with a user function and its label (right):</p>
+<p><a href="reference.charts_bins_fields.html#heatmaps"><code>chart/tile</code></a> draws a standalone matrix, a tile per row, and its <code>:value-label</code> writes the values; <a href="reference.facets_arrange.html#arrange"><code>plot/arrange</code></a> puts two side by side below. Tiles order the categories as they first appear and y grows upward, so the scales give both axes the variable order, the first variable on top as in <code>plot/pairs</code>. The left panel holds Cohen’s d of every ordered pair with the diagonal, a signed statistic on a diverging palette centred on 0. The right one holds a rectangular matrix of sepal against petal measurements with a function of your own and its label:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> <span class="at">:cohens-d</span> <span class="at">:self-pairs</span> <span class="va">true</span>})</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="st">"sepal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"petal-length"</span> <span class="st">"petal-width"</span>]}</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> {<span class="at">:domain</span> [<span class="st">"petal-width"</span> <span class="st">"petal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"sepal-length"</span>]}</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:title</span> <span class="st">"Cohen's d"</span>}}}</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:x-variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span>]</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:y-variables</span> [<span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">/</span> (<span class="kw">reduce</span> <span class="kw">+</span> xs) (<span class="kw">reduce</span> <span class="kw">+</span> ys)))</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:label</span> <span class="st">"sum ratio"</span>})</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"sum ratio"</span>}}}]</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> <span class="at">:cohens-d</span> <span class="at">:self-pairs</span> <span class="va">true</span>})</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [<span class="st">"sepal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"petal-length"</span> <span class="st">"petal-width"</span>]}</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> {<span class="at">:domain</span> [<span class="st">"petal-width"</span> <span class="st">"petal-length"</span> <span class="st">"sepal-width"</span> <span class="st">"sepal-length"</span>]}</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:domain</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:title</span> <span class="st">"Cohen's d"</span>}}}</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (pairwise/matrix-rows iris {<span class="at">:x-variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span>]</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:y-variables</span> [<span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:method</span> (<span class="kw">fn</span> [xs ys] (<span class="kw">/</span> (<span class="kw">reduce</span> <span class="kw">+</span> xs) (<span class="kw">reduce</span> <span class="kw">+</span> ys)))</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>                                                                     <span class="at">:label</span> <span class="st">"sum ratio"</span>})</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:x</span>) <span class="at">:y</span> (<span class="kw">comp</span> <span class="kw">name</span> <span class="at">:y</span>) <span class="at">:color</span> <span class="at">:value</span>}</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/tile {<span class="at">:value-label</span> <span class="va">true</span>})]</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"sum ratio"</span>}}}]</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.data_sets_series_files/image4.png" class="img-fluid"></p>

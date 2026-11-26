@@ -20,7 +20,7 @@
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
             [cljplot2.theme]
-            [cljplot2.test-util :refer [explicit-defaults migrated pixels same-pixels?]]))
+            [cljplot2.test-util :refer [explicit-defaults migrated migrated-function-groups pixels same-pixels?]]))
 
 (def chart-constructors
   "Kind -> constructor (var) of every built-in chart."
@@ -209,7 +209,8 @@
           [kind path t]))))
 
 (deftest writing-rules-test
-  (let [rows (remove #(contains? migrated (:kind %)) (all-rows))]
+  (let [card-owners (into migrated (migrated-function-groups))
+        rows (remove #(contains? card-owners (:kind %)) (all-rows))]
     (testing "descriptions"
       (is (= [] (rule-breaks rows :description))))
     (testing "default texts"
@@ -223,6 +224,9 @@
                                     {:kind :k :path [:f] :description "A full sentence."}
                                     {:kind :k :path [:g] :description "One. Two. Three."}]
                                    :description #{"A full sentence." "One. Two. Three."})))))
+    (testing "boundary: the groups skipped are the migrated functions' (a function's own group), never a chart's group"
+      (is (contains? (migrated-function-groups) :graph/graph))
+      (is (not-any? (migrated-function-groups) [:common :line-style :strip])))
     (testing "boundary: a card-style text not shared with a migrated chart breaks the table rule"
       (is (= 1 (count (rule-breaks [{:kind :k :path [:a] :description "A full sentence."}] :description #{})))))
     (testing "a migrated chart's mapped :group reads the card way"

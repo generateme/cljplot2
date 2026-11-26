@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -49,10 +51,10 @@ code-block-background: true
 
 # Levels
 
-Functions turning values into levels before plotting: numbers binned into intervals, numbers or dates read as
-levels, levels ordered by a statistic, rows ranked within each x, and overlapping intervals (shingles) for
-conditioning. Each returns rows, a vector of levels (`order-levels`) or a mapping marker (`categorical`) for an
-ordinary plot; options are checked against the table shown.
+These functions turn values into levels before plotting: they bin numbers into intervals, read numbers or dates as
+levels, order levels by a statistic, rank rows within each x and cut overlapping intervals (shingles). Use them to
+prepare categorical data for an ordinary plot. Most return rows; `order-levels` returns a vector of levels and
+`categorical` a mapping marker.
 
 
 ::: {.sourceClojure}
@@ -68,6 +70,8 @@ ordinary plot; options are checked against the table shown.
 ```
 :::
 
+
+The tables below hold the mtcars cars and the iris flowers; the sections use them:
 
 Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson & Velleman 1981); licence: Part of R (GPL-2 | GPL-3).
 
@@ -101,23 +105,52 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 ```
 
 
+The table below holds made-up yearly sales of three products; the ranking section uses it:
 
-## levels/bin
 
-Adds the bin of a numeric value to every row - an interval `[lo, hi)` (the last one closed), printed like R's
-`cut`; a missing or non-numeric value gets no bin.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:as (required)</td><td>the key of the bin column</td><td></td><td>the key of the bin column added to every row (required)</td></tr><tr><td>:bins</td><td>a fastmath bin-estimation method keyword or a vector of at least 2 increasing finite numbers or quantile bins {:quantiles q :estimation e}: q a positive count or a vector of increasing probabilities strictly between 0 and 1, e one of [:legacy :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9] or a positive integer</td><td>:sturges</td><td>the bins: a fastmath bin-estimation method, a bin count, a vector of increasing breaks or quantile bins {:quantiles q :estimation e}</td></tr><tr><td>:digits</td><td>a positive integer</td><td>3</td><td>the fewest significant digits of the printed bounds (more when needed to keep the printed breaks distinct)</td></tr><tr><td>:label</td><td>string or true or false or nil</td><td></td><td>the series name printed in every bin: a string, or true for the accessor's name (keyword accessors only); none when absent</td></tr></tbody></table>
+::: {.sourceClojure}
+```clojure
+(def sales (for [[year amounts] [[2020 [5 9 7]] [2021 [8 9 4]] [2022 [9 6 6]] [2023 [7 10 5]]]
+                 [product amount] (map vector ["apples" "pears" "plums"] amounts)]
+             {:year year :product product :amount amount}))
 ```
-
 :::
 
 
-The bins of the cars' horsepower - five equal-width bins, bounds printed with 2 significant digits - as a new
-column:
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>year</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>2020</td><td>apples</td><td>5</td></tr><tr><td>2020</td><td>pears</td><td>9</td></tr><tr><td>2020</td><td>plums</td><td>7</td></tr><tr><td>2021</td><td>apples</td><td>8</td></tr><tr><td>2021</td><td>pears</td><td>9</td></tr><tr><td>2021</td><td>plums</td><td>4</td></tr><tr><td>2022</td><td>apples</td><td>9</td></tr><tr><td>2022</td><td>pears</td><td>6</td></tr><tr><td>2022</td><td>plums</td><td>6</td></tr><tr><td>2023</td><td>apples</td><td>7</td></tr><tr><td>2023</td><td>pears</td><td>10</td></tr><tr><td>2023</td><td>plums</td><td>5</td></tr></tbody></table></div>
+```
+
+
+
+## Binning
+
+`levels/bin` adds the bin of a numeric value to every row: an interval `[lo, hi)`, the last one closed, printed as
+R's `cut` prints it. A missing or non-numeric value gets no bin. Use it to count or colour by ranges of a number.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:hp</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its bin under <code>:as</code>: an interval <code>[lo, hi)</code>, the last one closed. A missing, non-numeric or non-finite value, or one outside explicit breaks, gets a <code>nil</code> bin.</div></div>
+```
+
+
+These options name the bin column, choose the bins and set how their bounds print. The table below adds five
+equal-width bins of the cars' horsepower, their bounds printed with 2 significant digits:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:as</code></dt><dd><div class="option-example"><code>(levels/bin rows :x {:as :bin})</code></div><div class="option-text">The key of the bin column the function adds to every row.<ul><li><span>the key of the bin column</span></li></ul></div></dd></div><div class="option-card"><dt><code>:bins</code><span class="option-default">Default: <code>:sturges</code></span></dt><dd><div class="option-example"><code>(levels/bin rows :x {:as :bin, :bins 4})</code></div><div class="option-text">How the function cuts the finite values into bins.<ul><li><code>:sturges</code> – <code>ceil(log2(n)) + 1</code> bins; suits roughly normal samples but gives too few bins for large ones.</li><li><code>:sqrt</code> – <code>ceil(sqrt(n))</code> bins.</li><li><code>:rice</code> – <code>ceil(2 * cbrt(n))</code> bins.</li><li><code>:doane</code> – Sturges' rule corrected for skewed samples.</li><li><code>:scott</code> – Bins of width <code>3.5 * sd / cbrt(n)</code>, <code>sd</code> the standard deviation; suits roughly normal samples.</li><li><code>:freedman-diaconis</code> – Bins of width <code>2 * IQR / cbrt(n)</code>, <code>IQR</code> the interquartile range; robust to outliers.</li><li class="option-other">Other fastmath methods: one more rule of thumb and two that pick the bin count by minimising an estimated error. <code>:terrell-scott</code>, <code>:cross-validation</code>, <code>:shimazaki-shinomoto</code></li><li><a href="reference.types.html#breaks">breaks</a> – The bin edges; a value outside them gets a <code>nil</code> bin.</li><li><a href="reference.types.html#quantile-bins">quantile bins</a> – Bins with edges at quantiles of the values.</li><li><a href="reference.types.html#positive-integer">positive integer</a> – That many equal-width bins over the values' range.</li></ul></div></dd></div><div class="option-card"><dt><code>:digits</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>(levels/bin rows :x {:as :bin, :digits 1})</code></div><div class="option-text">The fewest significant digits of the printed bounds; the function prints more when fewer would make two breaks look the same.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: No series name.</span></dt><dd><div class="option-example"><code>(levels/bin rows :x {:as :bin, :label true})</code></div><div class="option-text">The series name printed in every bin.<ul><li><code>true</code> – The accessor's name, e.g. <code>x</code> for <code>:x</code>; only for a keyword accessor.</li><li><code>false</code> – No series name.</li><li><span>string</span> – This name.</li></ul></div></dd></div></dl>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
+```
+:::
+
 
 
 ```{=html}
@@ -125,9 +158,9 @@ column:
 ```
 
 
-Bins are levels: counted by a [bar](reference.charts_bars.html#bar-charts) chart (`:stat :count`), in interval
-order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin
-(right):
+Bins are levels, so a [bar](reference.charts_bars.html#bar-charts) chart with `:stat :count` counts them in
+interval order. The left panel below cuts at explicit breaks, the middle one into quantile bins of about equal counts; the
+right one prints the series name in every bin:
 
 
 ::: {.sourceClojure}
@@ -157,10 +190,19 @@ order. Explicit breaks (left), quantile bins of equal counts (middle), and the s
 
 
 
-## levels/categorical
+## Categorical mapping
 
-A mapping marker: the accessor reads its values as usual, and its dimension is declared categorical - numbers or
-dates become levels (bands on a position axis, an ordinal legend for an aesthetic). It takes no options.
+`levels/categorical` wraps an accessor as a mapping marker: the accessor reads its values as usual, and the mapping
+treats its dimension as categorical. Use it to show numbers or dates as levels: bands on a position axis, an ordinal
+legend for an aesthetic.
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>wrapped-accessor</code> – The accessor whose values the mapping treats as levels, e.g. <code>:cyl</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A mapping marker: an accessor that reads the same values and makes its dimension categorical.</div></div>
+```
+
+
+The left panel below maps the cylinder counts as numbers, the right one as levels:
 
 
 ::: {.sourceClojure}
@@ -185,20 +227,25 @@ dates become levels (bands on a position axis, an ordinal legend for an aestheti
 
 
 
-## levels/order-levels
+## Level order
 
-The levels of a column ordered by a statistic of a value in each level - for a scale `:domain`.
+`levels/order-levels` returns the levels of a column ordered by a statistic of a value in each level. Use it as a
+scale `:domain` to sort a level axis or a legend.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:descending</td><td>true or false</td><td>false</td><td>order the levels by the statistic descending</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>level</code> – The accessor of a row's level.</li><li><code>value</code> – The accessor of the value the statistic scores; a level's finite values are scored.</li><li><code>stat</code> – A function of a non-empty sequence of numbers that returns a number, e.g. <code>stats/median</code> or <code>count</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The levels ordered by their statistic; ties keep first-appearance order, and levels without a finite statistic follow. The <code>nil</code> level is left out.</div></div>
 ```
 
-:::
+
+This option sets the direction. The calls below order the iris species by their median petal length, ascending,
+then descending:
 
 
-Iris species by their median petal length, ascending and descending:
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:descending</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(levels/order-levels rows :level :value stats/mean {:descending true})</code></div><div class="option-text">Whether the largest statistic comes first.<ul><li><code>false</code> – The level of the smallest statistic first.</li><li><code>true</code> – The level of the largest statistic first.</li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
@@ -234,7 +281,8 @@ Iris species by their median petal length, ascending and descending:
 :::
 
 
-The descending order as the domain of the level axis - the cars' carburettor counts, highest median mpg first:
+The plot below takes the descending order as the domain of its level axis, so the carburettor count with the
+highest median mpg comes first:
 
 
 ::: {.sourceClojure}
@@ -255,37 +303,33 @@ The descending order as the domain of the level axis - the cars' carburettor cou
 
 
 
-## levels/rank-rows
+## Ranks
 
-Ranks the rows sharing an x by a value - rank 1 the highest by default - e.g. for a bump chart (a line through
-the ranks on a reversed y domain).
+`levels/rank-rows` ranks the rows sharing an x by a value; by default the highest value ranks 1. Use it for a bump
+chart: a line through the ranks on a reversed y axis.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:as</td><td>the key of the rank column</td><td>:rank</td><td>the key of the rank column added to every row</td></tr><tr><td>:descending</td><td>true or false</td><td>true</td><td>rank the highest value first (rank 1)</td></tr><tr><td>:ties</td><td>one of :average :dense :first :last :max :min :random</td><td>:min</td><td>the fastmath.core/rank tie strategy (:min gives 1, 1, 3; :average gives doubles)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>x</code> – The accessor of a row's x: the function ranks the rows sharing an x together.</li><li><code>value</code> – The accessor of the ranked value.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Every row with its rank under <code>:as</code>, 1 the first; a row without a finite value or a valid x gets <code>nil</code>.</div></div>
 ```
 
-:::
+
+These options name the rank column and set the direction and the ties. The table below ranks the sales per year
+under `:place`; a tie takes the lowest rank, so pears and plums share rank 2 in 2022:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:as</code><span class="option-default">Default: <code>:rank</code></span></dt><dd><div class="option-example"><code>(levels/rank-rows rows :x :value {:as :place})</code></div><div class="option-text">The key of the rank column the function adds to every row.<ul><li><span>the key of the rank column</span></li></ul></div></dd></div><div class="option-card"><dt><code>:descending</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(levels/rank-rows rows :x :value {:descending false})</code></div><div class="option-text">Whether the highest value gets rank 1.<ul><li><code>true</code> – The highest value ranks 1.</li><li><code>false</code> – The lowest value ranks 1.</li></ul></div></dd></div><div class="option-card"><dt><code>:ties</code><span class="option-default">Default: <code>:min</code></span></dt><dd><div class="option-example"><code>(levels/rank-rows rows :x :value {:ties :average})</code></div><div class="option-text">How the function ranks equal values, by <code>fastmath.core/rank</code>.<ul><li><code>:min</code> – The lowest rank of the tie for each: 1, 1, 3.</li><li><code>:average</code> – The mean rank of the tie, a double: 1.5, 1.5, 3.</li><li><code>:dense</code> – The lowest rank, without gaps after a tie: 1, 1, 2.</li><li><code>:first</code> – Consecutive ranks in row order: 1, 2, 3.</li><li><code>:last</code> – Consecutive ranks in reverse row order: 2, 1, 3.</li><li><code>:max</code> – The highest rank of the tie for each: 2, 2, 3.</li><li><code>:random</code> – Consecutive ranks in random order.</li></ul></div></dd></div></dl>
+```
 
 
 
 ::: {.sourceClojure}
 ```clojure
-(def sales (for [[year amounts] [[2020 [5 9 7]] [2021 [8 9 4]] [2022 [9 6 6]] [2023 [7 10 5]]]
-                 [product amount] (map vector ["apples" "pears" "plums"] amounts)]
-             {:year year :product product :amount amount}))
+(nu/result-table (levels/rank-rows sales :year :amount {:as :place :ties :min}))
 ```
 :::
 
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>year</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>2020</td><td>apples</td><td>5</td></tr><tr><td>2020</td><td>pears</td><td>9</td></tr><tr><td>2020</td><td>plums</td><td>7</td></tr><tr><td>2021</td><td>apples</td><td>8</td></tr><tr><td>2021</td><td>pears</td><td>9</td></tr><tr><td>2021</td><td>plums</td><td>4</td></tr><tr><td>2022</td><td>apples</td><td>9</td></tr><tr><td>2022</td><td>pears</td><td>6</td></tr><tr><td>2022</td><td>plums</td><td>6</td></tr><tr><td>2023</td><td>apples</td><td>7</td></tr><tr><td>2023</td><td>pears</td><td>10</td></tr><tr><td>2023</td><td>plums</td><td>5</td></tr></tbody></table></div>
-```
-
-
-The ranks under `:place`, ties taking the lowest rank (2022: pears and plums share 2):
 
 
 ```{=html}
@@ -293,9 +337,9 @@ The ranks under `:place`, ties taking the lowest rank (2022: pears and plums sha
 ```
 
 
-A bump chart of the ranks (left; rank 1 on top with the y scale's `:reverse true`, see
-[Order and direction](reference.scales_axes_coords.html#order-and-direction)), and ranks counted from the lowest
-amount with average ties (right):
+The left panel below draws a bump chart of the ranks, rank 1 on top through the y scale's `:reverse true` (see
+[Order and direction](reference.scales_axes_coords.html#order-and-direction)). The right one counts the ranks
+from the lowest amount and averages the ties:
 
 
 ::: {.sourceClojure}
@@ -323,23 +367,26 @@ amount with average ties (right):
 
 
 
-## shingle/shingle
+## Shingles
 
-Repeats every row once per interval containing its value - overlapping intervals (a lattice shingle) to
-condition on a continuous variable, typically as a facet.
+`shingle/shingle` cuts a numeric column into overlapping intervals, a lattice shingle, and repeats every row once per
+interval holding its value. Use it to condition a plot on a continuous variable, usually as a facet.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:as (required)</td><td>the key of the interval column</td><td></td><td>the key of the interval column added to every repeated row (required)</td></tr><tr><td>:intervals</td><td>sequential of [a finite number, a finite number] (at least 1)</td><td>equal-count intervals from :n and :overlap</td><td>the intervals [[lo hi] ...], closed, lo <= hi</td></tr><tr><td>:n</td><td>a positive integer</td><td>6</td><td>the number of equal-count intervals (fewer when the data can't support them; ignored with :intervals)</td></tr><tr><td>:overlap</td><td>a number in [0 1)</td><td>0.5</td><td>the fraction of points shared by neighbouring equal-count intervals (ignored with :intervals)</td></tr><tr><td>:label</td><td>string or true or false or nil</td><td></td><td>the series name printed in every interval (and so in facet strips): a string, or true for the accessor's name (keyword accessors only); none when absent</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows (maps) or columns (a map of equal-length sequences).</li><li><code>value</code> – The accessor of a row's numeric value, e.g. <code>:wt</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The rows repeated once per interval holding their value, the interval under <code>:as</code>; the function leaves out rows whose value is missing, not finite or in no interval.</div></div>
 ```
 
-:::
+
+These options name the interval column, choose the intervals and set the series name. The plot below cuts the
+cars' weight into 3 equal-count intervals, neighbours sharing a quarter of their points, and facets mpg against
+horsepower by them ([facets](reference.data_mapping.html#facets)); every strip prints the series name:
 
 
-Equal-count intervals of the cars' weight - 3 of them, neighbours sharing a quarter of their points - as a facet
-of mpg against horsepower ([facets](reference.data_mapping.html#facets)); the series name is printed in every
-strip:
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:as</code></dt><dd><div class="option-example"><code>(shingle/shingle rows :x {:as :interval})</code></div><div class="option-text">The key of the interval column the function adds to every repeated row.<ul><li><span>the key of the interval column</span></li></ul></div></dd></div><div class="option-card"><dt><code>:intervals</code><span class="option-default">Default: Equal-count intervals from <code>:n</code> and <code>:overlap</code>.</span></dt><dd><div class="option-example"><code>(shingle/shingle rows :x {:as :interval, :intervals [[-1 0] [0 1]]})</code></div><div class="option-text">The intervals, each <code>[lo hi]</code> closed with <code>lo</code> at most <code>hi</code>; a row goes into every interval holding its value.<ul><li><span>sequence of (pair of finite numbers)</span></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>6</code></span></dt><dd><div class="option-example"><code>(shingle/shingle rows :x {:as :interval, :n 3})</code></div><div class="option-text">The number of equal-count intervals; the function makes fewer when the data can't support them. <code>:intervals</code> overrides it.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:overlap</code><span class="option-default">Default: <code>0.5</code></span></dt><dd><div class="option-example"><code>(shingle/shingle rows :x {:as :interval, :overlap 0.1})</code></div><div class="option-text">The share of points neighbouring equal-count intervals have in common. <code>:intervals</code> overrides it.<ul><li><a href="reference.types.html#overlap-fraction">overlap fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: No series name.</span></dt><dd><div class="option-example"><code>(shingle/shingle rows :x {:as :interval, :label true})</code></div><div class="option-text">The series name printed in every interval, and so in facet strips.<ul><li><code>true</code> – The accessor's name, e.g. <code>x</code> for <code>:x</code>; only for a keyword accessor.</li><li><code>false</code> – No series name.</li><li><span>string</span> – This name.</li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
@@ -357,7 +404,15 @@ strip:
 :::
 
 
-Explicit intervals instead, here overlapping by hand:
+The table below takes explicit intervals instead; neighbours overlap by 0.5:
+
+
+::: {.sourceClojure}
+```clojure
+(nu/result-table (shingle/shingle mtcars :wt {:as :weight :intervals [[1.5 3.0] [2.5 4.0] [3.5 5.5]]}))
+```
+:::
+
 
 
 ```{=html}

@@ -8,7 +8,7 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [error-data migrated-builders]]))
+            [cljplot2.test-util :refer [error-data migrated-builders migrated-function-groups migrated-functions]]))
 
 (def builders
   "The builders of `cljplot2.core`."
@@ -48,20 +48,39 @@
 (defn- documented-problems
   "Entries of `schema` breaking the documentation rules: no description, both `:default` and a default text, or a text
   breaking its style - an option table's (lowercase, no closing period, at most 200 characters) or, for the paths in
-  `card-paths` and below them, an option card's (uppercase or code first, a closing period, at most 300 characters;
-  `option-cards-test` checks the rest)."
-  ([schema] (documented-problems schema #{}))
-  ([schema card-paths]
-   (vec (for [[path props v] (all-entries schema)
+  `card-paths` and below them, or of entries of the shared groups `card-groups` and below them, an option card's
+  (uppercase or code first, a closing period, at most 300 characters; `option-cards-test` checks the rest)."
+  ([schema] (documented-problems schema #{} #{}))
+  ([schema card-paths] (documented-problems schema card-paths #{}))
+  ([schema card-paths card-groups]
+   (let [entries (all-entries schema)
+         card-roots (into (set card-paths) (keep (fn [[path props]] (when (card-groups (:cljplot2/fragment props)) path))) entries)]
+    (vec (for [[path props v] entries
               :when (not (schema/forbidden? v))
               :let [texts (keep props [:description :cljplot2/default-doc])
-                    card? (some #(= % (subvec path 0 (min (count path) (count %)))) card-paths)]
+                    card? (some #(= % (subvec path 0 (min (count path) (count %)))) card-roots)]
               :when (or (nil? (:description props))
                         (and (contains? props :default) (contains? props :cljplot2/default-doc))
                         (if card?
                           (some #(not (and (re-find #"^[A-Z`]" %) (str/ends-with? % ".") (<= (count %) 300))) texts)
                           (some #(or (re-find #"^[A-Z]" %) (str/ends-with? % ".") (> (count %) 200)) texts)))]
-          path))))
+          path)))))
+
+(deftest documented-problems-test
+  (let [s [:map {:closed true}
+           [:own {:description "table text"} :int]
+           [:g {:description "Card text." :cljplot2/fragment :grp} :int]
+           [:h {:description "table text" :cljplot2/fragment :grp} :int]
+           [:m {:description "Card map."} [:map [:k {:description "Card key."} :int]]]
+           [:gm {:description "Card map." :cljplot2/fragment :grp} [:map [:k {:description "Card key."} :int]]]]]
+    (testing "boundary: table texts by default, card texts under card paths and in card groups (nested entries too)"
+      (is (= [[:g] [:m] [:m :k] [:gm] [:gm :k]] (documented-problems s)))
+      (is (= [[:g] [:gm] [:gm :k]] (documented-problems s #{[:m]})))
+      (is (= [[:h] [:m] [:m :k]] (documented-problems s #{} #{:grp})))
+      (is (= [[:h]] (documented-problems s #{[:m]} #{:grp})))
+      (is (= [[:own] [:h]] (documented-problems s #{[]} #{}))))))
+
+
 
 (defn- positional-args
   "`nil` for each positional argument of `v`'s longest arity taking options (the last argument)."
@@ -76,14 +95,16 @@
     [bad (error-data #(apply @v (concat (positional-args v) [{bad 1}])))]))
 
 (deftest builders-test
-  (doseq [v builders]
+  (doseq [:let [card-groups (migrated-function-groups)]
+          v builders]
     (testing (str (var-name v) ": options schema, documented")
       (is (some? (:cljplot2/options (meta v))))
       (is (seq (describe/options v)))
       (is (= [] (documented-problems (:cljplot2/options (meta v))
                                      (if (migrated-builders (:name (meta v)))
                                        (set (map :path (describe/own-rows (describe/options v))))
-                                       #{})))))
+                                       #{})
+                                     card-groups))))
     (testing (str (var-name v) ": the core var documents the implementation's schema")
       (let [n (:name (meta v))
             impl-ns (cond ('#{arrange pairs} n) "cljplot2.multiplot" ('#{acf horizon} n) "cljplot2.series-plots" :else "cljplot2.graphs")
@@ -95,13 +116,61 @@
         (is (= bad (:key data)))
         (is (re-find #"should be spelled" (pr-str (:errors data))))))))
 
+(defn- positional-names
+  "The positional parameter names of a function with var metadata `m`, in its longest arity: a symbol, or a
+  destructured map's `:as`; the options map - the last parameter of a function with `:cljplot2/options` - left out."
+  [m]
+  (let [arglist (last (sort-by count (:arglists m)))
+        names (mapv #(if (map? %) (:as %) %) arglist)]
+    (cond-> names (:cljplot2/options m) pop)))
+
+(defn- optional-names
+  "The positional parameter names (see [[positional-names]]) a call may leave out: those past the shortest arity's."
+  [m]
+  (set (drop (count (first (sort-by count (:arglists m)))) (positional-names m))))
+
+(defn- card-text?
+  "Tests whether `t` reads as an option card's text: uppercase or code first, a closing period, at most 300 characters."
+  [t]
+  (and (string? t) (re-find #"^[A-Z`]" t) (str/ends-with? t ".") (<= (count t) 300)))
+
+(deftest positional-names-test
+  (testing "boundary: symbols, a destructured map's :as, the options map left out, optional trailing parameters"
+    (let [m {:arglists '([g] [{:keys [nodes] :as g} {:keys [order] :as options}]) :cljplot2/options {}}]
+      (is (= '[g] (positional-names m)))
+      (is (= #{} (optional-names m))))
+    (let [m {:arglists '([rows mapping] [rows mapping sets])}]
+      (is (= '[rows mapping sets] (positional-names m)))
+      (is (= '#{sets} (optional-names m))))
+    (is (= '[rows value] (positional-names {:arglists '([rows value {:keys [as] :as options}]) :cljplot2/options {}})))
+    (is (= #{} (optional-names {:arglists '([rows value {:keys [as] :as options}]) :cljplot2/options {}}))
+        "a required options map: every positional parameter is required"))
+  (testing "boundary: the card text rule"
+    (is (every? card-text? ["A graph." "`g` first."]))
+    (is (not-any? card-text? ["a graph." "A graph" nil (str "A" (apply str (repeat 300 "x")) ".")]))))
+
+(deftest arguments-test
+  (doseq [v (concat (filter #(migrated-builders (:name (meta %))) builders) (describe/api-vars))
+          :let [m (meta v)
+                {:cljplot2/keys [arguments returns]} m]]
+    (testing (str (var-name v) ": every positional parameter documented in order, optional ones marked; card texts; a return value")
+      (is (= (positional-names m) (mapv :name arguments)))
+      (is (= (optional-names m) (set (map :name (filter :optional arguments)))))
+      (is (= [] (vec (for [{arg :name :keys [description columns] map-keys :keys} arguments
+                           t (concat [description] (vals columns) (vals map-keys))
+                           :when (not (card-text? t))]
+                       [arg t]))))
+      (is (card-text? returns) (str returns)))))
+
 (deftest api-vars-test
   (testing "exactly the user-facing functions are marked"
     (is (= api-names (set (map var-name (describe/api-vars))))))
   (doseq [v (describe/api-vars)
           :when (:cljplot2/options (meta v))]
     (testing (str (var-name v) ": options documented")
-      (is (= [] (documented-problems (:cljplot2/options (meta v))))))
+      (is (= [] (if (migrated-functions (symbol v))
+                  (documented-problems (:cljplot2/options (meta v)) #{[]})
+                  (documented-problems (:cljplot2/options (meta v)))))))
     (testing (str (var-name v) ": a misspelled option fails first, keyed by it")
       (let [[bad data] (bad-option-error v)]
         (is (= bad (:key data)))))))

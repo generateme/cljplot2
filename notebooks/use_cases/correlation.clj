@@ -335,7 +335,7 @@
 
 ;; ### Values in cells: the correlation matrix
 
-;; [`pairwise/matrix-rows`](reference.data_sets_series.html#pairwisematrix-rows) gives r of every pair of variables,
+;; [`pairwise/matrix-rows`](reference.data_sets_series.html#statistic-matrices) gives r of every pair of variables,
 ;; here the lower triangle with the diagonal, each pair once; one tile per pair, coloured on a diverging scale over
 ;; [-1 1] and labelled with its value (`:value-label`, text in a contrasting colour). The y scale's `:reverse` puts
 ;; the first variable on top.

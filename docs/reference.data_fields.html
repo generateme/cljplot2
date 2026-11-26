@@ -128,6 +128,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
 .mapping ul { margin: 0; padding-left: 1.25rem; }
 .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.mapping-returns { margin-top: 0.25rem; }
+.mapping code { white-space: pre-wrap; }
 .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
 .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
 .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -500,11 +502,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#fielddomain-color" id="toc-fielddomain-color" class="nav-link active" data-scroll-target="#fielddomain-color"><span class="header-section-number">30.1</span> field/domain-color</a></li>
-  <li><a href="#contourisolines" id="toc-contourisolines" class="nav-link" data-scroll-target="#contourisolines"><span class="header-section-number">30.2</span> contour/isolines</a></li>
-  <li><a href="#vector-fieldarrows" id="toc-vector-fieldarrows" class="nav-link" data-scroll-target="#vector-fieldarrows"><span class="header-section-number">30.3</span> vector-field/arrows</a></li>
-  <li><a href="#vector-fieldtraces" id="toc-vector-fieldtraces" class="nav-link" data-scroll-target="#vector-fieldtraces"><span class="header-section-number">30.4</span> vector-field/traces</a></li>
-  <li><a href="#vector-fieldmapped-points" id="toc-vector-fieldmapped-points" class="nav-link" data-scroll-target="#vector-fieldmapped-points"><span class="header-section-number">30.5</span> vector-field/mapped-points</a></li>
+  <li><a href="#domain-colouring" id="toc-domain-colouring" class="nav-link active" data-scroll-target="#domain-colouring"><span class="header-section-number">30.1</span> Domain colouring</a></li>
+  <li><a href="#isolines" id="toc-isolines" class="nav-link" data-scroll-target="#isolines"><span class="header-section-number">30.2</span> Isolines</a></li>
+  <li><a href="#vector-field-arrows" id="toc-vector-field-arrows" class="nav-link" data-scroll-target="#vector-field-arrows"><span class="header-section-number">30.3</span> Vector field arrows</a></li>
+  <li><a href="#streamlines" id="toc-streamlines" class="nav-link" data-scroll-target="#streamlines"><span class="header-section-number">30.4</span> Streamlines</a></li>
+  <li><a href="#mapped-points" id="toc-mapped-points" class="nav-link" data-scroll-target="#mapped-points"><span class="header-section-number">30.5</span> Mapped points</a></li>
   </ul>
 </nav>
     </div>
@@ -542,7 +544,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Functions turning functions of the plane into something to draw: a colour per pixel of a complex function, the level lines of a gridded field, and the rows of a vector field - arrows, traces (streamlines) and points mapped through it - drawn with ordinary charts (<code>field</code>, <code>line</code>, <code>segment</code>, <code>scatter</code>).</p>
+<p>These functions turn functions of the plane into something to draw: a colour per pixel of a complex function, the level lines of a gridded field, and the rows of a vector field (arrows, traces and points mapped through it). Use them with ordinary charts: <code>field</code>, <code>line</code>, <code>segment</code> and <code>scatter</code>.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.data-fields</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.complex <span class="at">:as</span> cx]</span>
@@ -558,106 +560,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="fielddomain-color" class="level2" data-number="30.1">
-<h2 data-number="30.1" class="anchored" data-anchor-id="fielddomain-color"><span class="header-section-number">30.1</span> field/domain-color</h2>
-<p>A <code>:pixel-color</code> function for <code>chart/field</code> colouring a complex function by domain colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1] by <code>:wrap</code>, in a hue-first <code>:colorspace</code>.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:wrap</td>
-<td>one of :exp :frac :log10 :log2 :sigmoid :sin</td>
-<td>:log2</td>
-<td>how the magnitude of f is wrapped into [0 1] for the brightness (see cljplot2.data.field/wrap)</td>
-</tr>
-<tr class="even">
-<td>:colorspace</td>
-<td>one of :HCL :HSB :HSI :HSL :HSV :HWB</td>
-<td>:HSI</td>
-<td>the hue-first colour space of the colours (:HSI - old cljplot's example)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>log(z) / sin(z) with the defaults (<code>:log2</code> wrap, <code>:HSI</code>), then every other <code>:wrap</code>:</p>
+<p>The grid below holds a field <code>sin x + cos 1.3y</code> over [-3 3]²: axis coordinates <code>:xs</code> and <code>:ys</code>, their counts <code>:nx</code> and <code>:ny</code>, and <code>:values</code> row by row, x fastest; the isolines section uses it. The table below holds its axis coordinates, the same along x and y:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z))))</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"defaults (:log2, :HSI)"</span>}}</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:log10</span>})</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :log10"</span>}}</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:exp</span>})</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :exp"</span>}}</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:frac</span>})</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :frac"</span>}}</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:sigmoid</span>})</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :sigmoid"</span>}}</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:sin</span>})</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :sin"</span>}}]</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">680</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_fields_files/image0.png" class="img-fluid"></p>
-</div>
-<p>The colour spaces (here with z³ - 1, its three zeros where all hues meet):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HCL</span>})</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HCL"</span>}}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSB</span>})</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSB"</span>}}</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSI</span> <span class="at">:wrap</span> <span class="at">:log2</span>})</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSI"</span>}}</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSL</span>})</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSL"</span>}}</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSV</span>})</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSV"</span>}}</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HWB</span>})</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HWB"</span>}}]</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">680</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_fields_files/image1.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="contourisolines" class="level2" data-number="30.2">
-<h2 data-number="30.2" class="anchored" data-anchor-id="contourisolines"><span class="header-section-number">30.2</span> contour/isolines</h2>
-<p>The lines of a gridded field at one level (marching squares) - what <code>chart/contour</code> draws - as point vectors, each open or closed. The grid: <code>:xs</code> / <code>:ys</code> (axis coordinates), <code>:nx</code> / <code>:ny</code> and <code>:values</code> (row by row, x fastest):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> grid-xs </span>(<span class="kw">range</span> -<span class="fl">3.0</span> <span class="fl">3.01</span> <span class="fl">0.25</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> grid-xs </span>(<span class="kw">range</span> -<span class="fl">3.0</span> <span class="fl">3.01</span> <span class="fl">0.25</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -748,294 +653,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> grid </span>{<span class="at">:xs</span> (<span class="kw">double-array</span> grid-xs) <span class="at">:ys</span> (<span class="kw">double-array</span> grid-xs) <span class="at">:nx</span> (<span class="kw">count</span> grid-xs) <span class="at">:ny</span> (<span class="kw">count</span> grid-xs)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">:values</span> (<span class="kw">double-array</span> (<span class="kw">for</span> [y grid-xs x grid-xs] (m/+ (m/sin x) (m/cos (m/* <span class="fl">1.3</span> y)))))})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> grid </span>{<span class="at">:xs</span> (<span class="kw">double-array</span> grid-xs) <span class="at">:ys</span> (<span class="kw">double-array</span> grid-xs) <span class="at">:nx</span> (<span class="kw">count</span> grid-xs) <span class="at">:ny</span> (<span class="kw">count</span> grid-xs)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">:values</span> (<span class="kw">double-array</span> (<span class="kw">for</span> [y grid-xs x grid-xs] (m/+ (m/sin x) (m/cos (m/* <span class="fl">1.3</span> y)))))})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The lines at levels 1 and 1.5 (their number of points) - an open line leaving the grid and a closed ring around the field’s peak:</p>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">points</th>
-<th data-quarto-table-cell-role="th">closed</th>
-<th data-quarto-table-cell-role="th">level</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>41</td>
-<td>false</td>
-<td>1.0</td>
-</tr>
-<tr class="even">
-<td>30</td>
-<td>true</td>
-<td>1.5</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Drawn as lines - every point row with its level and line number, a closed line’s first point repeated at its end - for six levels:</p>
+<p>The points below form a grid of seeds over [-2 2]²; the trace and mapped point sections use them:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [level [-<span class="fl">1.0</span> -<span class="fl">0.5</span> <span class="fl">0.0</span> <span class="fl">0.5</span> <span class="fl">1.0</span> <span class="fl">1.5</span>]</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                [i {<span class="at">:keys</span> [points closed]}] (map-indexed <span class="kw">vector</span> (contour/isolines grid level))</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                [x y] (cond-&gt; points closed (<span class="kw">conj</span> (<span class="kw">first</span> points)))]</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                            {<span class="at">:level</span> level <span class="at">:line</span> (<span class="kw">str</span> level <span class="st">"/"</span> i) <span class="at">:x</span> x <span class="at">:y</span> y})</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:level</span> <span class="va">%</span>)) <span class="at">:group</span> <span class="at">:line</span>}</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:line-width</span> <span class="dv">2</span>})]</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"level"</span> <span class="at">:domain</span> [<span class="st">"-1.0"</span> <span class="st">"-0.5"</span> <span class="st">"0.0"</span> <span class="st">"0.5"</span> <span class="st">"1.0"</span> <span class="st">"1.5"</span>]}}</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:aspect</span> <span class="at">:iso</span>}</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_fields_files/image2.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="vector-fieldarrows" class="level2" data-number="30.3">
-<h2 data-number="30.3" class="anchored" data-anchor-id="vector-fieldarrows"><span class="header-section-number">30.3</span> vector-field/arrows</h2>
-<p>Arrows of a vector field <code>f</code> (a function of a point <code>[x y]</code> returning a vector) on a grid over <code>:domain</code> - rows <code>{:x :y :xend :yend :magnitude}</code> for <code>chart/segment</code> with arrowheads.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:domain (required)</td>
-<td>map</td>
-<td></td>
-<td>the domain of the arrow grid {:x [lo hi] :y [lo hi]} (required)</td>
-</tr>
-<tr class="even">
-<td>:domain :x (required)</td>
-<td>[lo hi], finite numbers, lo &lt; hi</td>
-<td></td>
-<td>x domain [lo hi], lo &lt; hi</td>
-</tr>
-<tr class="odd">
-<td>:domain :y (required)</td>
-<td>[lo hi], finite numbers, lo &lt; hi</td>
-<td></td>
-<td>y domain [lo hi], lo &lt; hi</td>
-</tr>
-<tr class="even">
-<td>:n</td>
-<td>a positive integer or [a positive integer, a positive integer]</td>
-<td>20</td>
-<td>grid cells per axis, or [nx ny]</td>
-</tr>
-<tr class="odd">
-<td>:grid</td>
-<td>one of :square :shifted</td>
-<td>:square</td>
-<td>arrow starts: cell centres (:square) or every second row moved half a cell along x (:shifted)</td>
-</tr>
-<tr class="even">
-<td>:length-scale</td>
-<td>a positive finite number</td>
-<td>1.0</td>
-<td>arrow length factor: an arrow is length-scale * cell * (1 - e^-|f|) long</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="data-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">x</th>
-<th data-quarto-table-cell-role="th">y</th>
-<th data-quarto-table-cell-role="th">xend</th>
-<th data-quarto-table-cell-role="th">yend</th>
-<th data-quarto-table-cell-role="th">magnitude</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>-1.5</td>
-<td>-1.5</td>
-<td>-0.8776564068446936</td>
-<td>-2.1223435931553065</td>
-<td>2.1213203435596424</td>
-</tr>
-<tr class="even">
-<td>-0.5</td>
-<td>-1.5</td>
-<td>0.2535005691504276</td>
-<td>-1.751166856383476</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="odd">
-<td>0.5</td>
-<td>-1.5</td>
-<td>1.2535005691504275</td>
-<td>-1.248833143616524</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="even">
-<td>1.5</td>
-<td>-1.5</td>
-<td>2.1223435931553065</td>
-<td>-0.8776564068446936</td>
-<td>2.1213203435596424</td>
-</tr>
-<tr class="odd">
-<td>-1.5</td>
-<td>-0.5</td>
-<td>-1.248833143616524</td>
-<td>-1.2535005691504275</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="even">
-<td>-0.5</td>
-<td>-0.5</td>
-<td>-0.14154543408980363</td>
-<td>-0.8584545659101963</td>
-<td>0.7071067811865476</td>
-</tr>
-<tr class="odd">
-<td>0.5</td>
-<td>-0.5</td>
-<td>0.8584545659101963</td>
-<td>-0.14154543408980363</td>
-<td>0.7071067811865476</td>
-</tr>
-<tr class="even">
-<td>1.5</td>
-<td>-0.5</td>
-<td>1.751166856383476</td>
-<td>0.2535005691504276</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="odd">
-<td>-1.5</td>
-<td>0.5</td>
-<td>-1.751166856383476</td>
-<td>-0.2535005691504276</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="even">
-<td>-0.5</td>
-<td>0.5</td>
-<td>-0.8584545659101963</td>
-<td>0.14154543408980363</td>
-<td>0.7071067811865476</td>
-</tr>
-<tr class="odd">
-<td>0.5</td>
-<td>0.5</td>
-<td>0.14154543408980363</td>
-<td>0.8584545659101963</td>
-<td>0.7071067811865476</td>
-</tr>
-<tr class="even">
-<td>1.5</td>
-<td>0.5</td>
-<td>1.248833143616524</td>
-<td>1.2535005691504275</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="odd">
-<td>-1.5</td>
-<td>1.5</td>
-<td>-2.1223435931553065</td>
-<td>0.8776564068446936</td>
-<td>2.1213203435596424</td>
-</tr>
-<tr class="even">
-<td>-0.5</td>
-<td>1.5</td>
-<td>-1.2535005691504275</td>
-<td>1.248833143616524</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="odd">
-<td>0.5</td>
-<td>1.5</td>
-<td>-0.2535005691504276</td>
-<td>1.751166856383476</td>
-<td>1.5811388300841898</td>
-</tr>
-<tr class="even">
-<td>1.5</td>
-<td>1.5</td>
-<td>0.8776564068446936</td>
-<td>2.1223435931553065</td>
-<td>2.1213203435596424</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>A rotation on the default square grid (left), on a shifted grid with longer arrows (middle), and a fastmath field (<code>fastmath.fields</code>) with the arrows coloured by magnitude (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (vf/arrows (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y) x)) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">12</span> <span class="at">:grid</span> <span class="at">:square</span>})</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span>}</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"rotation, :n 12"</span>}}</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/arrows (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y) x)) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">12</span> <span class="at">:grid</span> <span class="at">:shifted</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:length-scale</span> <span class="fl">1.6</span>})</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span>}</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":grid :shifted, :length-scale 1.6"</span>}}</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/arrows (f/field <span class="at">:hyperbolic</span>) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">3</span> <span class="dv">3</span>] <span class="at">:y</span> [-<span class="dv">3</span> <span class="dv">3</span>]} <span class="at">:n</span> [<span class="dv">16</span> <span class="dv">12</span>]})</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span> <span class="at">:color</span> <span class="at">:magnitude</span>}</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:line-width</span> <span class="fl">1.5</span> <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"|f|"</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"hyperbolic, :n [16 12]"</span>}}]</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">1.25</span>]})</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.data_fields_files/image3.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="vector-fieldtraces" class="level2" data-number="30.4">
-<h2 data-number="30.4" class="anchored" data-anchor-id="vector-fieldtraces"><span class="header-section-number">30.4</span> vector-field/traces</h2>
-<p>Paths following the field from seed points - rows <code>{:id :i :x :y}</code> (seed index, step); each step moves a point along f, <code>:steps</code> times by a factor <code>:step</code>.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:steps</td>
-<td>a positive integer</td>
-<td>100</td>
-<td>the number of steps of every trace</td>
-</tr>
-<tr class="even">
-<td>:step</td>
-<td>a positive finite number</td>
-<td>0.01</td>
-<td>the step factor: each step moves p by f(p) * (1 - e^-|f(p)|) * step</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> seeds </span>(<span class="kw">for</span> [x (<span class="kw">range</span> -<span class="fl">2.0</span> <span class="fl">2.01</span> <span class="fl">0.5</span>) y (<span class="kw">range</span> -<span class="fl">2.0</span> <span class="fl">2.01</span> <span class="fl">0.5</span>)] [x y]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> seeds </span>(<span class="kw">for</span> [x (<span class="kw">range</span> -<span class="fl">2.0</span> <span class="fl">2.01</span> <span class="fl">0.5</span>) y (<span class="kw">range</span> -<span class="fl">2.0</span> <span class="fl">2.01</span> <span class="fl">0.5</span>)] [x y]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1292,6 +915,298 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </div>
+</div>
+<section id="domain-colouring" class="level2" data-number="30.1">
+<h2 data-number="30.1" class="anchored" data-anchor-id="domain-colouring"><span class="header-section-number">30.1</span> Domain colouring</h2>
+<p><code>field/domain-color</code> returns a <code>:pixel-color</code> function for <code>chart/field</code> that colours a complex function by domain colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1], in a hue-first colour space. Use it to see the zeros, poles and phase of a complex function.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A complex function of <code>fastmath.complex</code> from <code>Vec2</code> to <code>Vec2</code>, e.g. <code>cx/log</code>.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A <code>:pixel-color</code> function of a point <code>[x y]</code> that returns the colour of f(x + iy).</div></div>
+<p>These options set how the magnitude wraps and the colour space. The panels below draw log(z) / sin(z) with the defaults, then with every other <code>:wrap</code>:</p>
+<dl class="options"><div class="option-card"><dt><code>:wrap</code><span class="option-default">Default: <code>:log2</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:wrap :exp})</code></div><div class="option-text">How the function wraps the magnitude of <code>f</code> into [0 1] for the brightness.<ul><li><code>:log2</code> – The fractional part of <code>log2(v + 1)</code>: bands where the magnitude plus 1 doubles.</li><li><code>:exp</code> – <code>1 - e^-v</code>: dark at zeros, bright towards poles.</li><li><code>:frac</code> – The fractional part of <code>v</code>: a band per unit of magnitude.</li><li><code>:log10</code> – The fractional part of <code>log10(v + 1)</code>: bands where the magnitude plus 1 grows tenfold.</li><li><code>:sigmoid</code> – The logistic function of <code>v</code>.</li><li><code>:sin</code> – <code>sin v</code> scaled to [0 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:colorspace</code><span class="option-default">Default: <code>:HSI</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:colorspace :HCL})</code></div><div class="option-text">The hue-first colour space the function builds the colours in; <code>:HSI</code> matches the old cljplot.<ul><li><code>:HSI</code> – Hue, saturation, intensity.</li><li><code>:HCL</code> – Hue, chroma, luminance.</li><li><code>:HSB</code> – Hue, saturation, brightness.</li><li><code>:HSL</code> – Hue, saturation, lightness.</li><li><code>:HSV</code> – Hue, saturation, value.</li><li><code>:HWB</code> – Hue, whiteness, blackness.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z))))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"defaults (:log2, :HSI)"</span>}}</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:log10</span>})</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :log10"</span>}}</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:exp</span>})</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :exp"</span>}}</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:frac</span>})</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :frac"</span>}}</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:sigmoid</span>})</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :sigmoid"</span>}}</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/div (cx/log z) (cx/sin z)))</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:wrap</span> <span class="at">:sin</span>})</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]}})]</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":wrap :sin"</span>}}]</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">680</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_fields_files/image0.png" class="img-fluid"></p>
+</div>
+<p>The panels below draw z³ - 1 in each colour space; all hues meet at its three zeros:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HCL</span>})</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HCL"</span>}}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSB</span>})</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSB"</span>}}</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSI</span> <span class="at">:wrap</span> <span class="at">:log2</span>})</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSI"</span>}}</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSL</span>})</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSL"</span>}}</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HSV</span>})</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HSV"</span>}}</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/field {<span class="at">:pixel-color</span> (field/domain-color (<span class="kw">fn</span> [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>                                                                                           {<span class="at">:colorspace</span> <span class="at">:HWB</span>})</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]}})]</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":colorspace :HWB"</span>}}]</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">680</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_fields_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="isolines" class="level2" data-number="30.2">
+<h2 data-number="30.2" class="anchored" data-anchor-id="isolines"><span class="header-section-number">30.2</span> Isolines</h2>
+<p><code>contour/isolines</code> traces the lines of a gridded field at one level by marching squares and returns them as point vectors, each open or closed; <code>chart/contour</code> draws them. Use it for level lines of your own.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>grid</code> – A sampled field <code>{:xs :ys :nx :ny :values}</code>: double arrays of the axis coordinates, their counts, and a double array of the values row by row, x fastest.</li><li><code>level</code> – The contour level; a value equal to it counts as above.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A vector of lines <code>{:points :closed}</code>, open lines first; empty when the field doesn't cross the level.</div></div>
+<p>The table below counts the points of the lines at levels 1 and 1.5: an open line that leaves the grid and a closed ring around the field’s peak:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (<span class="kw">for</span> [level [<span class="fl">1.0</span> <span class="fl">1.5</span>] line (contour/isolines grid level)]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                   (<span class="kw">assoc</span> (<span class="kw">update</span> line <span class="at">:points</span> <span class="kw">count</span>) <span class="at">:level</span> level)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">points</th>
+<th data-quarto-table-cell-role="th">closed</th>
+<th data-quarto-table-cell-role="th">level</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>41</td>
+<td>false</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>30</td>
+<td>true</td>
+<td>1.5</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The plot below draws the lines of six levels from a row per point, with its level and line number; a closed line repeats its first point at its end:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [level [-<span class="fl">1.0</span> -<span class="fl">0.5</span> <span class="fl">0.0</span> <span class="fl">0.5</span> <span class="fl">1.0</span> <span class="fl">1.5</span>]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                [i {<span class="at">:keys</span> [points closed]}] (map-indexed <span class="kw">vector</span> (contour/isolines grid level))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                [x y] (cond-&gt; points closed (<span class="kw">conj</span> (<span class="kw">first</span> points)))]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                            {<span class="at">:level</span> level <span class="at">:line</span> (<span class="kw">str</span> level <span class="st">"/"</span> i) <span class="at">:x</span> x <span class="at">:y</span> y})</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:level</span> <span class="va">%</span>)) <span class="at">:group</span> <span class="at">:line</span>}</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:line-width</span> <span class="dv">2</span>})]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"level"</span> <span class="at">:domain</span> [<span class="st">"-1.0"</span> <span class="st">"-0.5"</span> <span class="st">"0.0"</span> <span class="st">"0.5"</span> <span class="st">"1.0"</span> <span class="st">"1.5"</span>]}}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:aspect</span> <span class="at">:iso</span>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_fields_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="vector-field-arrows" class="level2" data-number="30.3">
+<h2 data-number="30.3" class="anchored" data-anchor-id="vector-field-arrows"><span class="header-section-number">30.3</span> Vector field arrows</h2>
+<p><code>vector-field/arrows</code> returns the arrows of a vector field on a grid over <code>:domain</code>. Use it with <code>chart/segment</code> and arrowheads.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per arrow <code>{:x :y :xend :yend :magnitude}</code>, from a grid point along the field; zero and non-finite vectors are left out.</div></div>
+<p>These options set the domain, the grid and the arrow length. The table below holds the arrows of a rotation on a 4 × 4 grid:</p>
+<dl class="options"><div class="option-card"><dt><code>:domain</code></dt><dd><div class="option-text">The domain of the arrow grid along x and y.</div></dd></div><div class="option-card"><dt><code>:domain :x</code></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-2 2], :y [-1 1]}})</code></div><div class="option-text">The x domain <code>[lo hi]</code>.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain :y</code></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-2 2]}})</code></div><div class="option-text">The y domain <code>[lo hi]</code>.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>20</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :n 5})</code></div><div class="option-text">The number of grid cells per axis.<ul><li><a href="reference.types.html#positive-integer">positive integer</a> – The same count along both axes.</li><li><span>pair of positive integers</span> – The counts <code>[nx ny]</code> along x and y.</li></ul></div></dd></div><div class="option-card"><dt><code>:grid</code><span class="option-default">Default: <code>:square</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :grid :shifted})</code></div><div class="option-text">Where the arrows start.<ul><li><code>:square</code> – At the cell centres.</li><li><code>:shifted</code> – At the cell centres, every second row moved half a cell along x.</li></ul></div></dd></div><div class="option-card"><dt><code>:length-scale</code><span class="option-default">Default: <code>1.0</code></span></dt><dd><div class="option-example"><code>(vf/arrows f {:domain {:x [-1 1], :y [-1 1]}, :length-scale 0.5})</code></div><div class="option-text">The arrow length factor: an arrow is <code>length-scale * cell * (1 - e^-|f|)</code> long, where <code>cell</code> is the smaller cell side.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (vf/arrows (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y) x)) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">4</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="data-table">
+<div class="table-responsive">
+<table class="table table-hover clay-table caption-top">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">x</th>
+<th data-quarto-table-cell-role="th">y</th>
+<th data-quarto-table-cell-role="th">xend</th>
+<th data-quarto-table-cell-role="th">yend</th>
+<th data-quarto-table-cell-role="th">magnitude</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>-1.5</td>
+<td>-1.5</td>
+<td>-0.8776564068446936</td>
+<td>-2.1223435931553065</td>
+<td>2.1213203435596424</td>
+</tr>
+<tr class="even">
+<td>-0.5</td>
+<td>-1.5</td>
+<td>0.2535005691504276</td>
+<td>-1.751166856383476</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="odd">
+<td>0.5</td>
+<td>-1.5</td>
+<td>1.2535005691504275</td>
+<td>-1.248833143616524</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="even">
+<td>1.5</td>
+<td>-1.5</td>
+<td>2.1223435931553065</td>
+<td>-0.8776564068446936</td>
+<td>2.1213203435596424</td>
+</tr>
+<tr class="odd">
+<td>-1.5</td>
+<td>-0.5</td>
+<td>-1.248833143616524</td>
+<td>-1.2535005691504275</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="even">
+<td>-0.5</td>
+<td>-0.5</td>
+<td>-0.14154543408980363</td>
+<td>-0.8584545659101963</td>
+<td>0.7071067811865476</td>
+</tr>
+<tr class="odd">
+<td>0.5</td>
+<td>-0.5</td>
+<td>0.8584545659101963</td>
+<td>-0.14154543408980363</td>
+<td>0.7071067811865476</td>
+</tr>
+<tr class="even">
+<td>1.5</td>
+<td>-0.5</td>
+<td>1.751166856383476</td>
+<td>0.2535005691504276</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="odd">
+<td>-1.5</td>
+<td>0.5</td>
+<td>-1.751166856383476</td>
+<td>-0.2535005691504276</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="even">
+<td>-0.5</td>
+<td>0.5</td>
+<td>-0.8584545659101963</td>
+<td>0.14154543408980363</td>
+<td>0.7071067811865476</td>
+</tr>
+<tr class="odd">
+<td>0.5</td>
+<td>0.5</td>
+<td>0.14154543408980363</td>
+<td>0.8584545659101963</td>
+<td>0.7071067811865476</td>
+</tr>
+<tr class="even">
+<td>1.5</td>
+<td>0.5</td>
+<td>1.248833143616524</td>
+<td>1.2535005691504275</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="odd">
+<td>-1.5</td>
+<td>1.5</td>
+<td>-2.1223435931553065</td>
+<td>0.8776564068446936</td>
+<td>2.1213203435596424</td>
+</tr>
+<tr class="even">
+<td>-0.5</td>
+<td>1.5</td>
+<td>-1.2535005691504275</td>
+<td>1.248833143616524</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="odd">
+<td>0.5</td>
+<td>1.5</td>
+<td>-0.2535005691504276</td>
+<td>1.751166856383476</td>
+<td>1.5811388300841898</td>
+</tr>
+<tr class="even">
+<td>1.5</td>
+<td>1.5</td>
+<td>0.8776564068446936</td>
+<td>2.1223435931553065</td>
+<td>2.1213203435596424</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The left panel below draws the rotation on the default square grid, the middle one on a shifted grid with longer arrows. The right one draws a fastmath field (<code>fastmath.fields</code>) and colours the arrows by magnitude:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (vf/arrows (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y) x)) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">12</span> <span class="at">:grid</span> <span class="at">:square</span>})</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span>}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"rotation, :n 12"</span>}}</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/arrows (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y) x)) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:y</span> [-<span class="dv">2</span> <span class="dv">2</span>]} <span class="at">:n</span> <span class="dv">12</span> <span class="at">:grid</span> <span class="at">:shifted</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                                                                   <span class="at">:length-scale</span> <span class="fl">1.6</span>})</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span>}</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":grid :shifted, :length-scale 1.6"</span>}}</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/arrows (f/field <span class="at">:hyperbolic</span>) {<span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">3</span> <span class="dv">3</span>] <span class="at">:y</span> [-<span class="dv">3</span> <span class="dv">3</span>]} <span class="at">:n</span> [<span class="dv">16</span> <span class="dv">12</span>]})</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:xend</span> <span class="at">:xend</span> <span class="at">:yend</span> <span class="at">:yend</span> <span class="at">:color</span> <span class="at">:magnitude</span>}</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/segment {<span class="at">:line-width</span> <span class="fl">1.5</span> <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"|f|"</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"hyperbolic, :n [16 12]"</span>}}]</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="dv">1</span> <span class="fl">1.25</span>]})</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.data_fields_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="streamlines" class="level2" data-number="30.4">
+<h2 data-number="30.4" class="anchored" data-anchor-id="streamlines"><span class="header-section-number">30.4</span> Streamlines</h2>
+<p><code>vector-field/traces</code> returns paths that follow the field from seed points. Use it for streamlines.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li><li><code>seeds</code> – The start points <code>[x y]</code> of the paths.</li></ul><div class="mapping-returns"><strong>Returns</strong> – Rows <code>{:id :i :x :y}</code>: the seed's index, the step (0 at the seed) and the point; a path ends before a non-finite point.</div></div>
+<p>These options set the number of steps and their length. The table below holds the first rows of five steps from every seed:</p>
+<dl class="options"><div class="option-card"><dt><code>:steps</code><span class="option-default">Default: <code>100</code></span></dt><dd><div class="option-example"><code>(vf/traces f seeds {:steps 10})</code></div><div class="option-text">The number of steps of every trace.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:step</code><span class="option-default">Default: <code>0.01</code></span></dt><dd><div class="option-example"><code>(vf/traces f seeds {:step 0.05})</code></div><div class="option-text">The step factor: each step moves a point <code>p</code> by <code>f(p) * (1 - e^-|f(p)|) * step</code>.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y (<span class="kw">*</span> <span class="fl">0.3</span> x)) (<span class="kw">-</span> (<span class="kw">-</span> x) (<span class="kw">*</span> <span class="fl">0.3</span> y)))) seeds {<span class="at">:steps</span> <span class="dv">5</span> <span class="at">:step</span> <span class="fl">0.1</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1915,40 +1830,45 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Streamlines of a damped rotation from the seed grid - short (left) and long (middle; the spirals stop short of the centre after 400 steps) - and traces of a cellular flow <code>[sin y, sin x]</code> from 300 seeded random points as faint lines (right; cells turning in alternate directions, traces leaving the panel are cut):</p>
+<p>The left and middle panels below draw streamlines of a damped rotation from the seed grid, short and long; after 400 steps the spirals stop short of the centre. The right one draws traces of a cellular flow <code>[sin y, sin x]</code> from 300 seeded random points as faint lines: the cells turn in alternate directions, and the panel cuts the traces that leave it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y (<span class="kw">*</span> <span class="fl">0.3</span> x)) (<span class="kw">-</span> (<span class="kw">-</span> x) (<span class="kw">*</span> <span class="fl">0.3</span> y)))) seeds</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                                    {<span class="at">:steps</span> <span class="dv">20</span> <span class="at">:step</span> <span class="fl">0.05</span>})</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span>}</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":steps 20, :step 0.05"</span>}}</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y (<span class="kw">*</span> <span class="fl">0.3</span> x)) (<span class="kw">-</span> (<span class="kw">-</span> x) (<span class="kw">*</span> <span class="fl">0.3</span> y)))) seeds</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                                                    {<span class="at">:steps</span> <span class="dv">400</span> <span class="at">:step</span> <span class="fl">0.05</span>})</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span> <span class="at">:color</span> <span class="at">:i</span>}</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span>})]</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"step"</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":steps 400"</span>}}</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">12</span>)]</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                                           (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (m/sin y) (m/sin x)))</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                                                      (<span class="kw">repeatedly</span> <span class="dv">300</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">4</span> <span class="dv">4</span>) (r/drandom g -<span class="dv">4</span> <span class="dv">4</span>)))</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                                                      {<span class="at">:steps</span> <span class="dv">60</span> <span class="at">:step</span> <span class="fl">0.05</span>}))</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span>}</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:color</span> [<span class="dv">20</span> <span class="dv">70</span> <span class="dv">140</span> <span class="dv">70</span>]})]</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [-<span class="dv">4</span> <span class="dv">4</span>] <span class="at">:nice</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:domain</span> [-<span class="dv">4</span> <span class="dv">4</span>] <span class="at">:nice</span> <span class="va">false</span>}}</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"[sin y, sin x], 300 seeds"</span>}}]</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span> <span class="dv">1</span>]})</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y (<span class="kw">*</span> <span class="fl">0.3</span> x)) (<span class="kw">-</span> (<span class="kw">-</span> x) (<span class="kw">*</span> <span class="fl">0.3</span> y)))) seeds</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                                    {<span class="at">:steps</span> <span class="dv">20</span> <span class="at">:step</span> <span class="fl">0.05</span>})</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span>}</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:arrow</span> {<span class="at">:end</span> <span class="va">true</span> <span class="at">:size</span> <span class="dv">5</span>}})]</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":steps 20, :step 0.05"</span>}}</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (<span class="kw">-</span> y (<span class="kw">*</span> <span class="fl">0.3</span> x)) (<span class="kw">-</span> (<span class="kw">-</span> x) (<span class="kw">*</span> <span class="fl">0.3</span> y)))) seeds</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                                                    {<span class="at">:steps</span> <span class="dv">400</span> <span class="at">:step</span> <span class="fl">0.05</span>})</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span> <span class="at">:color</span> <span class="at">:i</span>}</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span>})]</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"step"</span> <span class="at">:range</span> [[<span class="dv">160</span> <span class="dv">200</span> <span class="dv">235</span>] [<span class="dv">8</span> <span class="dv">48</span> <span class="dv">107</span>]]}}</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":steps 400"</span>}}</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">12</span>)]</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                                           (vf/traces (<span class="kw">fn</span> [[x y]] (v/vec2 (m/sin y) (m/sin x)))</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                                                      (<span class="kw">repeatedly</span> <span class="dv">300</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">4</span> <span class="dv">4</span>) (r/drandom g -<span class="dv">4</span> <span class="dv">4</span>)))</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>                                                      {<span class="at">:steps</span> <span class="dv">60</span> <span class="at">:step</span> <span class="fl">0.05</span>}))</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:group</span> <span class="at">:id</span>}</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/line {<span class="at">:order</span> <span class="at">:data</span> <span class="at">:color</span> [<span class="dv">20</span> <span class="dv">70</span> <span class="dv">140</span> <span class="dv">70</span>]})]</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:x</span> {<span class="at">:domain</span> [-<span class="dv">4</span> <span class="dv">4</span>] <span class="at">:nice</span> <span class="va">false</span>} <span class="at">:y</span> {<span class="at">:domain</span> [-<span class="dv">4</span> <span class="dv">4</span>] <span class="at">:nice</span> <span class="va">false</span>}}</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"[sin y, sin x], 300 seeds"</span>}}]</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span> <span class="dv">1</span>]})</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.data_fields_files/image4.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="vector-fieldmapped-points" class="level2" data-number="30.5">
-<h2 data-number="30.5" class="anchored" data-anchor-id="vector-fieldmapped-points"><span class="header-section-number">30.5</span> vector-field/mapped-points</h2>
-<p>Seed points mapped once through the field: rows <code>{:x :y :x0 :y0}</code> - the image f(x0, y0) and its seed.</p>
+<section id="mapped-points" class="level2" data-number="30.5">
+<h2 data-number="30.5" class="anchored" data-anchor-id="mapped-points"><span class="header-section-number">30.5</span> Mapped points</h2>
+<p><code>vector-field/mapped-points</code> maps seed points once through the field. Use it to draw the image of a region.</p>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>f</code> – A vector field: a function of a point <code>[x y]</code> that returns a vector <code>[u v]</code>, e.g. a <code>fastmath.fields</code> field.</li><li><code>seeds</code> – The points <code>[x y]</code> to map.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A row per seed <code>{:x :y :x0 :y0}</code>: its image and the seed; seeds whose image isn't finite are left out.</div></div>
+<p>The table below maps the first 20 seeds through a sinusoidal field:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(nu/result-table (vf/mapped-points (f/field <span class="at">:sinusoidal</span>) (<span class="kw">take</span> <span class="dv">20</span> seeds)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <div class="data-table">
 <div class="table-responsive">
 <table class="table table-hover clay-table caption-top">
@@ -2085,27 +2005,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>100 000 seeded random points through two fastmath fields, coloured by the seed’s x (the field’s image of the square [-3 3]²):</p>
+<p>The plots below map 100 000 seeded random points of the square [-3 3]² through two fastmath fields and colour them by the seed’s x:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">9</span>)]</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                           (vf/mapped-points (f/field <span class="at">:swirl</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                                             (<span class="kw">repeatedly</span> <span class="dv">100000</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>) (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>)))))</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:x0</span>}</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">1</span>})]</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">250</span> <span class="dv">190</span> <span class="dv">120</span>] [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">10</span>]]}}</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"swirl"</span>}}</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">10</span>)]</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                                           (vf/mapped-points (f/field <span class="at">:horseshoe</span>)</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                                                             (<span class="kw">repeatedly</span> <span class="dv">100000</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>) (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>)))))</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:x0</span>}</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">1</span>})]</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"x0"</span> <span class="at">:range</span> [[<span class="dv">250</span> <span class="dv">190</span> <span class="dv">120</span>] [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">10</span>]]}}</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"horseshoe"</span>}}]</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">9</span>)]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                           (vf/mapped-points (f/field <span class="at">:swirl</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                                             (<span class="kw">repeatedly</span> <span class="dv">100000</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>) (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>)))))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:x0</span>}</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">1</span>})]</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> [[<span class="dv">250</span> <span class="dv">190</span> <span class="dv">120</span>] [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">10</span>]]}}</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:legend</span> <span class="va">false</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"swirl"</span>}}</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> (<span class="kw">let</span> [g (r/rng <span class="at">:mersenne</span> <span class="dv">10</span>)]</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                                           (vf/mapped-points (f/field <span class="at">:horseshoe</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                                                             (<span class="kw">repeatedly</span> <span class="dv">100000</span> #(<span class="kw">vector</span> (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>) (r/drandom g -<span class="dv">3</span> <span class="dv">3</span>)))))</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:x0</span>}</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">1</span>})]</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:title</span> <span class="st">"x0"</span> <span class="at">:range</span> [[<span class="dv">250</span> <span class="dv">190</span> <span class="dv">120</span>] [<span class="dv">120</span> <span class="dv">30</span> <span class="dv">10</span>]]}}</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"horseshoe"</span>}}]</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.2</span>]})</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.data_fields_files/image5.png" class="img-fluid"></p>

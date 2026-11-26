@@ -28,6 +28,8 @@ format:
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
         .mapping ul { margin: 0; padding-left: 1.25rem; }
         .mapping .required { font-size: 0.75rem; padding: 0 0.3rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+        .mapping-returns { margin-top: 0.25rem; }
+        .mapping code { white-space: pre-wrap; }
         .shared { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #6c757d; border-radius: 0.375rem; background: #f6f6f6; }
         .shared-title { font-weight: 700; margin-bottom: 0.25rem; }
         .shared-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -666,7 +668,7 @@ Source: [R Graph Gallery - The heatmap function (side colours)](https://r-graph-
 
 ### Values in cells: the correlation matrix
 
-[`pairwise/matrix-rows`](reference.data_sets_series.html#pairwisematrix-rows) gives r of every pair of variables,
+[`pairwise/matrix-rows`](reference.data_sets_series.html#statistic-matrices) gives r of every pair of variables,
 here the lower triangle with the diagonal, each pair once; one tile per pair, coloured on a diverging scale over
 [-1 1] and labelled with its value (`:value-label`, text in a contrasting colour). The y scale's `:reverse` puts
 the first variable on top.

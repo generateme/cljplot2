@@ -43,7 +43,9 @@
   Returns a vector of the leaves under `node` in order; a leaf gives itself.
 
   See also `leaf?`."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'node :description "A tree node, usually the root."}]
+   :cljplot2/returns "The leaves under the node in order; a leaf returns itself."}
   [node]
   (if (leaf? node) [node] (vec (mapcat leaves (:children node)))))
 
@@ -64,7 +66,10 @@
   Throws `ex-info {:key :leaf-names}` when `leaf-names` doesn't have one name per observation.
 
   See also [[from-levels]], [[from-parents]], [[layout]]."
-  {:cljplot2/api true}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'result :description "A fastmath `hclust` result."}
+                         {:name 'leaf-names :optional true :description "The observations' names, one per observation. Without them the leaves are named by their indices."}]
+   :cljplot2/returns "The root node: groups `{:height :children}` and leaves `{:name :index :height}`."}
   ([result] (from-hclust result nil))
   ([result leaf-names]
    (let [{:keys [height order ^long n] merges :merge} (:tree result)
@@ -113,7 +118,9 @@
 (def from-levels-options
   "Options schema of [[from-levels]]."
   [:map {:closed true}
-   (schema/nilable :hierarchy {:description "level accessors, outer level first (none - a root without children)"}
+   (schema/nilable :hierarchy {:description "The accessors of the level columns, outer level first."
+                               :cljplot2/default-doc "No levels: a root without children."
+                               :cljplot2/example [:region :country]}
                    [:sequential schema/accessor])])
 
 (defn from-levels
@@ -131,7 +138,10 @@
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[from-levels-options]]).
 
   See also [[from-parents]], [[from-hclust]], [[layout]]."
-  {:cljplot2/api true :cljplot2/options from-levels-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "The data rows, a level column for each accessor of `:hierarchy`."}]
+   :cljplot2/returns "The root group: every node with its level value under `:name` and its number of rows under `:value`, a leaf per distinct level path."
+   :cljplot2/options from-levels-options}
   ([rows] (from-levels rows {}))
   ([rows {:keys [hierarchy] :as options}]
    (schema/check-options! from-levels-options options)
@@ -145,9 +155,11 @@
 (def from-parents-options
   "Options schema of [[from-parents]]."
   [:map {:closed true}
-   (schema/optional :id {:description "accessor of a row's node id" :default :id} schema/accessor)
-   (schema/optional :parent {:description "accessor of a row's parent id (nil - the root)" :default :parent} schema/accessor)
-   (schema/nilable :name {:description "accessor of a node's name" :cljplot2/default-doc "the id accessor"} schema/accessor)])
+   (schema/optional :id {:description "The accessor of a row's node id." :default :id :cljplot2/example :key} schema/accessor)
+   (schema/optional :parent {:description "The accessor of a row's parent id; the root's is `nil`." :default :parent :cljplot2/example :up}
+                    schema/accessor)
+   (schema/nilable :name {:description "The accessor of a node's name." :cljplot2/default-doc "The id accessor." :cljplot2/example :label}
+                   schema/accessor)])
 
 (defn from-parents
   "Builds the tree of rows linked by parent ids, as d3 `stratify`.
@@ -167,7 +179,10 @@
   Throws `ex-info {:key :parent}` for no root or several roots, a parent id that isn't a row's id, a repeated id, or a cycle; `{:key k}` for an invalid option `k` (checked first, see [[from-parents-options]]).
 
   See also [[from-levels]], [[from-hclust]], [[leaf-key]]."
-  {:cljplot2/api true :cljplot2/options from-parents-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'rows :description "One row per node." :columns {:id "The node's id; the option `:id` names another column." :parent "The parent's id, `nil` for the root; the option `:parent` names another column."}}]
+   :cljplot2/returns "The root node: each node is its row with `:id`, `:name` and `:height`, a group also with its `:children` in row order."
+   :cljplot2/options from-parents-options}
   ([rows] (from-parents rows {}))
   ([rows {:keys [id parent] name-accessor :name :or {id :id parent :parent} :as options}]
    (schema/check-options! from-parents-options options)
@@ -270,20 +285,25 @@
 
 (def ^:private circular-entry
   "Option entry `:circular` of the tree layouts."
-  (schema/nilable :circular {:description "radial: breadth as the angle over :span degrees, height (or depth) as the radius; points in [-1, 1]"
-                             :default false}
+  (schema/nilable :circular {:description "Whether the layout is radial."
+                             :default false
+                             :cljplot2/value-meanings {true "Radial: the breadth as the angle over `:span` degrees, the height or depth as the radius; points in [-1, 1]."
+                                                       false "Along the axes."}}
                   schema/bool))
 
 (def ^:private span-entry
   "Option entry `:span` of the circular tree layouts."
-  (schema/optional :span {:description "degrees a circular layout covers, clockwise from the top" :default 360.0} schema/finite-pos))
+  (schema/optional :span {:description "The degrees a circular layout covers, clockwise from the top." :default 360.0
+                          :cljplot2/example 180 :cljplot2/example-context {:circular true}}
+                   schema/finite-pos))
 
 (def layout-entries
   "Option entries of [[layout]] (a shared group, `:tree/layout`; [[cljplot2.graphs/dendrogram]] forwards them)."
   (schema/in-fragment
    :tree/layout
-   [(schema/nilable :k {:description "cluster count: cutting the k - 1 highest groups leaves k subtrees, clusters 1..k in leaf order (at most the leaf count)"
-                        :cljplot2/default-doc "no clusters (every :cluster nil)"}
+   [(schema/nilable :k {:description "The number of clusters, at most the leaf count: cutting the k - 1 highest groups leaves k subtrees, numbered 1 to k in leaf order under `:cluster`."
+                        :cljplot2/default-doc "No clusters: every `:cluster` is `nil`."
+                        :cljplot2/example 2}
                     schema/pos-int)
     circular-entry
     span-entry]))
@@ -310,7 +330,10 @@
   Throws `ex-info {:key :k}` for more clusters than leaves; `{:key k}` for an invalid option `k` (checked first, see [[layout-options]]).
 
   See also [[node-link-layout]], [[bundle-paths]], [[arc-points]]."
-  {:cljplot2/api true :cljplot2/options layout-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'root :description "The root of a tree of `tree/from-hclust`, `tree/from-levels` or `tree/from-parents`."}]
+   :cljplot2/returns "`{:nodes :paths}`: the nodes with their positions and clusters, and an elbow path per branch as rows `{:id :x :y :cluster}`."
+   :cljplot2/options layout-options}
   ([root] (layout root {}))
   ([root {:keys [k circular ^double span] :or {span 360.0} :as options}]
    (schema/check-options! layout-options options)
@@ -506,10 +529,14 @@
   them)."
   (schema/in-fragment
    :tree/node-link-layout
-   [(schema/optional :layout {:description "node placement: :tidy (every node at its depth, d3 tree) or :cluster (leaves at the deepest depth, d3 cluster)"
-                              :default :tidy}
+   [(schema/optional :layout {:description "How the function places the nodes."
+                              :default :tidy
+                              :cljplot2/value-meanings {:tidy "Every node at its depth, as d3 `tree`."
+                                                        :cluster "Every leaf at the deepest depth, a group at the mean position of its children, as d3 `cluster`."}}
                      [:enum :tidy :cluster])
-    (schema/optional :links {:description "link shape: :diagonal (curves along the depth axis) or :line" :default :diagonal}
+    (schema/optional :links {:description "The shape of the links." :default :diagonal
+                             :cljplot2/value-meanings {:diagonal "Curves that leave and enter the nodes along the depth axis."
+                                                       :line "Straight lines."}}
                      [:enum :diagonal :line])
     circular-entry
     span-entry]))
@@ -535,7 +562,10 @@
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[node-link-layout-options]]).
 
   See also [[layout]], `tidy-breadths`."
-  {:cljplot2/api true :cljplot2/options node-link-layout-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'root :description "The root of a tree of `tree/from-hclust`, `tree/from-levels` or `tree/from-parents`."}]
+   :cljplot2/returns "`{:nodes :links}`: the nodes with their depth, breadth and position, and a link path per node but the root as rows `{:id :x :y}`."
+   :cljplot2/options node-link-layout-options}
   ([root] (node-link-layout root {}))
   ([root {:keys [links circular ^double span] layout-kind :layout :or {layout-kind :tidy links :diagonal span 360.0} :as options}]
    (schema/check-options! node-link-layout-options options)
@@ -653,9 +683,12 @@
   them)."
   (schema/in-fragment
    :tree/bundle-paths
-   [(schema/optional :from {:description "accessor of an edge row's source leaf id" :default :from} schema/accessor)
-    (schema/optional :to {:description "accessor of an edge row's target leaf id" :default :to} schema/accessor)
-    (schema/optional :beta {:description "bundling strength: 1 - along the tree path, 0 - a straight line" :default 0.85}
+   [(schema/optional :from {:description "The accessor of an edge row's source leaf key." :default :from :cljplot2/example :source}
+                     schema/accessor)
+    (schema/optional :to {:description "The accessor of an edge row's target leaf key." :default :to :cljplot2/example :target}
+                     schema/accessor)
+    (schema/optional :beta {:description "The bundling strength: 1 routes an edge along its tree path, 0 draws a straight line."
+                            :default 0.85 :cljplot2/example 0.3}
                      schema/fraction)]))
 
 (def bundle-paths-options
@@ -692,7 +725,11 @@
   Returns `{:paths [{:id i :x x :y y ..} ..] :dropped n}` - path rows with the edge's index `:id` and its row's keys kept; edges with an end that isn't a leaf, or the same leaf at both ends, are dropped and counted.
 
   Throws `ex-info {:key k}` for an invalid option `k` (checked first, see [[bundle-paths-options]])."
-  {:cljplot2/api true :cljplot2/options bundle-paths-options}
+  {:cljplot2/api true
+   :cljplot2/arguments [{:name 'edges :description "Edge rows between leaves of the tree." :columns {:from "The source leaf: a `tree/from-parents` node's `:id`, else a leaf's `:name`; the option `:from` names another column." :to "The target leaf; the option `:to` names another column."}}
+                         {:name 'laid :description "The tree's layout of `tree/layout`, usually circular."}]
+   :cljplot2/returns "`{:paths :dropped}`: a path per edge as rows `{:id :x :y}` with the edge's columns; the function drops and counts edges whose end isn't a leaf or that join a leaf to itself."
+   :cljplot2/options bundle-paths-options}
   ([edges laid] (bundle-paths edges laid {}))
   ([edges laid {:keys [from to ^double beta] :or {from :from to :to beta 0.85} :as options}]
    (schema/check-options! bundle-paths-options options)

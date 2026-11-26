@@ -1,8 +1,8 @@
 ;; # Graphs and trees
 
-;; Functions turning edges, adjacency matrices, parent links, level columns or clusterings into graphs and trees,
-;; and laying them out as rows - node positions, edge paths, ring sectors, bands - that ordinary charts draw (the
-;; graph and tree builders are made of them). Options are checked against the table shown.
+;; These functions build graphs and trees from edges, adjacency matrices, parent links, level columns or clusterings,
+;; and lay them out as rows: node positions, edge paths, ring sectors and bands. Use them to draw graphs and trees
+;; with ordinary charts; the graph and tree builders call them.
 
 (ns reference.data-graphs-trees
   (:require [fastmath.ml.clustering :as cl]
@@ -16,7 +16,8 @@
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
 
-;; Flights between airports (counts), the airports as node rows, and the same flows as a matrix:
+;; The tables below hold made-up flight counts between airports, and the airports as node rows; the graph sections
+;; use them:
 
 (def flights [{:src "WAW" :dst "BER" :n 12} {:src "WAW" :dst "PRG" :n 5} {:src "BER" :dst "PRG" :n 8}
               {:src "PRG" :dst "VIE" :n 6} {:src "VIE" :dst "WAW" :n 4} {:src "BER" :dst "VIE" :n 3}
@@ -29,39 +30,117 @@
 
 (nu/data-table airports)
 
-;; ## graph/graph
+;; The matrix below holds made-up counts of projects four teams share; the adjacency section uses it:
 
-;; The graph of edge rows: nodes (the given node rows first, then ids seen only in edges) with their degrees, and
-;; edges with numeric weights. Undirected by default; directed graphs split degrees into in and out.
+(def shared-projects [[0 3 1 0] [3 0 2 4] [1 2 0 0] [0 4 0 0]])
 
-(nu/options-table (describe/options #'graph/graph))
+;; The table below holds made-up stages of a web shop with their columns; the sankey section uses it:
 
-;; The flights as a directed graph with the airports as nodes - Krakow has no flights (degree 0):
+(def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
 
-(nu/data-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed true})))
+(nu/data-table stages)
 
-;; The edges of the flights as an undirected graph, the weights from `:n` as numbers (`:value`):
+;; The table below holds made-up passenger counts by class, sex and survival; the alluvial section uses it:
 
-(nu/data-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed false})))
+(def passengers [{:class "1st" :sex "f" :survived "yes" :n 140} {:class "1st" :sex "m" :survived "no" :n 118}
+                 {:class "2nd" :sex "f" :survived "yes" :n 80} {:class "2nd" :sex "m" :survived "no" :n 154}
+                 {:class "3rd" :sex "f" :survived "no" :n 106} {:class "3rd" :sex "m" :survived "no" :n 422}
+                 {:class "3rd" :sex "f" :survived "yes" :n 90} {:class "1st" :sex "m" :survived "yes" :n 62}])
 
-;; Without a `:value` accessor every edge weighs 1:
+(nu/data-table passengers)
 
-(nu/data-table (:edges (graph/graph flights {:from :src :to :dst})))
+;; The table below holds twelve mtcars cars; the clustering sections use it:
 
-;; ## graph/layout
+(nu/source-note {:dataset :mtcars})
 
-;; Node positions in the unit square: a force-directed layout (each connected component on its own, packed), a
-;; circle or random places. Edges get the positions of both ends - segments to draw.
+(def mtcars (take 12 (nu/dataset :mtcars)))
 
-(nu/options-table (describe/options #'graph/layout))
+(nu/data-table mtcars)
 
-;; The laid-out nodes (`:x`, `:y` added):
+;; The vectors defined below hold the twelve cars standardized on four variables; the clustering sections use them:
 
-(nu/data-table (:nodes (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
-                                     {:rng (r/rng :mersenne 3)})))
+(def car-features (let [cols (for [k [:mpg :hp :wt :qsec]] (stats/standardize (map k mtcars)))]
+                    (apply mapv vector cols)))
 
-;; The edges as segments, the nodes as points: the force layout (seeded, the same every build), a weaker pull to
-;; the centre after few iterations, a circle and random places:
+;; The table below holds made-up offices by region and country; the level and node-link sections use it:
+
+(def offices [{:region "Europe" :country "Poland" :city "Warsaw"} {:region "Europe" :country "Poland" :city "Krakow"}
+              {:region "Europe" :country "Czechia" :city "Prague"} {:region "Asia" :country "Japan" :city "Tokyo"}
+              {:region "Asia" :country "Japan" :city "Osaka"} {:region "Asia" :country "India" :city "Pune"}])
+
+(nu/data-table offices)
+
+;; The table below holds a made-up company's employees with their bosses; the parent sections use it:
+
+(def org [{:emp 1 :boss nil :who "CEO"} {:emp 2 :boss 1 :who "CTO"} {:emp 3 :boss 1 :who "CFO"}
+          {:emp 4 :boss 2 :who "dev lead"} {:emp 5 :boss 2 :who "ops lead"} {:emp 6 :boss 4 :who "developer"}])
+
+(nu/data-table org)
+
+;; The tables below hold a made-up program's modules with their parents, and the modules' imports; the bundling
+;; section uses them:
+
+(def modules [{:id "app"} {:id "ui" :parent "app"} {:id "core" :parent "app"} {:id "io" :parent "app"}
+              {:id "button" :parent "ui"} {:id "form" :parent "ui"} {:id "menu" :parent "ui"}
+              {:id "model" :parent "core"} {:id "rules" :parent "core"} {:id "cache" :parent "core"}
+              {:id "file" :parent "io"} {:id "net" :parent "io"} {:id "db" :parent "io"}])
+
+(nu/data-table modules)
+
+(def imports [{:module "button" :uses "model"} {:module "form" :uses "rules"} {:module "form" :uses "model"}
+              {:module "menu" :uses "cache"} {:module "model" :uses "db"} {:module "rules" :uses "file"}
+              {:module "cache" :uses "net"} {:module "button" :uses "net"} {:module "menu" :uses "db"}])
+
+(nu/data-table imports)
+
+;; The table below holds made-up visits to a web shop, as page sequences with counts; the sequence section uses it:
+
+(def visits [{:path "home>search>product>end" :n 30} {:path "home>search>end" :n 12}
+             {:path "home>product>cart>end" :n 18} {:path "home>search>product>cart" :n 9}
+             {:path "search>product>end" :n 7}])
+
+(nu/data-table visits)
+
+;; ## Graphs
+
+;; `graph/graph` builds the graph of edge rows: the nodes with their degrees, the given node rows first, and the edges
+;; with numeric weights. Use it as the input of the graph layouts.
+
+(nu/argument-list #'graph/graph)
+
+;; These options name the edge and node columns and set the direction. The table below holds the nodes of the flights
+;; as a directed graph with the airports as node rows; Krakow has no flights, so its degree is 0:
+
+(nu/option-cards '(graph/graph edges) (describe/options #'graph/graph))
+
+(nu/result-table (:nodes (graph/graph flights {:from :src :to :dst :value :n :nodes airports :id :code :directed true})))
+
+;; The next table holds the edges of the flights as an undirected graph, the weights from `:n` under `:value`:
+
+(nu/result-table (:edges (graph/graph flights {:from :src :to :dst :value :n :directed false})))
+
+;; Without a `:value` column every edge weighs 1:
+
+(nu/result-table (:edges (graph/graph flights {:from :src :to :dst})))
+
+;; ## Network layouts
+
+;; `graph/layout` places the nodes of a graph in the unit square and gives every edge the positions of both ends. Use
+;; it to draw a network: segments for the edges, points for the nodes.
+
+(nu/argument-list #'graph/layout)
+
+;; These options choose the placement and tune the force layout. The table below holds the placed nodes, `:x` and `:y`
+;; added:
+
+(nu/option-cards '(graph/layout g) (describe/options #'graph/layout))
+
+(nu/result-table (:nodes (graph/layout (graph/graph flights {:from :src :to :dst :value :n})
+                                       {:rng (r/rng :mersenne 3)})))
+
+;; The panels below draw the edges as segments and the nodes as points. The first one takes the seeded force layout,
+;; the same on every build; the second one stops after 20 iterations with a weaker pull to the centre; the last two
+;; place the nodes on a circle and at random:
 
 (plot/render-image (plot/arrange (for [[title laid]
                                        [[":layout :force (default)"
@@ -84,35 +163,38 @@
                                  {:columns 2})
                    {:width 900 :height 640})
 
-;; ## graph/adjacency->edges
+;; ## Adjacency matrices
 
-;; Edge rows of a square matrix of weights between named nodes; a zero or missing cell is no edge. Undirected, only
-;; the upper triangle (and the diagonal) is read.
+;; `graph/adjacency->edges` turns a square matrix of weights between named nodes into edge rows; a zero or missing
+;; cell is no edge. Use it for graphs stored as matrices.
 
-(nu/options-table (describe/options #'graph/adjacency->edges))
+(nu/argument-list #'graph/adjacency->edges)
 
-;; A symmetric matrix of shared projects between four teams: read whole (each pair twice, directed) and as an
-;; undirected graph (each pair once):
+;; This option chooses which cells the function reads. The first table below reads the shared projects whole, each pair twice; the
+;; second one reads only the upper triangle, each pair once:
 
-(def shared-projects [[0 3 1 0] [3 0 2 4] [1 2 0 0] [0 4 0 0]])
+(nu/option-cards '(graph/adjacency->edges matrix names) (describe/options #'graph/adjacency->edges))
 
-(nu/data-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"]))
+(nu/result-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"]))
 
-(nu/data-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"] {:whole-matrix false}))
+(nu/result-table (graph/adjacency->edges shared-projects ["design" "backend" "data" "ops"] {:whole-matrix false}))
 
-;; ## graph/arc-layout
+;; ## Arc layouts
 
-;; An arc diagram as rows: nodes on a line at 0, 1, ... in node order, each edge a semicircle between its ends
-;; (rows sampled along it).
+;; `graph/arc-layout` lays out an arc diagram: the nodes on a line at 0, 1, ... in node order, and every edge as rows
+;; along a semicircle between its ends. Use it to draw an arc diagram of your own.
 
-(nu/options-table (describe/options #'graph/arc-layout))
+(nu/argument-list #'graph/arc-layout)
 
-;; The arcs (rows of each edge's semicircle, `:edge` its index):
+;; This option sets the node order. The table below holds the arcs: rows along each edge's semicircle, with the edge's
+;; index under `:edge`:
 
-(nu/data-table (:arcs (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+(nu/option-cards '(graph/arc-layout g) (describe/options #'graph/arc-layout))
 
-;; Drawn as lines through the arc rows over the nodes: the input order, an order given by ids (those first) and
-;; the clustered order (nodes linked to the same others side by side):
+(nu/result-table (:arcs (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+
+;; The panels below draw lines through the arc rows over the nodes. The left one keeps the input order, the middle one
+;; puts the given ids first, and the right one puts nodes linked to the same others side by side:
 
 (plot/render-image (plot/arrange (for [[title laid]
                                        [["input order" (graph/arc-layout (graph/graph flights {:from :src :to :dst :value :n}))]
@@ -131,19 +213,25 @@
                                  {:columns 3})
                    {:width 1000 :height 260})
 
-;; ## graph/chord-layout
+;; ## Chord layouts
 
-;; A chord diagram as polygon rows in the unit circle: a ring sector per node (its angle by the node's flow) and a
-;; ribbon per linked pair (undirected) or edge (directed) through the centre.
+;; `graph/chord-layout` lays out a chord diagram as polygon rows in the unit circle: a ring sector per node, its angle
+;; by the node's flow, and a ribbon through the centre per linked pair of an undirected graph or per edge of a directed
+;; one. Use it to draw a chord diagram of your own.
 
-(nu/options-table (describe/options #'graph/chord-layout))
+(nu/argument-list #'graph/chord-layout)
 
-;; The ring sectors (`:start` / `:end` in degrees, clockwise from the top):
+;; These options set the node order, the ring and the smallest flow. The table below holds the ring sectors, `:start`
+;; and `:end` in degrees clockwise from the top:
 
-(nu/data-table (:groups (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+(nu/option-cards '(graph/chord-layout g) (describe/options #'graph/chord-layout))
 
-;; Ribbons coloured by their source, sectors by node: the default ring, wide gaps and a thin ring, and the directed
-;; graph (a ribbon per edge) in clustered order without flows under 4 (their edges are dropped):
+(nu/result-table (:groups (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))))
+
+;; The panels below colour the ribbons by their `:from` end and the sectors by node; an undirected ribbon's `:from` is
+;; its end earlier in the ring. The left one draws the default ring, the middle one wide gaps and a thin ring. The
+;; right one draws the directed graph, a ribbon per edge coloured by its source, in clustered order and leaves out the
+;; flows under 4:
 
 (plot/render-image (plot/arrange (for [[title {:keys [ribbons arcs]}]
                                        [["defaults" (graph/chord-layout (graph/graph flights {:from :src :to :dst :value :n}))]
@@ -162,23 +250,27 @@
                                  {:columns 3 :widths [1.3 1 1]})
                    {:width 1000 :height 330})
 
-;; ## graph/sankey-layout
+;; ## Sankey layouts
 
-;; A sankey diagram as rows in the unit square: nodes in columns as rectangles, every edge a band as thick as its
-;; flow from its source's right side to its target's left side (edges are flows, whatever the graph's direction).
+;; `graph/sankey-layout` lays out a sankey diagram as rows in the unit square: the nodes as rectangles in columns, every
+;; edge a band as thick as its flow from its source's right side to its target's left side. Use it to draw a sankey
+;; diagram of your own.
 
-(nu/options-table (describe/options #'graph/sankey-layout))
+(nu/argument-list #'graph/sankey-layout)
 
-;; The nodes with their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
+;; These options set the columns, the node size and gaps, and the relaxation. The table below holds the nodes with
+;; their columns (`:layer`) and rectangles (`:x0 :x1 :y0 :y1`):
 
-(nu/data-table (:nodes (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
-                                                         {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
-                                                         {:from "BER" :to "VIE" :value 3} {:from "BUD" :to "VIE" :value 7}]
-                                                        {:directed true}))))
+(nu/option-cards '(graph/sankey-layout g) (describe/options #'graph/sankey-layout))
 
-;; Bands (polygons grouped by `:link`) under the node rectangles (grouped by `:rect`), for each column alignment -
-;; Krakow, a dead end after Warsaw, sits in the last column (`:justify`, `:right`) or right after Warsaw (`:left`,
-;; `:center`); Budapest starts in the first column only with `:left` and `:justify`:
+(nu/result-table (:nodes (graph/sankey-layout (graph/graph [{:from "WAW" :to "BER" :value 12} {:from "WAW" :to "PRG" :value 5}
+                                                           {:from "BER" :to "PRG" :value 8} {:from "PRG" :to "VIE" :value 6}
+                                                           {:from "BER" :to "VIE" :value 3} {:from "BUD" :to "VIE" :value 7}]
+                                                          {:directed true}))))
+
+;; For each column alignment, the panels below draw the bands as polygons grouped by `:link`, and over them the node
+;; rectangles grouped by `:rect`. Krakow, a dead end after Warsaw, sits in the last column with `:justify` and `:right`, and right
+;; after Warsaw with `:left` and `:center`. Budapest starts in the first column only with `:left` and `:justify`:
 
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
                                        [[":align :justify (default)"
@@ -208,13 +300,9 @@
                                  {:columns 4})
                    {:width 1000 :height 280})
 
-;; Columns given by a node column (`:layer :stage`, winning over `:align`), wide nodes (`:node-width 0.08`) far apart
-;; (`:gap 0.1`), no relaxation, nodes in input order (left), against the defaults - columns from `:align`, six
-;; relaxation sweeps moving the nodes towards their links' ends (right):
-
-(def stages [{:id "visit" :stage 0} {:id "search" :stage 1} {:id "browse" :stage 1} {:id "cart" :stage 2} {:id "buy" :stage 3}])
-
-(nu/data-table stages)
+;; The left panel below takes the columns from the stages' node column (`:layer :stage`) and draws wide nodes far
+;; apart, without relaxation, in input order. The right one keeps the defaults: columns from
+;; `:align` and six relaxation sweeps:
 
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
                                        [[":layer, :iterations 0, :order :input"
@@ -236,26 +324,23 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 320})
 
-;; ## graph/alluvial-graph
+;; ## Alluvial graphs
 
-;; The directed graph of an alluvial diagram: a node per level of every axis (a column each), an edge per pair of
-;; levels of consecutive axes and fill level, with the summed weight - for `sankey-layout` with fixed columns.
+;; `graph/alluvial-graph` builds the directed graph of an alluvial diagram: a node per level of every variable, a
+;; column per variable, and, for each strand level, an edge per pair of levels of neighbouring variables, weighted by
+;; the summed weight. Use it with `sankey-layout` and fixed columns.
 
-(nu/options-table (describe/options #'graph/alluvial-graph))
+(nu/argument-list #'graph/alluvial-graph)
 
-(def passengers [{:class "1st" :sex "f" :survived "yes" :n 140} {:class "1st" :sex "m" :survived "no" :n 118}
-                 {:class "2nd" :sex "f" :survived "yes" :n 80} {:class "2nd" :sex "m" :survived "no" :n 154}
-                 {:class "3rd" :sex "f" :survived "no" :n 106} {:class "3rd" :sex "m" :survived "no" :n 422}
-                 {:class "3rd" :sex "f" :survived "yes" :n 90} {:class "1st" :sex "m" :survived "yes" :n 62}])
+;; These options name the variables, the weight and the strand level. The table below holds the edges of the
+;; passengers, weighted by `:n` and grouped by survival:
 
-(nu/data-table passengers)
+(nu/option-cards '(graph/alluvial-graph rows) (describe/options #'graph/alluvial-graph))
 
-;; The edges, weighted by `:n` and grouped by the survival level:
+(nu/result-table (:edges (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})))
 
-(nu/data-table (:edges (graph/alluvial-graph passengers {:variables [:class :sex :survived] :value :n :strand-color :survived})))
-
-;; Laid out by `sankey-layout` with the axes as columns and the input order kept, strands coloured by their
-;; `:strand-color` level - by survival (left) and by class, the default first column (right):
+;; The panels below lay the graphs out with `sankey-layout`, the variables as columns in input order, and colour the
+;; strands by their strand level: by survival on the left and by class (the first variable) on the right:
 
 (plot/render-image (plot/arrange (for [[title {:keys [rects bands]}]
                                        [[":strand-color :survived"
@@ -272,26 +357,20 @@
                                  {:columns 2})
                    {:width 1000 :height 320})
 
-;; ## tree/from-hclust
+;; ## Trees from clusterings
 
-;; A tree of a fastmath hierarchical clustering (`fastmath.ml.clustering/hclust`): groups with their merge
-;; heights, leaves named by the given labels. It takes no options.
+;; `tree/from-hclust` builds the tree of a fastmath hierarchical clustering (`fastmath.ml.clustering/hclust`): groups
+;; with their merge heights, leaves named by the given labels. Use it to draw a dendrogram of a clustering.
 
-(nu/source-note {:dataset :mtcars})
+(nu/argument-list #'tree/from-hclust)
 
-(def mtcars (take 12 (nu/dataset :mtcars)))
-
-(nu/data-table mtcars)
-
-;; The cars standardized on four variables, clustered with complete linkage; the tree's leaves in order:
-
-(def car-features (let [cols (for [k [:mpg :hp :wt :qsec]] (stats/standardize (map k mtcars)))]
-                    (apply mapv vector cols)))
+;; The call below clusters the cars with complete linkage and returns the tree's leaves in order:
 
 (mapv :name (tree/leaves (tree/from-hclust (cl/hclust car-features {:method :complete}) (mapv :model mtcars))))
 
-;; The linkage methods of `hclust` (`:method`): `:single`, `:complete` (default), `:average`, `:weighted`,
-;; `:centroid`, `:median`, `:ward`, `:ward-d` and the divisive `:diana`. Their trees of the same cars:
+;; The panels below draw the trees of every linkage method of `hclust` (`:method`) on the same cars: `:single`,
+;; `:complete` (the default), `:average`, `:weighted`, `:centroid`, `:median`, `:ward`, `:ward-d` and the divisive
+;; `:diana`:
 
 (plot/render-image (plot/arrange (for [method [:single :complete :average :weighted :centroid :median :ward :ward-d :diana]]
                                    (plot/dendrogram (tree/from-hclust (cl/hclust car-features {:method method}) (mapv :model mtcars))
@@ -299,58 +378,60 @@
                                  {:columns 3})
                    {:width 1000 :height 800})
 
-;; ## tree/from-levels
+;; ## Trees from level columns
 
-;; A tree of rows grouped by level columns, outer level first: a group per level path, a leaf per innermost level
-;; path (its `:value` the number of its rows).
+;; `tree/from-levels` builds the tree of rows grouped by level columns: a group per level path, a leaf per innermost
+;; path with its number of rows as `:value`. Use it for hierarchies stored as columns.
 
-(nu/options-table (describe/options #'tree/from-levels))
+(nu/argument-list #'tree/from-levels)
 
-(def offices [{:region "Europe" :country "Poland" :city "Warsaw"} {:region "Europe" :country "Poland" :city "Krakow"}
-              {:region "Europe" :country "Czechia" :city "Prague"} {:region "Asia" :country "Japan" :city "Tokyo"}
-              {:region "Asia" :country "Japan" :city "Osaka"} {:region "Asia" :country "India" :city "Pune"}])
+;; This option names the level columns. The call below returns the leaves of the offices, the countries with their
+;; numbers of offices, in tree order; the node-link section draws the tree with the cities as a third level:
 
-(nu/data-table offices)
-
-;; Its leaves - the countries, each with its number of offices - in tree order (with the cities as a third level,
-;; the tree is drawn by `tree/node-link-layout` below):
+(nu/option-cards '(tree/from-levels rows) (describe/options #'tree/from-levels))
 
 (mapv (juxt :name :value) (tree/leaves (tree/from-levels offices {:hierarchy [:region :country]})))
 
-;; ## tree/from-parents
+;; ## Trees from parent links
 
-;; A tree of rows with ids and parent ids (as d3 `stratify`): the row without a parent is the root, children in row
-;; order, names from a column (the id by default).
+;; `tree/from-parents` builds the tree of rows with ids and parent ids, as d3 `stratify`: the row without a parent is
+;; the root, and children keep the row order. Use it for hierarchies stored as parent links.
 
-(nu/options-table (describe/options #'tree/from-parents))
+(nu/argument-list #'tree/from-parents)
 
-(def org [{:emp 1 :boss nil :who "CEO"} {:emp 2 :boss 1 :who "CTO"} {:emp 3 :boss 1 :who "CFO"}
-          {:emp 4 :boss 2 :who "dev lead"} {:emp 5 :boss 2 :who "ops lead"} {:emp 6 :boss 4 :who "developer"}])
+;; These options name the id, parent and name columns. The call below returns the leaves of the company:
 
-(nu/data-table org)
+(nu/option-cards '(tree/from-parents rows) (describe/options #'tree/from-parents))
 
 (mapv :name (tree/leaves (tree/from-parents org {:id :emp :parent :boss :name :who})))
 
-;; ## tree/leaves
+;; ## Leaves
 
-;; The leaves under a node, in order (it takes no options) - above the leaves of a clustering, of level groups and
-;; of parent links; here of one subtree, the CTO's:
+;; `tree/leaves` returns the leaves under a node in order; the sections above call it on whole trees. Use it to list a
+;; subtree's leaves.
+
+(nu/argument-list #'tree/leaves)
+
+;; The call below returns the leaves under the CTO:
 
 (mapv :name (tree/leaves (first (:children (tree/from-parents org {:id :emp :parent :boss :name :who})))))
 
-;; ## tree/layout
+;; ## Dendrogram layouts
 
-;; A dendrogram layout: nodes at their heights, leaves one step apart, an elbow path per branch; optionally cut into
-;; coloured clusters or bent around a circle.
+;; `tree/layout` lays out a tree as a dendrogram: the nodes at their heights, the leaves one step apart, an elbow path
+;; per branch. Use it to draw a dendrogram of your own, cut into clusters or bent around a circle.
 
-(nu/options-table (describe/options #'tree/layout))
+(nu/argument-list #'tree/layout)
 
-;; The elbow paths (rows grouped by `:id`, the branch's node; `:cluster` from the cut):
+;; These options cut the clusters and bend the layout. The table below holds the elbow paths, rows grouped by the
+;; branch's node `:id`, with `:cluster` from a cut into 3:
 
-(nu/data-table (:paths (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {:k 3})))
+(nu/option-cards '(tree/layout root) (describe/options #'tree/layout))
 
-;; Drawn as lines: plain, cut into 3 clusters, and (also cut) circular - around the whole circle and over
-;; `:span 180` degrees:
+(nu/result-table (:paths (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {:k 3})))
+
+;; The panels below draw the paths as lines: plain, cut into 3 clusters, and circular with the cut, around the whole
+;; circle and over 180 degrees:
 
 (plot/render-image (plot/arrange (for [[title {:keys [paths]} iso?]
                                        [["defaults" (tree/layout (tree/from-hclust (cl/hclust car-features) (mapv :model mtcars)) {}) false]
@@ -370,19 +451,22 @@
                                  {:columns 2})
                    {:width 900 :height 640})
 
-;; ## tree/node-link-layout
+;; ## Node-link layouts
 
-;; A node-link layout (d3 `tree` / `cluster`): nodes at their depth, one link path per child; tidy or with the
-;; leaves aligned, curved or straight links, optionally around a circle.
+;; `tree/node-link-layout` lays out a tree as nodes and links, like d3 `tree` and `cluster`: the nodes by depth, a link
+;; path per child. Use it to draw a node-link tree of your own.
 
-(nu/options-table (describe/options #'tree/node-link-layout))
+(nu/argument-list #'tree/node-link-layout)
 
-;; The nodes (`:depth`, `:breadth`, `:x`, `:y`):
+;; These options choose the placement and the link shape, and bend the layout around a circle. The table below holds the nodes with
+;; `:depth`, `:breadth`, `:x` and `:y`:
 
-(nu/data-table (:nodes (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]}) {})))
+(nu/option-cards '(tree/node-link-layout root) (describe/options #'tree/node-link-layout))
 
-;; Links as lines under the nodes - tidy with curved links, the leaves aligned with straight links, and circular
-;; (tidy, curved) over a full turn and `:span 180` degrees:
+(nu/result-table (:nodes (tree/node-link-layout (tree/from-levels offices {:hierarchy [:region :country :city]}) {})))
+
+;; The panels below draw the links as lines under the nodes: tidy with curved links, then the leaves aligned with
+;; straight links; the last two bend a tidy, curved layout around a circle, over a full turn and over 180 degrees:
 
 (plot/render-image (plot/arrange (for [[title {:keys [nodes links]} iso?]
                                        [[":layout :tidy, :links :diagonal"
@@ -407,32 +491,22 @@
                                  {:columns 2})
                    {:width 900 :height 640})
 
-;; ## tree/bundle-paths
+;; ## Edge bundling
 
-;; Hierarchical edge bundling: edges between leaves of a circular tree layout, each a B-spline through the tree
-;; path between its ends, straightened by `:beta`.
+;; `tree/bundle-paths` routes edges between the leaves of a laid-out tree by hierarchical edge bundling: each edge is a
+;; B-spline through the tree path between its ends. Use it to draw an edge bundle of your own.
 
-(nu/options-table (describe/options #'tree/bundle-paths))
+(nu/argument-list #'tree/bundle-paths)
 
-(def modules [{:id "app"} {:id "ui" :parent "app"} {:id "core" :parent "app"} {:id "io" :parent "app"}
-              {:id "button" :parent "ui"} {:id "form" :parent "ui"} {:id "menu" :parent "ui"}
-              {:id "model" :parent "core"} {:id "rules" :parent "core"} {:id "cache" :parent "core"}
-              {:id "file" :parent "io"} {:id "net" :parent "io"} {:id "db" :parent "io"}])
+;; These options name the edge ends and set the bundling strength. The table below holds the paths of the imports,
+;; rows grouped by the edge's index `:id`:
 
-(nu/data-table modules)
+(nu/option-cards '(tree/bundle-paths edges laid) (describe/options #'tree/bundle-paths))
 
-(def imports [{:module "button" :uses "model"} {:module "form" :uses "rules"} {:module "form" :uses "model"}
-              {:module "menu" :uses "cache"} {:module "model" :uses "db"} {:module "rules" :uses "file"}
-              {:module "cache" :uses "net"} {:module "button" :uses "net"} {:module "menu" :uses "db"}])
+(nu/result-table (:paths (tree/bundle-paths imports (tree/layout (tree/from-parents modules {}) {:circular true})
+                                            {:from :module :to :uses})))
 
-(nu/data-table imports)
-
-;; The paths (rows grouped by `:id`, the edge's index):
-
-(nu/data-table (:paths (tree/bundle-paths imports (tree/layout (tree/from-parents modules {}) {:circular true})
-                                          {:from :module :to :uses})))
-
-;; Bundled along the tree (`:beta 1`), the default 0.85, and straight lines (`:beta 0`):
+;; The panels below bundle the imports fully along the tree, at the default strength 0.85, and not at all:
 
 (plot/render-image (plot/arrange (for [[title beta] [[":beta 1" 1.0] [":beta 0.85 (default)" 0.85] [":beta 0" 0.0]]]
                                    {:charts [(chart/line {:data (:paths (tree/bundle-paths imports
@@ -448,26 +522,24 @@
                                  {:columns 3})
                    {:width 1000 :height 340})
 
-;; ## hierarchy/sequence-levels
+;; ## Sequence levels
 
-;; Hierarchy rows of sequences (e.g. visited pages) for a flow sunburst: a step column per position, identical
-;; sequences summed; a final end marker is removed (or kept as a step).
+;; `hierarchy/sequence-levels` turns sequences, such as visited pages, into hierarchy rows: a step column per position,
+;; identical sequences summed. Use it for a flow sunburst.
 
-(nu/options-table (describe/options #'hierarchy/sequence-levels))
+(nu/argument-list #'hierarchy/sequence-levels)
 
-(def visits [{:path "home>search>product>end" :n 30} {:path "home>search>end" :n 12}
-             {:path "home>product>cart>end" :n 18} {:path "home>search>product>cart" :n 9}
-             {:path "search>product>end" :n 7}])
+;; These options read the sequences and their weights and handle the end marker. The first table below drops the end
+;; marker with `:keep-end false`, the second one keeps it as a step, the default:
 
-(nu/data-table visits)
+(nu/option-cards '(hierarchy/sequence-levels rows) (describe/options #'hierarchy/sequence-levels))
 
-;; The step rows - the end marker dropped with `:keep-end false` (first table), kept as a step by default (second):
+(nu/result-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end false})))
 
-(nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end" :keep-end false})))
+(nu/result-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end"})))
 
-(nu/data-table (:rows (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :end "end"})))
-
-;; The rows as a sunburst - `chart/partition` under polar, the steps as its hierarchy:
+;; The plot below draws the rows as a sunburst: `chart/partition` under polar coordinates, the steps as its
+;; hierarchy:
 
 (plot/render-image (let [{:keys [rows hierarchy]} (hierarchy/sequence-levels visits {:sequence :path :value :n :separator ">" :keep-end false})]
                      {:data rows

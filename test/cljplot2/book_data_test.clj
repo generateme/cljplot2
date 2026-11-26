@@ -58,7 +58,8 @@
     (testing "shown: a table of the dataset, of a var defined from it, of a computation reading it"
       (is (= [] (nf/datasets-unshown [(list 'f {:data (ds :a)}) (table (ds :a))])))
       (is (= [] (nf/datasets-unshown [(list 'def 'x (list 'map 'g (ds :a))) (table 'x) (list 'f {:data (ds :a)})])))
-      (is (= [] (nf/datasets-unshown [(table (list 'remove 'p (ds :a)))]))))
+      (is (= [] (nf/datasets-unshown [(table (list 'remove 'p (ds :a)))])))
+      (is (= [] (nf/datasets-unshown [(list 'notebook-utils/result-table (list 'g (ds :a)))])) "a result table of a call reading it"))
     (testing "boundary: read inline only; a var from it never tabled; two datasets, one shown; none read"
       (is (= [:a] (nf/datasets-unshown [(list 'f {:data (ds :a)})])))
       (is (= [:a] (nf/datasets-unshown [(list 'def 'x (ds :a)) (list 'f 'x)])))

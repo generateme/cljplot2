@@ -274,7 +274,8 @@ the theme: banned names, and one type family per name across all owners). One na
   has a table of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
   `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
   some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
-  class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`). Chart pages (`charts_*.clj`, ten chapters grouped by what
+  class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`); a function's result
+  is shown with `nu/result-table` (the same box, its call shown). Chart pages (`charts_*.clj`, ten chapters grouped by what
   they show: points, lines and areas; annotations; bars; distribution per level; distribution of one variable; fitted
   curves; 2D bins and fields; pairwise statistics; shares and sets; multivariate and 3D - kinds per page in
   `reference-notebook-test/chart-chapters`): per kind a `;; ## kind` heading (a migrated kind: its concept, see
@@ -284,14 +285,17 @@ the theme: banned names, and one type family per name across all owners). One na
   heading there; on a migrated page it opens the section, right after the opening sentences);
   `chart-coverage-test`: every own top-level option set in a literal `(chart/kind {...})` map on the page and every
   value of an enum of at most 6 values given (a default counts when a call omits the option). Builder pages
-  (`builders_*.clj`) likewise (own options + shared groups); data function pages (`data_*.clj`, a `;; ## ns/name`
-  heading per `:cljplot2/api` function, its full options table); the same coverage rule over a call's literal last
+  (`builders_*.clj`) likewise (own options + shared groups); data function pages (`data_*.clj`, a `;; ## concept`
+  heading per `:cljplot2/api` function, `describe/concepts`, its full options rows); the same coverage rule over a call's literal last
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
   Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
-  `test-util/migrated-builders` - the switches; `describe/concepts` keyed by kind keyword or builder symbol):
+  `test-util/migrated-builders`, data functions in `test-util/migrated-functions` - the switches; `describe/concepts`
+  keyed by kind keyword, builder symbol or data function's qualified symbol; data function sections show cards of all
+  their `describe/options` rows - a function owns its shared group's rows, whose texts read in the card style for the
+  builders forwarding them too):
   `nu/option-cards call rows [section]` (`call` a symbol, `chart/smooth`, or a builder or function with its arguments
-  before the options, `'(plot/network edges)`) instead of options tables (per option a boxed card: a header with the option
+  before the options as placeholders shared with the test fixtures, `'(plot/network edges)`, `'(graph/layout g)`) instead of options tables (per option a boxed card: a header with the option
   and its default, an example call, then its description, a bullet per value or form with its meaning and the other
   values of a long list on one line), each card group after a sentence or two on what the options are for, and
   `nu/mapping-list` (a titled Mapping box; a section of sliced mapping rows) instead of the mapping table; the section heading names the concept
@@ -355,7 +359,8 @@ the theme: banned names, and one type family per name across all owners). One na
   (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y` (a `schema/forbidden` branch - a form rejected with its own message,
   e.g. histogram quantile bins - is none), a vector of them `vector of Xs or Ys`; `:int` / `:double` bounds as words
   (`integer at least 2`); rules of `schema/with-rules` (`schema/rule?`) are left out - the description states the
-  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart or builder (card owners: fixture plots of charts, fixture calls of builders): sentences, a
+  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart, builder or data function (card owners: fixture plots of charts, fixture
+  calls of builders and data functions - a function's example must change its result, `:compare :value`): sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -
@@ -369,7 +374,12 @@ the theme: banned names, and one type family per name across all owners). One na
   var) and check it first - `(schema/check-options! schema options)` before reading their data; a builder's schema
   is `(schema/options-map own forwarded... multiplot/builder-entries)` (own entries win), a forwarded function's
   entries a shared group (`:graph/sankey-layout` ...) registered in `cljplot2.describe/fragments`; data checks stay
-  `fail!`. `reference-r2-test` checks every builder and API function.
+  `fail!`. They document their positional parameters in var metadata `:cljplot2/arguments` (the longest arity's, in
+  order, without the options map: `:name` - the parameter's symbol, a card-style `:description`, `:optional` for one a
+  shorter arity leaves out, `:columns` - the columns rows hold, keyword keys or a string naming a column an option
+  picks - and `:keys` of a map argument) and `:cljplot2/returns` (a card-style sentence); a section shows them with
+  `nu/argument-list` right after its opening, and its card calls name the parameters as placeholders.
+  `reference-r2-test` checks every builder and API function.
 - Errors: `cljplot2.schema/fail!` with `{:key option …}`; namespaces `cljplot2.schema` itself requires (e.g.
   `graphics.shape`) use `cljplot2.error/fail!` (the same function, no dependency cycle).
 - Docstrings follow the user's `docstring` skill (statement, context, parameters with map keys and defaults, return
