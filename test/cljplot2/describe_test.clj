@@ -185,16 +185,34 @@
         (is (= (sort (keys theme/text-roles)) (map :key roles)))
         (is (every? :description roles))
         (is (= (get-in theme/default-theme [:text :title]) (:default (by-path [:text :title]))))
-        (is (re-find #"^a text style" (:type (by-path [:text :title]))))))
+        (is (re-find #"^a text style" (:type (by-path [:text :title]))))
+        (is (= [{:size 20 :font-style :italic}] (describe/example (by-path [:text :title]))) "its example the role's")))
+    (testing "a map form whose keys a shared group documents names the group: text styles, grid line styles"
+      (is (= [{:form :map :type "text style" :group :text-style}] (map #(dissoc % :meaning) (:forms (by-path [:text :title])))))
+      (is (= [{:form :map :type "text style" :group :text-style}] (map #(dissoc % :meaning) (:forms (by-path [:axis :x :tick-label])))))
+      (is (= {:form :map :type "line style" :group :line-style} (dissoc (first (:forms (by-path [:panel :grid :x]))) :meaning)))
+      (testing "boundary: a map form without a documenting group names none; one under :maybe keeps its group"
+        (let [form (fn [s] (first (:forms (first (describe/schema-rows [:map [:k {:description "k"} s]])))))]
+          (is (not (contains? (form [:or [:= :none] [:map [:a :int]]]) :group)))
+          (is (= :line-style (:group (form [:maybe [:map {:cljplot2/entries-fragment :line-style} [:a :int]]])))))))
+    (testing "boundary: a chart's or named style's rows keep their theme values even beside a default text (only theme rows drop them)"
+      (is (= 0.3 (:default (first (filter #(= [:bridge :alpha-factor] (:path %)) (describe/style-rows :line)))))))
+    (testing "boundary: a theme row with a default text shows the text only (the palette); one without keeps the value"
+      (is (nil? (:default (by-path [:palette :color]))))
+      (is (string? (:default-doc (by-path [:palette :color]))))
+      (is (= (get-in theme/default-theme [:palette :na]) (:default (by-path [:palette :na])))))
     (testing "the style keys aren't repeated per role: one shared table, the :text-style group"
       (is (not-any? #(= 3 (count (:path %))) (filter #(= :text (first (:path %))) rows)))
       (is (= [:font :size :font-style :color :inset :align :background :dollar-math] (map :key (describe/fragment-rows :text-style)))))
     (testing "role rows go through the common row code: merged, not required"
       (is (not-any? :required (filter #(= :text (first (:path %))) rows))))
-    (testing "a section's rows: the rows under it, in order; together every row"
-      (is (= (filter #(= :legend (first (:path %))) rows) (describe/theme-rows :legend)))
-      (is (= [:legend] (:path (first (describe/theme-rows :legend)))))
-      (is (= (count rows) (reduce + (map (comp count describe/theme-rows) (distinct (map (comp first :path) rows)))))))
+    (testing "a key's rows: the rows under it, in order, without the key's own row; with the top-level rows every row"
+      (is (= (filter #(and (= :legend (first (:path %))) (< 1 (count (:path %)))) rows) (describe/theme-rows :legend)))
+      (is (= [:legend :gap] (:path (first (describe/theme-rows :legend)))))
+      (is (= (count rows) (+ (count (keys theme/default-theme))
+                             (reduce + (map (comp count describe/theme-rows) (keys theme/default-theme)))))))
+    (testing "boundary: :chart has no rows under it (each chart's page documents its style), but is a theme key"
+      (is (= [] (describe/theme-rows :chart))))
     (testing "boundary: an unknown theme key, nil - an error keyed :theme-key"
       (is (= :theme-key (:key (error-data #(describe/theme-rows :no-such-key)))))
       (is (= :theme-key (:key (error-data #(describe/theme-rows nil))))))

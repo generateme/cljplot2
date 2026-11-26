@@ -344,11 +344,13 @@
                   (rich-text default-doc)))))
 
 (defn- type-link
-  "Hiccup of the type text of a form: a link to its section of the Types page for a documented type."
-  [{:keys [form type]}]
-  (if (contains? describe/documented-types form)
-    [:a {:href (str types-page "#" (heading-anchor type))} type]
-    (into [:span] (rich-text type))))
+  "Hiccup of the type text of a form: a link to its section of the Types page for a documented type, to its shared
+  group's section for a map whose keys a group documents (`:group`, e.g. a text style), else the text."
+  [{:keys [form type group]}]
+  (cond
+    (contains? describe/documented-types form) [:a {:href (str types-page "#" (heading-anchor type))} type]
+    group [:a {:href (group-link group)} type]
+    :else (into [:span] (rich-text type))))
 
 (defn- bullet
   "A list item: `head` (hiccup) and the rich text of `meaning` after a dash, when there is one."
@@ -371,10 +373,13 @@
 (defn- example-call
   "The example of option `row` of `rows` as code `(call {...})`: its options map (`cljplot2.describe/example-options`,
   nested paths as nested maps, with the options it needs); `call` a symbol (`chart/smooth`) or a list of the function
-  and the arguments before the options (`(plot/network edges)`); `nil` without an example."
+  and the arguments before the options (`(plot/network edges)`) - or `:theme`: theme rows, the example a plot key
+  `{:theme {...}}`; `nil` without an example."
   [call rows row]
   (when-let [options (describe/example-options rows row)]
-    (str "(" (str/join " " (if (seq? call) call [call])) " " (printed options) ")")))
+    (if (= :theme call)
+      (printed {:theme options})
+      (str "(" (str/join " " (if (seq? call) call [call])) " " (printed options) ")"))))
 
 (defn- option-card
   "Hiccup of the card of option `row`, three parts: the header (the option and its default), its example as a call of
@@ -393,7 +398,7 @@
   "Option cards of `rows` (from `cljplot2.describe/options`, the chart's or function's own), its code hidden: per
   option a boxed card - a header (the option and its default), an example call of `call` (a symbol, e.g.
   `chart/smooth`, or a list of a builder or function and its arguments before the options, e.g.
-  `(plot/network edges)`), then its description, a bullet per value or form with its meaning and the values without one on
+  `(plot/network edges)`; `:theme` for theme rows - the example as the plot key `{:theme {...}}`), then its description, a bullet per value or form with its meaning and the values without one on
   one line (styles in `clay.edn`). With `section`
   only the rows of that slice (see [[options-table]]).
   Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."

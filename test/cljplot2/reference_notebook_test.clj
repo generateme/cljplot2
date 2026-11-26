@@ -283,9 +283,12 @@
     (is (seq (calls (get (notebook-forms) "shared_options") 'notebook-utils/owned-groups)))))
 
 (deftest theme-sections-test
-  (testing "every top-level theme key has a table in the Theme chapter"
-    (is (= (set (map (comp first :path) (describe/theme-rows)))
-           (set (map second (calls (get (notebook-forms) "theme") 'cljplot2.describe/theme-rows)))))))
+  (testing "every top-level theme key but :chart has its rows shown in the Theme chapter; :chart has a section linking the chart pages"
+    (is (= (disj (set (map (comp first :path) (describe/theme-rows))) :chart)
+           (set (map second (calls (get (notebook-forms) "theme") 'cljplot2.describe/theme-rows)))))
+    (let [chart-section (second (re-find #"(?ms)^;; ## Chart$(.*)" (slurp "notebooks/reference/theme.clj")))]
+      (is (some? chart-section))
+      (is (re-find #"\(reference\.charts_[a-z_0-9]+\.html#" (str chart-section)) "it links a chart page's section"))))
 
 (defn- kind-calls
   "Calls of `scicloj.kindly.v4.kind` functions in `forms`."

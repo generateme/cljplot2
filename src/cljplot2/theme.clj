@@ -295,30 +295,10 @@
   [[:font schema/font] [:size schema/pos] [:font-style schema/font-style] [:color schema/text-color]
    [:inset schema/non-neg]])
 
-(def ^:private text-style-descriptions
-  "Text style key -> its description in option tables."
-  {:font "font name (bundled, installed or logical) or a java.awt.Font"
-   :size "font size in points"
-   :font-style "font style"
-   :color "text colour; :contrast - black or white by what is behind (a chart's fill under its labels, else the plot background)"
-   :inset "space between the text and its box edge on every side, in pixels"
-   :align "alignment [horizontal vertical] of the text at its anchor"
-   :background "box colour behind the text (:none - no box)"
-   :min-size "smallest font size in points a text too long for its room shrinks to (a role without it doesn't shrink)"
-   :dollar-math "true draws text between two dollar signs as a LaTeX formula (a dollar after a backslash stays literal), false keeps every dollar literal; default true"})
-
-(def text-style-schema
-  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align`, `:background`, `:min-size` (a role's least fitted size, not a key content overrides) and `:dollar-math` optional."
-  (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)"}]
-      (into (map (fn [[k s]] [k {:description (text-style-descriptions k)} s])) text-style-entries)
-      (conj (schema/optional :align {:description (text-style-descriptions :align)} schema/align)
-            (schema/optional :background {:description (text-style-descriptions :background)} schema/color)
-            (schema/nilable :min-size {:description (text-style-descriptions :min-size)} schema/pos)
-            (schema/nilable :dollar-math {:description (text-style-descriptions :dollar-math)} schema/bool))))
-
 (def ^:private text-style-card-props
-  "Text style key -> its card properties in the shared group `:text-style` (description, default text, meanings,
-  example); the theme's text style tables keep [[text-style-descriptions]] until their own cards."
+  "Text style key -> its card properties (description, meanings, example): the one description of each key, taken by
+  the shared group `:text-style` ([[text-style-overrides]] - label maps, the text chart, per-axis tick labels) and by a
+  text role's style ([[text-style-schema]])."
   {:font {:description "The font: a bundled, installed or logical family name, or a `java.awt.Font`." :cljplot2/example "Serif"}
    :size {:description "The font size in points." :cljplot2/example 20}
    :font-style {:description "The font style." :cljplot2/example :bold
@@ -326,14 +306,26 @@
    :color {:description "The text colour." :cljplot2/example :red
            :cljplot2/value-meanings {:contrast "Black or white, whichever reads better on what is behind: the text's own `:background` box, a chart's fill under its labels, else the plot background."}
            :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:black`."}}
-   :inset {:description "The space between the text and its box's edge on every side, in pixels." :cljplot2/example 8 :cljplot2/example-context {:background :yellow}}
-   :align {:description "The alignment `[horizontal vertical]` of a label's lines at its anchor; label maps take it, the text chart doesn't." :cljplot2/no-example true}
+   :inset {:description "The space in pixels between the text and its box's edge on every side." :cljplot2/example 8 :cljplot2/example-context {:background :yellow}}
+   :align {:description "The placement `[horizontal vertical]` of the text in its box; the horizontal part also aligns its lines. Label maps take it, the text chart doesn't." :cljplot2/no-example true}
    :background {:description "The colour of a box behind the text." :cljplot2/example :yellow
                 :cljplot2/value-meanings {:none "No box."}
                 :cljplot2/form-meanings {::schema/solid-color "This colour, e.g. `:white`."}}
    :dollar-math {:description "Whether text between two dollar signs draws as a LaTeX formula; a dollar after a backslash stays literal."
                  :cljplot2/example false :cljplot2/example-context {:text ["$x^2$ costs $5"]}
-                 :cljplot2/value-meanings {true "Formulas between dollars." false "Every dollar literal."}}})
+                 :cljplot2/value-meanings {true "Formulas between dollars." false "Every dollar literal."}}
+   :min-size {:description "The least font size in points a fitted text (an axis title, a strip, a text chart with `:x-span`, a builder label) shrinks to when it is too long for its room; without it the text keeps its size."
+              :cljplot2/example 6}})
+
+(def text-style-schema
+  "Schema of a text role's style: `:font :size :font-style :color :inset` required, `:align`, `:background`, `:min-size` (a role's least fitted size, not a key content overrides) and `:dollar-math` optional. Its entries take the descriptions of the shared group `:text-style`, which documents them (`:cljplot2/entries-fragment`)."
+  (-> [:map {:closed true :cljplot2/type-doc "a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)"
+             :cljplot2/type-name "text style" :cljplot2/entries-fragment :text-style}]
+      (into (map (fn [[k s]] [k (text-style-card-props k) s])) text-style-entries)
+      (conj (schema/optional :align (text-style-card-props :align) schema/align)
+            (schema/optional :background (text-style-card-props :background) schema/color)
+            (schema/nilable :min-size (text-style-card-props :min-size) schema/pos)
+            (schema/nilable :dollar-math (text-style-card-props :dollar-math) schema/bool))))
 
 (def text-style-overrides
   "Map entries of the text style keys content may override (all optional, shared group `:text-style`), see [[style-keys]]."
@@ -344,116 +336,186 @@
          (schema/nilable :dollar-math (assoc (text-style-card-props :dollar-math) :cljplot2/default-doc "The text role's value.") schema/bool))))
 
 (def text-roles
-  "The text roles of the default theme: role -> `{:section s :description d}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, bundle, chord, pairs). A theme may add roles of its own, used by labels' and text charts' `:role`."
-  {:title {:section :plot-text :description "plot and multiplot titles"}
-   :strip {:section :plot-text :description "facet strip texts"}
-   :axis-title {:section :plot-text :description "axis titles"}
-   :tick-label {:section :plot-text :description "tick labels"}
-   :legend-title {:section :legend-text :description "legend titles"}
-   :legend-label {:section :legend-text :description "legend entry labels and colour bar ticks"}
-   :treemap-group {:section :hierarchy-text :description "treemap group headers"}
-   :treemap-leaf {:section :hierarchy-text :description "treemap leaf labels"}
-   :partition-group {:section :hierarchy-text :description "partition (icicle, sunburst) group labels"}
-   :partition-leaf {:section :hierarchy-text :description "partition leaf labels"}
-   :pack-group {:section :hierarchy-text :description "circle packing group labels"}
-   :pack-leaf {:section :hierarchy-text :description "circle packing leaf labels"}
-   :venn-set {:section :chart-text :description "Venn diagram set names"}
-   :venn-count {:section :chart-text :description "Venn diagram region counts"}
-   :tile-value {:section :chart-text :description "tile value labels"}
-   :correlation {:section :chart-text :description "correlation numbers"}
-   :pairwise {:section :chart-text :description "pairwise statistic numbers"}
-   :contour-label {:section :chart-text :description "contour level labels"}
-   :annotation {:section :chart-text :description "text charts and strip n labels"}
-   :bar-value {:section :chart-text :description "bar value and count labels"}
-   :network-label {:section :builder-text :description "network node labels"}
-   :sankey-label {:section :builder-text :description "sankey node labels"}
-   :dendrogram-group-label {:section :builder-text :description "dendrogram group (inner node) labels"}
-   :alluvial-label {:section :builder-text :description "alluvial stratum labels"}
-   :tree-label {:section :builder-text :description "node-link tree node labels"}
-   :radial-label {:section :builder-text :description "leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks with the leaf count (not to a room), down to the role's :min-size, never above its size"}
-   :pairs-name {:section :builder-text :description "variable names on the diagonal of a scatter-plot matrix"}})
+  "The text roles of the default theme: role -> `{:section s :description d :example e}` - what the role styles and who draws it (`:plot-text` - titles, strips, axes; `:legend-text`; `:hierarchy-text` - treemap, partition and pack labels; `:chart-text` - texts of other charts; `:builder-text` - labels of builders: network, sankey, dendrogram, alluvial, tree, bundle, chord, pairs) and a partial style changing it, for the role's option card. A theme may add roles of its own, used by labels' and text charts' `:role`."
+  {:title {:section :plot-text :description "The style of plot and multiplot titles." :example {:size 20 :font-style :italic}}
+   :strip {:section :plot-text :description "The style of facet strip texts." :example {:font-style :bold}}
+   :axis-title {:section :plot-text :description "The style of axis titles." :example {:color :darkred}}
+   :tick-label {:section :plot-text :description "The style of tick labels; an axis's `:tick-label` keys go over it." :example {:size 8}}
+   :legend-title {:section :legend-text :description "The style of legend titles." :example {:font-style :plain}}
+   :legend-label {:section :legend-text :description "The style of legend entry labels and colour bar tick labels." :example {:font-style :italic}}
+   :treemap-group {:section :hierarchy-text :description "The style of treemap group headers." :example {:size 13}}
+   :treemap-leaf {:section :hierarchy-text :description "The style of treemap leaf labels." :example {:font-style :italic}}
+   :partition-group {:section :hierarchy-text :description "The style of partition (icicle and sunburst) group labels." :example {:size 13}}
+   :partition-leaf {:section :hierarchy-text :description "The style of partition leaf labels." :example {:font-style :italic}}
+   :pack-group {:section :hierarchy-text :description "The style of circle packing group labels." :example {:size 13}}
+   :pack-leaf {:section :hierarchy-text :description "The style of circle packing leaf labels." :example {:font-style :italic}}
+   :venn-set {:section :chart-text :description "The style of Venn diagram set names." :example {:size 14}}
+   :venn-count {:section :chart-text :description "The style of Venn diagram region counts." :example {:font-style :bold}}
+   :tile-value {:section :chart-text :description "The style of tile value labels." :example {:size 12}}
+   :correlation {:section :chart-text :description "The style of correlation numbers; they shrink to fit their cell, down to 6 points." :example {:size 16}}
+   :pairwise {:section :chart-text :description "The style of pairwise statistic numbers; they shrink to fit their cell, down to 6 points." :example {:size 16}}
+   :contour-label {:section :chart-text :description "The style of contour level labels." :example {:background :none}}
+   :annotation {:section :chart-text :description "The style of text charts and strip n labels." :example {:size 14 :color :darkred}}
+   :bar-value {:section :chart-text :description "The style of bar value and count labels." :example {:font-style :bold}}
+   :network-label {:section :builder-text :description "The style of network node labels." :example {:size 11}}
+   :sankey-label {:section :builder-text :description "The style of sankey node labels." :example {:size 12 :font-style :bold}}
+   :dendrogram-group-label {:section :builder-text :description "The style of dendrogram group (inner node) labels." :example {:size 11}}
+   :alluvial-label {:section :builder-text :description "The style of alluvial stratum labels." :example {:font-style :bold}}
+   :tree-label {:section :builder-text :description "The style of node-link tree node labels." :example {:size 11}}
+   :radial-label {:section :builder-text :description "The style of leaf names around circular builders (dendrogram, tree, bundle, chord); the builder picks the size from the leaf count, between `:min-size` and `:size`." :example {:color :darkred}}
+   :pairs-name {:section :builder-text :description "The style of variable names on the diagonal of a scatter-plot matrix." :example {:size 10 :color :darkred}}})
 
-(def ^:private grid-line
-  "Schema of a grid line style `{:color :line-width :dash}`, or `:none`."
-  (schema/keyword-or :none [:map {:closed true :cljplot2/type-doc "a line {:color :line-width :dash}"}
-                            [:color {:description "line colour"} schema/color]
-                            [:line-width {:description "line width in pixels"} schema/non-neg]
-                            [:dash {:description "dash style (:none - solid)"} schema/dash]]))
+(defn- grid-line
+  "Gives the schema of a grid line entry's value: a line style `{:color :line-width :dash}` (documented by the shared group `:line-style`), or `:none`.
 
-(def ^:private axis-style
-  "Schema of one axis style (see the namespace doc, `:axis`)."
+  Parameters:
+
+  - `form-meaning` (string): the meaning of the line style form on the entry's card (how a partial map merges).
+
+  Returns `[props schema]` - the entry's meaning properties and its schema."
+  [form-meaning]
+  [{:cljplot2/value-meanings {:none "No lines."} :cljplot2/form-meanings {:map form-meaning}}
+   (schema/keyword-or :none [:map {:closed true :cljplot2/type-doc "a line {:color :line-width :dash}"
+                                   :cljplot2/type-name "line style" :cljplot2/entries-fragment :line-style}
+                             [:color {:description "The colour of the lines."} schema/color]
+                             [:line-width {:description "The width of the lines in pixels."} schema/non-neg]
+                             [:dash {:description "The dash style of the lines."} schema/dash]])])
+
+(def ^:private partial-grid-line
+  "[[grid-line]] of an entry whose default is a line style: a partial map merges over it."
+  (grid-line "Lines in this style; keys left out keep the default line's."))
+
+(defn- axis-style
+  "Gives the schema of one axis style (see the namespace doc, `:axis`).
+
+  Parameters:
+
+  - `k` (keyword): the axis, `:x` or `:y` - the examples' contexts name it.
+
+  Returns a closed map schema."
+  [k]
   [:map {:closed true}
-   [:line-color {:description "axis line colour"} schema/color]
-   [:line-width {:description "axis line width in pixels (0 - not drawn)"} schema/non-neg]
-   [:tick-color {:description "tick colour"} schema/color]
-   [:tick-length {:description "tick length in pixels"} schema/non-neg]
-   [:tick-width {:description "tick width in pixels (0 - not drawn)"} schema/non-neg]
-   [:label-gap {:description "gap between ticks and tick labels in pixels"} schema/non-neg]
-   [:tick-label-gap {:description "least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn"} schema/non-neg]
-   [:tick-spacing {:description "target distance between ticks in pixels (sets the tick count)"} schema/pos]
-   [:label-rotation {:description "tick labels rotated clockwise, degrees"} [:and number? [:>= -90] [:<= 90]]]
-   [:minor-tick-length {:description "minor tick length in pixels"} schema/non-neg]
-   [:tick-label {:description "text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role"
-                 :cljplot2/entries-fragment :text-style}
-    (into [:map {:closed true :cljplot2/type-doc "a partial text style (:font, :size, :color ...)"}] text-style-overrides)]])
+   [:line-color {:description "The colour of the axis line." :cljplot2/example :red
+                 :cljplot2/value-meanings {:none "No axis line."}}
+    schema/color]
+   [:line-width {:description "The width of the axis line in pixels; 0 draws none." :cljplot2/example 3} schema/non-neg]
+   [:tick-color {:description "The colour of the ticks." :cljplot2/example :red
+                 :cljplot2/value-meanings {:none "No ticks."}}
+    schema/color]
+   [:tick-length {:description "The length of the ticks in pixels." :cljplot2/example 12} schema/non-neg]
+   [:tick-width {:description "The width of the ticks in pixels; 0 draws none." :cljplot2/example 3} schema/non-neg]
+   [:label-gap {:description "The space in pixels between the ticks and their labels." :cljplot2/example 12} schema/non-neg]
+   [:tick-label-gap {:description "The least space in pixels between neighbouring tick labels lying end to end (unrotated on a horizontal axis, turned 90 degrees on a vertical one); a numeric axis skips a label closer than this to the last one it drew."
+                     :cljplot2/example 30
+                     :cljplot2/example-context (when (= :y k) {:axis {:y {:label-rotation 90}}})}
+    schema/non-neg]
+   [:tick-spacing {:description "The distance in pixels the axis aims for between ticks; it sets how many ticks fit." :cljplot2/example 25} schema/pos]
+   [:label-rotation {:description "The angle in degrees the tick labels turn clockwise, from -90 to 90." :cljplot2/example 45}
+    [:and number? [:>= -90] [:<= 90]]]
+   [:minor-tick-length {:description "The length of the minor ticks in pixels; a scale with `:minor-ticks` draws them." :cljplot2/example 8} schema/non-neg]
+   [:tick-label {:description "Text style keys of this axis's tick labels, merged over the `:tick-label` text role; polar guides take them too, and `[:axis :x]` styles 3D frames."
+                 :cljplot2/entries-fragment :text-style :cljplot2/example {:size 14 :color :darkred}}
+    (into [:map {:closed true :cljplot2/type-doc "a partial text style (:font, :size, :color ...)"
+                 :cljplot2/type-name "text style" :cljplot2/entries-fragment :text-style}]
+          text-style-overrides)]])
 
 (def theme-schema
   "Schema of the merged theme (see [[default-theme]]; every key has a value there - overrides are partial). `:chart` subtrees are checked against the charts' style schemas by `build`, see [[cljplot2.pipeline/build]]."
   [:map {:closed true :cljplot2/merged true}
-   [:plot {:description "the whole canvas"}
+   [:plot {:description "The canvas: its background and margin."}
     [:map {:closed true}
-     [:background {:description "canvas background colour"} schema/color]
-     [:margin {:description "pixels around the plot on every side"} schema/non-neg]]]
-   [:panel {:description "the data panels"}
+     [:background {:description "The colour of the canvas behind the whole plot." :cljplot2/example :white
+                   :cljplot2/value-meanings {:none "No background: the canvas stays transparent."}}
+      schema/color]
+     [:margin {:description "The space in pixels around the plot on every side." :cljplot2/example 30} schema/non-neg]]]
+   [:panel {:description "The data panels: their box and grid lines."}
     [:map {:closed true}
-     [:fill {:description "panel background colour" :cljplot2/section :panel-box} schema/color]
-     [:alternate-fill {:description "drawn over odd facet panels (row + column odd); :none - off" :cljplot2/section :panel-box} schema/color]
-     [:border-color {:description "panel border colour" :cljplot2/section :panel-box} schema/color]
-     [:border-width {:description "panel border width in pixels (drawn inside the panel)" :cljplot2/section :panel-box} schema/non-neg]
-     [:invalid-band-size {:description "pixels across the band of invalid values beside a panel's axis (charts' :invalid :show), at least its label's"
-                          :cljplot2/section :panel-box}
+     [:fill {:description "The background colour of each data panel." :cljplot2/section :panel-box :cljplot2/example :white
+             :cljplot2/value-meanings {:none "No fill: the plot background shows through."}}
+      schema/color]
+     [:alternate-fill {:description "A colour drawn over the fill of every facet panel whose row and column numbers add up to an odd number; `plot/pairs` shades its cells the same way."
+                       :cljplot2/section :panel-box :cljplot2/example [0 0 0 40]
+                       :cljplot2/value-meanings {:none "No shading."}}
+      schema/color]
+     [:border-color {:description "The colour of the border drawn inside each panel's edge." :cljplot2/section :panel-box :cljplot2/example :black
+                     :cljplot2/value-meanings {:none "No border."}}
+      schema/color]
+     [:border-width {:description "The width of the panel border in pixels." :cljplot2/section :panel-box
+                     :cljplot2/example 4 :cljplot2/example-context {:panel {:border-color :black}}}
       schema/non-neg]
-     [:grid{:description "grid lines at the ticks" :cljplot2/section :grid}
-      [:map {:closed true}
-       [:x {:description "grid lines of the x scale"} grid-line]
-       [:y {:description "grid lines of the y scale"} grid-line]
-       [:bands {:description "grid lines of a bands scale, instead of :x / :y"} grid-line]
-       [:bands-fill {:description "fill of every second band of a bands scale; :none - off"} schema/color]
-       [:minor {:description "grid lines at minor ticks"} grid-line]]]]]
-   [:strip {:description "facet strips"}
+     [:invalid-band-size {:description "The size in pixels across the band beside an axis where a chart with `:invalid :show` draws its invalid values; the band's label may widen it."
+                          :cljplot2/section :panel-box :cljplot2/example 48}
+      schema/non-neg]
+     [:grid {:description "The grid lines and band shading, by kind: `:x`, `:y`, `:bands`, `:bands-fill` and `:minor`." :cljplot2/section :grid}
+      (let [[meanings line] partial-grid-line
+            [minor-meanings minor-line] (grid-line "Lines in this style; the default is `:none`, so give all three keys.")]
+        [:map {:closed true}
+         [:x (merge {:description "The grid lines at the ticks of the x scale." :cljplot2/example {:color :darkred :line-width 1}} meanings) line]
+         [:y (merge {:description "The grid lines at the ticks of the y scale." :cljplot2/example :none} meanings) line]
+         [:bands (merge {:description "The grid lines of a bands scale (levels on a categorical axis), drawn in place of its axis's `:x` or `:y` lines; `:none` for that axis turns them off too."
+                         :cljplot2/example {:color :darkred :dash :none}}
+                        meanings)
+          line]
+         [:bands-fill {:description "The colour of every second band of a bands scale." :cljplot2/example [0 0 255 30]
+                       :cljplot2/value-meanings {:none "No band shading."}}
+          schema/color]
+         [:minor (merge {:description "The grid lines at the minor ticks of a scale with `:minor-ticks`."
+                         :cljplot2/example {:color :gray :line-width 0.5 :dash :none}}
+                        minor-meanings)
+          minor-line]])]]]
+   [:strip {:description "The facet strips."}
     [:map {:closed true}
-     [:fill {:description "strip background colour"} schema/color]
-     [:border-color {:description "strip border colour"} schema/color]
-     [:border-width {:description "strip border width in pixels"} schema/non-neg]
-     [:shingle-fill {:description "colour of the bar marking a shingle level"} schema/color]]]
-   [:facet {:description "facet layout"}
-    [:map {:closed true} [:gap {:description "pixels between facet panels"} schema/non-neg]]]
-   [:multiplot {:description "arranged plots"}
-    [:map {:closed true} [:gap {:description "pixels between arranged plots"} schema/non-neg]]]
-   [:palette {:description "default aesthetic ranges"} aesthetic/palette-schema]
-   [:legend {:description "legends and colour bars"}
+     [:fill {:description "The background colour of the facet strips." :cljplot2/example :lightblue
+             :cljplot2/value-meanings {:none "No strip background."}}
+      schema/color]
+     [:border-color {:description "The colour of the strip border." :cljplot2/example :black
+                     :cljplot2/value-meanings {:none "No border."}}
+      schema/color]
+     [:border-width {:description "The width of the strip border in pixels." :cljplot2/example 3} schema/non-neg]
+     [:shingle-fill {:description "The colour of the bar marking a shingle level's range in its strip." :cljplot2/example :lightgreen
+                     :cljplot2/value-meanings {:none "No bar."}}
+      schema/color]]]
+   [:facet {:description "The facet layout."}
+    [:map {:closed true} [:gap {:description "The space in pixels between facet panels, and between a panel and its margins or invalid-value band." :cljplot2/example 25} schema/non-neg]]]
+   [:multiplot {:description "The layout of arranged plots."}
+    [:map {:closed true} [:gap {:description "The space in pixels between arranged plots." :cljplot2/example 40} schema/non-neg]]]
+   [:palette {:description "The default ranges of the aesthetic scales."} aesthetic/palette-schema]
+   [:legend {:description "The legends and colour bars."}
     [:map {:closed true}
-     [:gap {:description "pixels between key and label and between legends"} schema/non-neg]
-     [:key-size {:description "side of a legend key box in pixels"} schema/non-neg]
-     [:fill {:description "legend box fill"} schema/color]
-     [:border-color {:description "legend box border colour"} schema/color]
-     [:border-width {:description "legend box border width in pixels"} schema/non-neg]
-     [:bar-length {:description "colour bar length: :stretch (the space left) or pixels"} (schema/keyword-or :stretch schema/pos)]
-     [:bar-width {:description "colour bar width in pixels (nil - the key size)"} [:maybe schema/pos]]
-     [:bar-ticks {:description "colour bar tick count (a scale's :ticks wins)"} schema/pos-int]
-     [:bar-tick-length {:description "colour bar tick length in pixels (labels follow it)"} schema/non-neg]
-     [:bar-tick-width {:description "colour bar tick width in pixels (0 - no tick lines)"} schema/non-neg]
-     [:min-key-line-width {:description "least width in pixels of the line marks drawn in legend keys (thinner visible lines are drawn this wide there, width 0 stays 0; 0 - as in the panel)"} schema/non-neg]]]
-   [:frame-3d {:description "3D box frames (their axes and edges take [:axis :x])"}
+     [:gap {:description "The space in pixels between a legend's keys and their labels, between two legends and between the panels and the legends." :cljplot2/example 15} schema/non-neg]
+     [:key-size {:description "The least side of a legend key's box in pixels; a key grows to fit a mapped size. It is also the default colour bar width." :cljplot2/example 28} schema/non-neg]
+     [:fill {:description "The fill colour of the legend box." :cljplot2/example :white
+             :cljplot2/value-meanings {:none "No fill."}}
+      schema/color]
+     [:border-color {:description "The colour of the legend box's border." :cljplot2/example :black
+                     :cljplot2/value-meanings {:none "No border."}}
+      schema/color]
+     [:border-width {:description "The width of the legend box's border in pixels." :cljplot2/example 3
+                     :cljplot2/example-context {:legend {:border-color :black}}}
+      schema/non-neg]
+     [:bar-length {:description "The length of a colour bar in pixels, at most the height available." :cljplot2/example 60
+                   :cljplot2/value-meanings {:stretch "The height left in the bar's column of legends, at least three key sizes."}
+                   :cljplot2/form-meanings {::schema/pos "This many pixels."}}
+      (schema/keyword-or :stretch schema/pos)]
+     [:bar-width {:description "The width of a colour bar in pixels." :cljplot2/default-doc "The legend's `:key-size`." :cljplot2/example 30}
+      [:maybe schema/pos]]
+     [:bar-ticks {:description "The tick count a colour bar aims for; a colour scale's `:ticks` wins, and a binned bar ticks its breaks." :cljplot2/example 2} schema/pos-int]
+     [:bar-tick-length {:description "The length of a colour bar's ticks in pixels; the labels sit past them." :cljplot2/example 8} schema/non-neg]
+     [:bar-tick-width {:description "The width of a colour bar's ticks in pixels; 0 draws none." :cljplot2/example 3} schema/non-neg]
+     [:min-key-line-width {:description "The least width in pixels of a line in a legend key: a key draws a thinner line this wide, and a line of width 0 stays 0. 0 keeps the panel's widths."
+                           :cljplot2/example 5}
+      schema/non-neg]]]
+   [:frame-3d {:description "The box frames of 3D charts; their axes and edges take the x axis style `[:axis :x]`."}
     [:map {:closed true}
-     [:hidden-edge-dash {:description "dash of the hidden box edges (:none - solid)"} schema/dash]]]
-   [:chart {:description "per chart kind styles, see each chart's style options"}
+     [:hidden-edge-dash {:description "The dash of a 3D box's hidden edges." :cljplot2/example [8 2 2 2]} schema/dash]]]
+   [:chart {:description "The style of each chart kind, `[:chart kind]`, and the named styles."}
     [:and {:cljplot2/type-doc "map of chart kind to its style"} [:map-of keyword? :map]
      [:map (schema/optional :text (schema/forbidden "isn't used: text charts take the text role [:text :annotation]"))]]]
-   [:axis {:description "axes per scale (kept by scale also when a flipped plot draws :x vertically)"}
-    [:map {:closed true} [:x {:description "x axis style" :cljplot2/section :x-axis} axis-style]
-     [:y {:description "y axis style" :cljplot2/section :y-axis} axis-style]]]
-   [:text {:description "text styles by role (see text-roles)"} [:map-of keyword? text-style-schema]]])
+   [:axis {:description "The axes, per position scale: `:x` stays the x scale's axis when `:flip` draws it vertically."}
+    [:map {:closed true}
+     [:x {:description "The keys of the axis drawn for the x scale, also when `:flip` draws it vertically." :cljplot2/section :x-axis} (axis-style :x)]
+     [:y {:description "The keys of the axis drawn for the y scale, also when `:flip` draws it horizontally." :cljplot2/section :y-axis} (axis-style :y)]]]
+   [:text {:description "The text styles, per text role."} [:map-of keyword? text-style-schema]]])
 
 (defn plot-theme
   "Returns the theme of a plot: its `theme` overrides deep-merged over [[default-theme]] (see [[deep-merge]]).

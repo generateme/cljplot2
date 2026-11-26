@@ -3,8 +3,9 @@
   their meanings, examples, theme defaults, concept titles - and the rules a chart migrated to cards follows: full
   sentence descriptions, a meaning for every value of a short list (a long list's other values under one meaning),
   a meaning for every form of an option taking several, a default for every optional option, an example for every
-  option. The switches of `test-util` - `migrated` (chart kinds), `migrated-builders` and `migrated-functions` (data
-  functions) - list the owners whose pages show option cards."
+  option. The switches of `test-util` - `migrated` (chart kinds), `migrated-builders`, `migrated-functions` (data
+  functions), `migrated-groups` (shared groups) and `migrated-theme-keys` - list the owners whose pages show option
+  cards."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest testing is are]]
@@ -33,7 +34,9 @@
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
             [cljplot2.core :as plot]
-            [cljplot2.test-util :refer [error-data migrated migrated-builders migrated-functions migrated-groups same-pixels?]]
+            [cljplot2.theme :as theme]
+            [cljplot2.test-util :refer [error-data migrated migrated-builders migrated-functions migrated-groups
+                                         migrated-theme-keys same-pixels?]]
             [notebook-utils]))
 
 (def ^:private max-listed-values
@@ -141,7 +144,7 @@
                           (slurp %)))
         (reference-files)))
 
-(declare function-fixtures group-fixtures)
+(declare function-fixtures group-fixtures theme-fixtures)
 
 (defn- group-section
   "The source of the Shared options section headed `### title`, up to the next `##` or `###` heading (its `####`
@@ -217,6 +220,16 @@
     (testing (str g ": its owner is a migrated data function taking the group")
       (is (contains? migrated-functions owner))
       (is (some #(= g (first %)) (describe/fragment-keys (describe/options (resolve owner)))))))
+  (testing "every theme key but :chart (each chart's page documents its style) is migrated and has a fixture"
+    (is (= (disj (set (keys theme/default-theme)) :chart) migrated-theme-keys))
+    (is (= migrated-theme-keys (set (keys theme-fixtures)))))
+  (let [code (str/join "\n" (remove #(str/starts-with? (str/triml %) ";;") (str/split-lines (slurp "notebooks/reference/theme.clj"))))]
+    (doseq [k migrated-theme-keys]
+      (testing (str k ": the Theme page shows its keys as option cards, the example a plot key, no options table")
+        (is (str/includes? code (str "(nu/option-cards :theme (describe/theme-rows " k ")")))
+        (is (not (str/includes? code (str "(nu/options-table (describe/theme-rows " k ")"))))))
+    (testing "with every key migrated the Theme page has no options table at all"
+      (is (not (str/includes? code "nu/options-table")))))
   (testing "boundary: a group section ends at the next ## or ### heading, not at a #### slice"
     (is (str/includes? (str (group-section "Strip options")) "#### Counts"))
     (is (not (str/includes? (str (group-section "Strip options")) "### Mirrored strips")))
@@ -310,6 +323,12 @@
       (is (= "(chart/line {:position :stack})" (example-call 'chart/line rows row)))
       (is (= "(plot/network edges {:position :stack})" (example-call '(plot/network edges) rows row)))
       (is (= "(plot/bundle calls tree {:position :stack})" (example-call '(plot/bundle calls tree) rows row))))
+    (testing "a theme card's example is the plot key :theme with the nested example, readable"
+      (let [theme-rows (describe/theme-rows :axis)
+            at #(first (filter (fn [r] (= % (:path r))) theme-rows))]
+        (is (= "{:theme {:axis {:x {:line-width 3}}}}" (example-call :theme theme-rows (at [:axis :x :line-width]))))
+        (is (= "{:theme {:axis {:y {:label-rotation 90, :tick-label-gap 30}}}}" (example-call :theme theme-rows (at [:axis :y :tick-label-gap])))
+            "with its context")))
     (testing "boundary: no example - no call"
       (is (nil? (example-call 'chart/line [] {:path [:x]}))))))
 
@@ -689,6 +708,108 @@
         {:id (keyword "group" (name fragment)) :rows rows :options rows :mapping [] :schema (get-in (constructor) [:schema :options]) :base base
          :draw (plot {}) :draws (update-vals per-option plot)}))))
 
+;; theme owners
+
+(def ^:private theme-points
+  "Rows of two groups (`:g`) of eight points with a numeric `:z` - the fixture plots of the theme keys."
+  (for [g ["a" "b"] x (range 8)] {:g g :x x :y (m/+ (m/sin (m/* 0.9 x)) (if (= g "a") 0.0 1.5)) :z (m/* 0.5 x)}))
+
+(def ^:private theme-scatter
+  "A scatter plot of [[theme-points]] coloured by group."
+  {:data theme-points :mapping {:x :x :y :y :color :g} :charts [(chart/scatter)]})
+
+(def ^:private theme-facets
+  "[[theme-scatter]] in a facet per group, with a title and axis titles: every plot text role draws."
+  (assoc theme-scatter :mapping {:x :x :y :y :color :g :facet :g} :labels {:title "title" :x "x" :y "y"}))
+
+(def ^:private theme-bars
+  "Bars of [[theme-points]] by x as levels (a bands scale), filled by group pattern."
+  {:data theme-points :mapping {:x (comp str :x) :y :z :pattern :g} :charts [(chart/bar)]})
+
+(defn- themed
+  "A theme fixture: a function of theme overrides giving `plot` with them as its `:theme`."
+  [plot]
+  (fn [t] (assoc plot :theme t)))
+
+(defn- themed-kind
+  "A theme fixture of chart `kind`: its card owner's fixture plot ([[chart-owner]]) with `chart-options`, as [[themed]]."
+  [kind chart-options]
+  (themed ((:draw (chart-owner kind)) chart-options)))
+
+(defn- themed-builder
+  "A theme fixture of builder `sym` of `cljplot2.core`: its card owner's fixture call ([[builder-owner]]) with `options`
+  and the theme overrides as its `:theme` option."
+  [sym options]
+  (let [draw (:draw (builder-owner sym))]
+    (fn [t] (draw (assoc options :theme t)))))
+
+(def ^:private theme-fixtures
+  "Top-level theme key -> its fixture: `:draw` - a function of theme overrides giving a plot on which the key's examples
+  act, `:per-option` - option path -> its own such function (a key acting only on another plot: facets, a bands scale,
+  minor ticks, a text role's chart or builder)."
+  {:plot {:draw (themed theme-scatter)}
+   :panel {:draw (themed theme-scatter)
+           :per-option {[:panel :alternate-fill] (themed theme-facets)
+                        [:panel :invalid-band-size] (themed-kind :histogram {:invalid :show})
+                        [:panel :grid :bands] (themed theme-bars)
+                        [:panel :grid :bands-fill] (themed theme-bars)
+                        [:panel :grid :minor] (themed (assoc theme-scatter :scales {:x {:minor-ticks 4}}))}}
+   :axis {:draw (themed theme-scatter)
+          :per-option {[:axis :x :tick-label-gap] (themed (assoc theme-scatter :scales {:x {:ticks 20}}))
+                       [:axis :y :tick-label-gap] (themed (assoc theme-scatter :scales {:y {:ticks 20}}))
+                       [:axis :x :minor-tick-length] (themed (assoc theme-scatter :scales {:x {:minor-ticks 4}}))
+                       [:axis :y :minor-tick-length] (themed (assoc theme-scatter :scales {:y {:minor-ticks 4}}))}}
+   :strip {:draw (themed theme-facets)
+           :per-option {[:strip :shingle-fill] (themed {:data (shingle/shingle theme-points :z {:as :band :n 2 :overlap 0.25})
+                                                        :mapping {:x :x :y :y :facet :band} :charts [(chart/scatter)]})}}
+   :facet {:draw (themed theme-facets)}
+   :multiplot {:draw (fn [t] (plot/arrange [theme-scatter (assoc theme-scatter :charts [(chart/line)])] {:columns 2 :theme t}))}
+   :legend {:draw (themed (assoc theme-scatter :mapping {:x :x :y :y :shape :g :color :z}))
+            :per-option {[:legend :min-key-line-width] (themed (assoc theme-scatter :charts [(chart/line)]))}}
+   :frame-3d {:draw (themed-kind :surface nil)}
+   :palette {:draw (themed theme-scatter)
+             :per-option {[:palette :gradient] (themed (assoc theme-scatter :mapping {:x :x :y :y :color :z}))
+                          [:palette :shape] (themed (assoc theme-scatter :mapping {:x :x :y :y :shape :g}))
+                          [:palette :size] (themed (assoc theme-scatter :mapping {:x :x :y :y :size :z}))
+                          [:palette :dash] (themed (assoc theme-scatter :mapping {:x :x :y :y :dash :g} :charts [(chart/line)]))
+                          [:palette :pattern] (themed theme-bars)
+                          [:palette :na] (themed (assoc theme-scatter :data (conj (vec theme-points) {:g nil :x 3.5 :y 0.5 :z 1})))}}
+   :text {:draw (themed theme-facets)
+          :per-option {[:text :treemap-group] (themed-kind :treemap nil) [:text :treemap-leaf] (themed-kind :treemap nil)
+                       [:text :partition-group] (themed-kind :partition nil) [:text :partition-leaf] (themed-kind :partition nil)
+                       [:text :pack-group] (themed-kind :pack nil) [:text :pack-leaf] (themed-kind :pack nil)
+                       [:text :venn-set] (themed-kind :venn nil) [:text :venn-count] (themed-kind :venn nil)
+                       [:text :tile-value] (themed-kind :tile {:value-label true})
+                       [:text :correlation] (themed-kind :correlation nil)
+                       [:text :pairwise] (themed-kind :pairwise nil)
+                       [:text :contour-label] (themed-kind :contour {:labels true})
+                       [:text :annotation] (themed-kind :text {:x [5] :y [5] :text ["label"]})
+                       [:text :bar-value] (themed-kind :bar {:value-label true})
+                       [:text :network-label] (themed-builder 'network {:labels true})
+                       [:text :sankey-label] (themed-builder 'sankey nil)
+                       [:text :dendrogram-group-label] (themed-builder 'dendrogram {:group-labels true})
+                       [:text :alluvial-label] (themed-builder 'alluvial {:variables [:class :sex] :value :n})
+                       [:text :tree-label] (themed-builder 'tree nil)
+                       [:text :radial-label] (themed-builder 'dendrogram {:circular true})
+                       [:text :pairs-name] (fn [t] (plot/pairs correlated {:variables [:x :y] :diagonal :names :theme t}))}}})
+
+(def ^:private theme-overrides-schema
+  "Schema of a plot's `:theme`: overrides valid once merged over the default theme (the card owners' option schema of
+  the theme keys)."
+  [:fn {:error/message "should be theme overrides valid over the default theme"}
+   #(and (map? %) (empty? (theme/errors (theme/plot-theme %))))])
+
+(defn- theme-owner
+  "The card owner of top-level theme key `k` (see [[owners]]), its id `:theme/<name>`: its rows
+  (`cljplot2.describe/theme-rows`, as the Theme page shows them) drawn as theme overrides of the fixture plots of
+  [[theme-fixtures]]. Its `:base` is always `{}`: the fixtures take no base theme, so `drawable?`'s shallow merge of
+  base and example is the example."
+  [k]
+  (let [{:keys [draw per-option]} (theme-fixtures k)
+        rows (describe/theme-rows k)]
+    {:id (keyword "theme" (name k)) :rows rows :options rows :mapping [] :schema theme-overrides-schema :base {}
+     :draw draw :draws (or per-option {})}))
+
 (defn- function-owner
   "The card owner of data function `sym` (a qualified symbol, see [[owners]]): every option row is its own (a group's
   rows too - the function owns them), its draw function returns the compared value (`:compare :value`)."
@@ -701,14 +822,16 @@
      :draw (call args) :draws (update-vals per-option #(call (:args %)))}))
 
 (defn- owners
-  "Every migrated chart kind, builder and data function as a card owner: `:id` (the kind or the builder's symbol), `:rows` (every option
+  "Every migrated chart kind, builder, data function, shared group and theme key as a card owner: `:id` (the kind, the
+  builder's or function's symbol, `:group/<name>`, `:theme/<key>`), `:rows` (every option
   row), `:options` (its own rows), `:mapping` (mapping rows, none for a builder or a data function), `:schema` (its options schema), `:base`
   (the fixture's base options), `:draw` (a function of options - the fixture's base options merged under them -
   returning the fixture plot - a data function's: its compared value, `:compare :value`) and `:draws` (option path ->
   its own draw function, for an option acting on another fixture)."
   []
   (concat (map chart-owner (sort migrated)) (map builder-owner (sort migrated-builders))
-          (map function-owner (sort migrated-functions)) (map group-owner (sort migrated-groups))))
+          (map function-owner (sort migrated-functions)) (map group-owner (sort migrated-groups))
+          (map theme-owner (sort migrated-theme-keys))))
 
 (defn- without-option
   "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
@@ -786,7 +909,11 @@
         (is (nil? (describe/example row)) [id path reason])))
     (testing "every inert-in-fixtures and needed-to-draw entry names an option of its owner"
       (doseq [[id path] (concat (keys inert-in-fixtures) (keys needed-to-draw))]
-        (is (some #(= path (:path %)) (rows-of id)) [id path])))))
+        (is (some #(= path (:path %)) (rows-of id)) [id path])))
+    (testing "every per-option fixture names a leaf option of its owner (a renamed option leaves no dead fixture)"
+      (doseq [{:keys [id options draws]} (owners)
+              path (keys draws)]
+        (is (some #(= path (:path %)) (leaf-rows options)) [id path])))))
 
 (deftest function-owner-test
   (let [graph-owner (function-owner 'cljplot2.data.graph/graph)

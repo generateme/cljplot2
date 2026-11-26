@@ -59,7 +59,7 @@
   Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
   extents only cover what is drawn.
 
-  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]]; values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
+  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]] (named types [[palette]], [[size-range]]); values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
 
   Also: [[dim?]], [[level-key]], [[kinds]], [[transform-names]]."
   (:require [clojure2d.color :as c]
@@ -155,15 +155,21 @@
     (when (and (seq colors) (every? schema/solid-color? colors))
       colors)))
 
-(def ^:private palette
-  "Schema of a palette: a palette name or a non-empty sequence of colours."
-  (schema/named-type ::palette (comp some? palette-colors) "should be a palette name or a non-empty sequence of colors"))
+(def palette
+  "Schema of a palette: a palette name or a non-empty sequence of colours (theme `[:palette :color]`, `[:palette :gradient]`)."
+  (schema/named-type ::palette (comp some? palette-colors) "should be a palette name or a non-empty sequence of colors"
+                     {:cljplot2/type-doc "a palette name or a non-empty sequence of colors"
+                      :cljplot2/type-name "palette"
+                      :cljplot2/type-meaning "A clojure2d palette name such as `:tableau-10`, or a non-empty sequence of solid colours such as `[:red :green :blue]`."}))
 
-(def ^:private size-range
-  "Schema of a size range `[min max]`: non-negative numbers, `min <= max`."
+(def size-range
+  "Schema of a size range `[min max]`: non-negative numbers, `min <= max` (theme `[:palette :size]`)."
   (schema/named-type ::size-range #(and (vector? %) (m/== 2 (count %)) (every? (fn [v] (and (number? v) (m/not-neg? (double v)))) %)
                                         (m/<= (double (% 0)) (double (% 1))))
-                     "should be [min max], non-negative numbers, min <= max"))
+                     "should be [min max], non-negative numbers, min <= max"
+                     {:cljplot2/type-doc "[min max], non-negative numbers, min <= max"
+                      :cljplot2/type-name "size range"
+                      :cljplot2/type-meaning "Two non-negative numbers `[min max]` in pixels, `min` at most `max`, e.g. `[2 10]`."}))
 
 (def ^:private shapes
   "Schema of a shape range: shapes, cycled."
@@ -236,15 +242,20 @@
 (def palette-schema
   "Theme `:palette` (aesthetic defaults)."
   [:map {:closed true}
-   [:color {:description "ordinal colours: a palette name or colours"
-            :cljplot2/default-doc "the default palette (cljplot2.theme/default-palette): 14 colours checked for colour vision deficiencies"}
+   [:color {:description "The colours of a categorical colour scale's levels, repeated past their count."
+            :cljplot2/default-doc "The default palette: 14 colours checked for colour vision deficiencies."
+            :cljplot2/example :tableau-10}
     palette]
-   [:gradient {:description "linear and binned colours: colours or a palette name"} gradient]
-   [:shape {:description "point shapes, cycled"} shapes]
-   [:size {:description "size range [min max] in pixels"} size-range]
-   [:dash {:description "dash styles, cycled"} dashes]
-   [:pattern {:description "fill patterns, cycled"} patterns]
-   [:na {:description "colour of NA values"} schema/solid-color]])
+   [:gradient {:description "The colours of a continuous or binned colour scale, from its low end to its high end."
+               :cljplot2/example [:gold :darkred]
+               :cljplot2/form-meanings {::schema/function "A function of `t` from 0 to 1 that returns a colour."
+                                        ::palette "These colours, spread evenly over the scale."}}
+    gradient]
+   [:shape {:description "The point shapes of a categorical shape scale's levels, repeated past their count." :cljplot2/example [\s \A \V]} shapes]
+   [:size {:description "The range of a size scale in pixels." :cljplot2/example [1 20]} size-range]
+   [:dash {:description "The dash styles of a categorical dash scale's levels, repeated past their count." :cljplot2/example [:solid :dotted]} dashes]
+   [:pattern {:description "The fill patterns of a categorical pattern scale's levels, repeated past their count." :cljplot2/example [:dots :cross]} patterns]
+   [:na {:description "The colour of missing (`nil`) values of a colour scale; hierarchy charts also fill nodes without a colour with it." :cljplot2/example :red} schema/solid-color]])
 
 (defn level-key
   "Gives the identity of an ordinal level, shared by aesthetic scales and grouping (see [[cljplot2.data.group]]).

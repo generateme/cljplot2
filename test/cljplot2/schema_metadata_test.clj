@@ -20,7 +20,7 @@
             [cljplot2.data.rows]
             [cljplot2.layout.plot-grid]
             [cljplot2.theme]
-            [cljplot2.test-util :refer [card-groups explicit-defaults migrated pixels same-pixels?]]))
+            [cljplot2.test-util :refer [card-groups explicit-defaults migrated migrated-theme-keys pixels same-pixels?]]))
 
 (def chart-constructors
   "Kind -> constructor (var) of every built-in chart."
@@ -273,11 +273,18 @@
                 nil)))]
     (walk schema [])))
 
+(defn- card-theme-entry?
+  "Tests whether a theme entry at `path` reads in the card style: under a migrated theme key (`test-util/migrated-theme-keys`)
+  or `:chart` (no cards - each chart's page documents its style - but one style per schema)."
+  [path]
+  (contains? (conj migrated-theme-keys :chart) (first path)))
+
 (deftest non-chart-descriptions-test
   (doseq [:let [card-group? (card-groups)]
           [n s] non-chart-schemas
           :let [entries (remove (fn [[_ _ v]] (schema/forbidden? v)) (all-entries s))
-                table-entries (remove (fn [[_ props]] (card-group? (:cljplot2/fragment props))) entries)]]
+                card-entry? (fn [[path props]] (or (card-group? (:cljplot2/fragment props)) (and (= :theme n) (card-theme-entry? path))))
+                table-entries (remove card-entry? entries)]]
     (testing (str n ": every entry described")
       (is (seq entries))
       (is (= [] (vec (keep (fn [[path props]] (when-not (:description props) path)) entries)))))
@@ -290,6 +297,17 @@
                              :description)))
       (is (= [] (rule-breaks (map (fn [[path props]] {:kind n :path path :default-doc (:cljplot2/default-doc props)}) table-entries)
                              :default-doc))))
+    (when (= :theme n)
+      (testing "theme: every entry of a migrated key reads in the card style, nested ones without rows too (grid line keys, a role's text style keys)"
+        (is (= [] (vec (for [[path props :as entry] entries
+                             :when (card-entry? entry)
+                             t (keep props [:description :cljplot2/default-doc])
+                             :when (not (card-style? t))]
+                         [path t]))))
+        (testing "boundary: :chart and nested paths of migrated keys are card entries"
+          (is (card-theme-entry? [:chart]))
+          (is (card-theme-entry? [:text :title :size]))
+          (is (not (card-theme-entry? [:no-such-key]))))))
     (testing (str n ": readable type texts")
       (is (= [] (vec (keep #(when (re-find #":cljplot2\.|#object|\[:(cat|\?|\*|\+|fn|map|and|or|maybe|enum)\b|\w\?(,| |$)" (:type %))
                               [(:path %) (:type %)])

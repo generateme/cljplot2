@@ -123,6 +123,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 .options .option-example code { background: none; padding: 0; }
 .options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
 .options code, .mapping code { overflow-wrap: anywhere; }
+.options .option-default code, .options .option-example code { white-space: pre-wrap; }
 .mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
 .mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
 .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -533,20 +534,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#open-fraction" id="toc-open-fraction" class="nav-link" data-scroll-target="#open-fraction"><span class="header-section-number">4.29</span> open fraction</a></li>
   <li><a href="#overlap-fraction" id="toc-overlap-fraction" class="nav-link" data-scroll-target="#overlap-fraction"><span class="header-section-number">4.30</span> overlap fraction</a></li>
   <li><a href="#padding" id="toc-padding" class="nav-link" data-scroll-target="#padding"><span class="header-section-number">4.31</span> padding</a></li>
-  <li><a href="#panel-position" id="toc-panel-position" class="nav-link" data-scroll-target="#panel-position"><span class="header-section-number">4.32</span> panel position</a></li>
-  <li><a href="#point-shape" id="toc-point-shape" class="nav-link" data-scroll-target="#point-shape"><span class="header-section-number">4.33</span> point shape</a></li>
-  <li><a href="#position" id="toc-position" class="nav-link" data-scroll-target="#position"><span class="header-section-number">4.34</span> position</a></li>
-  <li><a href="#positive-finite-number" id="toc-positive-finite-number" class="nav-link" data-scroll-target="#positive-finite-number"><span class="header-section-number">4.35</span> positive finite number</a></li>
-  <li><a href="#positive-integer" id="toc-positive-integer" class="nav-link" data-scroll-target="#positive-integer"><span class="header-section-number">4.36</span> positive integer</a></li>
-  <li><a href="#positive-number" id="toc-positive-number" class="nav-link" data-scroll-target="#positive-number"><span class="header-section-number">4.37</span> positive number</a></li>
-  <li><a href="#quantile-bins" id="toc-quantile-bins" class="nav-link" data-scroll-target="#quantile-bins"><span class="header-section-number">4.38</span> quantile bins</a></li>
-  <li><a href="#quantile-range" id="toc-quantile-range" class="nav-link" data-scroll-target="#quantile-range"><span class="header-section-number">4.39</span> quantile range</a></li>
-  <li><a href="#random-generator" id="toc-random-generator" class="nav-link" data-scroll-target="#random-generator"><span class="header-section-number">4.40</span> random generator</a></li>
-  <li><a href="#sample-step" id="toc-sample-step" class="nav-link" data-scroll-target="#sample-step"><span class="header-section-number">4.41</span> sample step</a></li>
-  <li><a href="#solid-colour" id="toc-solid-colour" class="nav-link" data-scroll-target="#solid-colour"><span class="header-section-number">4.42</span> solid colour</a></li>
-  <li><a href="#span" id="toc-span" class="nav-link" data-scroll-target="#span"><span class="header-section-number">4.43</span> span</a></li>
-  <li><a href="#text-colour" id="toc-text-colour" class="nav-link" data-scroll-target="#text-colour"><span class="header-section-number">4.44</span> text colour</a></li>
-  <li><a href="#variable" id="toc-variable" class="nav-link" data-scroll-target="#variable"><span class="header-section-number">4.45</span> variable</a></li>
+  <li><a href="#palette" id="toc-palette" class="nav-link" data-scroll-target="#palette"><span class="header-section-number">4.32</span> palette</a></li>
+  <li><a href="#panel-position" id="toc-panel-position" class="nav-link" data-scroll-target="#panel-position"><span class="header-section-number">4.33</span> panel position</a></li>
+  <li><a href="#point-shape" id="toc-point-shape" class="nav-link" data-scroll-target="#point-shape"><span class="header-section-number">4.34</span> point shape</a></li>
+  <li><a href="#position" id="toc-position" class="nav-link" data-scroll-target="#position"><span class="header-section-number">4.35</span> position</a></li>
+  <li><a href="#positive-finite-number" id="toc-positive-finite-number" class="nav-link" data-scroll-target="#positive-finite-number"><span class="header-section-number">4.36</span> positive finite number</a></li>
+  <li><a href="#positive-integer" id="toc-positive-integer" class="nav-link" data-scroll-target="#positive-integer"><span class="header-section-number">4.37</span> positive integer</a></li>
+  <li><a href="#positive-number" id="toc-positive-number" class="nav-link" data-scroll-target="#positive-number"><span class="header-section-number">4.38</span> positive number</a></li>
+  <li><a href="#quantile-bins" id="toc-quantile-bins" class="nav-link" data-scroll-target="#quantile-bins"><span class="header-section-number">4.39</span> quantile bins</a></li>
+  <li><a href="#quantile-range" id="toc-quantile-range" class="nav-link" data-scroll-target="#quantile-range"><span class="header-section-number">4.40</span> quantile range</a></li>
+  <li><a href="#random-generator" id="toc-random-generator" class="nav-link" data-scroll-target="#random-generator"><span class="header-section-number">4.41</span> random generator</a></li>
+  <li><a href="#sample-step" id="toc-sample-step" class="nav-link" data-scroll-target="#sample-step"><span class="header-section-number">4.42</span> sample step</a></li>
+  <li><a href="#size-range" id="toc-size-range" class="nav-link" data-scroll-target="#size-range"><span class="header-section-number">4.43</span> size range</a></li>
+  <li><a href="#solid-colour" id="toc-solid-colour" class="nav-link" data-scroll-target="#solid-colour"><span class="header-section-number">4.44</span> solid colour</a></li>
+  <li><a href="#span" id="toc-span" class="nav-link" data-scroll-target="#span"><span class="header-section-number">4.45</span> span</a></li>
+  <li><a href="#text-colour" id="toc-text-colour" class="nav-link" data-scroll-target="#text-colour"><span class="header-section-number">4.46</span> text colour</a></li>
+  <li><a href="#variable" id="toc-variable" class="nav-link" data-scroll-target="#variable"><span class="header-section-number">4.47</span> variable</a></li>
   </ul>
 </nav>
     </div>
@@ -713,60 +716,68 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="4.31" class="anchored" data-anchor-id="padding"><span class="header-section-number">4.31</span> padding</h2>
 <p>Two non-negative fractions of the data span <code>[lo hi]</code>: the room added at the low and the high end, e.g.&nbsp;<code>[0.05 0]</code>.</p>
 </section>
-<section id="panel-position" class="level2" data-number="4.32">
-<h2 data-number="4.32" class="anchored" data-anchor-id="panel-position"><span class="header-section-number">4.32</span> panel position</h2>
+<section id="palette" class="level2" data-number="4.32">
+<h2 data-number="4.32" class="anchored" data-anchor-id="palette"><span class="header-section-number">4.32</span> palette</h2>
+<p>A clojure2d palette name such as <code>:tableau-10</code>, or a non-empty sequence of solid colours such as <code>[:red :green :blue]</code>.</p>
+</section>
+<section id="panel-position" class="level2" data-number="4.33">
+<h2 data-number="4.33" class="anchored" data-anchor-id="panel-position"><span class="header-section-number">4.33</span> panel position</h2>
 <p>A place in the panel rather than in the data: <code>[:panel f]</code>, a fraction <code>f</code> from 0 to 1 of the way from the low-value end, e.g.&nbsp;<code>[:panel 0.5]</code> - the middle. It doesn’t widen the axis.</p>
 </section>
-<section id="point-shape" class="level2" data-number="4.33">
-<h2 data-number="4.33" class="anchored" data-anchor-id="point-shape"><span class="header-section-number">4.33</span> point shape</h2>
+<section id="point-shape" class="level2" data-number="4.34">
+<h2 data-number="4.34" class="anchored" data-anchor-id="point-shape"><span class="header-section-number">4.34</span> point shape</h2>
 <p>A built-in shape character such as <code>\o</code>, or a map <code>{:path svg-path}</code>, <code>{:text string}</code>, <code>{:svg source}</code> or <code>{:image image}</code>.</p>
 </section>
-<section id="position" class="level2" data-number="4.34">
-<h2 data-number="4.34" class="anchored" data-anchor-id="position"><span class="header-section-number">4.34</span> position</h2>
+<section id="position" class="level2" data-number="4.35">
+<h2 data-number="4.35" class="anchored" data-anchor-id="position"><span class="header-section-number">4.35</span> position</h2>
 <p>A place on an axis in data units: a number, a <code>java.time</code> value, or a level (a string or keyword) on a categorical axis, e.g.&nbsp;<code>2.5</code> or <code>"setosa"</code>.</p>
 </section>
-<section id="positive-finite-number" class="level2" data-number="4.35">
-<h2 data-number="4.35" class="anchored" data-anchor-id="positive-finite-number"><span class="header-section-number">4.35</span> positive finite number</h2>
+<section id="positive-finite-number" class="level2" data-number="4.36">
+<h2 data-number="4.36" class="anchored" data-anchor-id="positive-finite-number"><span class="header-section-number">4.36</span> positive finite number</h2>
 <p>A finite number greater than zero, e.g.&nbsp;<code>1.5</code>.</p>
 </section>
-<section id="positive-integer" class="level2" data-number="4.36">
-<h2 data-number="4.36" class="anchored" data-anchor-id="positive-integer"><span class="header-section-number">4.36</span> positive integer</h2>
+<section id="positive-integer" class="level2" data-number="4.37">
+<h2 data-number="4.37" class="anchored" data-anchor-id="positive-integer"><span class="header-section-number">4.37</span> positive integer</h2>
 <p>A whole number from 1 up, e.g.&nbsp;<code>200</code>.</p>
 </section>
-<section id="positive-number" class="level2" data-number="4.37">
-<h2 data-number="4.37" class="anchored" data-anchor-id="positive-number"><span class="header-section-number">4.37</span> positive number</h2>
+<section id="positive-number" class="level2" data-number="4.38">
+<h2 data-number="4.38" class="anchored" data-anchor-id="positive-number"><span class="header-section-number">4.38</span> positive number</h2>
 <p>A number greater than zero, e.g.&nbsp;<code>0.5</code>.</p>
 </section>
-<section id="quantile-bins" class="level2" data-number="4.38">
-<h2 data-number="4.38" class="anchored" data-anchor-id="quantile-bins"><span class="header-section-number">4.38</span> quantile bins</h2>
+<section id="quantile-bins" class="level2" data-number="4.39">
+<h2 data-number="4.39" class="anchored" data-anchor-id="quantile-bins"><span class="header-section-number">4.39</span> quantile bins</h2>
 <p>Bins with edges at quantiles of the values: <code>{:quantiles q :estimation e}</code>, e.g.&nbsp;<code>{:quantiles 4}</code>. <code>q</code> is a count of equal-share bins or a vector of increasing inner probabilities strictly between 0 and 1; <code>e</code> is a fastmath quantile estimation strategy (default <code>:legacy</code>).</p>
 </section>
-<section id="quantile-range" class="level2" data-number="4.39">
-<h2 data-number="4.39" class="anchored" data-anchor-id="quantile-range"><span class="header-section-number">4.39</span> quantile range</h2>
+<section id="quantile-range" class="level2" data-number="4.40">
+<h2 data-number="4.40" class="anchored" data-anchor-id="quantile-range"><span class="header-section-number">4.40</span> quantile range</h2>
 <p>Two sample quantiles <code>{:quantiles [p q]}</code>, fractions from 0 to 1 with <code>p</code> below <code>q</code>, e.g.&nbsp;<code>{:quantiles [0.05 0.95]}</code>.</p>
 </section>
-<section id="random-generator" class="level2" data-number="4.40">
-<h2 data-number="4.40" class="anchored" data-anchor-id="random-generator"><span class="header-section-number">4.40</span> random generator</h2>
+<section id="random-generator" class="level2" data-number="4.41">
+<h2 data-number="4.41" class="anchored" data-anchor-id="random-generator"><span class="header-section-number">4.41</span> random generator</h2>
 <p>A fastmath random generator, e.g.&nbsp;<code>(r/rng :mersenne 7)</code>; a seeded one draws the same values on every build.</p>
 </section>
-<section id="sample-step" class="level2" data-number="4.41">
-<h2 data-number="4.41" class="anchored" data-anchor-id="sample-step"><span class="header-section-number">4.41</span> sample step</h2>
+<section id="sample-step" class="level2" data-number="4.42">
+<h2 data-number="4.42" class="anchored" data-anchor-id="sample-step"><span class="header-section-number">4.42</span> sample step</h2>
 <p>How densely a curve is sampled: a positive number of pixels between samples, e.g.&nbsp;<code>2</code>, or <code>{:count n}</code> - <code>n</code> samples, at least 2, e.g.&nbsp;<code>{:count 50}</code>.</p>
 </section>
-<section id="solid-colour" class="level2" data-number="4.42">
-<h2 data-number="4.42" class="anchored" data-anchor-id="solid-colour"><span class="header-section-number">4.42</span> solid colour</h2>
+<section id="size-range" class="level2" data-number="4.43">
+<h2 data-number="4.43" class="anchored" data-anchor-id="size-range"><span class="header-section-number">4.43</span> size range</h2>
+<p>Two non-negative numbers <code>[min max]</code> in pixels, <code>min</code> at most <code>max</code>, e.g.&nbsp;<code>[2 10]</code>.</p>
+</section>
+<section id="solid-colour" class="level2" data-number="4.44">
+<h2 data-number="4.44" class="anchored" data-anchor-id="solid-colour"><span class="header-section-number">4.44</span> solid colour</h2>
 <p>Any clojure2d colour: a name such as <code>:steelblue</code>, a hex string such as <code>#0072b2</code>, an integer such as <code>0x0072b2</code>, a vector of channels such as <code>[0 114 178]</code>, or <code>(c/color 0 114 178 128)</code> with an alpha.</p>
 </section>
-<section id="span" class="level2" data-number="4.43">
-<h2 data-number="4.43" class="anchored" data-anchor-id="span"><span class="header-section-number">4.43</span> span</h2>
+<section id="span" class="level2" data-number="4.45">
+<h2 data-number="4.45" class="anchored" data-anchor-id="span"><span class="header-section-number">4.45</span> span</h2>
 <p>The range a function is sampled over, <code>[lo hi]</code>: two finite numbers with <code>lo</code> below <code>hi</code>, e.g.&nbsp;<code>[0 10]</code>, or two different <code>java.time</code> values.</p>
 </section>
-<section id="text-colour" class="level2" data-number="4.44">
-<h2 data-number="4.44" class="anchored" data-anchor-id="text-colour"><span class="header-section-number">4.44</span> text colour</h2>
+<section id="text-colour" class="level2" data-number="4.46">
+<h2 data-number="4.46" class="anchored" data-anchor-id="text-colour"><span class="header-section-number">4.46</span> text colour</h2>
 <p>A solid colour, or <code>:contrast</code>.</p>
 </section>
-<section id="variable" class="level2" data-number="4.45">
-<h2 data-number="4.45" class="anchored" data-anchor-id="variable"><span class="header-section-number">4.45</span> variable</h2>
+<section id="variable" class="level2" data-number="4.47">
+<h2 data-number="4.47" class="anchored" data-anchor-id="variable"><span class="header-section-number">4.47</span> variable</h2>
 <p>A column of wide rows, one axis of a parallel coordinates chart: a keyword, labelled by its name, or a <code>[label accessor]</code> pair, e.g.&nbsp;<code>["petal length" :petal-length]</code>.</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/types.clj</small></small></pre></div>

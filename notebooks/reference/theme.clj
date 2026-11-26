@@ -1,8 +1,8 @@
 ;; # Theme
 
 ;; The theme holds every style default: backgrounds, grid lines, axes, legends, palettes, text roles and each chart
-;; kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes. Each
-;; section below lists its keys with their default values and changes some of them.
+;; kind's style. `build` deep-merges a plot's `:theme` over the default theme, so the plot's theme names only what
+;; changes.
 
 (ns reference.theme
   (:require [fastmath.core :as m]
@@ -10,6 +10,8 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+
+;; The table below holds the iris flowers; most sections restyle a scatter plot of them (`iris-plot`):
 
 (nu/source-note {:dataset :iris})
 
@@ -22,20 +24,47 @@
    :mapping {:x :sepal-length :y :petal-length :color :species}
    :charts [(chart/scatter)]})
 
+;; The table below holds three levels with long names; the axes section turns them:
+
+(def long-levels [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}])
+
+(nu/data-table long-levels)
+
+;; The table below holds made-up fruit counts named by emoji; the axes section draws them in an emoji font:
+
+(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
+            {:fruit "🍒" :count 81}])
+
+(nu/data-table fruit)
+
+;; The table below holds the 14 levels of the default palette, one bar each; the palette section draws them:
+
+(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
+
+(nu/data-table palette-levels)
+
+;; The table below holds a made-up budget of departments and teams; the text section draws it as a treemap:
+
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}])
+
+(nu/data-table budget)
+
 ;; ## Plot
 
-;; The canvas behind everything and the margin around the plot.
+;; These keys style the canvas behind the plot. The plot below has a cream background and a wider margin:
 
-(nu/options-table (describe/theme-rows :plot))
+(nu/option-cards :theme (describe/theme-rows :plot))
 
 (plot/render-image (assoc iris-plot :theme {:plot {:background [255 250 235] :margin 30}})
                    {:width 500 :height 300})
 
 ;; ## Panel box
 
-;; The data panel's fill and border; `:alternate-fill` shades every other facet panel.
+;; These keys style each data panel's box: its fill and border, the shading of alternate facet panels and the band
+;; of invalid values. The plot below fills the panel white and draws a thick dark border:
 
-(nu/options-table (describe/theme-rows :panel) :panel-box)
+(nu/option-cards :theme (describe/theme-rows :panel) :panel-box)
 
 (plot/render-image (assoc iris-plot
                           :theme {:panel {:fill :white :border-color [60 60 60] :border-width 2}})
@@ -43,10 +72,9 @@
 
 ;; ## Grid lines
 
-;; Grid lines at the ticks of each position scale, of bands scales (with the alternate band fill) and at minor
-;; ticks; `:none` turns a kind of line off.
+;; These keys draw the grid behind the charts. The plot below draws solid x lines, no y lines and light minor x lines:
 
-(nu/options-table (describe/theme-rows :panel) :grid)
+(nu/option-cards :theme (describe/theme-rows :panel) :grid)
 
 (plot/render-image (assoc iris-plot
                           :scales {:x {:minor-ticks 4}}
@@ -57,14 +85,10 @@
 
 ;; ## Axes
 
-;; The axis line, ticks and tick labels per position scale - kept by scale (`:x` stays `:x` when `:flip` draws it
-;; vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-rotation` turns long tick labels.
+;; These keys set the x axis line, its ticks and its tick labels. The plot below turns the long level names 45 degrees
+;; and draws no ticks and no axis line:
 
-(nu/options-table (describe/theme-rows :axis) :x-axis)
-
-(def long-levels [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}])
-
-(nu/data-table long-levels)
+(nu/option-cards :theme (describe/theme-rows :axis) :x-axis)
 
 (plot/render-image {:data long-levels
                     :mapping {:x :k :y :v}
@@ -72,13 +96,8 @@
                     :theme {:axis {:x {:label-rotation 45 :tick-length 0 :line-color :none}}}}
                    {:width 500 :height 320})
 
-;; `:tick-label` restyles one axis's tick labels over the `:tick-label` text role (polar guides too) - here emoji
-;; levels drawn in the bundled Noto Emoji font, larger, while the y axis keeps the role's font:
-
-(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
-            {:fruit "🍒" :count 81}])
-
-(nu/data-table fruit)
+;; The plot below draws the emoji levels in the bundled Noto Emoji font, larger, while the y axis keeps the
+;; `:tick-label` role's font:
 
 (plot/render-image {:data fruit
                     :mapping {:x :fruit :y :count}
@@ -86,15 +105,17 @@
                     :theme {:axis {:x {:tick-label {:font "Noto Emoji" :size 22}}}}}
                    {:width 500 :height 300})
 
-;; The y axis has the same keys:
+;; The y axis takes the same keys:
 
-(nu/options-table (describe/theme-rows :axis) :y-axis)
+(nu/option-cards :theme (describe/theme-rows :axis) :y-axis)
+
+;; The plot below draws more y ticks, longer and red:
 
 (plot/render-image (assoc iris-plot :theme {:axis {:y {:tick-spacing 25 :tick-color [200 0 0] :tick-length 10}}})
                    {:width 500 :height 300})
 
-;; `:tick-label-gap` - the least pixels between neighbouring tick labels: a label closer to the last drawn one isn't
-;; drawn. Here dense ticks with no gap (left; labels may touch) and with a wide one (right):
+;; The plots below draw dense x ticks with no gap between their labels (left, where labels may touch) and with a wide
+;; gap (right):
 
 (plot/render-image (plot/arrange (for [gap [0 12]]
                                    (assoc iris-plot
@@ -106,10 +127,10 @@
 
 ;; ## Strips
 
-;; Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
-;; down to the `:strip` text role's `:min-size` points, then is cut with an ellipsis.
+;; These keys style the facet strips. The plot below fills the strips dark blue without a border and writes their
+;; texts in white:
 
-(nu/options-table (describe/theme-rows :strip))
+(nu/option-cards :theme (describe/theme-rows :strip))
 
 (def faceted-iris (assoc iris-plot :mapping {:x :sepal-length :y :petal-length :facet :species}))
 
@@ -117,8 +138,9 @@
                                                :text {:strip {:color :white}}})
                    {:width 700 :height 280})
 
-;; Long level names in row strips: the first two fit; the third shrinks to the role's `:min-size` and is cut - at
-;; the default 7 points (left) later than at 9 (right).
+;; When a strip's text doesn't fit, the library shrinks it down to the `:strip` role's `:min-size` and then cuts it
+;; with an ellipsis. In the plots below the first two row names fit; the third is cut later at the default 7 points
+;; (left) than at 9 (right):
 
 (plot/render-image (plot/arrange (for [min-size [7 9]]
                                    (assoc iris-plot
@@ -131,17 +153,18 @@
 
 ;; ## Facets
 
-;; The gap between facet panels.
+;; This key sets how far apart the facet panels sit. The plot below widens the gap:
 
-(nu/options-table (describe/theme-rows :facet))
+(nu/option-cards :theme (describe/theme-rows :facet))
 
 (plot/render-image (assoc faceted-iris :theme {:facet {:gap 25}}) {:width 700 :height 280})
 
 ;; ## Multiplots
 
-;; The gap between arranged plots.
+;; This key sets how far apart arranged plots sit; `plot/arrange` takes it in its `:theme` option. The plot below
+;; widens the gap:
 
-(nu/options-table (describe/theme-rows :multiplot))
+(nu/option-cards :theme (describe/theme-rows :multiplot))
 
 (plot/render-image (plot/arrange [iris-plot (assoc iris-plot :mapping {:x :sepal-width :y :petal-width :color :species})]
                                  {:columns 2 :theme {:multiplot {:gap 40}}})
@@ -149,15 +172,15 @@
 
 ;; ## Legend
 
-;; Legend key sizes, spacing, the legend box and the colour bar.
+;; These keys set the legend keys' size and spacing, the legend box and the colour bar. The plot below draws larger,
+;; wider spaced keys in a white box with a gray border:
 
-(nu/options-table (describe/theme-rows :legend))
+(nu/option-cards :theme (describe/theme-rows :legend))
 
 (plot/render-image (assoc iris-plot :theme {:legend {:key-size 24 :gap 10 :fill :white :border-color [150 150 150]}})
                    {:width 500 :height 300})
 
-;; Line marks thinner than `:min-key-line-width` are drawn that wide in legend keys, so a key's colour reads (the
-;; lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width 0 - no line - stays undrawn.
+;; The plots below draw line keys at three values of `:min-key-line-width`; the lines in the panels are 1 pixel wide:
 
 (plot/render-image (plot/arrange (for [min-key-line-width [0 2 4]]
                                    (assoc iris-plot
@@ -167,7 +190,7 @@
                                  {:columns 3})
                    {:width 900 :height 260})
 
-;; A colour bar with more, longer and thicker ticks.
+;; The plot below draws a colour bar with more, longer and thicker ticks:
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :petal-length :color :petal-width}
@@ -177,10 +200,11 @@
 
 ;; ## 3D frame
 
-;; The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). Here a
-;; [surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$:
+;; This key sets the dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). The
+;; plot below draws a [surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$
+;; with dash-dot hidden edges and thicker axes:
 
-(nu/options-table (describe/theme-rows :frame-3d))
+(nu/option-cards :theme (describe/theme-rows :frame-3d))
 
 (plot/render-image {:charts [(chart/surface {:f (fn [[x y]] (m/sin (m/* x y))) :domain {:x [-2 2] :y [-2 2]}})]
                     :labels {:title "$z = \\sin(xy)$"}
@@ -190,24 +214,21 @@
 
 ;; ## Palette
 
-;; The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
-;; numbers, shapes, sizes, dashes and patterns. The 14 level colours are checked for colour vision deficiencies: the
-;; Okabe-Ito colours (a darker yellow, a gray in place of black), then lighter versions of the first six (the blue
-;; turned toward violet) - weak as thin lines on the background; levels past 14 repeat the colours.
+;; These keys set the default ranges of the [aesthetic scales](reference.aesthetics_legends.html): colours for levels
+;; and for numbers, shapes, sizes, dashes and patterns. The level colours start with the Okabe-Ito colours, with a
+;; darker yellow and a gray in place of black, then repeat the first six lighter, the blue turned toward violet. The
+;; lighter six are weak as thin lines. The plot below takes the Tableau 10 colours and three other shapes:
 
-(nu/options-table (describe/theme-rows :palette))
+(nu/option-cards :theme (describe/theme-rows :palette))
 
 (plot/render-image (assoc iris-plot
                           :mapping {:x :sepal-length :y :petal-length :color :species :shape :species}
                           :theme {:palette {:color :tableau-10 :shape [\s \A \V]}})
                    {:width 500 :height 300})
 
-;; The default level colours, as rendered and as seen with deuteranopia (the render option `:cvd`, Render chapter):
-;; the closest pair is orange and the darker yellow (04, 07); the lighter six read as lighter versions of the first.
-
-(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
-
-(nu/data-table palette-levels)
+;; The plots below draw the default level colours as rendered and as a viewer with deuteranopia sees them (the
+;; [render option](reference.render.html) `:cvd`). The closest pair is orange and the darker yellow (04, 07); the
+;; lighter six read as lighter versions of the first.
 
 (plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
                     :charts [(chart/bar)] :legend false :labels {:title "default palette" :x nil :y nil}}
@@ -219,15 +240,15 @@
 
 ;; ## Text
 
-;; Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this
-;; section). A label's `:role` may also name a role of your own added under `:text`. A role's `:color` may be
-;; `:contrast` - black or white, whichever reads on what's behind: the fill under a chart's label, else the plot
-;; background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values, correlation and pairwise
-;; statistic numbers) default to it.
+;; These keys style the texts the library draws, by role. Each role is a text style: the keys of the
+;; [Text style](reference.shared_options.html#text-style) group plus `:min-size`. A label's `:role` may also name a role
+;; of your own added under `:text`. The roles of labels drawn over fills (hierarchies, Venn counts, tile and bar values,
+;; correlation and pairwise numbers) default to the colour `:contrast`: black or white, whichever reads on the fill.
 
-;; Titles, strips and axis texts:
+;; These roles style the titles, strips and axis texts. The plot below draws a larger italic title on the left, dark
+;; red axis titles and smaller tick labels:
 
-(nu/options-table (describe/theme-rows :text) :plot-text)
+(nu/option-cards :theme (describe/theme-rows :text) :plot-text)
 
 (plot/render-image (assoc iris-plot
                           :labels {:title "Iris" :x "sepal length" :y "petal length"}
@@ -236,24 +257,26 @@
                                          :tick-label {:size 8}}})
                    {:width 500 :height 320})
 
-;; Legend texts:
+;; The plot below restyles the title's role with keys of the Text style group: another font, a box and a wider inset:
 
-(nu/options-table (describe/theme-rows :text) :legend-text)
+(plot/render-image (assoc iris-plot
+                          :labels {:title "Iris"}
+                          :theme {:text {:title {:font "Serif" :size 16 :inset 10 :background [230 230 245]}}})
+                   {:width 500 :height 300})
+
+;; These roles style the legend texts. The plot below draws a smaller, plain gray legend title and italic labels:
+
+(nu/option-cards :theme (describe/theme-rows :text) :legend-text)
 
 (plot/render-image (assoc iris-plot :theme {:text {:legend-title {:size 9 :font-style :plain :color [100 100 100]}
                                                    :legend-label {:font-style :italic}}})
                    {:width 500 :height 300})
 
-;; Labels of treemaps, partitions and circle packings - by default in the contrast colour of their cell; a colour
-;; given wins, on every cell alike (here dark leaf labels - hard to read on the dark cells, which is why `:contrast`
-;; is the default):
+;; These roles style the labels of treemaps, partitions and circle packings. A colour you give applies on every cell
+;; alike. The plot below sets dark leaf labels, which are hard to read on the dark cells; that is why `:contrast` is
+;; the default:
 
-(nu/options-table (describe/theme-rows :text) :hierarchy-text)
-
-(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
-             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}])
-
-(nu/data-table budget)
+(nu/option-cards :theme (describe/theme-rows :text) :hierarchy-text)
 
 (plot/render-image {:data budget
                     :mapping {:hierarchy [:dept :team] :value :cost}
@@ -262,12 +285,10 @@
                                    :treemap-leaf {:font-style :italic :color [40 40 60]}}}}
                    {:width 500 :height 300})
 
-;; Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics,
-;; contours (bar values, Venn counts, tile values and the correlation and pairwise numbers in the contrast colour of
-;; what's behind them by default). The bars write their values in their middle
-;; ([bar](reference.charts_bars.html#bar-charts) `:value-label`, `:label-position`):
+;; These roles style the texts of other charts. The plot below draws a larger red annotation on a white box and bold
+;; bar values in the bars' middle ([bar](reference.charts_bars.html#bar-charts) `:value-label`, `:label-position`):
 
-(nu/options-table (describe/theme-rows :text) :chart-text)
+(nu/option-cards :theme (describe/theme-rows :text) :chart-text)
 
 (plot/render-image (plot/arrange [(assoc iris-plot
                                           :charts [(chart/scatter) (chart/text {:x 6.5 :y 2 :text "an annotation"})]
@@ -280,10 +301,10 @@
                                  {:columns 2 :widths [3 2]})
                    {:width 800 :height 300})
 
-;; Labels of builders - network, sankey, dendrogram groups, alluvial, node-link trees and the names of a scatter-plot
-;; matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme restyles them all:
+;; These roles style the labels of builders. The plot below draws larger bold sankey labels and smaller red names on
+;; a scatter-plot matrix (`plot/pairs` `:diagonal :names`):
 
-(nu/options-table (describe/theme-rows :text) :builder-text)
+(nu/option-cards :theme (describe/theme-rows :text) :builder-text)
 
 (plot/render-image (plot/arrange [(plot/sankey [{:from "in" :to "a" :value 3} {:from "in" :to "b" :value 2}]
                                                {:theme {:text {:sankey-label {:size 12 :font-style :bold}}}})
@@ -293,26 +314,22 @@
                                  {:columns 2})
                    {:width 800 :height 320})
 
-;; A text role's style takes the keys of the [Text style](reference.shared_options.html#text-style) group, plus
-;; `:min-size`. The plot below restyles the title's role:
-
-(plot/render-image (assoc iris-plot
-                          :labels {:title "Iris"}
-                          :theme {:text {:title {:font "Serif" :size 16 :inset 10 :background [230 230 245]}}})
-                   {:width 500 :height 300})
-
 ;; ## Chart
 
-;; The style of each chart kind, `[:chart kind]` - its keys and defaults are the rows with a theme default in the
-;; chart's table. Options given to a chart override its theme style. `[:chart name]` entries that aren't kinds are
-;; named styles, partial styles a chart picks with `:theme-style` over its kind's (see Shared options); builders
-;; draw with theirs (`:network-node`, `:tree-link` ... - each listed on its builder's page).
+;; These keys hold each chart kind's style under `[:chart kind]`. Their keys are the chart's style options, and the
+;; option cards on the chart's page show these defaults. Options given to a chart override its theme style. Four kinds
+;; also take theme-only keys, listed in a Theme keys box on their page: [violin plots](reference.charts_per_level.html#violin-plots),
+;; [heatmaps](reference.charts_bins_fields.html#heatmaps), [Venn diagrams](reference.charts_shares_sets.html#venn-diagrams)
+;; and [3D clouds](reference.charts_multivariate_3d.html#d-clouds). The other `[:chart name]` entries are
+;; [named styles](reference.shared_options.html#named-theme-styles): partial styles that a chart's `:theme-style` merges
+;; over its kind's style. Builders draw with their own named styles (`:network-node`, `:tree-link` ...), and each
+;; builder's page lists them in a Theme keys box.
 
-(nu/options-table (describe/theme-rows :chart))
-
-;; The kinds with a theme style:
+;; The chart kinds; every kind but `:text` has a theme style (text charts take the text role `:annotation`):
 
 (keys (describe/chart-constructors))
+
+;; The plot below draws larger squares in every scatter chart:
 
 (plot/render-image (assoc iris-plot :theme {:chart {:scatter {:shape \s :size 8}}})
                    {:width 500 :height 300})

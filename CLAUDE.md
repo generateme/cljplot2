@@ -270,8 +270,8 @@ the theme: banned names, and one type family per name across all owners). One na
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
   only from `nu/options-table` (option cards on migrated pages - see below) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
   time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
-  `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key and section
-  has a table of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
+  `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key (but
+  `:chart`) and section has a table (cards on migrated pages) of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
   `book-data-test`) every dataset or data defined is shown right after its `def`, and every dataset read is shown by
   some table (of the dataset, or of a var defined from it), with `nu/data-table` (first 100 rows, a last row of `…` when cut, code hidden; a box of
   class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`); a function's result
@@ -291,7 +291,11 @@ the theme: banned names, and one type family per name across all owners). One na
   namespaces by example.
   Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
   `test-util/migrated-builders`, data functions in `test-util/migrated-functions`, shared groups in
-  `test-util/migrated-groups` - the switches; a group's cards on Shared options print its representative's call
+  `test-util/migrated-groups`, top-level theme keys in `test-util/migrated-theme-keys` (all but `:chart` - the Theme
+  chapter's Chart section links the chart pages) - the switches; theme cards are `nu/option-cards :theme
+  (describe/theme-rows k)` (the rows under `k`, without its own row; each example printed as a plot key `{:theme
+  {...}}`, drawn on `option-cards-test/theme-fixtures` plots - text roles on the chart or builder drawing them); a
+  group's cards on Shared options print its representative's call
   (`chart/line`, `'(plot/network edges)`) and `option-cards-test` checks them through it (`group-fixtures`); a group a
   data function owns (`:owner` in `describe/fragments`) is documented in that function's section, Shared options
   boxes link there; a style group (`:style true`) gives its rows the default text `The chart's theme style.`; `describe/concepts`
@@ -351,7 +355,9 @@ the theme: banned names, and one type family per name across all owners). One na
   option rows for the book's reference part;
   `schema-metadata-test` checks every chart and plot-level entry (plot, scales, facets, labels, coord, theme ...) is
   described and every `:default` is the real one (pixel-equal renders); theme entries take their defaults from
-  `default-theme`, text roles their descriptions and sections from `theme/text-roles`.
+  `default-theme` (a row with a default text shows the text only), text roles their descriptions, sections and
+  examples from `theme/text-roles`; text style keys have one description map (`theme/text-style-card-props`: the
+  `:text-style` group, a role's style).
   For option cards an entry also gives `:cljplot2/value-meanings` (value meanings), `:cljplot2/form-meanings` (meanings of
   other forms, keyed by named type or malli type), `:cljplot2/other-values` (one meaning for a long list's rest) and
   `:cljplot2/example` (with `:cljplot2/example-context` - options the example needs to be valid or to act, a
@@ -363,7 +369,8 @@ the theme: banned names, and one type family per name across all owners). One na
   (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y` (a `schema/forbidden` branch - a form rejected with its own message,
   e.g. histogram quantile bins - is none), a vector of them `vector of Xs or Ys`; `:int` / `:double` bounds as words
   (`integer at least 2`); rules of `schema/with-rules` (`schema/rule?`) are left out - the description states the
-  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart, builder or data function (card owners: fixture plots of charts, fixture
+  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`, and with `:cljplot2/entries-fragment`
+  links its card form to the shared group documenting its keys - a text style, a grid line's line style). `option-cards-test` checks a migrated chart, builder or data function (card owners: fixture plots of charts, fixture
   calls of builders and data functions - a function's example must change its result, `:compare :value`): sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the

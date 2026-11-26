@@ -36,6 +36,11 @@
   #{:annotation :arrange :builder :cell :common :corner-radius :curve :field :frame-3d :hierarchy-labels :line-style
     :mirror :pattern :ridge :shading :strip :text-style :theme-style})
 
+(def migrated-theme-keys
+  "Top-level theme keys whose Theme chapter sections show option cards (`nu/option-cards :theme`) and follow the card
+  rules of `option-cards-test` - the theme's switch; every key but `:chart` (each chart's page documents its style)."
+  #{:plot :panel :axis :strip :facet :multiplot :legend :frame-3d :palette :text})
+
 (declare migrated-function-groups)
 
 (defn card-groups

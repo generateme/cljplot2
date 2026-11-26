@@ -23,6 +23,7 @@ format:
         .options .option-example code { background: none; padding: 0; }
         .options .option-text ul { margin: 0.3rem 0 0 0; padding-left: 1.25rem; }
         .options code, .mapping code { overflow-wrap: anywhere; }
+        .options .option-default code, .options .option-example code { white-space: pre-wrap; }
         .mapping { margin: 0.5rem 0 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--bs-border-color, #dee2e6); border-left: 0.3rem solid #2780e3; border-radius: 0.375rem; background: #f5f8fc; }
         .mapping-title { font-weight: 700; margin-bottom: 0.25rem; }
         .mapping-hint { font-weight: normal; font-size: 0.85rem; color: var(--bs-secondary-color, #6c757d); }
@@ -52,8 +53,8 @@ code-block-background: true
 # Theme
 
 The theme holds every style default: backgrounds, grid lines, axes, legends, palettes, text roles and each chart
-kind's style. A plot's `:theme` is deep-merged over the default theme, so it names only what changes. Each
-section below lists its keys with their default values and changes some of them.
+kind's style. `build` deep-merges a plot's `:theme` over the default theme, so the plot's theme names only what
+changes.
 
 
 ::: {.sourceClojure}
@@ -67,6 +68,8 @@ section below lists its keys with their default values and changes some of them.
 ```
 :::
 
+
+The table below holds the iris flowers; most sections restyle a scatter plot of them (`iris-plot`):
 
 Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
@@ -95,18 +98,81 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 :::
 
 
+The table below holds three levels with long names; the axes section turns them:
+
+
+::: {.sourceClojure}
+```clojure
+(def long-levels [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>k</th><th>v</th></tr></thead><tbody><tr><td>a long level</td><td>3</td></tr><tr><td>another long level</td><td>5</td></tr><tr><td>the last level</td><td>4</td></tr></tbody></table></div>
+```
+
+
+The table below holds made-up fruit counts named by emoji; the axes section draws them in an emoji font:
+
+
+::: {.sourceClojure}
+```clojure
+(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
+            {:fruit "🍒" :count 81}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>fruit</th><th>count</th></tr></thead><tbody><tr><td>🍎</td><td>28</td></tr><tr><td>🍌</td><td>55</td></tr><tr><td>🍇</td><td>43</td></tr><tr><td>🍑</td><td>91</td></tr><tr><td>🍒</td><td>81</td></tr></tbody></table></div>
+```
+
+
+The table below holds the 14 levels of the default palette, one bar each; the palette section draws them:
+
+
+::: {.sourceClojure}
+```clojure
+(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>level</th><th>n</th></tr></thead><tbody><tr><td>01</td><td>1</td></tr><tr><td>02</td><td>1</td></tr><tr><td>03</td><td>1</td></tr><tr><td>04</td><td>1</td></tr><tr><td>05</td><td>1</td></tr><tr><td>06</td><td>1</td></tr><tr><td>07</td><td>1</td></tr><tr><td>08</td><td>1</td></tr><tr><td>09</td><td>1</td></tr><tr><td>10</td><td>1</td></tr><tr><td>11</td><td>1</td></tr><tr><td>12</td><td>1</td></tr><tr><td>13</td><td>1</td></tr><tr><td>14</td><td>1</td></tr></tbody></table></div>
+```
+
+
+The table below holds a made-up budget of departments and teams; the text section draws it as a treemap:
+
+
+::: {.sourceClojure}
+```clojure
+(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
+             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr></tbody></table></div>
+```
+
+
 
 ## Plot
 
-The canvas behind everything and the margin around the plot.
+These keys style the canvas behind the plot. The plot below has a cream background and a wider margin:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:plot</td><td>map</td><td></td><td>the whole canvas</td></tr><tr><td>:plot :background</td><td>a clojure2d color or :none</td><td>[236 236 243]</td><td>canvas background colour</td></tr><tr><td>:plot :margin</td><td>a non-negative number</td><td>10</td><td>pixels around the plot on every side</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:plot :background</code><span class="option-default">Default: <code>[236 236 243]</code></span></dt><dd><div class="option-example"><code>{:theme {:plot {:background :white}}}</code></div><div class="option-text">The colour of the canvas behind the whole plot.<ul><li><code>:none</code> – No background: the canvas stays transparent.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:plot :margin</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>{:theme {:plot {:margin 30}}}</code></div><div class="option-text">The space in pixels around the plot on every side.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -126,15 +192,13 @@ The canvas behind everything and the margin around the plot.
 
 ## Panel box
 
-The data panel's fill and border; `:alternate-fill` shades every other facet panel.
+These keys style each data panel's box: its fill and border, the shading of alternate facet panels and the band
+of invalid values. The plot below fills the panel white and draws a thick dark border:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>panel background colour</td></tr><tr><td>:panel :alternate-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 12]</td><td>drawn over odd facet panels (row + column odd); :none - off</td></tr><tr><td>:panel :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>panel border colour</td></tr><tr><td>:panel :border-width</td><td>a non-negative number</td><td>1</td><td>panel border width in pixels (drawn inside the panel)</td></tr><tr><td>:panel :invalid-band-size</td><td>a non-negative number</td><td>24</td><td>pixels across the band of invalid values beside a panel's axis (charts' :invalid :show), at least its label's</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:panel :fill</code><span class="option-default">Default: <code>:none</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:fill :white}}}</code></div><div class="option-text">The background colour of each data panel.<ul><li><code>:none</code> – No fill: the plot background shows through.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :alternate-fill</code><span class="option-default">Default: <code>[0 0 0 12]</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:alternate-fill [0 0 0 40]}}}</code></div><div class="option-text">A colour drawn over the fill of every facet panel whose row and column numbers add up to an odd number; <code>plot/pairs</code> shades its cells the same way.<ul><li><code>:none</code> – No shading.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :border-color</code><span class="option-default">Default: <code>:none</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:border-color :black}}}</code></div><div class="option-text">The colour of the border drawn inside each panel's edge.<ul><li><code>:none</code> – No border.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :border-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:border-color :black, :border-width 4}}}</code></div><div class="option-text">The width of the panel border in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:panel :invalid-band-size</code><span class="option-default">Default: <code>24</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:invalid-band-size 48}}}</code></div><div class="option-text">The size in pixels across the band beside an axis where a chart with <code>:invalid :show</code> draws its invalid values; the band's label may widen it.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -155,16 +219,12 @@ The data panel's fill and border; `:alternate-fill` shades every other facet pan
 
 ## Grid lines
 
-Grid lines at the ticks of each position scale, of bands scales (with the alternate band fill) and at minor
-ticks; `:none` turns a kind of line off.
+These keys draw the grid behind the charts. The plot below draws solid x lines, no y lines and light minor x lines:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:panel :grid</td><td>map</td><td></td><td>grid lines at the ticks</td></tr><tr><td>:panel :grid :x</td><td>:none or a line {:color :line-width :dash}</td><td>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</td><td>grid lines of the x scale</td></tr><tr><td>:panel :grid :y</td><td>:none or a line {:color :line-width :dash}</td><td>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</td><td>grid lines of the y scale</td></tr><tr><td>:panel :grid :bands</td><td>:none or a line {:color :line-width :dash}</td><td>{:color [180 180 180], :line-width 1, :dash [1.0 2.0]}</td><td>grid lines of a bands scale, instead of :x / :y</td></tr><tr><td>:panel :grid :bands-fill</td><td>a clojure2d color or :none</td><td>[0 0 0 8]</td><td>fill of every second band of a bands scale; :none - off</td></tr><tr><td>:panel :grid :minor</td><td>:none or a line {:color :line-width :dash}</td><td>:none</td><td>grid lines at minor ticks</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:panel :grid</code></dt><dd><div class="option-text">The grid lines and band shading, by kind: <code>:x</code>, <code>:y</code>, <code>:bands</code>, <code>:bands-fill</code> and <code>:minor</code>.</div></dd></div><div class="option-card"><dt><code>:panel :grid :x</code><span class="option-default">Default: <code>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:grid {:x {:color :darkred, :line-width 1}}}}}</code></div><div class="option-text">The grid lines at the ticks of the x scale.<ul><li><code>:none</code> – No lines.</li><li><a href="reference.shared_options.html#line-style">line style</a> – Lines in this style; keys left out keep the default line's.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :grid :y</code><span class="option-default">Default: <code>{:color [180 180 180], :line-width 0.5, :dash [4.0]}</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:grid {:y :none}}}}</code></div><div class="option-text">The grid lines at the ticks of the y scale.<ul><li><code>:none</code> – No lines.</li><li><a href="reference.shared_options.html#line-style">line style</a> – Lines in this style; keys left out keep the default line's.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :grid :bands</code><span class="option-default">Default: <code>{:color [180 180 180], :line-width 1, :dash [1.0 2.0]}</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:grid {:bands {:color :darkred, :dash :none}}}}}</code></div><div class="option-text">The grid lines of a bands scale (levels on a categorical axis), drawn in place of its axis's <code>:x</code> or <code>:y</code> lines; <code>:none</code> for that axis turns them off too.<ul><li><code>:none</code> – No lines.</li><li><a href="reference.shared_options.html#line-style">line style</a> – Lines in this style; keys left out keep the default line's.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :grid :bands-fill</code><span class="option-default">Default: <code>[0 0 0 8]</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:grid {:bands-fill [0 0 255 30]}}}}</code></div><div class="option-text">The colour of every second band of a bands scale.<ul><li><code>:none</code> – No band shading.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:panel :grid :minor</code><span class="option-default">Default: <code>:none</code></span></dt><dd><div class="option-example"><code>{:theme {:panel {:grid {:minor {:color :gray, :line-width 0.5, :dash :none}}}}}</code></div><div class="option-text">The grid lines at the minor ticks of a scale with <code>:minor-ticks</code>.<ul><li><code>:none</code> – No lines.</li><li><a href="reference.shared_options.html#line-style">line style</a> – Lines in this style; the default is <code>:none</code>, so give all three keys.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -188,29 +248,12 @@ ticks; `:none` turns a kind of line off.
 
 ## Axes
 
-The axis line, ticks and tick labels per position scale - kept by scale (`:x` stays `:x` when `:flip` draws it
-vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-rotation` turns long tick labels.
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :x</td><td>map</td><td></td><td>x axis style</td></tr><tr><td>:axis :x :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :x :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :x :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :x :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :x :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :x :tick-label-gap</td><td>a non-negative number</td><td>3</td><td>least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn</td></tr><tr><td>:axis :x :tick-spacing</td><td>a positive number</td><td>80</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :x :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :x :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :x :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def long-levels [{:k "a long level" :v 3} {:k "another long level" :v 5} {:k "the last level" :v 4}])
-```
-:::
-
+These keys set the x axis line, its ticks and its tick labels. The plot below turns the long level names 45 degrees
+and draws no ticks and no axis line:
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>k</th><th>v</th></tr></thead><tbody><tr><td>a long level</td><td>3</td></tr><tr><td>another long level</td><td>5</td></tr><tr><td>the last level</td><td>4</td></tr></tbody></table></div>
+<dl class="options"><div class="option-card"><dt><code>:axis :x</code></dt><dd><div class="option-text">The keys of the axis drawn for the x scale, also when <code>:flip</code> draws it vertically.</div></dd></div><div class="option-card"><dt><code>:axis :x :line-color</code><span class="option-default">Default: <code>:black</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:line-color :red}}}}</code></div><div class="option-text">The colour of the axis line.<ul><li><code>:none</code> – No axis line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :line-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:line-width 3}}}}</code></div><div class="option-text">The width of the axis line in pixels; 0 draws none.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-color</code><span class="option-default">Default: <code>:black</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-color :red}}}}</code></div><div class="option-text">The colour of the ticks.<ul><li><code>:none</code> – No ticks.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-length</code><span class="option-default">Default: <code>6</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-length 12}}}}</code></div><div class="option-text">The length of the ticks in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-width 3}}}}</code></div><div class="option-text">The width of the ticks in pixels; 0 draws none.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :label-gap</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:label-gap 12}}}}</code></div><div class="option-text">The space in pixels between the ticks and their labels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-label-gap</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-label-gap 30}}}}</code></div><div class="option-text">The least space in pixels between neighbouring tick labels lying end to end (unrotated on a horizontal axis, turned 90 degrees on a vertical one); a numeric axis skips a label closer than this to the last one it drew.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-spacing</code><span class="option-default">Default: <code>80</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-spacing 25}}}}</code></div><div class="option-text">The distance in pixels the axis aims for between ticks; it sets how many ticks fit.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :label-rotation</code><span class="option-default">Default: <code>0</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:label-rotation 45}}}}</code></div><div class="option-text">The angle in degrees the tick labels turn clockwise, from -90 to 90.<ul><li><span>number at least -90 and at most 90</span></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :minor-tick-length</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:minor-tick-length 8}}}}</code></div><div class="option-text">The length of the minor ticks in pixels; a scale with <code>:minor-ticks</code> draws them.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :x :tick-label</code><span class="option-default">Default: <code>{}</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:x {:tick-label {:size 14, :color :darkred}}}}}</code></div><div class="option-text">Text style keys of this axis's tick labels, merged over the <code>:tick-label</code> text role; polar guides take them too, and <code>[:axis :x]</code> styles 3D frames.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
 
 
@@ -231,23 +274,8 @@ vertically). `:tick-spacing` sets how many ticks fit (pixels per tick); `:label-
 :::
 
 
-`:tick-label` restyles one axis's tick labels over the `:tick-label` text role (polar guides too) - here emoji
-levels drawn in the bundled Noto Emoji font, larger, while the y axis keeps the role's font:
-
-
-::: {.sourceClojure}
-```clojure
-(def fruit [{:fruit "🍎" :count 28} {:fruit "🍌" :count 55} {:fruit "🍇" :count 43} {:fruit "🍑" :count 91}
-            {:fruit "🍒" :count 81}])
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>fruit</th><th>count</th></tr></thead><tbody><tr><td>🍎</td><td>28</td></tr><tr><td>🍌</td><td>55</td></tr><tr><td>🍇</td><td>43</td></tr><tr><td>🍑</td><td>91</td></tr><tr><td>🍒</td><td>81</td></tr></tbody></table></div>
-```
-
+The plot below draws the emoji levels in the bundled Noto Emoji font, larger, while the y axis keeps the
+`:tick-label` role's font:
 
 
 ::: {.sourceClojure}
@@ -266,16 +294,15 @@ levels drawn in the bundled Noto Emoji font, larger, while the y axis keeps the 
 :::
 
 
-The y axis has the same keys:
+The y axis takes the same keys:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:axis :y</td><td>map</td><td></td><td>y axis style</td></tr><tr><td>:axis :y :line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>axis line colour</td></tr><tr><td>:axis :y :line-width</td><td>a non-negative number</td><td>1</td><td>axis line width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :tick-color</td><td>a clojure2d color or :none</td><td>:black</td><td>tick colour</td></tr><tr><td>:axis :y :tick-length</td><td>a non-negative number</td><td>6</td><td>tick length in pixels</td></tr><tr><td>:axis :y :tick-width</td><td>a non-negative number</td><td>1</td><td>tick width in pixels (0 - not drawn)</td></tr><tr><td>:axis :y :label-gap</td><td>a non-negative number</td><td>2</td><td>gap between ticks and tick labels in pixels</td></tr><tr><td>:axis :y :tick-label-gap</td><td>a non-negative number</td><td>3</td><td>least pixels between neighbouring tick labels lying end to end along the axis; a closer label isn't drawn</td></tr><tr><td>:axis :y :tick-spacing</td><td>a positive number</td><td>50</td><td>target distance between ticks in pixels (sets the tick count)</td></tr><tr><td>:axis :y :label-rotation</td><td>number, >= -90, <= 90</td><td>0</td><td>tick labels rotated clockwise, degrees</td></tr><tr><td>:axis :y :minor-tick-length</td><td>a non-negative number</td><td>3</td><td>minor tick length in pixels</td></tr><tr><td>:axis :y :tick-label</td><td>a partial text style (:font, :size, :color ...)</td><td>{}</td><td>text style keys of this axis's tick labels (axes and polar guides) merged over the :tick-label text role</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:axis :y</code></dt><dd><div class="option-text">The keys of the axis drawn for the y scale, also when <code>:flip</code> draws it horizontally.</div></dd></div><div class="option-card"><dt><code>:axis :y :line-color</code><span class="option-default">Default: <code>:black</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:line-color :red}}}}</code></div><div class="option-text">The colour of the axis line.<ul><li><code>:none</code> – No axis line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :line-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:line-width 3}}}}</code></div><div class="option-text">The width of the axis line in pixels; 0 draws none.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-color</code><span class="option-default">Default: <code>:black</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:tick-color :red}}}}</code></div><div class="option-text">The colour of the ticks.<ul><li><code>:none</code> – No ticks.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-length</code><span class="option-default">Default: <code>6</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:tick-length 12}}}}</code></div><div class="option-text">The length of the ticks in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:tick-width 3}}}}</code></div><div class="option-text">The width of the ticks in pixels; 0 draws none.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :label-gap</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:label-gap 12}}}}</code></div><div class="option-text">The space in pixels between the ticks and their labels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-label-gap</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:label-rotation 90, :tick-label-gap 30}}}}</code></div><div class="option-text">The least space in pixels between neighbouring tick labels lying end to end (unrotated on a horizontal axis, turned 90 degrees on a vertical one); a numeric axis skips a label closer than this to the last one it drew.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-spacing</code><span class="option-default">Default: <code>50</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:tick-spacing 25}}}}</code></div><div class="option-text">The distance in pixels the axis aims for between ticks; it sets how many ticks fit.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :label-rotation</code><span class="option-default">Default: <code>0</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:label-rotation 45}}}}</code></div><div class="option-text">The angle in degrees the tick labels turn clockwise, from -90 to 90.<ul><li><span>number at least -90 and at most 90</span></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :minor-tick-length</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:minor-tick-length 8}}}}</code></div><div class="option-text">The length of the minor ticks in pixels; a scale with <code>:minor-ticks</code> draws them.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis :y :tick-label</code><span class="option-default">Default: <code>{}</code></span></dt><dd><div class="option-example"><code>{:theme {:axis {:y {:tick-label {:size 14, :color :darkred}}}}}</code></div><div class="option-text">Text style keys of this axis's tick labels, merged over the <code>:tick-label</code> text role; polar guides take them too, and <code>[:axis :x]</code> styles 3D frames.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
 
-:::
 
+The plot below draws more y ticks, longer and red:
 
 
 ::: {.sourceClojure}
@@ -291,8 +318,8 @@ The y axis has the same keys:
 :::
 
 
-`:tick-label-gap` - the least pixels between neighbouring tick labels: a label closer to the last drawn one isn't
-drawn. Here dense ticks with no gap (left; labels may touch) and with a wide one (right):
+The plots below draw dense x ticks with no gap between their labels (left, where labels may touch) and with a wide
+gap (right):
 
 
 ::: {.sourceClojure}
@@ -316,16 +343,13 @@ drawn. Here dense ticks with no gap (left; labels may touch) and with a wide one
 
 ## Strips
 
-Facet strip boxes; the shingle fill marks a shingle level's range. A strip text longer than its strip shrinks,
-down to the `:strip` text role's `:min-size` points, then is cut with an ellipsis.
+These keys style the facet strips. The plot below fills the strips dark blue without a border and writes their
+texts in white:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:strip</td><td>map</td><td></td><td>facet strips</td></tr><tr><td>:strip :fill</td><td>a clojure2d color or :none</td><td>[255 255 255 150]</td><td>strip background colour</td></tr><tr><td>:strip :border-color</td><td>a clojure2d color or :none</td><td>[0 0 0 100]</td><td>strip border colour</td></tr><tr><td>:strip :border-width</td><td>a non-negative number</td><td>1</td><td>strip border width in pixels</td></tr><tr><td>:strip :shingle-fill</td><td>a clojure2d color or :none</td><td>[255 165 0 110]</td><td>colour of the bar marking a shingle level</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:strip :fill</code><span class="option-default">Default: <code>[255 255 255 150]</code></span></dt><dd><div class="option-example"><code>{:theme {:strip {:fill :lightblue}}}</code></div><div class="option-text">The background colour of the facet strips.<ul><li><code>:none</code> – No strip background.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:strip :border-color</code><span class="option-default">Default: <code>[0 0 0 100]</code></span></dt><dd><div class="option-example"><code>{:theme {:strip {:border-color :black}}}</code></div><div class="option-text">The colour of the strip border.<ul><li><code>:none</code> – No border.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:strip :border-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:strip {:border-width 3}}}</code></div><div class="option-text">The width of the strip border in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:strip :shingle-fill</code><span class="option-default">Default: <code>[255 165 0 110]</code></span></dt><dd><div class="option-example"><code>{:theme {:strip {:shingle-fill :lightgreen}}}</code></div><div class="option-text">The colour of the bar marking a shingle level's range in its strip.<ul><li><code>:none</code> – No bar.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -351,8 +375,9 @@ down to the `:strip` text role's `:min-size` points, then is cut with an ellipsi
 :::
 
 
-Long level names in row strips: the first two fit; the third shrinks to the role's `:min-size` and is cut - at
-the default 7 points (left) later than at 9 (right).
+When a strip's text doesn't fit, the library shrinks it down to the `:strip` role's `:min-size` and then cuts it
+with an ellipsis. In the plots below the first two row names fit; the third is cut later at the default 7 points
+(left) than at 9 (right):
 
 
 ::: {.sourceClojure}
@@ -377,15 +402,12 @@ the default 7 points (left) later than at 9 (right).
 
 ## Facets
 
-The gap between facet panels.
+This key sets how far apart the facet panels sit. The plot below widens the gap:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:facet</td><td>map</td><td></td><td>facet layout</td></tr><tr><td>:facet :gap</td><td>a non-negative number</td><td>5</td><td>pixels between facet panels</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:facet :gap</code><span class="option-default">Default: <code>5</code></span></dt><dd><div class="option-example"><code>{:theme {:facet {:gap 25}}}</code></div><div class="option-text">The space in pixels between facet panels, and between a panel and its margins or invalid-value band.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -404,15 +426,13 @@ The gap between facet panels.
 
 ## Multiplots
 
-The gap between arranged plots.
+This key sets how far apart arranged plots sit; `plot/arrange` takes it in its `:theme` option. The plot below
+widens the gap:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:multiplot</td><td>map</td><td></td><td>arranged plots</td></tr><tr><td>:multiplot :gap</td><td>a non-negative number</td><td>10</td><td>pixels between arranged plots</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:multiplot :gap</code><span class="option-default">Default: <code>10</code></span></dt><dd><div class="option-example"><code>{:theme {:multiplot {:gap 40}}}</code></div><div class="option-text">The space in pixels between arranged plots.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -433,15 +453,13 @@ The gap between arranged plots.
 
 ## Legend
 
-Legend key sizes, spacing, the legend box and the colour bar.
+These keys set the legend keys' size and spacing, the legend box and the colour bar. The plot below draws larger,
+wider spaced keys in a white box with a gray border:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>map</td><td></td><td>legends and colour bars</td></tr><tr><td>:legend :gap</td><td>a non-negative number</td><td>5</td><td>pixels between key and label and between legends</td></tr><tr><td>:legend :key-size</td><td>a non-negative number</td><td>14</td><td>side of a legend key box in pixels</td></tr><tr><td>:legend :fill</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box fill</td></tr><tr><td>:legend :border-color</td><td>a clojure2d color or :none</td><td>:none</td><td>legend box border colour</td></tr><tr><td>:legend :border-width</td><td>a non-negative number</td><td>1</td><td>legend box border width in pixels</td></tr><tr><td>:legend :bar-length</td><td>:stretch or a positive number</td><td>:stretch</td><td>colour bar length: :stretch (the space left) or pixels</td></tr><tr><td>:legend :bar-width</td><td>a positive number or nil</td><td></td><td>colour bar width in pixels (nil - the key size)</td></tr><tr><td>:legend :bar-ticks</td><td>a positive integer</td><td>5</td><td>colour bar tick count (a scale's :ticks wins)</td></tr><tr><td>:legend :bar-tick-length</td><td>a non-negative number</td><td>3</td><td>colour bar tick length in pixels (labels follow it)</td></tr><tr><td>:legend :bar-tick-width</td><td>a non-negative number</td><td>1</td><td>colour bar tick width in pixels (0 - no tick lines)</td></tr><tr><td>:legend :min-key-line-width</td><td>a non-negative number</td><td>2</td><td>least width in pixels of the line marks drawn in legend keys (thinner visible lines are drawn this wide there, width 0 stays 0; 0 - as in the panel)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:legend :gap</code><span class="option-default">Default: <code>5</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:gap 15}}}</code></div><div class="option-text">The space in pixels between a legend's keys and their labels, between two legends and between the panels and the legends.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :key-size</code><span class="option-default">Default: <code>14</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:key-size 28}}}</code></div><div class="option-text">The least side of a legend key's box in pixels; a key grows to fit a mapped size. It is also the default colour bar width.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :fill</code><span class="option-default">Default: <code>:none</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:fill :white}}}</code></div><div class="option-text">The fill colour of the legend box.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend :border-color</code><span class="option-default">Default: <code>:none</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:border-color :black}}}</code></div><div class="option-text">The colour of the legend box's border.<ul><li><code>:none</code> – No border.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend :border-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:border-color :black, :border-width 3}}}</code></div><div class="option-text">The width of the legend box's border in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :bar-length</code><span class="option-default">Default: <code>:stretch</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:bar-length 60}}}</code></div><div class="option-text">The length of a colour bar in pixels, at most the height available.<ul><li><code>:stretch</code> – The height left in the bar's column of legends, at least three key sizes.</li><li><a href="reference.types.html#positive-number">positive number</a> – This many pixels.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend :bar-width</code><span class="option-default">Default: The legend's <code>:key-size</code>.</span></dt><dd><div class="option-example"><code>{:theme {:legend {:bar-width 30}}}</code></div><div class="option-text">The width of a colour bar in pixels.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :bar-ticks</code><span class="option-default">Default: <code>5</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:bar-ticks 2}}}</code></div><div class="option-text">The tick count a colour bar aims for; a colour scale's <code>:ticks</code> wins, and a binned bar ticks its breaks.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :bar-tick-length</code><span class="option-default">Default: <code>3</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:bar-tick-length 8}}}</code></div><div class="option-text">The length of a colour bar's ticks in pixels; the labels sit past them.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :bar-tick-width</code><span class="option-default">Default: <code>1</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:bar-tick-width 3}}}</code></div><div class="option-text">The width of a colour bar's ticks in pixels; 0 draws none.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend :min-key-line-width</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>{:theme {:legend {:min-key-line-width 5}}}</code></div><div class="option-text">The least width in pixels of a line in a legend key: a key draws a thinner line this wide, and a line of width 0 stays 0. 0 keeps the panel's widths.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -458,8 +476,7 @@ Legend key sizes, spacing, the legend box and the colour bar.
 :::
 
 
-Line marks thinner than `:min-key-line-width` are drawn that wide in legend keys, so a key's colour reads (the
-lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width 0 - no line - stays undrawn.
+The plots below draw line keys at three values of `:min-key-line-width`; the lines in the panels are 1 pixel wide:
 
 
 ::: {.sourceClojure}
@@ -480,7 +497,7 @@ lines here are 1 pixel wide; 0 draws keys as thin as the lines). A line of width
 :::
 
 
-A colour bar with more, longer and thicker ticks.
+The plot below draws a colour bar with more, longer and thicker ticks:
 
 
 ::: {.sourceClojure}
@@ -502,16 +519,14 @@ A colour bar with more, longer and thicker ticks.
 
 ## 3D frame
 
-The dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). Here a
-[surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$:
+This key sets the dash of a 3D box's hidden edges; the box edges and axes take the x axis style (`[:axis :x]`). The
+plot below draws a [surface](reference.charts_multivariate_3d.html#d-surfaces) of $z = \sin(xy)$ over $[-2, 2]^2$
+with dash-dot hidden edges and thicker axes:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:frame-3d</td><td>map</td><td></td><td>3D box frames (their axes and edges take [:axis :x])</td></tr><tr><td>:frame-3d :hidden-edge-dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers</td><td>[3 3]</td><td>dash of the hidden box edges (:none - solid)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:frame-3d :hidden-edge-dash</code><span class="option-default">Default: <code>[3 3]</code></span></dt><dd><div class="option-example"><code>{:theme {:frame-3d {:hidden-edge-dash [8 2 2 2]}}}</code></div><div class="option-text">The dash of a 3D box's hidden edges.<ul><li><a href="reference.types.html#dash">dash</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -534,18 +549,15 @@ The dash of a 3D box's hidden edges; the box edges and axes take the x axis styl
 
 ## Palette
 
-The default ranges of the aesthetic scales (Aesthetics and legends chapter): colours of levels, the gradient of
-numbers, shapes, sizes, dashes and patterns. The 14 level colours are checked for colour vision deficiencies: the
-Okabe-Ito colours (a darker yellow, a gray in place of black), then lighter versions of the first six (the blue
-turned toward violet) - weak as thin lines on the background; levels past 14 repeat the colours.
+These keys set the default ranges of the [aesthetic scales](reference.aesthetics_legends.html): colours for levels
+and for numbers, shapes, sizes, dashes and patterns. The level colours start with the Okabe-Ito colours, with a
+darker yellow and a gray in place of black, then repeat the first six lighter, the blue turned toward violet. The
+lighter six are weak as thin lines. The plot below takes the Tableau 10 colours and three other shapes:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:palette</td><td>map</td><td></td><td>default aesthetic ranges</td></tr><tr><td>:palette :color</td><td>a palette name or a non-empty sequence of colors</td><td>[[0 114 178] [213 94 0] [0 158 115] [230 159 0] [204 121 167] [86 180 233] [204 205 35] [110 110 110] [130 137 207] [251 152 100] [110 201 164] [255 212 122] [245 175 212] [155 227 255]]; the default palette (cljplot2.theme/default-palette): 14 colours checked for colour vision deficiencies</td><td>ordinal colours: a palette name or colours</td></tr><tr><td>:palette :gradient</td><td>a function or a palette name or a non-empty sequence of colors</td><td>[[255 255 255] [127 192 236] [56 133 201] [14 83 161] [0 63 143] [0 1 11]]</td><td>linear and binned colours: colours or a palette name</td></tr><tr><td>:palette :shape</td><td>sequential of a shape character or shape map (at least 1)</td><td>[\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]</td><td>point shapes, cycled</td></tr><tr><td>:palette :size</td><td>[min max], non-negative numbers, min <= max</td><td>[2 10]</td><td>size range [min max] in pixels</td></tr><tr><td>:palette :dash</td><td>sequential of :none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers (at least 1)</td><td>[:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]</td><td>dash styles, cycled</td></tr><tr><td>:palette :pattern</td><td>sequential of a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map (at least 1)</td><td>[:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]</td><td>fill patterns, cycled</td></tr><tr><td>:palette :na</td><td>a clojure2d color</td><td>[150 150 150]</td><td>colour of NA values</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:palette :color</code><span class="option-default">Default: The default palette: 14 colours checked for colour vision deficiencies.</span></dt><dd><div class="option-example"><code>{:theme {:palette {:color :tableau-10}}}</code></div><div class="option-text">The colours of a categorical colour scale's levels, repeated past their count.<ul><li><a href="reference.types.html#palette">palette</a></li></ul></div></dd></div><div class="option-card"><dt><code>:palette :gradient</code><span class="option-default">Default: <code>[[255 255 255] [127 192 236] [56 133 201] [14 83 161] [0 63 143] [0 1 11]]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:gradient [:gold :darkred]}}}</code></div><div class="option-text">The colours of a continuous or binned colour scale, from its low end to its high end.<ul><li><a href="reference.types.html#function">function</a> – A function of <code>t</code> from 0 to 1 that returns a colour.</li><li><a href="reference.types.html#palette">palette</a> – These colours, spread evenly over the scale.</li></ul></div></dd></div><div class="option-card"><dt><code>:palette :shape</code><span class="option-default">Default: <code>[\O \s \A \x \+ \V \o \S \^ \v \{ \} \< \>]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:shape [\s \A \V]}}}</code></div><div class="option-text">The point shapes of a categorical shape scale's levels, repeated past their count.<ul><li><span>sequence of point shapes</span></li></ul></div></dd></div><div class="option-card"><dt><code>:palette :size</code><span class="option-default">Default: <code>[2 10]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:size [1 20]}}}</code></div><div class="option-text">The range of a size scale in pixels.<ul><li><a href="reference.types.html#size-range">size range</a></li></ul></div></dd></div><div class="option-card"><dt><code>:palette :dash</code><span class="option-default">Default: <code>[:solid :dashed :dotted :dot-dash :long-dash :dot-dot-dash :two-dash :loose-dot]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:dash [:solid :dotted]}}}</code></div><div class="option-text">The dash styles of a categorical dash scale's levels, repeated past their count.<ul><li><span>sequence of dashes</span></li></ul></div></dd></div><div class="option-card"><dt><code>:palette :pattern</code><span class="option-default">Default: <code>[:hatch :back-hatch :horizontal :vertical :cross :diagonal-cross :dots :dense-dots]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:pattern [:dots :cross]}}}</code></div><div class="option-text">The fill patterns of a categorical pattern scale's levels, repeated past their count.<ul><li><span>sequence of fill patterns</span></li></ul></div></dd></div><div class="option-card"><dt><code>:palette :na</code><span class="option-default">Default: <code>[150 150 150]</code></span></dt><dd><div class="option-example"><code>{:theme {:palette {:na :red}}}</code></div><div class="option-text">The colour of missing (<code>nil</code>) values of a colour scale; hierarchy charts also fill nodes without a colour with it.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -564,22 +576,9 @@ turned toward violet) - weak as thin lines on the background; levels past 14 rep
 :::
 
 
-The default level colours, as rendered and as seen with deuteranopia (the render option `:cvd`, Render chapter):
-the closest pair is orange and the darker yellow (04, 07); the lighter six read as lighter versions of the first.
-
-
-::: {.sourceClojure}
-```clojure
-(def palette-levels (mapv (fn [i] {:level (format "%02d" (inc i)) :n 1}) (range 14)))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>level</th><th>n</th></tr></thead><tbody><tr><td>01</td><td>1</td></tr><tr><td>02</td><td>1</td></tr><tr><td>03</td><td>1</td></tr><tr><td>04</td><td>1</td></tr><tr><td>05</td><td>1</td></tr><tr><td>06</td><td>1</td></tr><tr><td>07</td><td>1</td></tr><tr><td>08</td><td>1</td></tr><tr><td>09</td><td>1</td></tr><tr><td>10</td><td>1</td></tr><tr><td>11</td><td>1</td></tr><tr><td>12</td><td>1</td></tr><tr><td>13</td><td>1</td></tr><tr><td>14</td><td>1</td></tr></tbody></table></div>
-```
-
+The plots below draw the default level colours as rendered and as a viewer with deuteranopia sees them (the
+[render option](reference.render.html) `:cvd`). The closest pair is orange and the darker yellow (04, 07); the
+lighter six read as lighter versions of the first.
 
 
 ::: {.sourceClojure}
@@ -614,21 +613,18 @@ the closest pair is orange and the darker yellow (04, 07); the lighter six read 
 
 ## Text
 
-Every text the library draws has a role; each role is a text style (the keys of the Text style group, last in this
-section). A label's `:role` may also name a role of your own added under `:text`. A role's `:color` may be
-`:contrast` - black or white, whichever reads on what's behind: the fill under a chart's label, else the plot
-background. Labels drawn over fills (hierarchies, Venn counts, tile and bar values, correlation and pairwise
-statistic numbers) default to it.
+These keys style the texts the library draws, by role. Each role is a text style: the keys of the
+[Text style](reference.shared_options.html#text-style) group plus `:min-size`. A label's `:role` may also name a role
+of your own added under `:text`. The roles of labels drawn over fills (hierarchies, Venn counts, tile and bar values,
+correlation and pairwise numbers) default to the colour `:contrast`: black or white, whichever reads on the fill.
 
-Titles, strips and axis texts:
+These roles style the titles, strips and axis texts. The plot below draws a larger italic title on the left, dark
+red axis titles and smaller tick labels:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :axis-title</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 12, :min-size 8, :font-style :plain, :color :black, :inset 4, :align [:center :middle]}</td><td>axis titles</td></tr><tr><td>:text :strip</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 11, :min-size 7, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>facet strip texts</td></tr><tr><td>:text :tick-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>tick labels</td></tr><tr><td>:text :title</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :inset 4, :align [:center :middle]}</td><td>plot and multiplot titles</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:text :axis-title</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 12, :min-size 8, :font-style :plain, :color :black, :inset 4, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:axis-title {:color :darkred}}}}</code></div><div class="option-text">The style of axis titles.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :strip</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 11, :min-size 7, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:strip {:font-style :bold}}}}</code></div><div class="option-text">The style of facet strip texts.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :tick-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:tick-label {:size 8}}}}</code></div><div class="option-text">The style of tick labels; an axis's <code>:tick-label</code> keys go over it.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :title</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 14, :font-style :bold, :color :black, :inset 4, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:title {:size 20, :font-style :italic}}}}</code></div><div class="option-text">The style of plot and multiplot titles.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -649,15 +645,30 @@ Titles, strips and axis texts:
 :::
 
 
-Legend texts:
+The plot below restyles the title's role with keys of the Text style group: another font, a box and a wider inset:
 
-::: {.clay-table}
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (assoc iris-plot
+                          :labels {:title "Iris"}
+                          :theme {:text {:title {:font "Serif" :size 16 :inset 10 :background [230 230 245]}}})
+                   {:width 500 :height 300})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.theme_files/image19.png)
+:::
+
+
+These roles style the legend texts. The plot below draws a smaller, plain gray legend title and italic labels:
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :legend-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:left :middle]}</td><td>legend entry labels and colour bar ticks</td></tr><tr><td>:text :legend-title</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:left :middle]}</td><td>legend titles</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:text :legend-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :black, :inset 2, :align [:left :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:legend-label {:font-style :italic}}}}</code></div><div class="option-text">The style of legend entry labels and colour bar tick labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :legend-title</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:left :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:legend-title {:font-style :plain}}}}</code></div><div class="option-text">The style of legend titles.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -671,35 +682,17 @@ Legend texts:
 
 
 ::: {.clay-image}
-![](reference.theme_files/image19.png)
+![](reference.theme_files/image20.png)
 :::
 
 
-Labels of treemaps, partitions and circle packings - by default in the contrast colour of their cell; a colour
-given wins, on every cell alike (here dark leaf labels - hard to read on the dark cells, which is why `:contrast`
-is the default):
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :pack-group</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</td><td>circle packing group labels</td></tr><tr><td>:text :pack-leaf</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>circle packing leaf labels</td></tr><tr><td>:text :partition-group</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</td><td>partition (icicle, sunburst) group labels</td></tr><tr><td>:text :partition-leaf</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>partition leaf labels</td></tr><tr><td>:text :treemap-group</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:left :middle]}</td><td>treemap group headers</td></tr><tr><td>:text :treemap-leaf</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>treemap leaf labels</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def budget [{:dept "science" :team "physics" :cost 40} {:dept "science" :team "biology" :cost 25}
-             {:dept "arts" :team "music" :cost 15} {:dept "arts" :team "theatre" :cost 10}])
-```
-:::
-
+These roles style the labels of treemaps, partitions and circle packings. A colour you give applies on every cell
+alike. The plot below sets dark leaf labels, which are hard to read on the dark cells; that is why `:contrast` is
+the default:
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>dept</th><th>team</th><th>cost</th></tr></thead><tbody><tr><td>science</td><td>physics</td><td>40</td></tr><tr><td>science</td><td>biology</td><td>25</td></tr><tr><td>arts</td><td>music</td><td>15</td></tr><tr><td>arts</td><td>theatre</td><td>10</td></tr></tbody></table></div>
+<dl class="options"><div class="option-card"><dt><code>:text :pack-group</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:pack-group {:size 13}}}}</code></div><div class="option-text">The style of circle packing group labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :pack-leaf</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:pack-leaf {:font-style :italic}}}}</code></div><div class="option-text">The style of circle packing leaf labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :partition-group</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:partition-group {:size 13}}}}</code></div><div class="option-text">The style of partition (icicle and sunburst) group labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :partition-leaf</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:partition-leaf {:font-style :italic}}}}</code></div><div class="option-text">The style of partition leaf labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :treemap-group</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :bold, :color :contrast, :inset 2, :align [:left :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:treemap-group {:size 13}}}}</code></div><div class="option-text">The style of treemap group headers.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :treemap-leaf</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:treemap-leaf {:font-style :italic}}}}</code></div><div class="option-text">The style of treemap leaf labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
 
 
@@ -717,22 +710,17 @@ is the default):
 
 
 ::: {.clay-image}
-![](reference.theme_files/image20.png)
+![](reference.theme_files/image21.png)
 :::
 
 
-Texts of other charts - text annotations, bar values, Venn diagrams, tiles, correlations, pairwise statistics,
-contours (bar values, Venn counts, tile values and the correlation and pairwise numbers in the contrast colour of
-what's behind them by default). The bars write their values in their middle
-([bar](reference.charts_bars.html#bar-charts) `:value-label`, `:label-position`):
+These roles style the texts of other charts. The plot below draws a larger red annotation on a white box and bold
+bar values in the bars' middle ([bar](reference.charts_bars.html#bar-charts) `:value-label`, `:label-position`):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :annotation</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :min-size 6, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>text charts and strip n labels</td></tr><tr><td>:text :bar-value</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>bar value and count labels</td></tr><tr><td>:text :contour-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 180]}</td><td>contour level labels</td></tr><tr><td>:text :correlation</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>correlation numbers</td></tr><tr><td>:text :pairwise</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>pairwise statistic numbers</td></tr><tr><td>:text :tile-value</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</td><td>tile value labels</td></tr><tr><td>:text :venn-count</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</td><td>Venn diagram region counts</td></tr><tr><td>:text :venn-set</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>Venn diagram set names</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:text :annotation</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :min-size 6, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:annotation {:size 14, :color :darkred}}}}</code></div><div class="option-text">The style of text charts and strip n labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :bar-value</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:bar-value {:font-style :bold}}}}</code></div><div class="option-text">The style of bar value and count labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :contour-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 180]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:contour-label {:background :none}}}}</code></div><div class="option-text">The style of contour level labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :correlation</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:correlation {:size 16}}}}</code></div><div class="option-text">The style of correlation numbers; they shrink to fit their cell, down to 6 points.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :pairwise</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 12, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:pairwise {:size 16}}}}</code></div><div class="option-text">The style of pairwise statistic numbers; they shrink to fit their cell, down to 6 points.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :tile-value</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :contrast, :inset 1, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:tile-value {:size 12}}}}</code></div><div class="option-text">The style of tile value labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :venn-count</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 10, :font-style :plain, :color :contrast, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:venn-count {:font-style :bold}}}}</code></div><div class="option-text">The style of Venn diagram region counts.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :venn-set</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 11, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:venn-set {:size 14}}}}</code></div><div class="option-text">The style of Venn diagram set names.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -753,20 +741,17 @@ what's behind them by default). The bars write their values in their middle
 
 
 ::: {.clay-image}
-![](reference.theme_files/image21.png)
+![](reference.theme_files/image22.png)
 :::
 
 
-Labels of builders - network, sankey, dendrogram groups, alluvial, node-link trees and the names of a scatter-plot
-matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme restyles them all:
+These roles style the labels of builders. The plot below draws larger bold sankey labels and smaller red names on
+a scatter-plot matrix (`plot/pairs` `:diagonal :names`):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:text :alluvial-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 190]}</td><td>alluvial stratum labels</td></tr><tr><td>:text :dendrogram-group-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>dendrogram group (inner node) labels</td></tr><tr><td>:text :network-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>network node labels</td></tr><tr><td>:text :pairs-name</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</td><td>variable names on the diagonal of a scatter-plot matrix</td></tr><tr><td>:text :radial-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :min-size 5, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>leaf names around circular builders (dendrogram, tree, bundle, chord); the size shrinks with the leaf count (not to a room), down to the role's :min-size, never above its size</td></tr><tr><td>:text :sankey-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :min-size 6, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</td><td>sankey node labels</td></tr><tr><td>:text :tree-label</td><td>a text style (:font :size :font-style :color :inset :align :background :min-size :dollar-math)</td><td>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</td><td>node-link tree node labels</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:text :alluvial-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 190]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:alluvial-label {:font-style :bold}}}}</code></div><div class="option-text">The style of alluvial stratum labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :dendrogram-group-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:dendrogram-group-label {:size 11}}}}</code></div><div class="option-text">The style of dendrogram group (inner node) labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :network-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 8, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:network-label {:size 11}}}}</code></div><div class="option-text">The style of network node labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :pairs-name</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 13, :font-style :bold, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:pairs-name {:size 10, :color :darkred}}}}</code></div><div class="option-text">The style of variable names on the diagonal of a scatter-plot matrix.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :radial-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :min-size 5, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:radial-label {:color :darkred}}}}</code></div><div class="option-text">The style of leaf names around circular builders (dendrogram, tree, bundle, chord); the builder picks the size from the leaf count, between <code>:min-size</code> and <code>:size</code>.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :sankey-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :min-size 6, :font-style :plain, :color :black, :inset 1, :align [:center :middle], :background [255 255 255 170]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:sankey-label {:size 12, :font-style :bold}}}}</code></div><div class="option-text">The style of sankey node labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div><div class="option-card"><dt><code>:text :tree-label</code><span class="option-default">Default: <code>{:font "DejaVu Sans Mono", :size 9, :font-style :plain, :color :black, :inset 2, :align [:center :middle]}</code></span></dt><dd><div class="option-example"><code>{:theme {:text {:tree-label {:size 11}}}}</code></div><div class="option-text">The style of node-link tree node labels.<ul><li><a href="reference.shared_options.html#text-style">text style</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -784,25 +769,6 @@ matrix (`plot/pairs` `:diagonal :names`) - each in a role of its own, so a theme
 
 
 ::: {.clay-image}
-![](reference.theme_files/image22.png)
-:::
-
-
-A text role's style takes the keys of the [Text style](reference.shared_options.html#text-style) group, plus
-`:min-size`. The plot below restyles the title's role:
-
-
-::: {.sourceClojure}
-```clojure
-(plot/render-image (assoc iris-plot
-                          :labels {:title "Iris"}
-                          :theme {:text {:title {:font "Serif" :size 16 :inset 10 :background [230 230 245]}}})
-                   {:width 500 :height 300})
-```
-:::
-
-
-::: {.clay-image}
 ![](reference.theme_files/image23.png)
 :::
 
@@ -810,21 +776,16 @@ A text role's style takes the keys of the [Text style](reference.shared_options.
 
 ## Chart
 
-The style of each chart kind, `[:chart kind]` - its keys and defaults are the rows with a theme default in the
-chart's table. Options given to a chart override its theme style. `[:chart name]` entries that aren't kinds are
-named styles, partial styles a chart picks with `:theme-style` over its kind's (see Shared options); builders
-draw with theirs (`:network-node`, `:tree-link` ... - each listed on its builder's page).
+These keys hold each chart kind's style under `[:chart kind]`. Their keys are the chart's style options, and the
+option cards on the chart's page show these defaults. Options given to a chart override its theme style. Four kinds
+also take theme-only keys, listed in a Theme keys box on their page: [violin plots](reference.charts_per_level.html#violin-plots),
+[heatmaps](reference.charts_bins_fields.html#heatmaps), [Venn diagrams](reference.charts_shares_sets.html#venn-diagrams)
+and [3D clouds](reference.charts_multivariate_3d.html#d-clouds). The other `[:chart name]` entries are
+[named styles](reference.shared_options.html#named-theme-styles): partial styles that a chart's `:theme-style` merges
+over its kind's style. Builders draw with their own named styles (`:network-node`, `:tree-link` ...), and each
+builder's page lists them in a Theme keys box.
 
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:chart</td><td>map of chart kind to its style</td><td></td><td>per chart kind styles, see each chart's style options</td></tr></tbody></table>
-```
-
-:::
-
-
-The kinds with a theme style:
+The chart kinds; every kind but `:text` has a theme style (text charts take the text role `:annotation`):
 
 
 ::: {.sourceClojure}
@@ -881,6 +842,8 @@ The kinds with a theme style:
 ```
 :::
 
+
+The plot below draws larger squares in every scatter chart:
 
 
 ::: {.sourceClojure}
