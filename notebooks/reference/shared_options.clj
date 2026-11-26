@@ -459,7 +459,7 @@
 ;; ### Graph
 
 ;; The edge rows' ends, weight and node ids, optional node rows, directedness. A directed
-;; [network](reference.builders_graphs.html#network) with node labels (`:labels`) and a seeded layout (`:rng`):
+;; [network](reference.builders_graphs.html#networks) with node labels (`:labels`) and a seeded layout (`:rng`):
 
 (nu/options-table (describe/fragment-rows :graph/graph))
 

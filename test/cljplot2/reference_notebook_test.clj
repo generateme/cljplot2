@@ -489,7 +489,7 @@
                   own (describe/own-rows rows)
                   f (symbol "cljplot2.core" (name b))]]
       (testing (str page " " b ": a heading, its own options, its shared groups, called; every own option shown")
-        (is (heading? page (name b)))
+        (is (heading? page (get describe/concepts b (name b))))
         (when (seq own) (is (tables (row-keys own))))
         (when (seq (describe/fragment-keys rows)) (is (groups (row-keys rows))))
         (is (seq (calls (get forms page) f)))

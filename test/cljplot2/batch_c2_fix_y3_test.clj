@@ -35,6 +35,33 @@
   [f]
   (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-message e))))
 
+(defn- thrown
+  "Gives the `ExceptionInfo` thrown by calling `f`, `nil` without one."
+  [f]
+  (try (f) nil (catch clojure.lang.ExceptionInfo e e)))
+
+(deftest annotation-type-test
+  (testing "an annotation is [accessor colour-scale-spec]: the spec may be nil, the accessor a function, a list of annotations is a sequence, no annotations nil"
+    (doseq [annotations [[[:grp nil] [:num {:range :viridis/magma}]] (list [:grp nil]) [[(fn [r] (:grp r)) nil]] nil]]
+      (is (nil? (thrown #(plot/clustered-heatmap hm (assoc base :row-annotations annotations)))) (pr-str annotations))))
+  (testing "boundary: one error per bad annotation at its index; a problem inside the pair named with its place, a value that isn't a pair without one"
+    (doseq [[option bad needle] [[:row-annotations [:grp] "should be an annotation [accessor color-scale-spec]"]
+                                 [:row-annotations :grp "should be an annotation [accessor color-scale-spec]"]
+                                 [:row-annotations {} "should be an annotation [accessor color-scale-spec]"]
+                                 [:row-annotations nil "should be an annotation [accessor color-scale-spec]"]
+                                 [:row-annotations [:grp nil :extra] "should be an annotation [accessor color-scale-spec]"]
+                                 [:row-annotations [:grp {:nope 1}] "at [1 :nope]"]
+                                 [:row-annotations [42 nil] "at [0]"]
+                                 [:row-annotations [:grp :viridis] "at [1]"]
+                                 [:col-annotations [:cg {:nope 1}] "at [1 :nope]"]]
+            :let [e (thrown #(plot/clustered-heatmap hm (assoc base option [[:grp nil] bad])))]]
+      (is (= [option 1] (:in (ex-data e))) (pr-str bad))
+      (is (= 1 (count (:errors (ex-data e)))) (pr-str bad))
+      (is (str/includes? (str (ex-message e)) needle) (pr-str bad))
+      (is (not (str/includes? (str (ex-message e)) ", at []")) (pr-str bad))))
+  (testing "boundary: a whole value that isn't a sequence fails at the option"
+    (is (= [:row-annotations] (:in (ex-data (thrown #(plot/clustered-heatmap hm (assoc base :row-annotations :grp)))))))))
+
 ;; P2: strips keep no plot margin under a user margin
 
 (deftest heatmap-user-margin-test

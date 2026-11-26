@@ -8,7 +8,7 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
-            [cljplot2.test-util :refer [error-data]]))
+            [cljplot2.test-util :refer [error-data migrated-builders]]))
 
 (def builders
   "The builders of `cljplot2.core`."
@@ -47,15 +47,21 @@
 
 (defn- documented-problems
   "Entries of `schema` breaking the documentation rules: no description, both `:default` and a default text, or a text
-  starting uppercase, ending with a period or longer than 200 characters."
-  [schema]
-  (vec (for [[path props v] (all-entries schema)
-             :when (not (schema/forbidden? v))
-             :let [texts (keep props [:description :cljplot2/default-doc])]
-             :when (or (nil? (:description props))
-                       (and (contains? props :default) (contains? props :cljplot2/default-doc))
-                       (some #(or (re-find #"^[A-Z]" %) (str/ends-with? % ".") (> (count %) 200)) texts))]
-         path)))
+  breaking its style - an option table's (lowercase, no closing period, at most 200 characters) or, for the paths in
+  `card-paths` and below them, an option card's (uppercase or code first, a closing period, at most 300 characters;
+  `option-cards-test` checks the rest)."
+  ([schema] (documented-problems schema #{}))
+  ([schema card-paths]
+   (vec (for [[path props v] (all-entries schema)
+              :when (not (schema/forbidden? v))
+              :let [texts (keep props [:description :cljplot2/default-doc])
+                    card? (some #(= % (subvec path 0 (min (count path) (count %)))) card-paths)]
+              :when (or (nil? (:description props))
+                        (and (contains? props :default) (contains? props :cljplot2/default-doc))
+                        (if card?
+                          (some #(not (and (re-find #"^[A-Z`]" %) (str/ends-with? % ".") (<= (count %) 300))) texts)
+                          (some #(or (re-find #"^[A-Z]" %) (str/ends-with? % ".") (> (count %) 200)) texts)))]
+          path))))
 
 (defn- positional-args
   "`nil` for each positional argument of `v`'s longest arity taking options (the last argument)."
@@ -74,7 +80,10 @@
     (testing (str (var-name v) ": options schema, documented")
       (is (some? (:cljplot2/options (meta v))))
       (is (seq (describe/options v)))
-      (is (= [] (documented-problems (:cljplot2/options (meta v))))))
+      (is (= [] (documented-problems (:cljplot2/options (meta v))
+                                     (if (migrated-builders (:name (meta v)))
+                                       (set (map :path (describe/own-rows (describe/options v))))
+                                       #{})))))
     (testing (str (var-name v) ": the core var documents the implementation's schema")
       (let [n (:name (meta v))
             impl-ns (cond ('#{arrange pairs} n) "cljplot2.multiplot" ('#{acf horizon} n) "cljplot2.series-plots" :else "cljplot2.graphs")
@@ -163,7 +172,7 @@
     (doseq [[v k] [[#'plot/network :node-style] [#'plot/network :edge-style] [#'plot/dendrogram :line-style]
                    [#'plot/tree :node-style] [#'plot/tree :link-style] [#'plot/arc :node-style] [#'plot/arc :edge-style]]]
       (let [row (first (filter #(= [k] (:path %)) (describe/options v)))
-            [_ style-name] (re-find #"^theme \[:chart :([a-z-]+)\]$" (str (:default-doc row)))]
+            [_ style-name] (re-find #"^The theme style `\[:chart :([a-z-]+)\]`\.$" (str (:default-doc row)))]
         (is (contains? cljplot2.theme/named-styles (keyword style-name)) [(var-name v) k])
         (is (not (re-find #"\{:" (:description row))) [(var-name v) k])))))
 

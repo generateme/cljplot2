@@ -15,12 +15,14 @@
             [malli.core :as malli]
             [cljplot2.chart :as chart]
             [cljplot2.data.levels :as levels]
+            [cljplot2.data.tree :as tree]
+            [fastmath.ml.clustering :as cl]
             [cljplot2.chart.extent :as extent-chart]
             [cljplot2.data.pairwise :as pairwise]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
             [cljplot2.core :as plot]
-            [cljplot2.test-util :refer [migrated same-pixels?]]
+            [cljplot2.test-util :refer [migrated migrated-builders same-pixels?]]
             [notebook-utils]))
 
 (def ^:private max-listed-values
@@ -38,9 +40,12 @@
     {:options (describe/own-rows (describe/options c)) :mapping (describe/mapping c)}))
 
 (defn- leaf-rows
-  "The option rows of `rows` that aren't a map of options (a container row)."
+  "The option rows of `rows` without rows of their own below them: a container row holding nested rows is left out, a
+  map option without nested rows (e.g. a style map merged over a theme style) stays."
   [rows]
-  (remove describe/container-row? rows))
+  (remove (fn [{:keys [path] :as row}]
+            (and (describe/container-row? row) (some #(= path (pop (:path %))) rows)))
+          rows))
 
 ;; the option model
 
@@ -126,8 +131,9 @@
         (reference-files)))
 
 (deftest migration-switch-test
-  (testing "the migrated kinds are exactly the kinds with a concept title"
-    (is (= migrated (set (keys describe/concepts)))))
+  (testing "the migrated kinds and builders are exactly those with a concept title (kinds keywords, builders symbols)"
+    (is (= migrated (set (filter keyword? (keys describe/concepts)))))
+    (is (= migrated-builders (set (filter symbol? (keys describe/concepts))))))
   (testing "every chart kind is migrated, so a new chart can't miss its cards"
     (is (= migrated (set (keys (describe/chart-constructors))))))
   (doseq [kind migrated
@@ -145,6 +151,14 @@
         (is (= (nil? groups) (nil? (at "nu/shared-groups"))))
         (when groups
           (is (every? #(< (at "nu/shared-groups") %) (keep at ["nu/mapping-list" "nu/option-cards"])))))))
+  (doseq [sym migrated-builders
+          :let [section (str (concept-section (describe/concepts sym)))
+                at (fn [s] (str/index-of section s))]]
+    (testing (str sym ": its section shows option cards, no options table, its shared groups first")
+      (is (str/includes? section "nu/option-cards"))
+      (is (not (str/includes? section "nu/options-table")))
+      (is (some? (at "nu/shared-groups")))
+      (is (and (at "nu/shared-groups") (at "nu/option-cards") (< (at "nu/shared-groups") (at "nu/option-cards"))))))
   (testing "boundary: a section ends at the next ## heading"
     (is (nil? (concept-section "No such concept")))))
 
@@ -226,6 +240,17 @@
              :when (and (not required) (nil? default) (nil? default-doc) (not theme-default))]
          path)))
 
+(deftest example-call-test
+  (let [example-call #'notebook-utils/example-call
+        rows (describe/options (chart/line))
+        row (first (filter #(= [:position] (:path %)) rows))]
+    (testing "a chart's card example is (call {...}); a builder's or function's takes its arguments before the options"
+      (is (= "(chart/line {:position :stack})" (example-call 'chart/line rows row)))
+      (is (= "(plot/network edges {:position :stack})" (example-call '(plot/network edges) rows row)))
+      (is (= "(plot/bundle calls tree {:position :stack})" (example-call '(plot/bundle calls tree) rows row))))
+    (testing "boundary: no example - no call"
+      (is (nil? (example-call 'chart/line [] {:path [:x]}))))))
+
 (deftest card-rules-rule-test
   (testing "boundary: sentences"
     (is (= [[:a] [:b] [:c] [:d]]
@@ -245,6 +270,8 @@
     (is (= [[:b]] (default-gaps [{:path [:a] :default false} {:path [:b]} {:path [:c] :required true}
                                  {:path [:d] :theme-default true :default 1}])))))
 
+(declare owners)
+
 (defn- evaluated
   "`options` with each code form (a list, e.g. `(fn [x] (m/sin x))`) replaced by its value, evaluated whole in this
   namespace."
@@ -252,9 +279,8 @@
   (walk/prewalk #(if (seq? %) (binding [*ns* (the-ns 'cljplot2.option-cards-test)] (eval %)) %) options))
 
 (deftest card-rules-test
-  (doseq [kind migrated
-          :let [{:keys [options mapping]} (kind-rows kind)
-                leaves (leaf-rows options)]]
+  (doseq [{kind :id :keys [options mapping schema]} (owners)
+          :let [leaves (leaf-rows options)]]
     (testing (str kind ": descriptions are one or two sentences")
       (is (= [] (sentence-breaks (concat options mapping)))))
     (testing (str kind ": default texts are sentences")
@@ -272,10 +298,10 @@
     (testing (str kind ": every option has an example")
       (is (= [] (vec (keep #(when-not (describe/example %) (:path %)) leaves)))))
     (testing (str kind ": every example is a valid option on its own (a code form evaluated first)")
-      (let [options-schema (get-in ((get (describe/chart-constructors) kind)) [:schema :options])]
-        (doseq [row leaves
-                :let [example (evaluated (describe/example-options options row))]]
-          (is (malli/validate options-schema example) (str (:path row) " " example)))))))
+      (doseq [row options
+              :let [example (evaluated (describe/example-options options row))]
+              :when example]
+        (is (malli/validate schema example) (str (:path row) " " example))))))
 
 (def ^:private correlated
   "Rows of two related variables, the fixture of the statistic cells."
@@ -386,6 +412,74 @@
      :correlation {:data correlated :mapping {:x :x :y :y}}
      :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 
+(def ^:private edges
+  "Weighted edge rows of four nodes, one node without an edge out - the fixture of the graph builders."
+  [{:from "a" :to "b" :value 3} {:from "a" :to "c" :value 1} {:from "b" :to "c" :value 2} {:from "c" :to "d" :value 4}
+   {:from "b" :to "d" :value 1}])
+
+(def ^:private place-rows
+  "Rows of a three-level hierarchy of places - the source of the fixture tree."
+  [{:region "east" :country "p" :city "p1"} {:region "east" :country "p" :city "p2"} {:region "east" :country "q" :city "q1"}
+   {:region "west" :country "r" :city "r1"} {:region "west" :country "r" :city "r2"} {:region "west" :country "s" :city "s1"}])
+
+(def ^:private place-tree
+  "The fixture tree of the tree builders: regions, countries, cities."
+  (tree/from-levels place-rows {:hierarchy [:region :country :city]}))
+
+(def ^:private three-observations
+  "An `hclust` result of three observations - the fixture of the options naming a clustering's leaves."
+  (cl/hclust [[0.0 0.0] [1.0 0.0] [5.0 5.0]]))
+
+(def ^:private builder-fixtures
+  "Builder symbol -> its fixture call: `:args`, the arguments before the options, `:per-option` (an option path -> its
+  own `:args`, for an option a fixture of another source acts on) and `:options` under every example
+  (a seeded `:rng`; required options come with every example, see the builders' example contexts): small edges, wide rows, a matrix in long form, a tree, sequences and series on
+  which every option example of the builder changes the picture."
+  {'network {:args [edges] :options {:rng (r/rng :mersenne 1)}}
+   'chord {:args [edges]}
+   'arc {:args [edges]}
+   'sankey {:args [edges]}
+   'alluvial {:args [[{:class "first" :sex "f" :n 5} {:class "first" :sex "m" :n 2} {:class "crew" :sex "f" :n 3} {:class "crew" :sex "m" :n 4}]]}
+   'dendrogram {:args [place-tree] :per-option {[:leaf-names] {:args [three-observations]}}}
+   'tree {:args [place-tree] :per-option {[:leaf-names] {:args [three-observations]}}}
+   'clustered-heatmap {:args [(for [[i car] (map-indexed vector ["p" "q" "r" "s" "t"]) [j variable] (map-indexed vector ["mpg" "hp" "wt"])]
+                                {:car car :variable variable :origin (if (m/< i 2) "eu" "us") :unit (if (m/zero? j) "mi" "x")
+                                 :score (m/sin (m/+ (m/* 1.3 j) (m/* 0.7 i i)))})]}
+   'bundle {:args [[{:from "p1" :to "r1"} {:from "p2" :to "s1"} {:from "q1" :to "r2"} {:from "p1" :to "q1"}] place-tree]}
+   'sequences {:args [[{:sequence "a-b-end" :n 3} {:sequence "a-c-end" :n 2} {:sequence "b-end" :n 2} {:sequence "a-b-c-end" :n 1}]]
+               :options {:value :n}}
+   'acf {:args [(mapv (fn [i] (m/+ (m/sin (m/* 0.5 i)) (m/* 0.3 (m/cos (m/* 2.3 i))))) (range 60))]}
+   'horizon {:args [(for [s ["a" "b"] t (range 30)] {:t t :v (m/* (if (= s "a") 1.0 -0.6) (m/sin (m/* 0.3 t))) :series s})]}})
+
+(defn- chart-owner
+  "The card owner of chart `kind` (see [[owners]])."
+  [kind]
+  (let [constructor (get (describe/chart-constructors) kind)
+        {:keys [data mapping scales] base :options} (example-fixtures kind)
+        rows (describe/options (constructor))]
+    {:id kind :rows rows :options (describe/own-rows rows) :mapping (describe/mapping (constructor))
+     :schema (get-in (constructor) [:schema :options]) :base base
+     :draw (fn [options] (cond-> {:data data :mapping mapping :charts [(constructor (merge base options))]} scales (assoc :scales scales)))}))
+
+(defn- builder-owner
+  "The card owner of builder `sym` of `cljplot2.core` (see [[owners]])."
+  [sym]
+  (let [v (ns-resolve 'cljplot2.core sym)
+        {:keys [args per-option] base :options} (builder-fixtures sym)
+        rows (describe/options v)
+        call (fn [call-args] (fn [options] (apply @v (conj (vec call-args) (merge base options)))))]
+    {:id sym :rows rows :options (describe/own-rows rows) :mapping [] :schema (:cljplot2/options (meta v)) :base base
+     :draw (call args) :draws (update-vals per-option #(call (:args %)))}))
+
+(defn- owners
+  "Every migrated chart kind and builder as a card owner: `:id` (the kind or the builder's symbol), `:rows` (every option
+  row), `:options` (its own rows), `:mapping` (mapping rows, none for a builder), `:schema` (its options schema), `:base`
+  (the fixture's base options), `:draw` (a function of options - the fixture's base options merged under them -
+  returning the fixture plot) and `:draws` (option path -> its own draw function, for an option acting on another
+  fixture)."
+  []
+  (concat (map chart-owner (sort migrated)) (map builder-owner (sort migrated-builders))))
+
 (defn- without-option
   "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
   (the theme's) or its example context's value, so a required key stays."
@@ -422,38 +516,37 @@
    [:box [:stat]] "its example's own data holds statistics, not values: :tukey has nothing to compute"
    [:pp [:domain]] "two distribution sides need :domain"
    [:surface [:fu]] "its :u and :v context is valid only with :fu"
-   [:surface [:u]] "a parametric :fu needs both :u and :v" [:surface [:v]] "a parametric :fu needs both :u and :v"})
+   [:surface [:u]] "a parametric :fu needs both :u and :v" [:surface [:v]] "a parametric :fu needs both :u and :v"
+   ['clustered-heatmap [:row]] "a required option" ['clustered-heatmap [:col]] "a required option"
+   ['clustered-heatmap [:value]] "a required option"})
 
 (defn- drawable?
-  "Tests whether a fixture plot draws: its chart's options valid and the plot rendering without an error.
+  "Tests whether a fixture plot of options draws: the options valid and the plot made and rendered without an error.
 
   Parameters:
 
-  - `options-schema`: the chart's options schema.
-  - `p` (map): the fixture plot, one chart.
+  - `owner` (map): a card owner (see [[owners]]) - `:schema`, `:base`.
+  - `draw` (function): the owner's draw function for the option (its `:draws` entry, else `:draw`).
+  - `options` (map): the options, the fixture's base options left out.
   - `size` (map): render options."
-  [options-schema p size]
-  (and (malli/validate options-schema (:options (first (:charts p))))
-       (try (some? (plot/render-image p size)) (catch clojure.lang.ExceptionInfo _ false))))
+  [{:keys [schema base]} draw options size]
+  (and (malli/validate schema (merge base options))
+       (try (some? (plot/render-image (draw options) size)) (catch clojure.lang.ExceptionInfo _ false))))
 
 (deftest examples-act-test
-  (doseq [kind migrated
-          :let [constructor (get (describe/chart-constructors) kind)
-                rows (describe/options (constructor))
-                options-schema (get-in (constructor) [:schema :options])
-                {:keys [data mapping scales] base :options} (example-fixtures kind)
-                draw (fn [options] (cond-> {:data data :mapping mapping :charts [(constructor (merge base options))]} scales (assoc :scales scales)))]
-          row (leaf-rows (describe/own-rows rows))
-          :when (not (contains? inert-in-fixtures [kind (:path row)]))
-          :let [example (evaluated (describe/example-options rows row))]]
+  (doseq [{:keys [id rows options draws] :as owner} (owners)
+          row (leaf-rows options)
+          :when (not (contains? inert-in-fixtures [id (:path row)]))
+          :let [example (evaluated (describe/example-options rows row))
+                draw (get draws (:path row) (:draw owner))]]
     (let [baseline (without-option example rows (:path row))
           size {:width 320 :height 240}]
-      (if-let [reason (needed-to-draw [kind (:path row)])]
-        (testing (str kind " " (:path row) ": needed to draw (" reason "): the baseline doesn't draw, the example renders - " (pr-str example))
-          (is (not (drawable? options-schema (draw baseline) size)))
+      (if-let [reason (needed-to-draw [id (:path row)])]
+        (testing (str id " " (:path row) ": needed to draw (" reason "): the baseline doesn't draw, the example renders - " (pr-str example))
+          (is (not (drawable? owner draw baseline size)))
           (is (some? (plot/render-image (draw example) size))))
-        (testing (str kind " " (:path row) ": the example changes the picture - " (pr-str example))
-          (is (drawable? options-schema (draw baseline) size))
+        (testing (str id " " (:path row) ": the example changes the picture - " (pr-str example))
+          (is (drawable? owner draw baseline size))
           (is (not (same-pixels? (draw baseline) (draw example) size))))))))
 
 ;; types and links
@@ -515,16 +608,13 @@
     (is (every? #(seq (:description %)) (vals pairwise/statistics)))))
 
 (deftest none-colours-test
-  (testing "every migrated chart's colour option documenting :none (a colour form beside it) draws with it"
-    (doseq [kind migrated
-            :let [constructor (get (describe/chart-constructors) kind)
-                  {:keys [data mapping scales] base :options} (example-fixtures kind)]
-            row (leaf-rows (describe/own-rows (describe/options (constructor))))
+  (testing "every migrated chart's and builder's colour option documenting :none (a colour form beside it) draws with it"
+    (doseq [{:keys [id rows options draw draws]} (owners)
+            row (leaf-rows options)
             :when (and (some #(= :none (:value %)) (:values row)) (some #(= ::schema/solid-color (:form %)) (:forms row)))
-            :let [options (assoc-in (or (evaluated (describe/example-options (describe/options (constructor)) row)) {}) (:path row) :none)
-                  p (cond-> {:data data :mapping mapping :charts [(constructor (merge base options))]} scales (assoc :scales scales))]]
-      (testing (str kind " " (:path row))
-        (is (some? (plot/render-image p {:width 160 :height 120})))))))
+            :let [example (assoc-in (or (evaluated (describe/example-options rows row)) {}) (:path row) :none)]]
+      (testing (str id " " (:path row))
+        (is (some? (plot/render-image ((get draws (:path row) draw) example) {:width 160 :height 120})))))))
 
 (deftest extent-method-descriptions-test
   (testing "every extent method says what it gives (its card meaning)"

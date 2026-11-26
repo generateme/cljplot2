@@ -6,7 +6,7 @@
 ;;
 ;; Labels along a trend line and labels moved apart (repel) are shown with the
 ;; [text](reference.charts_annotations.html#text-labels) chart. Not here: 3D densities and interactivity; a heatmap in
-;; clustered order with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmap)) is
+;; clustered order with its dendrograms ([plot/clustered-heatmap](reference.builders_trees.html#clustered-heatmaps)) is
 ;; in the [Flow](use_cases.flow.html) chapter.
 
 (ns use-cases.correlation

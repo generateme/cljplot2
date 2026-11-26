@@ -1,8 +1,8 @@
 ;; # Graphs
 
-;; Builders turn edge rows (or wide rows) into an ordinary plot map: they lay the graph out with the data functions
-;; of the Graphs and trees chapter and add the charts. Each builder lists its own options; the options it forwards
-;; to the layout functions and the builder options (title, scales, theme) are shared groups.
+;; These builders turn edge rows, or wide rows, into an ordinary plot map: they lay the graph out with the data
+;; functions of the Graphs and trees chapter and add the charts. Use them for networks and flows. The Shared options
+;; chapter documents the layout options they pass on and the builder options (title, scales, theme).
 
 (ns reference.builders-graphs
   (:require [clojure.string :as str]
@@ -10,6 +10,9 @@
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
             [notebook-utils :as nu]))
+
+;; The tables below hold made-up friendships with their weights, and the people's teams and ages; the networks and arc
+;; diagrams use them:
 
 (def friends [{:from "Ann" :to "Bob" :value 3} {:from "Ann" :to "Cid" :value 1} {:from "Bob" :to "Cid" :value 2}
               {:from "Cid" :to "Dan" :value 4} {:from "Dan" :to "Eve" :value 1} {:from "Eve" :to "Ann" :value 2}
@@ -21,6 +24,18 @@
              {:id "Dan" :team "blue" :age 52} {:id "Eve" :team "green" :age 38} {:id "Fay" :team "green" :age 23}])
 
 (nu/data-table people)
+
+;; The tables below hold made-up shop visits through stages, and the stages' kinds; the small sankeys use them:
+
+(def stages [{:id "web" :kind "channel"} {:id "store" :kind "channel"} {:id "basket" :kind "step"}
+             {:id "paid" :kind "outcome"} {:id "left" :kind "outcome"}])
+
+(nu/data-table stages)
+
+(def visits [{:from "web" :to "basket" :value 60} {:from "store" :to "basket" :value 30}
+             {:from "basket" :to "paid" :value 55} {:from "basket" :to "left" :value 35}])
+
+(nu/data-table visits)
 
 (nu/source-note {:dataset :migration})
 
@@ -45,16 +60,19 @@
 
 (nu/data-table titanic)
 
-;; ## network
+;; ## Networks
 
-;; A node-link diagram of edge rows (`:from`, `:to`, optional `:value`): nodes placed by a force-directed, circle or
-;; random layout (seeded here), edges as segments - with arrows for a directed graph.
+;; `plot/network` draws a node-link diagram of edge rows (`:from`, `:to`, optional `:value`). A force-directed, circle
+;; or random layout places the nodes, and segments join them, with arrows in a directed graph. Use it to show who links
+;; to whom.
 
-(nu/options-table (describe/own-rows (describe/options #'plot/network)))
+(nu/shared-groups (describe/options #'plot/network))
 
-;; Node aesthetics from the node rows or the computed degree (whole numbers: `:integer-ticks` through the builder's
-;; `:scales`, the teams in colours matching their names), labels beside the nodes (a label overlapping that of a larger
-;; node is left out):
+;; These options map node and edge aesthetics, style the nodes and edges, and write labels. The plot below takes node
+;; aesthetics from the node rows and the computed degree (whole numbers through the builder's `:scales`) and writes
+;; labels beside the nodes; a label overlapping that of a larger node is left out:
+
+(nu/option-cards '(plot/network edges) (describe/own-rows (describe/options #'plot/network)))
 
 (plot/render-image (plot/network friends {:nodes people :rng (r/rng :mersenne 1)
                                           :mapping {:color :team :size :degree}
@@ -63,9 +81,9 @@
                                           :labels true})
                    {:width 600 :height 400})
 
-;; The node and edge style merged over the defaults, a directed graph's arrows in `:edge-style` (left); edge widths
-;; from the weights and labels from a node column (`:labels :age`, right) - an aesthetic maps either nodes or edges,
-;; not both:
+;; The left panel below merges a node and edge style over the defaults, with a directed graph's arrows in
+;; `:edge-style`; the right one takes edge widths from the weights and labels from a node column (`:labels :age`). An
+;; aesthetic maps either nodes or edges, not both:
 
 (plot/render-image (plot/arrange [(plot/network friends {:directed true :rng (r/rng :mersenne 1)
                                                          :node-style {:size 16 :color [230 120 40] :shape \S}
@@ -79,37 +97,39 @@
                                  {:columns 2})
                    {:width 900 :height 380})
 
-;; The theme styles a network draws with - the nodes in `[:chart :network-node]` (a scatter style over
-;; `[:chart :scatter]`), the edges in `[:chart :network-edge]` (a segment style), the labels in the text role
-;; `:network-label` (see the Theme chapter); `:node-style` / `:edge-style` win over them per call:
+;; A network draws in theme styles: the nodes in `[:chart :network-node]` (a scatter style), the edges in
+;; `[:chart :network-edge]` (a segment style) and the labels in the text role `:network-label`. `:node-style` and
+;; `:edge-style` win over them per call:
 
-(nu/options-table (describe/style-rows :network-node))
+(nu/theme-key-list :network-node (describe/style-rows :network-node))
 
-;; A theme restyles every network of a plot - here square, dark nodes:
+;; A theme restyles every network of a plot; the plot below draws square, dark nodes:
 
 (plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
                                           :theme {:chart {:network-node {:shape \S :color [60 60 60] :size 10}}}})
                    {:width 500 :height 360})
 
-(nu/options-table (describe/style-rows :network-edge))
+;; The edges' theme style has these keys; the plot below draws dashed blue edges and larger labels through the theme:
 
-;; Dashed blue edges and larger labels through the theme:
+(nu/theme-key-list :network-edge (describe/style-rows :network-edge))
 
 (plot/render-image (plot/network friends {:rng (r/rng :mersenne 1) :labels true
                                           :theme {:chart {:network-edge {:color [40 90 200] :dash :dashed :line-width 2}}
                                                   :text {:network-label {:size 11}}}})
                    {:width 500 :height 360})
 
-(nu/shared-groups (describe/options #'plot/network))
+;; ## Chord diagrams
 
-;; ## chord
+;; `plot/chord` draws flows between groups around a circle: a sector per node sized by its flow, and a ribbon per
+;; flow of a directed graph, or per pair of an undirected one. Use it for flows in both directions between a few
+;; groups.
 
-;; Flows between groups around a circle: a sector per node sized by its flow, a ribbon per link - directed (a
-;; ribbon per flow) or not (a ribbon per pair).
+(nu/shared-groups (describe/options #'plot/chord))
 
-(nu/options-table (describe/own-rows (describe/options #'plot/chord)))
+;; These options set the ribbons' opacity and the node names. The left panel below draws directed migration between
+;; world regions without flows under 0.1; the right one draws opaque ribbons without names:
 
-;; Migration between world regions (flows under 0.1 dropped), opaque ribbons and no labels (right):
+(nu/option-cards '(plot/chord edges) (describe/own-rows (describe/options #'plot/chord)))
 
 (plot/render-image (plot/arrange [(plot/chord migration {:directed true :min-value 0.1 :title "directed, :alpha 0.6"})
                                   (plot/chord migration {:min-value 0.1 :alpha 1.0 :labels false
@@ -117,22 +137,25 @@
                                  {:columns 2})
                    {:width 1000 :height 500})
 
-(nu/shared-groups (describe/options #'plot/chord))
+;; ## Arc diagrams
 
-;; ## arc
+;; `plot/arc` draws the nodes on a line and the links as arcs above it. Use it for a compact view of a graph whose node
+;; order matters.
 
-;; Nodes on a line, links as arcs above it - a compact view of a graph whose node order matters.
+(nu/shared-groups (describe/options #'plot/arc))
 
-(nu/options-table (describe/own-rows (describe/options #'plot/arc)))
+;; These options map node and edge aesthetics, set the arcs' opacity, style the nodes and arcs, and write labels. The
+;; plot below colours the nodes by team and takes arc widths from the weights, as arc does by default when the weights
+;; differ:
 
-;; Node colours from their rows, arc widths from the weights (the default when weights differ), names under the
-;; line:
+(nu/option-cards '(plot/arc edges) (describe/own-rows (describe/options #'plot/arc)))
 
 (plot/render-image (plot/arc friends {:nodes people :mapping {:color :team}
                                      :scales {:color {:range {"red" [213 94 0] "blue" [0 114 178] "green" [0 158 115]}}}})
                    {:width 600 :height 320})
 
-;; Arc colours and opacity, node style, labels from a node column (left); no labels (right):
+;; The left panel below colours the arcs, sets their opacity and the node style and takes labels from a node column;
+;; the right one draws no labels:
 
 (plot/render-image (plot/arrange [(plot/arc friends {:nodes people :edge-mapping {:color :value} :alpha 0.9
                                                      :node-style {:size 12 :color [40 40 40]}
@@ -144,52 +167,43 @@
                                  {:columns 2})
                    {:width 900 :height 320})
 
-;; The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), arcs in `[:chart :arc-edge]`
-;; (line; its colour, width and dash shown - the other line style keys apply too, see the line chart):
+;; An arc diagram draws in theme styles: the nodes in `[:chart :arc-node]` (a scatter style) and the arcs in
+;; `[:chart :arc-edge]` (a line style: the box shows its colour, width and dash; the other line style keys apply too):
 
-(nu/options-table (describe/style-rows :arc-node))
+(nu/theme-key-list :arc-node (describe/style-rows :arc-node))
 
-;; Hollow nodes through the theme:
+;; The plot below draws hollow nodes through the theme:
 
 (plot/render-image (plot/arc friends {:theme {:chart {:arc-node {:shape \o :color [200 60 40] :size 10}}}})
                    {:width 500 :height 300})
 
-(nu/options-table (describe/style-rows :arc-edge [:color :line-width :dash]))
+(nu/theme-key-list :arc-edge (describe/style-rows :arc-edge [:color :line-width :dash]))
 
-;; Thick dark arcs through the theme:
+;; The plot below draws thick dark arcs through the theme:
 
 (plot/render-image (plot/arc friends {:edge-mapping {} :alpha 0.8
                                       :theme {:chart {:arc-edge {:color [40 40 40] :line-width 3}}}})
                    {:width 500 :height 300})
 
-(nu/shared-groups (describe/options #'plot/arc))
+;; ## Sankey diagrams
 
-;; ## sankey
+;; `plot/sankey` draws flows through layered nodes: the nodes as bars in columns, the links as bands as wide as their
+;; flows. Use it to follow quantities through stages.
 
-;; Flows through layered nodes: nodes as bars in columns, links as bands as wide as their flow.
+(nu/shared-groups (describe/options #'plot/sankey))
 
-(nu/options-table (describe/own-rows (describe/options #'plot/sankey)))
+;; These options colour the nodes and the flow bands, set the bands' opacity and write the node names. The plot below
+;; draws the UK energy flows of a 2050 scenario, bands in their source's colour (the default). A node name too long for
+;; its room shrinks down to the `:min-size` of the text role `:sankey-label` (here the farm wastes before
+;; Bio-conversion); a name overlapping that of a larger node is left out:
 
-;; The UK energy flows of a 2050 scenario, bands in their source's colour (the default). A node name too long for
-;; its room - up to the nearest node on its side in its line, half way when that node's name faces it across the
-;; gap - shrinks, down to the `:min-size` of the text role
-;; `:sankey-label` (here the farm wastes before Bio-conversion); a name overlapping that of a larger node is left out:
+(nu/option-cards '(plot/sankey edges) (describe/own-rows (describe/options #'plot/sankey)))
 
 (plot/render-image (plot/sankey energy {:link-color :source})
                    {:width 900 :height 550})
 
-;; Bands in the target's colour with stronger opacity (`:alpha 0.8`), bands in the theme's grey, and nodes coloured
-;; by a node column with a legend and no labels:
-
-(def stages [{:id "web" :kind "channel"} {:id "store" :kind "channel"} {:id "basket" :kind "step"}
-             {:id "paid" :kind "outcome"} {:id "left" :kind "outcome"}])
-
-(nu/data-table stages)
-
-(def visits [{:from "web" :to "basket" :value 60} {:from "store" :to "basket" :value 30}
-             {:from "basket" :to "paid" :value 55} {:from "basket" :to "left" :value 35}])
-
-(nu/data-table visits)
+;; The left panel below draws bands in the target's colour at a higher opacity; the middle one draws them in the
+;; theme's grey; the right one colours the nodes by a node column, with a legend and no names:
 
 (plot/render-image (plot/arrange [(plot/sankey visits {:link-color :target :alpha 0.8 :title ":link-color :target"})
                                   (plot/sankey visits {:link-color :theme :title ":link-color :theme"})
@@ -199,11 +213,11 @@
                    {:width 1000 :height 330})
 
 ;; The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style; its colour shows with
-;; `:link-color :theme`), the node names in the text role `:sankey-label`:
+;; `:link-color :theme`) and the node names in the text role `:sankey-label`:
 
-(nu/options-table (describe/style-rows :sankey-link))
+(nu/theme-key-list :sankey-link (describe/style-rows :sankey-link))
 
-;; Grey bands outlined in white, larger names:
+;; The plot below draws grey bands outlined in white and larger names:
 
 (plot/render-image (plot/sankey visits {:link-color :theme
                                         :theme {:chart {:sankey-link {:color [120 140 170] :stroke-color :white
@@ -211,37 +225,37 @@
                                                 :text {:sankey-label {:size 11}}}})
                    {:width 600 :height 330})
 
-(nu/shared-groups (describe/options #'plot/sankey))
+;; ## Alluvial diagrams
 
-;; ## alluvial
+;; `plot/alluvial` draws a column per categorical variable of wide rows, with a stratum per level. Strands join
+;; neighbouring columns; a value weights them and one variable colours them all the way through. Use it to follow how
+;; groups split across several categories.
 
-;; A column per categorical variable of wide rows, a stratum per level and strands between neighbouring columns,
-;; weighted by a value and coloured by one variable all the way through.
+(nu/shared-groups (describe/options #'plot/alluvial))
 
-(nu/options-table (describe/own-rows (describe/options #'plot/alluvial)))
+;; These options set the strands' opacity, the strata's width and gaps, and the names under the columns. The plot
+;; below draws Titanic passengers by class, sex, age and survival, coloured by class:
 
-;; Titanic passengers by class, sex, age and survival, coloured by class:
+(nu/option-cards '(plot/alluvial rows) (describe/own-rows (describe/options #'plot/alluvial)))
 
 (plot/render-image (plot/alluvial titanic {:variables [:class :sex :age :survived] :value :n :strand-color :class})
                    {:width 900 :height 500})
 
-;; Opaque strands, wide strata with large gaps and names of your own under the columns:
+;; The next plot draws nearly opaque strands, wide strata with large gaps and names of your own under the columns:
 
 (plot/render-image (plot/alluvial titanic {:variables [:class :survived] :value :n :strand-color :survived
                                            :alpha 0.9 :node-width 0.25 :gap 0.1
                                            :variable-names ["passenger class" "survived?"]})
                    {:width 600 :height 400})
 
-;; The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style), their names in the text role
-;; `:alluvial-label`:
+;; The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style) and their names in the text
+;; role `:alluvial-label`:
 
-(nu/options-table (describe/style-rows :alluvial-stratum))
+(nu/theme-key-list :alluvial-stratum (describe/style-rows :alluvial-stratum))
 
-;; Dark strata with light names:
+;; The plot below draws dark strata with light names:
 
 (plot/render-image (plot/alluvial titanic {:variables [:class :survived] :value :n :strand-color :survived
                                            :theme {:chart {:alluvial-stratum {:color [50 50 50]}}
                                                    :text {:alluvial-label {:color :white :background :none}}}})
                    {:width 600 :height 400})
-
-(nu/shared-groups (describe/options #'plot/alluvial))

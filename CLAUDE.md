@@ -288,8 +288,10 @@ the theme: banned names, and one type family per name across all owners). One na
   heading per `:cljplot2/api` function, its full options table); the same coverage rule over a call's literal last
   argument map (`reference-notebook-test` `builder-chapters`, `data-chapters`); `specific_cases.clj` shows internal
   namespaces by example.
-  Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, the one switch):
-  `nu/option-cards call rows [section]` instead of options tables (per option a boxed card: a header with the option
+  Option cards (pages being rewritten for readability; chart kinds in `test-util/migrated`, builders in
+  `test-util/migrated-builders` - the switches; `describe/concepts` keyed by kind keyword or builder symbol):
+  `nu/option-cards call rows [section]` (`call` a symbol, `chart/smooth`, or a builder or function with its arguments
+  before the options, `'(plot/network edges)`) instead of options tables (per option a boxed card: a header with the option
   and its default, an example call, then its description, a bullet per value or form with its meaning and the other
   values of a long list on one line), each card group after a sentence or two on what the options are for, and
   `nu/mapping-list` (a titled Mapping box; a section of sliced mapping rows) instead of the mapping table; the section heading names the concept
@@ -353,7 +355,7 @@ the theme: banned names, and one type family per name across all owners). One na
   (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y` (a `schema/forbidden` branch - a form rejected with its own message,
   e.g. histogram quantile bins - is none), a vector of them `vector of Xs or Ys`; `:int` / `:double` bounds as words
   (`integer at least 2`); rules of `schema/with-rules` (`schema/rule?`) are left out - the description states the
-  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart: sentences, a
+  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`). `option-cards-test` checks a migrated chart or builder (card owners: fixture plots of charts, fixture calls of builders): sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an
   option taking several, a default for every optional option, a valid example for every option that changes the
   picture of a small fixture plot (`examples-act-test`; an option acting only beyond the chart's options - a plot scale -

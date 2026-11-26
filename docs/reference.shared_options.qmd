@@ -1116,7 +1116,7 @@ The options a builder forwards to the data function computing its layout; the fu
 ### Graph
 
 The edge rows' ends, weight and node ids, optional node rows, directedness. A directed
-[network](reference.builders_graphs.html#network) with node labels (`:labels`) and a seeded layout (`:rng`):
+[network](reference.builders_graphs.html#networks) with node labels (`:labels`) and a seeded layout (`:rng`):
 
 ::: {.clay-table}
 

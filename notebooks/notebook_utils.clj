@@ -340,10 +340,11 @@
 
 (defn- example-call
   "The example of option `row` of `rows` as code `(call {...})`: its options map (`cljplot2.describe/example-options`,
-  nested paths as nested maps, with the options it needs); `nil` without an example."
+  nested paths as nested maps, with the options it needs); `call` a symbol (`chart/smooth`) or a list of the function
+  and the arguments before the options (`(plot/network edges)`); `nil` without an example."
   [call rows row]
   (when-let [options (describe/example-options rows row)]
-    (str "(" call " " (printed options) ")")))
+    (str "(" (str/join " " (if (seq? call) call [call])) " " (printed options) ")")))
 
 (defn- option-card
   "Hiccup of the card of option `row`, three parts: the header (the option and its default), its example as a call of
@@ -361,7 +362,8 @@
 (defn option-cards
   "Option cards of `rows` (from `cljplot2.describe/options`, the chart's or function's own), its code hidden: per
   option a boxed card - a header (the option and its default), an example call of `call` (a symbol, e.g.
-  `chart/smooth`), then its description, a bullet per value or form with its meaning and the values without one on
+  `chart/smooth`, or a list of a builder or function and its arguments before the options, e.g.
+  `(plot/network edges)`), then its description, a bullet per value or form with its meaning and the values without one on
   one line (styles in `clay.edn`). With `section`
   only the rows of that slice (see [[options-table]]).
   Throws `ex-info {:key :rows}` for no rows, `{:key :section}` for a section without rows."

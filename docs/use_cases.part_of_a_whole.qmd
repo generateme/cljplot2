@@ -53,7 +53,7 @@ How a whole splits into parts: grouped and stacked bars, treemaps, donuts and pi
 waffles, Venn diagrams and UpSet plots (the [R Graph Gallery](https://r-graph-gallery.com/) part-of-a-whole pages,
 the [data-to-viz](https://www.data-to-viz.com/) sunburst and the pie caveat).
 
-Not here: dendrograms ([plot/dendrogram](reference.builders_trees.html#dendrogram)) and the sunburst of flows
+Not here: dendrograms ([plot/dendrogram](reference.builders_trees.html#dendrograms)) and the sunburst of flows
 belong to the [Flow](use_cases.flow.html#dendrogram) chapter.
 
 

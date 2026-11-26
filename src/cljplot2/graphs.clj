@@ -7,7 +7,7 @@
 
   Trees: [[dendrogram]] (elbow branches at merge heights), [[tree]] (node-link tree), [[clustered-heatmap]] (tiles ordered by clustering, with dendrograms), [[bundle]] (hierarchical edge bundling), [[sequences]] (flow sunburst).
 
-  Option schemas: [[network-options]], [[chord-options]], [[arc-options]], [[sankey-options]], [[alluvial-options]], [[dendrogram-options]], [[tree-options]], [[clustered-heatmap-options]], [[bundle-options]], [[sequences-options]]."
+  Option types: [[annotation-schema]] (clustered heatmap annotations). Option schemas: [[network-options]], [[chord-options]], [[arc-options]], [[sankey-options]], [[alluvial-options]], [[dendrogram-options]], [[tree-options]], [[clustered-heatmap-options]], [[bundle-options]], [[sequences-options]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.ml.clustering :as cl]
@@ -21,7 +21,8 @@
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
-            [cljplot2.theme :as theme]))
+            [cljplot2.theme :as theme]
+            [malli.core :as malli]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -137,18 +138,22 @@
 (def network-options
   "Options schema of [[network]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
+   [(schema/nilable :mapping {:description "Maps node aesthetics (`:color`, `:size`, `:shape`) to accessors of the nodes: their rows' columns, `:degree`, `:in` or `:out`."
+                             :cljplot2/default-doc "No node aesthetics." :cljplot2/example {:size :degree}}
                     node-map)
-    (schema/nilable :edge-mapping {:description "edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too"}
+    (schema/nilable :edge-mapping {:description "Maps edge aesthetics (`:color`, and `:size` for the width) to accessors of the edges: their rows' columns or `:value`; an aesthetic can't be mapped for nodes too."
+                                  :cljplot2/default-doc "No edge aesthetics." :cljplot2/example {:color :value}}
                     node-map)
-    (schema/nilable :node-style {:description "scatter options of the nodes, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :network-node]"}
+    (schema/nilable :node-style {:description "Scatter options of the nodes, merged over the theme style `[:chart :network-node]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :network-node]`." :cljplot2/example {:size 16}}
                     node-map)
-    (schema/nilable :edge-style {:description "segment options of the edges, merged over the default (a mapped colour wins); :arrow - the arrows of a directed graph"
-                                 :cljplot2/default-doc "theme [:chart :network-edge]"}
+    (schema/nilable :edge-style {:description "Segment options of the edges, merged over the theme style `[:chart :network-edge]`; a mapped colour wins, and `:arrow` styles a directed graph's arrows."
+                                 :cljplot2/default-doc "The theme style `[:chart :network-edge]`." :cljplot2/example {:line-width 4}}
                     node-map)
-    (schema/nilable :labels {:description "node labels right of the nodes: true - the id, an accessor of the node, false - none"
-                             :default false}
+    (schema/nilable :labels {:description "Writes a label right of each node."
+                             :default false
+                             :cljplot2/value-meanings {true "The node's id." false "No labels."}
+                             :cljplot2/form-meanings {::schema/accessor "An accessor of the node, e.g. `:name`; a `nil` or `\"\"` result writes no label."}}
                     [:or schema/bool schema/accessor])]
    graph/graph-entries
    graph/layout-entries
@@ -326,17 +331,20 @@
 (def dendrogram-options
   "Options schema of [[dendrogram]]: its own entries, those of [[cljplot2.data.tree/layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/nilable :leaf-names {:description "names of an hclust result's observations, in order (one per observation)"
-                             :cljplot2/default-doc "the observations' indices"}
+   [(schema/nilable :leaf-names {:description "The names of an `hclust` result's observations, in order, one per observation."
+                             :cljplot2/default-doc "The observations' indices." :cljplot2/example ["a" "b" "c"]}
                     [:sequential any?])
-    (schema/nilable :horizontal {:description "leaves on the left, heights growing right (not circular)" :default false}
+    (schema/nilable :horizontal {:description "Whether the leaves sit on the left with heights growing right; a circular dendrogram ignores it."
+                                 :default false :cljplot2/value-meanings {true "Leaves on the left." false "Leaves at the bottom, heights growing up."}}
                     schema/bool)
-    (schema/optional :labels {:description "leaf names along the leaf axis (circular - outward around the circle)" :default true}
+    (schema/optional :labels {:description "Writes the leaf names along the leaf axis, outward around a circular dendrogram."
+                              :default true :cljplot2/value-meanings {true "Writes the names." false "No names."}}
                      schema/bool)
-    (schema/nilable :group-labels {:description "names of the named groups at their nodes (level and parent trees)" :default false}
+    (schema/nilable :group-labels {:description "Writes the names of named groups at their nodes. Only trees built from levels or parents name their groups; an `hclust` result's groups have no names."
+                                   :default false :cljplot2/value-meanings {true "Writes the names." false "No names."}}
                     schema/bool)
-    (schema/nilable :line-style {:description "line options of the branches, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :dendrogram-branch]"}
+    (schema/nilable :line-style {:description "Line options of the branches, merged over the theme style `[:chart :dendrogram-branch]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :dendrogram-branch]`." :cljplot2/example {:line-width 4}}
                     node-map)]
    tree/layout-entries
    plot/builder-entries))
@@ -419,20 +427,23 @@
 (def tree-options
   "Options schema of [[tree]]: its own entries, those of [[cljplot2.data.tree/node-link-layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/optional :labels {:description "node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)"
-                               :default true}
+   [(schema/optional :labels {:description "Writes the node names. A cartesian tree writes leaf names right of their nodes and group names left of them; a circular tree writes leaf names outward."
+                               :default true :cljplot2/value-meanings {true "Writes the names." false "No names."}}
                      schema/bool)
-    (schema/optional :node-points {:description "a point per node" :default true} schema/bool)
-    (schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf, :name)"}
+    (schema/optional :node-points {:description "Whether the plot draws a point per node." :default true
+                                   :cljplot2/value-meanings {true "Draws a point per node." false "Draws no points."}}
+                     schema/bool)
+    (schema/nilable :mapping {:description "Maps node aesthetics (`:color`, `:size`, `:shape`) to accessors of the nodes: their rows' columns, `:depth`, `:leaf` or `:name`."
+                             :cljplot2/default-doc "No node aesthetics." :cljplot2/example {:color :depth}}
                     node-map)
-    (schema/nilable :node-style {:description "scatter options of the nodes, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :tree-node]"}
+    (schema/nilable :node-style {:description "Scatter options of the nodes, merged over the theme style `[:chart :tree-node]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :tree-node]`." :cljplot2/example {:size 14}}
                     node-map)
-    (schema/nilable :link-style {:description "line options of the links, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :tree-link]"}
+    (schema/nilable :link-style {:description "Line options of the links, merged over the theme style `[:chart :tree-link]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :tree-link]`." :cljplot2/example {:line-width 4}}
                     node-map)
-    (schema/nilable :leaf-names {:description "names of an hclust result's observations, in order (one per observation)"
-                             :cljplot2/default-doc "the observations' indices"}
+    (schema/nilable :leaf-names {:description "The names of an `hclust` result's observations, in order, one per observation."
+                             :cljplot2/default-doc "The observations' indices." :cljplot2/example ["a" "b" "c"]}
                     [:sequential any?])]
    tree/node-link-layout-entries
    plot/builder-entries))
@@ -524,37 +535,80 @@
   [matrix]
   (apply mapv vector matrix))
 
+(def ^:private annotation-shape
+  "Schema of one clustered heatmap annotation: an accessor and a closed colour scale spec (or `nil`)."
+  [:tuple schema/accessor [:maybe (aesthetic/scale-spec-schema :color)]])
+
+(defn- annotation-problem
+  "Gives the error message of a value that isn't an annotation.
+
+  Parameters:
+
+  - `v`: the invalid value.
+
+  Returns `should be an annotation [accessor color-scale-spec]`, followed by the first problem inside the pair (its place and its message); a value that isn't a pair at all gets the first part only."
+  [v]
+  (let [{:keys [in message]} (first (schema/errors annotation-shape v []))]
+    (str "should be an annotation [accessor color-scale-spec]" (when (and message (seq in)) (str ", at " (pr-str (vec in)) ": " message)))))
+
+(def annotation-schema
+  "Schema of one clustered heatmap annotation `[accessor colour-scale-spec]`, a named type reporting the first problem inside the pair."
+  (schema/named-type ::annotation (malli/validator annotation-shape) annotation-problem
+                     {:cljplot2/type-name "annotation"
+                      :cljplot2/type-doc "[accessor colour-scale-spec]"
+                      :cljplot2/type-meaning "A pair `[accessor colour-scale-spec]` that adds a strip beside a clustered heatmap: the accessor returns each row's value and the spec sets the strip's colour scale (`nil` for the default), e.g. `[:group {:range :set2}]`."}))
+
 (def ^:private annotations-schema
-  "Schema of clustered heatmap annotations: `[accessor colour-scale-spec]` pairs, the spec closed (or `nil`)."
-  [:sequential [:tuple schema/accessor [:maybe (aesthetic/scale-spec-schema :color)]]])
+  "Schema of clustered heatmap annotations: a sequence of [[annotation-schema]]."
+  [:sequential annotation-schema])
+
+(def ^:private heatmap-example-keys
+  "The required options of every clustered heatmap option example: the tile row, column and value of the example scores."
+  {:row :car :col :variable :value :score})
 
 (def clustered-heatmap-options
   "Options schema of [[clustered-heatmap]]: its own entries and the builder's."
   (schema/options-map
-   [[:row {:description "accessor of a row's tile row"} schema/accessor]
-    [:col {:description "accessor of a row's tile column"} schema/accessor]
-    [:value {:description "accessor of a row's tile value, a finite number"} schema/accessor]
-    (schema/optional :method {:description "fastmath hclust linkage of the rows and columns" :default :complete}
-                     [:enum :single :complete :average :weighted :centroid :median :ward :ward-d :diana])
-    (schema/optional :distance {:description "fastmath hclust distance: a keyword or a function of two double arrays" :default :euclidean}
-                     [:or [:enum :euclidean :chebyshev :manhattan :canberra :earth-movers] schema/function])
-    (schema/optional :row-tree {:description "the rows' dendrogram right of the tiles (false - order only)" :default true}
-                     schema/bool)
-    (schema/optional :col-tree {:description "the columns' dendrogram above the tiles (false - order only)" :default true}
-                     schema/bool)
-    (schema/optional :tree-size {:description "[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)"
-                                 :default [0.2 0.2]}
-                     [:tuple schema/open-fraction schema/open-fraction])
-    (schema/nilable :row-annotations {:description "[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the tiles and the rows' tree, coloured by its values (categorical or continuous), with a legend"
-                                      :cljplot2/default-doc "no strips"}
-                    annotations-schema)
-    (schema/nilable :col-annotations {:description "[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the columns' tree and the tiles, coloured by its values (categorical or continuous), with a legend"
-                                      :cljplot2/default-doc "no strips"}
-                    annotations-schema)
-    (schema/nilable :annotation-size {:description "thickness of an annotation strip in pixels (not a fraction, as :tree-size)" :default 16} schema/pos)
-    (schema/nilable :legend-span {:description "height of the legend column: :row - beside the tiles' row; :matrix - one cell beside every row (the trees' and the strips' too), stacking the value legend over the annotations' legends"
-                                  :cljplot2/default-doc ":matrix with annotations, else :row"}
-                    [:enum :row :matrix])]
+   (map (fn [[k props s]] [k (update props :cljplot2/example-context #(merge heatmap-example-keys %)) s])
+        [[:row {:description "The accessor that returns each data row's tile row, e.g. `:car`." :cljplot2/example :car} schema/accessor]
+         [:col {:description "The accessor that returns each data row's tile column, e.g. `:variable`." :cljplot2/example :variable} schema/accessor]
+         [:value {:description "The accessor that returns each data row's tile value, a finite number." :cljplot2/example :score} schema/accessor]
+         (schema/optional :method {:description "The fastmath `hclust` linkage of the rows and columns: how it measures the distance between two clusters from the distances between their members."
+                                   :default :complete
+                                   :cljplot2/value-meanings {:single "The nearest pair of members." :complete "The farthest pair of members."
+                                                             :average "The mean distance between members (UPGMA)." :centroid "The distance between the clusters' centroids."
+                                                             :ward "Ward's minimum variance on squared distances (R `ward.D2`)." :diana "Divisive clustering: splits from one cluster down."}
+                                   :cljplot2/other-values "Other fastmath linkages: the mean of the two merged clusters' distances (WPGMA), the distance between weighted centroids (WPGMC), and Ward's update on unsquared distances (R `ward.D`)."}
+                          [:enum :single :complete :average :weighted :centroid :median :ward :ward-d :diana])
+         (schema/optional :distance {:description "The fastmath `hclust` distance between two rows or two columns." :default :euclidean
+                                     :cljplot2/value-meanings {:euclidean "The straight-line distance." :chebyshev "The largest difference in any position."
+                                                               :manhattan "The sum of the absolute differences." :canberra "The sum of absolute differences, each over the sum of the two values' absolute values."
+                                                               :earth-movers "The earth mover's distance between the two profiles."}
+                                     :cljplot2/form-meanings {::schema/function "A function of two double arrays that returns their distance."}}
+                          [:or [:enum :euclidean :chebyshev :manhattan :canberra :earth-movers] schema/function])
+         (schema/optional :row-tree {:description "Whether the plot draws the rows' dendrogram right of the tiles." :default true
+                                     :cljplot2/value-meanings {true "Draws the dendrogram." false "Only orders the rows."}}
+                          schema/bool)
+         (schema/optional :col-tree {:description "Whether the plot draws the columns' dendrogram above the tiles." :default true
+                                     :cljplot2/value-meanings {true "Draws the dendrogram." false "Only orders the columns."}}
+                          schema/bool)
+         (schema/optional :tree-size {:description "The fractions `[w h]` of the plot the dendrograms take: `w` of the width for the rows' tree, `h` of the height for the columns' tree."
+                                      :default [0.2 0.2] :cljplot2/example [0.4 0.4]}
+                          [:tuple schema/open-fraction schema/open-fraction])
+         (schema/nilable :row-annotations {:description "Adds a coloured strip per annotation, in order, between the tiles and the rows' tree. Each strip is coloured by its values and gets a legend."
+                                           :cljplot2/default-doc "No strips." :cljplot2/example [[:origin nil]]}
+                         annotations-schema)
+         (schema/nilable :col-annotations {:description "Adds a coloured strip per annotation, in order, between the columns' tree and the tiles. Each strip is coloured by its values and gets a legend."
+                                           :cljplot2/default-doc "No strips." :cljplot2/example [[:unit nil]]}
+                         annotations-schema)
+         (schema/nilable :annotation-size {:description "The thickness of an annotation strip in pixels." :default 16
+                                           :cljplot2/example 40 :cljplot2/example-context {:row-annotations [[:origin nil]]}}
+                         schema/pos)
+         (schema/nilable :legend-span {:description "How far down the plot the legend column reaches; with annotations it stacks the value legend over the annotations' legends."
+                                       :cljplot2/default-doc "`:matrix` with annotations, else `:row`."
+                                       :cljplot2/value-meanings {:row "One legend cell beside the tiles' row only." :matrix "One legend cell spanning every row, beside the trees and strips too."}
+                                       :cljplot2/example :matrix}
+                         [:enum :row :matrix])])
    plot/builder-entries))
 
 (defn- level-annotations
@@ -742,14 +796,19 @@
 (def bundle-options
   "Options schema of [[bundle]]: its own entries, those of [[cljplot2.data.tree/bundle-paths]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/optional :alpha {:description "opacity of the edges (leaf points and legend keys stay opaque)" :default 0.4}
+   [(schema/optional :alpha {:description "The opacity of the edges; leaf points and legend keys stay opaque." :default 0.4 :cljplot2/example 1.0}
                      schema/fraction)
-    (schema/nilable :color-by {:description "edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend"
-                                 :default :group}
+    (schema/nilable :color-by {:description "How the plot colours the edges and leaves."
+                               :default :group
+                               :cljplot2/value-meanings {:group "Colours each edge by the top-level group of its source leaf and each leaf by its own group, with a legend."
+                                                         :none "Edges in `:edge-color`, leaves in the theme colour, without a legend."}}
                      [:enum :group :none])
-    (schema/optional :edge-color {:description "colour of the edges when not coloured by group" :default bundle-edge-color}
+    (schema/optional :edge-color {:description "The colour of the edges with `:color-by :none`." :default bundle-edge-color
+                                  :cljplot2/value-meanings {:none "No edges."} :cljplot2/example :darkorange :cljplot2/example-context {:color-by :none}}
                      schema/color)
-    (schema/optional :labels {:description "leaf names outward around the circle" :default true} schema/bool)]
+    (schema/optional :labels {:description "Writes the leaf names outward around the circle." :default true
+                              :cljplot2/value-meanings {true "Writes the names." false "No names."}}
+                     schema/bool)]
    tree/bundle-paths-entries
    plot/builder-entries))
 
@@ -810,8 +869,9 @@
 (def chord-options
   "Options schema of [[chord]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/chord-layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/optional :alpha {:description "opacity of the ribbons" :default 0.6} schema/fraction)
-    (schema/optional :labels {:description "node names outward from the sectors' middles (nodes without flow unlabelled)" :default true}
+   [(schema/optional :alpha {:description "The opacity of the ribbons." :default 0.6 :cljplot2/example 1.0} schema/fraction)
+    (schema/optional :labels {:description "Writes each node's name outward from the middle of its sector; a node without flow gets none." :default true
+                              :cljplot2/value-meanings {true "Writes the names." false "No names."}}
                      schema/bool)]
    graph/graph-entries
    graph/chord-layout-entries
@@ -872,20 +932,24 @@
 (def arc-options
   "Options schema of [[arc]]: its own entries, those of [[cljplot2.data.graph/graph]] and [[cljplot2.data.graph/arc-layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/nilable :mapping {:description "node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)"}
+   [(schema/nilable :mapping {:description "Maps node aesthetics (`:color`, `:size`, `:shape`) to accessors of the nodes: their rows' columns, `:degree`, `:in` or `:out`."
+                             :cljplot2/default-doc "No node aesthetics." :cljplot2/example {:size :degree}}
                     node-map)
-    (schema/nilable :edge-mapping {:description "edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too"
-                                   :cljplot2/default-doc "{:size :value} (widths from the size scale {:range [0.5 4]}) when the edge weights differ and :mapping has no :size"}
+    (schema/nilable :edge-mapping {:description "Maps edge aesthetics (`:color`, and `:size` for the width) to accessors of the edges: their rows' columns or `:value`; an aesthetic can't be mapped for nodes too."
+                                   :cljplot2/example {:color :value}
+                                   :cljplot2/default-doc "`{:size :value}` (widths from a size scale of range `[0.5 4]`) when the edge weights differ and `:mapping` has no `:size`."}
                     node-map)
-    (schema/optional :alpha {:description "opacity of the arcs' strokes" :default 0.5} schema/fraction)
-    (schema/nilable :node-style {:description "scatter options of the nodes, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :arc-node]"}
+    (schema/optional :alpha {:description "The opacity of the arcs." :default 0.5 :cljplot2/example 1.0} schema/fraction)
+    (schema/nilable :node-style {:description "Scatter options of the nodes, merged over the theme style `[:chart :arc-node]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :arc-node]`." :cljplot2/example {:size 16}}
                     node-map)
-    (schema/nilable :edge-style {:description "line options of the arcs, merged over the default"
-                                 :cljplot2/default-doc "theme [:chart :arc-edge]"}
+    (schema/nilable :edge-style {:description "Line options of the arcs, merged over the theme style `[:chart :arc-edge]`."
+                                 :cljplot2/default-doc "The theme style `[:chart :arc-edge]`." :cljplot2/example {:color :black}}
                     node-map)
-    (schema/optional :labels {:description "node labels under the line, rotated to read downward: true - the id, false - none, or an accessor of the node (a nil or \"\" result - an empty label)"
-                              :default true}
+    (schema/optional :labels {:description "Writes a label under the line for each node, turned to read downward."
+                              :default true
+                              :cljplot2/value-meanings {true "The node's id." false "No labels."}
+                              :cljplot2/form-meanings {::schema/accessor "An accessor of the node, e.g. `:name`; a `nil` or `\"\"` result writes no label."}}
                      [:or :boolean schema/accessor])]
    graph/graph-entries
    graph/arc-layout-entries
@@ -1023,15 +1087,20 @@
 (def sankey-options
   "Options schema of [[sankey]]: its own entries, those of [[cljplot2.data.graph/graph]] (but `:directed` - flows are directed) and [[cljplot2.data.graph/sankey-layout]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/nilable :mapping {:description "node aesthetics: only :color"}
+   [(schema/nilable :mapping {:description "Maps the node colour to an accessor of the node rows; sankey maps only `:color`."}
                     [:map {:closed true}
-                     (schema/nilable :color {:description "accessor of the node rows giving the node colour (a legend unless it's the id)"
-                                             :cljplot2/default-doc "the node id, no legend"}
+                     (schema/nilable :color {:description "An accessor of the node rows that returns each node's colour; mapping it adds a legend."
+                                             :cljplot2/default-doc "The node id, without a legend." :cljplot2/example :kind
+                                             :cljplot2/example-context {:nodes [{:id "a" :kind "x"} {:id "b" :kind "y"} {:id "c" :kind "x"} {:id "d" :kind "y"}]}}
                                      schema/accessor)])
-    (schema/nilable :link-color {:description "the flow colour: that of its :source or :target node, or :theme (the theme style [:chart :sankey-link], grey)" :default :source}
+    (schema/nilable :link-color {:description "The colour of each flow band." :default :source
+                                 :cljplot2/value-meanings {:source "The colour of its source node." :target "The colour of its target node."
+                                                           :theme "The colour of the theme style `[:chart :sankey-link]`, grey by default."}}
                     [:enum :source :target :theme])
-    (schema/optional :alpha {:description "opacity of the flow bands" :default 0.5} schema/fraction)
-    (schema/optional :labels {:description "node names beside the nodes, inside the frame" :default true} schema/bool)]
+    (schema/optional :alpha {:description "The opacity of the flow bands." :default 0.5 :cljplot2/example 1.0} schema/fraction)
+    (schema/optional :labels {:description "Writes each node's name beside it, inside the frame." :default true
+                              :cljplot2/value-meanings {true "Writes the names." false "No names."}}
+                     schema/bool)]
    (remove #(= :directed (first %)) graph/graph-entries)
    graph/sankey-layout-entries
    plot/builder-entries))
@@ -1086,16 +1155,21 @@
               :labels {:title title :x nil :y nil}}
        user-theme (assoc :theme user-theme)))))
 
+(def ^:private alluvial-example-keys
+  "The required options of every alluvial option example: the variables and weight of the example rows."
+  {:variables [:class :sex] :value :n})
+
 (def alluvial-options
   "Options schema of [[alluvial]]: its own entries, those of [[cljplot2.data.graph/alluvial-graph]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/optional :alpha {:description "opacity of the strands" :default 0.6} schema/fraction)
-    (schema/optional :node-width {:description "stratum width, a fraction of the plot width" :default 0.12} schema/open-fraction)
-    (schema/optional :gap {:description "least gap between the strata of an axis, a fraction of the plot height" :default 0.03}
-                     schema/finite-non-neg)
-    (schema/nilable :variable-names {:description "names under the columns, one per variable"
-                                 :cljplot2/default-doc "the variables' accessor names (a keyword's name, else its text)"}
-                    [:sequential any?])]
+   (map (fn [[k props s]] [k (update props :cljplot2/example-context #(merge alluvial-example-keys %)) s])
+    [(schema/optional :alpha {:description "The opacity of the strands." :default 0.6 :cljplot2/example 1.0} schema/fraction)
+     (schema/optional :node-width {:description "The width of each stratum, as a fraction of the plot width." :default 0.12 :cljplot2/example 0.3} schema/open-fraction)
+     (schema/optional :gap {:description "The smallest gap between the strata of a column, as a fraction of the plot height." :default 0.03 :cljplot2/example 0.2}
+                      schema/finite-non-neg)
+     (schema/nilable :variable-names {:description "The names under the columns, one per variable."
+                                      :cljplot2/default-doc "The variables' accessor names: a keyword's name, else its text." :cljplot2/example ["Class" "Sex"]}
+                     [:sequential any?])])
    graph/alluvial-graph-entries
    plot/builder-entries))
 
@@ -1157,11 +1231,13 @@
 (def sequences-options
   "Options schema of [[sequences]]: its own entries, those of [[cljplot2.data.hierarchy/sequence-levels]] (forwarded) and the builder's."
   (schema/options-map
-   [(schema/optional :inner-radius {:description "radius of the centre hole, a fraction of the outer one" :default 0.3}
+   [(schema/optional :inner-radius {:description "The radius of the centre hole, as a fraction of the outer radius." :default 0.3 :cljplot2/example 0.6}
                      [:and schema/finite [:>= 0] [:< 1]])
-    (schema/optional :labels {:description "step names in the cells that fit" :default false} schema/bool)
-    (schema/optional :keep-end {:description "the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)"
-                                 :default true}
+    (schema/optional :labels {:description "Writes the step names in the cells they fit in." :default false
+                              :cljplot2/value-meanings {true "Writes the names." false "No names."}}
+                     schema/bool)
+    (schema/optional :keep-end {:description "Whether the end marker is a step of its own." :default true
+                                :cljplot2/value-meanings {true "A step of its own, coloured and in the legend." false "Sequences that end leave their group's grey remainder."}}
                      schema/bool)]
    hierarchy/sequence-levels-entries
    plot/builder-entries))

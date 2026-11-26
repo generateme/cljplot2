@@ -500,8 +500,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#acf" id="toc-acf" class="nav-link active" data-scroll-target="#acf"><span class="header-section-number">26.1</span> acf</a></li>
-  <li><a href="#horizon" id="toc-horizon" class="nav-link" data-scroll-target="#horizon"><span class="header-section-number">26.2</span> horizon</a></li>
+  <li><a href="#autocorrelation-plots" id="toc-autocorrelation-plots" class="nav-link active" data-scroll-target="#autocorrelation-plots"><span class="header-section-number">26.1</span> Autocorrelation plots</a></li>
+  <li><a href="#horizon-charts" id="toc-horizon-charts" class="nav-link" data-scroll-target="#horizon-charts"><span class="header-section-number">26.2</span> Horizon charts</a></li>
   </ul>
 </nav>
     </div>
@@ -539,7 +539,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Builders of time series plots: the autocorrelation correlogram of a series of values, and horizon charts of one or more series. Each takes its data and an options map and returns an ordinary plot map; the series functions it forwards to are shared groups (Shared options).</p>
+<p>These builders draw time series: the autocorrelation correlogram of a series of values, and horizon charts of one or more series. Use them to look at a series’ structure over time. The Shared options chapter documents the series options they pass on.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.builders-series</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -548,7 +548,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.describe <span class="at">:as</span> describe]</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>An autoregressive series AR(1) with coefficient 0.7, 200 values - fastmath <code>r/ar</code> over seeded white noise:</p>
+<p>The values below form an AR(1) series with coefficient 0.7: fastmath <code>r/ar</code> draws 200 values over seeded white noise:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> ar1 </span>(<span class="kw">vec</span> (<span class="kw">take</span> <span class="dv">200</span> (r/ar <span class="fl">0.7</span> (r/white-noise (r/rng <span class="at">:mersenne</span> <span class="dv">11</span>) <span class="fl">1.0</span>)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -868,197 +868,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="acf" class="level2" data-number="26.1">
-<h2 data-number="26.1" class="anchored" data-anchor-id="acf"><span class="header-section-number">26.1</span> acf</h2>
-<p>The autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag: a stem per lag, a significance band around zero, the lags outside it marked (lag 0, always 1, is not marked).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:correlograms</td>
-<td>one of :both :acf :pacf or nil</td>
-<td>:both</td>
-<td>the correlograms drawn: :both (ACF above PACF), :acf or :pacf</td>
-</tr>
-<tr class="even">
-<td>:band</td>
-<td>one of :smooth :stepped or nil</td>
-<td>:smooth</td>
-<td>significance band: :smooth (a ribbon through the lags) or :stepped (a block per lag)</td>
-</tr>
-<tr class="odd">
-<td>:colors</td>
-<td>map</td>
-<td></td>
-<td>colours of the stems and points, the band and the significant lags' points</td>
-</tr>
-<tr class="even">
-<td>:colors :stem</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>colour of the stems and points</td>
-</tr>
-<tr class="odd">
-<td>:colors :band</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>colour of the significance band</td>
-</tr>
-<tr class="even">
-<td>:colors :significant</td>
-<td>a clojure2d color or :none</td>
-<td>[215 48 39]</td>
-<td>colour of the points of lags outside the band</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds three made-up series of growing waves, <code>:t</code> and <code>:v</code> per series; the horizon charts use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_series_files/image0.png" class="img-fluid"></p>
-</div>
-<p>One correlogram - the ACF (<code>:acf</code>) or the PACF (<code>:pacf</code>) - and the band as a block per lag (<code>:stepped</code>); the default <code>:both</code> draws ACF above PACF, the band <code>:smooth</code>:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:band</span> <span class="at">:stepped</span> <span class="at">:title</span> <span class="st">":correlograms :acf, :band :stepped"</span>})</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:pacf</span> <span class="at">:title</span> <span class="st">":correlograms :pacf"</span>})]</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_series_files/image1.png" class="img-fluid"></p>
-</div>
-<p>The colours of the stems, the band and the significant lags:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:both</span> <span class="at">:lags</span> <span class="dv">30</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:colors</span> {<span class="at">:stem</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] <span class="at">:band</span> [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">40</span>] <span class="at">:significant</span> [<span class="dv">40</span> <span class="dv">150</span> <span class="dv">60</span>]}</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:title</span> <span class="st">":colors"</span>})</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_series_files/image2.png" class="img-fluid"></p>
-</div>
-<p>The lag points draw in the theme style <code>[:chart :acf-point]</code> (a scatter style over <code>[:chart :scatter]</code>; their colours are the <code>:colors</code> option):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:size</td>
-<td>a non-negative number</td>
-<td>5</td>
-<td>The point size in pixels; a mapped `:size` wins.</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178 180]</td>
-<td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:none</td>
-<td>The colour of each point's outline.</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>The width of the outline in pixels; `0` draws no outline.</td>
-</tr>
-<tr class="odd">
-<td>:shape</td>
-<td>a shape character or shape map</td>
-<td>\O</td>
-<td>The shape of every point; a mapped `:shape` wins.</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1] or nil</td>
-<td>The colours' own alpha.</td>
-<td>The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Larger triangle points through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:acf-point</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\A</span>}}}})</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_series_files/image3.png" class="img-fluid"></p>
-</div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> – <code>:lags</code> <code>:level</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-</section>
-<section id="horizon" class="level2" data-number="26.2">
-<h2 data-number="26.2" class="anchored" data-anchor-id="horizon"><span class="header-section-number">26.2</span> horizon</h2>
-<p>Horizon charts: each series folded into bands of equal height - values above the first band drawn over it in a darker colour, negative values mirrored up in reds - so a series takes a fraction of its height. The data are rows with x, y and (several series) a series column.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:colors</td>
-<td>map</td>
-<td></td>
-<td>band colours per sign, lightest first, at least :bands colours each</td>
-</tr>
-<tr class="even">
-<td>:colors :positive</td>
-<td>sequential of a clojure2d color or :none</td>
-<td>:bands blues from [158 202 225] to [8 69 148]</td>
-<td>colours of the positive bands, lightest first</td>
-</tr>
-<tr class="odd">
-<td>:colors :negative</td>
-<td>sequential of a clojure2d color or :none</td>
-<td>:bands reds from [252 174 145] to [165 15 21]</td>
-<td>colours of the negative (mirrored) bands, lightest first</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>1.0</td>
-<td>fill alpha of the bands (translucent bands show the ones beneath)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> waves </span>(<span class="kw">for</span> [[i series] (map-indexed <span class="kw">vector</span> [<span class="st">"north"</span> <span class="st">"south"</span> <span class="st">"east"</span>]) t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">100</span> <span class="dv">2</span>)]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:t</span> t <span class="at">:series</span> series</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (m/* (m/inc i) (m/sin (m/+ (m/* (m/+ <span class="fl">0.05</span> (m/* <span class="fl">0.03</span> i)) t) (m/* <span class="fl">1.3</span> i))) (m/inc (m/* <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> waves </span>(<span class="kw">for</span> [[i series] (map-indexed <span class="kw">vector</span> [<span class="st">"north"</span> <span class="st">"south"</span> <span class="st">"east"</span>]) t (<span class="kw">range</span> <span class="dv">0</span> <span class="dv">100</span> <span class="dv">2</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:t</span> t <span class="at">:series</span> series</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">:v</span> (m/* (m/inc i) (m/sin (m/+ (m/* (m/+ <span class="fl">0.05</span> (m/* <span class="fl">0.03</span> i)) t) (m/* <span class="fl">1.3</span> i))) (m/inc (m/* <span class="fl">0.01</span> t)))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1580,13 +1394,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<section id="autocorrelation-plots" class="level2" data-number="26.1">
+<h2 data-number="26.1" class="anchored" data-anchor-id="autocorrelation-plots"><span class="header-section-number">26.1</span> Autocorrelation plots</h2>
+<p><code>plot/acf</code> draws the autocorrelation (ACF) and partial autocorrelation (PACF) of a series of numbers by lag. It draws a stem per lag and a significance band around zero, and marks the lags outside the band (but not lag 0, which is always 1). Use it to find the lags a series depends on.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#autocorrelation-rows">Autocorrelation rows</a> – <code>:lags</code> <code>:level</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options choose the correlograms, the band’s shape and the colours. The plot below draws both correlograms of the AR(1) series:</p>
+<dl class="options"><div class="option-card"><dt><code>:correlograms</code><span class="option-default">Default: <code>:both</code></span></dt><dd><div class="option-example"><code>(plot/acf values {:correlograms :acf})</code></div><div class="option-text">The correlograms the plot draws.<ul><li><code>:both</code> – The ACF above the PACF.</li><li><code>:acf</code> – Only the autocorrelation function.</li><li><code>:pacf</code> – Only the partial autocorrelation function.</li></ul></div></dd></div><div class="option-card"><dt><code>:band</code><span class="option-default">Default: <code>:smooth</code></span></dt><dd><div class="option-example"><code>(plot/acf values {:band :stepped})</code></div><div class="option-text">How the plot draws the significance band.<ul><li><code>:smooth</code> – A ribbon through the lags.</li><li><code>:stepped</code> – A block per lag.</li></ul></div></dd></div><div class="option-card"><dt><code>:colors</code></dt><dd><div class="option-text">The colours of the stems and points, of the band and of the points of significant lags.</div></dd></div><div class="option-card"><dt><code>:colors :stem</code><span class="option-default">Default: <code>[0 114 178]</code></span></dt><dd><div class="option-example"><code>(plot/acf values {:colors {:stem :black}})</code></div><div class="option-text">The colour of the stems and points.<ul><li><code>:none</code> – No stems, and no points except those of significant lags.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:colors :band</code><span class="option-default">Default: <code>[0 114 178]</code></span></dt><dd><div class="option-example"><code>(plot/acf values {:colors {:band :orange}})</code></div><div class="option-text">The colour of the significance band.<ul><li><code>:none</code> – No band.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:colors :significant</code><span class="option-default">Default: <code>[215 48 39]</code></span></dt><dd><div class="option-example"><code>(plot/acf values {:colors {:significant :black}})</code></div><div class="option-text">The colour of the points of lags outside the band.<ul><li><code>:none</code> – Draws no extra points; those lags keep the stem colour.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image0.png" class="img-fluid"></p>
+</div>
+<p>The next panels draw only the ACF with the band as a block per lag, then only the PACF:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:band</span> <span class="at">:stepped</span> <span class="at">:title</span> <span class="st">":correlograms :acf, :band :stepped"</span>})</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:pacf</span> <span class="at">:title</span> <span class="st">":correlograms :pacf"</span>})]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image1.png" class="img-fluid"></p>
+</div>
+<p>The next plot sets the colours of the stems, the band and the significant lags:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:both</span> <span class="at">:lags</span> <span class="dv">30</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:colors</span> {<span class="at">:stem</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] <span class="at">:band</span> [<span class="dv">230</span> <span class="dv">150</span> <span class="dv">40</span>] <span class="at">:significant</span> [<span class="dv">40</span> <span class="dv">150</span> <span class="dv">60</span>]}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:title</span> <span class="st">":colors"</span>})</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image2.png" class="img-fluid"></p>
+</div>
+<p>The lag points draw in the theme style <code>[:chart :acf-point]</code> (a scatter style; the <code>:colors</code> option sets their colours):</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :acf-point]</code>, not options</span></div><ul><li><code>:size</code> (default <code>5</code>) – The point size in pixels; a mapped <code>:size</code> wins.</li><li><code>:color</code> (default <code>[0 114 178 180]</code>) – The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.</li><li><code>:stroke-color</code> (default <code>:none</code>) – The colour of each point's outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li><li><code>:shape</code> (default <code>\O</code>) – The shape of every point; a mapped <code>:shape</code> wins.</li><li><code>:alpha</code> – The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</li></ul></div>
+<p>The plot below draws larger triangle points through the theme:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/acf ar1 {<span class="at">:correlograms</span> <span class="at">:acf</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:acf-point</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\A</span>}}}})</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_series_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="horizon-charts" class="level2" data-number="26.2">
+<h2 data-number="26.2" class="anchored" data-anchor-id="horizon-charts"><span class="header-section-number">26.2</span> Horizon charts</h2>
+<p><code>plot/horizon</code> folds each series of rows into bands of equal height: values above the first band draw over it in a darker colour, and negative values mirror up in reds. Use it to compare many series in little height.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#horizon-rows">Horizon rows</a> – <code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options set the band colours of each sign and the bands’ opacity. The plot below folds the waves into 3 bands:</p>
+<dl class="options"><div class="option-card"><dt><code>:colors</code></dt><dd><div class="option-text">The band colours of each sign; each list needs at least <code>:bands</code> colours.</div></dd></div><div class="option-card"><dt><code>:colors :positive</code><span class="option-default">Default: <code>:bands</code> blues from <code>[158 202 225]</code> to <code>[8 69 148]</code>.</span></dt><dd><div class="option-example"><code>(plot/horizon rows {:x :t, :y :v, :series :series, :colors {:positive [:yellow :orange]}})</code></div><div class="option-text">The colours of the positive bands, lightest first.<ul><li><span>sequence of colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:colors :negative</code><span class="option-default">Default: <code>:bands</code> reds from <code>[252 174 145]</code> to <code>[165 15 21]</code>.</span></dt><dd><div class="option-example"><code>(plot/horizon rows {:x :t, :y :v, :series :series, :colors {:negative [:lightgreen :darkgreen]}})</code></div><div class="option-text">The colours of the negative, mirrored bands, lightest first.<ul><li><span>sequence of colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>1.0</code></span></dt><dd><div class="option-example"><code>(plot/horizon rows {:x :t, :y :v, :series :series, :alpha 0.4})</code></div><div class="option-text">The opacity of the bands; translucent bands show the ones beneath.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:bands</span> <span class="dv">3</span>}) {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image4.png" class="img-fluid"></p>
 </div>
-<p>Two bands (the default; left - blues and reds), own band colours per sign, lightest first (middle), and translucent bands showing the ones beneath (right):</p>
+<p>The left panel below draws two bands, the default, in blues and reds; the middle one sets its own band colours per sign, lightest first; the right one makes the bands translucent, so they show the ones beneath:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span> <span class="at">:title</span> <span class="st">"defaults"</span>})</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                  (plot/horizon waves {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:series</span> <span class="at">:series</span></span>
@@ -1600,7 +1463,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_series_files/image5.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#horizon-rows">Horizon rows</a> – <code>:x</code> <code>:y</code> <code>:series</code> <code>:bands</code> <code>:band-height</code> <code>:interpolator</code> <code>:steps-per-gap</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/builders_series.clj</small></small></pre></div>
 

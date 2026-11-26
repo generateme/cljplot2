@@ -49,9 +49,9 @@ code-block-background: true
 
 # Graphs
 
-Builders turn edge rows (or wide rows) into an ordinary plot map: they lay the graph out with the data functions
-of the Graphs and trees chapter and add the charts. Each builder lists its own options; the options it forwards
-to the layout functions and the builder options (title, scales, theme) are shared groups.
+These builders turn edge rows, or wide rows, into an ordinary plot map: they lay the graph out with the data
+functions of the Graphs and trees chapter and add the charts. Use them for networks and flows. The Shared options
+chapter documents the layout options they pass on and the builder options (title, scales, theme).
 
 
 ::: {.sourceClojure}
@@ -65,6 +65,9 @@ to the layout functions and the builder options (title, scales, theme) are share
 ```
 :::
 
+
+The tables below hold made-up friendships with their weights, and the people's teams and ages; the networks and arc
+diagrams use them:
 
 
 ::: {.sourceClojure}
@@ -94,6 +97,38 @@ to the layout functions and the builder options (title, scales, theme) are share
 
 ```{=html}
 <div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>team</th><th>age</th></tr></thead><tbody><tr><td>Ann</td><td>red</td><td>31</td></tr><tr><td>Bob</td><td>red</td><td>45</td></tr><tr><td>Cid</td><td>blue</td><td>27</td></tr><tr><td>Dan</td><td>blue</td><td>52</td></tr><tr><td>Eve</td><td>green</td><td>38</td></tr><tr><td>Fay</td><td>green</td><td>23</td></tr></tbody></table></div>
+```
+
+
+The tables below hold made-up shop visits through stages, and the stages' kinds; the small sankeys use them:
+
+
+::: {.sourceClojure}
+```clojure
+(def stages [{:id "web" :kind "channel"} {:id "store" :kind "channel"} {:id "basket" :kind "step"}
+             {:id "paid" :kind "outcome"} {:id "left" :kind "outcome"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>kind</th></tr></thead><tbody><tr><td>web</td><td>channel</td></tr><tr><td>store</td><td>channel</td></tr><tr><td>basket</td><td>step</td></tr><tr><td>paid</td><td>outcome</td></tr><tr><td>left</td><td>outcome</td></tr></tbody></table></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(def visits [{:from "web" :to "basket" :value 60} {:from "store" :to "basket" :value 30}
+             {:from "basket" :to "paid" :value 55} {:from "basket" :to "left" :value 35}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>web</td><td>basket</td><td>60</td></tr><tr><td>store</td><td>basket</td><td>30</td></tr><tr><td>basket</td><td>paid</td><td>55</td></tr><tr><td>basket</td><td>left</td><td>35</td></tr></tbody></table></div>
 ```
 
 
@@ -151,23 +186,27 @@ Data: Titanic passengers and crew by class, sex, age and survival, R datasets pa
 
 
 
-## network
+## Networks
 
-A node-link diagram of edge rows (`:from`, `:to`, optional `:value`): nodes placed by a force-directed, circle or
-random layout (seeded here), edges as segments - with arrows for a directed graph.
+`plot/network` draws a node-link diagram of edge rows (`:from`, `:to`, optional `:value`). A force-directed, circle
+or random layout places the nodes, and segments join them, with arrows in a directed graph. Use it to show who links
+to whom.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td></td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :network-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :network-edge]</td><td>segment options of the edges, merged over the default (a mapped colour wins); :arrow - the arrows of a directed graph</td></tr><tr><td>:labels</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>node labels right of the nodes: true - the id, an accessor of the node, false - none</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#graph-layout">Graph layout</a> – <code>:layout</code> <code>:iterations</code> <code>:gravity</code> <code>:rng</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
-:::
+
+These options map node and edge aesthetics, style the nodes and edges, and write labels. The plot below takes node
+aesthetics from the node rows and the computed degree (whole numbers through the builder's `:scales`) and writes
+labels beside the nodes; a label overlapping that of a larger node is left out:
 
 
-Node aesthetics from the node rows or the computed degree (whole numbers: `:integer-ticks` through the builder's
-`:scales`, the teams in colours matching their names), labels beside the nodes (a label overlapping that of a larger
-node is left out):
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No node aesthetics.</span></dt><dd><div class="option-example"><code>(plot/network edges {:mapping {:size :degree}})</code></div><div class="option-text">Maps node aesthetics (<code>:color</code>, <code>:size</code>, <code>:shape</code>) to accessors of the nodes: their rows' columns, <code>:degree</code>, <code>:in</code> or <code>:out</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:edge-mapping</code><span class="option-default">Default: No edge aesthetics.</span></dt><dd><div class="option-example"><code>(plot/network edges {:edge-mapping {:color :value}})</code></div><div class="option-text">Maps edge aesthetics (<code>:color</code>, and <code>:size</code> for the width) to accessors of the edges: their rows' columns or <code>:value</code>; an aesthetic can't be mapped for nodes too.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:node-style</code><span class="option-default">Default: The theme style <code>[:chart :network-node]</code>.</span></dt><dd><div class="option-example"><code>(plot/network edges {:node-style {:size 16}})</code></div><div class="option-text">Scatter options of the nodes, merged over the theme style <code>[:chart :network-node]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:edge-style</code><span class="option-default">Default: The theme style <code>[:chart :network-edge]</code>.</span></dt><dd><div class="option-example"><code>(plot/network edges {:edge-style {:line-width 4}})</code></div><div class="option-text">Segment options of the edges, merged over the theme style <code>[:chart :network-edge]</code>; a mapped colour wins, and <code>:arrow</code> styles a directed graph's arrows.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/network edges {:labels true})</code></div><div class="option-text">Writes a label right of each node.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The node's id.</li><li><a href="reference.types.html#accessor">accessor</a> – An accessor of the node, e.g. <code>:name</code>; a <code>nil</code> or <code>""</code> result writes no label.</li></ul></div></dd></div></dl>
+```
+
 
 
 ::: {.sourceClojure}
@@ -187,9 +226,9 @@ node is left out):
 :::
 
 
-The node and edge style merged over the defaults, a directed graph's arrows in `:edge-style` (left); edge widths
-from the weights and labels from a node column (`:labels :age`, right) - an aesthetic maps either nodes or edges,
-not both:
+The left panel below merges a node and edge style over the defaults, with a directed graph's arrows in
+`:edge-style`; the right one takes edge widths from the weights and labels from a node column (`:labels :age`). An
+aesthetic maps either nodes or edges, not both:
 
 
 ::: {.sourceClojure}
@@ -214,20 +253,17 @@ not both:
 :::
 
 
-The theme styles a network draws with - the nodes in `[:chart :network-node]` (a scatter style over
-`[:chart :scatter]`), the edges in `[:chart :network-edge]` (a segment style), the labels in the text role
-`:network-label` (see the Theme chapter); `:node-style` / `:edge-style` win over them per call:
+A network draws in theme styles: the nodes in `[:chart :network-node]` (a scatter style), the edges in
+`[:chart :network-edge]` (a segment style) and the labels in the text role `:network-label`. `:node-style` and
+`:edge-style` win over them per call:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>12</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :network-node]</code>, not options</span></div><ul><li><code>:size</code> (default <code>12</code>) – The point size in pixels; a mapped <code>:size</code> wins.</li><li><code>:color</code> (default <code>[0 114 178]</code>) – The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.</li><li><code>:stroke-color</code> (default <code>:white</code>) – The colour of each point's outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li><li><code>:shape</code> (default <code>\O</code>) – The shape of every point; a mapped <code>:shape</code> wins.</li><li><code>:alpha</code> – The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</li></ul></div>
 ```
 
-:::
 
-
-A theme restyles every network of a plot - here square, dark nodes:
+A theme restyles every network of a plot; the plot below draws square, dark nodes:
 
 
 ::: {.sourceClojure}
@@ -244,16 +280,13 @@ A theme restyles every network of a plot - here square, dark nodes:
 :::
 
 
-::: {.clay-table}
+The edges' theme style has these keys; the plot below draws dashed blue edges and larger labels through the theme:
+
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[120 120 120 200]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :network-edge]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[120 120 120 200]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
 ```
 
-:::
-
-
-Dashed blue edges and larger labels through the theme:
 
 
 ::: {.sourceClojure}
@@ -272,27 +305,26 @@ Dashed blue edges and larger labels through the theme:
 
 
 
+## Chord diagrams
+
+`plot/chord` draws flows between groups around a circle: a sector per node sized by its flow, and a ribbon per
+flow of a directed graph, or per pair of an undirected one. Use it for flows in both directions between a few
+groups.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#graph-layout">Graph layout</a> – <code>:layout</code> <code>:iterations</code> <code>:gravity</code> <code>:rng</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#chord-layout">Chord layout</a> – <code>:order</code> <code>:gap-angle</code> <code>:inner-radius</code> <code>:min-value</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
+These options set the ribbons' opacity and the node names. The left panel below draws directed migration between
+world regions without flows under 0.1; the right one draws opaque ribbons without names:
 
-## chord
-
-Flows between groups around a circle: a sector per node sized by its flow, a ribbon per link - directed (a
-ribbon per flow) or not (a ribbon per pair).
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>opacity of the ribbons</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>node names outward from the sectors' middles (nodes without flow unlabelled)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code></span></dt><dd><div class="option-example"><code>(plot/chord edges {:alpha 1.0})</code></div><div class="option-text">The opacity of the ribbons.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/chord edges {:labels false})</code></div><div class="option-text">Writes each node's name outward from the middle of its sector; a node without flow gets none.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-Migration between world regions (flows under 0.1 dropped), opaque ribbons and no labels (right):
 
 
 ::: {.sourceClojure}
@@ -312,27 +344,26 @@ Migration between world regions (flows under 0.1 dropped), opaque ribbons and no
 
 
 
+## Arc diagrams
+
+`plot/arc` draws the nodes on a line and the links as arcs above it. Use it for a compact view of a graph whose node
+order matters.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#chord-layout">Chord layout</a> – <code>:order</code> <code>:gap-angle</code> <code>:inner-radius</code> <code>:min-value</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#arc-layout">Arc layout</a> – <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
+These options map node and edge aesthetics, set the arcs' opacity, style the nodes and arcs, and write labels. The
+plot below colours the nodes by team and takes arc widths from the weights, as arc does by default when the weights
+differ:
 
-## arc
-
-Nodes on a line, links as arcs above it - a compact view of a graph whose node order matters.
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map of keyword to any value or nil</td><td></td><td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :degree, :in, :out)</td></tr><tr><td>:edge-mapping</td><td>map of keyword to any value or nil</td><td>{:size :value} (widths from the size scale {:range [0.5 4]}) when the edge weights differ and :mapping has no :size</td><td>edge aesthetics (:color, :size - the width): accessors of the edges (their row's columns, :value); none mapped in :mapping too</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the arcs' strokes</td></tr><tr><td>:node-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :arc-node]</td><td>scatter options of the nodes, merged over the default</td></tr><tr><td>:edge-style</td><td>map of keyword to any value or nil</td><td>theme [:chart :arc-edge]</td><td>line options of the arcs, merged over the default</td></tr><tr><td>:labels</td><td>true or false or a keyword, a function or a categorical marker of one</td><td>true</td><td>node labels under the line, rotated to read downward: true - the id, false - none, or an accessor of the node (a nil or "" result - an empty label)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No node aesthetics.</span></dt><dd><div class="option-example"><code>(plot/arc edges {:mapping {:size :degree}})</code></div><div class="option-text">Maps node aesthetics (<code>:color</code>, <code>:size</code>, <code>:shape</code>) to accessors of the nodes: their rows' columns, <code>:degree</code>, <code>:in</code> or <code>:out</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:edge-mapping</code><span class="option-default">Default: <code>{:size :value}</code> (widths from a size scale of range <code>[0.5 4]</code>) when the edge weights differ and <code>:mapping</code> has no <code>:size</code>.</span></dt><dd><div class="option-example"><code>(plot/arc edges {:edge-mapping {:color :value}})</code></div><div class="option-text">Maps edge aesthetics (<code>:color</code>, and <code>:size</code> for the width) to accessors of the edges: their rows' columns or <code>:value</code>; an aesthetic can't be mapped for nodes too.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.5</code></span></dt><dd><div class="option-example"><code>(plot/arc edges {:alpha 1.0})</code></div><div class="option-text">The opacity of the arcs.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:node-style</code><span class="option-default">Default: The theme style <code>[:chart :arc-node]</code>.</span></dt><dd><div class="option-example"><code>(plot/arc edges {:node-style {:size 16}})</code></div><div class="option-text">Scatter options of the nodes, merged over the theme style <code>[:chart :arc-node]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:edge-style</code><span class="option-default">Default: The theme style <code>[:chart :arc-edge]</code>.</span></dt><dd><div class="option-example"><code>(plot/arc edges {:edge-style {:color :black}})</code></div><div class="option-text">Line options of the arcs, merged over the theme style <code>[:chart :arc-edge]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/arc edges {:labels false})</code></div><div class="option-text">Writes a label under the line for each node, turned to read downward.<ul><li><code>true</code> – The node's id.</li><li><code>false</code> – No labels.</li><li><a href="reference.types.html#accessor">accessor</a> – An accessor of the node, e.g. <code>:name</code>; a <code>nil</code> or <code>""</code> result writes no label.</li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-Node colours from their rows, arc widths from the weights (the default when weights differ), names under the
-line:
 
 
 ::: {.sourceClojure}
@@ -349,7 +380,8 @@ line:
 :::
 
 
-Arc colours and opacity, node style, labels from a node column (left); no labels (right):
+The left panel below colours the arcs, sets their opacity and the node style and takes labels from a node column;
+the right one draws no labels:
 
 
 ::: {.sourceClojure}
@@ -372,19 +404,16 @@ Arc colours and opacity, node style, labels from a node column (left); no labels
 :::
 
 
-The theme styles of an arc diagram - nodes in `[:chart :arc-node]` (scatter), arcs in `[:chart :arc-edge]`
-(line; its colour, width and dash shown - the other line style keys apply too, see the line chart):
+An arc diagram draws in theme styles: the nodes in `[:chart :arc-node]` (a scatter style) and the arcs in
+`[:chart :arc-edge]` (a line style: the box shows its colour, width and dash; the other line style keys apply too):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:size</td><td>a non-negative number</td><td>8</td><td>The point size in pixels; a mapped `:size` wins.</td></tr><tr><td>:color</td><td>a clojure2d color or :none</td><td>[0 114 178]</td><td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td></tr><tr><td>:stroke-color</td><td>a clojure2d color or :none</td><td>:white</td><td>The colour of each point's outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr><tr><td>:shape</td><td>a shape character or shape map</td><td>\O</td><td>The shape of every point; a mapped `:shape` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1] or nil</td><td>The colours' own alpha.</td><td>The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :arc-node]</code>, not options</span></div><ul><li><code>:size</code> (default <code>8</code>) – The point size in pixels; a mapped <code>:size</code> wins.</li><li><code>:color</code> (default <code>[0 114 178]</code>) – The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.</li><li><code>:stroke-color</code> (default <code>:white</code>) – The colour of each point's outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li><li><code>:shape</code> (default <code>\O</code>) – The shape of every point; a mapped <code>:shape</code> wins.</li><li><code>:alpha</code> – The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</li></ul></div>
 ```
 
-:::
 
-
-Hollow nodes through the theme:
+The plot below draws hollow nodes through the theme:
 
 
 ::: {.sourceClojure}
@@ -400,16 +429,13 @@ Hollow nodes through the theme:
 :::
 
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[120 120 120]</td><td>line colour (a mapped :color wins)</td></tr><tr><td>:line-width</td><td>a non-negative number</td><td>1</td><td>line width in pixels</td></tr><tr><td>:dash</td><td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td><td>:none</td><td>dash style of the line (a mapped :dash wins)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :arc-edge]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[120 120 120]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
 ```
 
-:::
 
-
-Thick dark arcs through the theme:
+The plot below draws thick dark arcs through the theme:
 
 
 ::: {.sourceClojure}
@@ -427,29 +453,27 @@ Thick dark arcs through the theme:
 
 
 
+## Sankey diagrams
+
+`plot/sankey` draws flows through layered nodes: the nodes as bars in columns, the links as bands as wide as their
+flows. Use it to follow quantities through stages.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code> <code>:directed</code></li><li><a href="reference.shared_options.html#arc-layout">Arc layout</a> – <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code></li><li><a href="reference.shared_options.html#sankey-layout">Sankey layout</a> – <code>:align</code> <code>:layer</code> <code>:node-width</code> <code>:gap</code> <code>:iterations</code> <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
+These options colour the nodes and the flow bands, set the bands' opacity and write the node names. The plot below
+draws the UK energy flows of a 2050 scenario, bands in their source's colour (the default). A node name too long for
+its room shrinks down to the `:min-size` of the text role `:sankey-label` (here the farm wastes before
+Bio-conversion); a name overlapping that of a larger node is left out:
 
-## sankey
-
-Flows through layered nodes: nodes as bars in columns, links as bands as wide as their flow.
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:mapping</td><td>map</td><td></td><td>node aesthetics: only :color</td></tr><tr><td>:mapping :color</td><td>a keyword, a function or a categorical marker of one or nil</td><td>the node id, no legend</td><td>accessor of the node rows giving the node colour (a legend unless it's the id)</td></tr><tr><td>:link-color</td><td>one of :source :target :theme or nil</td><td>:source</td><td>the flow colour: that of its :source or :target node, or :theme (the theme style [:chart :sankey-link], grey)</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.5</td><td>opacity of the flow bands</td></tr><tr><td>:labels</td><td>true or false</td><td>true</td><td>node names beside the nodes, inside the frame</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:mapping</code></dt><dd><div class="option-text">Maps the node colour to an accessor of the node rows; sankey maps only <code>:color</code>.</div></dd></div><div class="option-card"><dt><code>:mapping :color</code><span class="option-default">Default: The node id, without a legend.</span></dt><dd><div class="option-example"><code>(plot/sankey edges {:nodes [{:id "a", :kind "x"} {:id "b", :kind "y"} {:id "c", :kind "x"} {:id "d", :kind "y"}], :mapping {:color :kind}})</code></div><div class="option-text">An accessor of the node rows that returns each node's colour; mapping it adds a legend.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:link-color</code><span class="option-default">Default: <code>:source</code></span></dt><dd><div class="option-example"><code>(plot/sankey edges {:link-color :target})</code></div><div class="option-text">The colour of each flow band.<ul><li><code>:source</code> – The colour of its source node.</li><li><code>:target</code> – The colour of its target node.</li><li><code>:theme</code> – The colour of the theme style <code>[:chart :sankey-link]</code>, grey by default.</li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.5</code></span></dt><dd><div class="option-example"><code>(plot/sankey edges {:alpha 1.0})</code></div><div class="option-text">The opacity of the flow bands.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/sankey edges {:labels false})</code></div><div class="option-text">Writes each node's name beside it, inside the frame.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-The UK energy flows of a 2050 scenario, bands in their source's colour (the default). A node name too long for
-its room - up to the nearest node on its side in its line, half way when that node's name faces it across the
-gap - shrinks, down to the `:min-size` of the text role
-`:sankey-label` (here the farm wastes before Bio-conversion); a name overlapping that of a larger node is left out:
 
 
 ::: {.sourceClojure}
@@ -465,38 +489,8 @@ gap - shrinks, down to the `:min-size` of the text role
 :::
 
 
-Bands in the target's colour with stronger opacity (`:alpha 0.8`), bands in the theme's grey, and nodes coloured
-by a node column with a legend and no labels:
-
-
-::: {.sourceClojure}
-```clojure
-(def stages [{:id "web" :kind "channel"} {:id "store" :kind "channel"} {:id "basket" :kind "step"}
-             {:id "paid" :kind "outcome"} {:id "left" :kind "outcome"}])
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>id</th><th>kind</th></tr></thead><tbody><tr><td>web</td><td>channel</td></tr><tr><td>store</td><td>channel</td></tr><tr><td>basket</td><td>step</td></tr><tr><td>paid</td><td>outcome</td></tr><tr><td>left</td><td>outcome</td></tr></tbody></table></div>
-```
-
-
-
-::: {.sourceClojure}
-```clojure
-(def visits [{:from "web" :to "basket" :value 60} {:from "store" :to "basket" :value 30}
-             {:from "basket" :to "paid" :value 55} {:from "basket" :to "left" :value 35}])
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>from</th><th>to</th><th>value</th></tr></thead><tbody><tr><td>web</td><td>basket</td><td>60</td></tr><tr><td>store</td><td>basket</td><td>30</td></tr><tr><td>basket</td><td>paid</td><td>55</td></tr><tr><td>basket</td><td>left</td><td>35</td></tr></tbody></table></div>
-```
-
+The left panel below draws bands in the target's colour at a higher opacity; the middle one draws them in the
+theme's grey; the right one colours the nodes by a node column, with a legend and no names:
 
 
 ::: {.sourceClojure}
@@ -517,18 +511,15 @@ by a node column with a legend and no labels:
 
 
 The flow bands draw in the theme style `[:chart :sankey-link]` (a polygon style; its colour shows with
-`:link-color :theme`), the node names in the text role `:sankey-label`:
+`:link-color :theme`) and the node names in the text role `:sankey-label`:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>The fill colour; a mapped `:color` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>How opaque the fill is; it multiplies the fill colour's alpha.</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:none</td><td>The colour of the outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :sankey-link]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[150 150 150]</code>) – The fill colour; a mapped <code>:color</code> wins.</li><li><code>:alpha</code> (default <code>1.0</code>) – How opaque the fill is; it multiplies the fill colour's alpha.</li><li><code>:stroke-color</code> (default <code>:none</code>) – The colour of the outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li></ul></div>
 ```
 
-:::
 
-
-Grey bands outlined in white, larger names:
+The plot below draws grey bands outlined in white and larger names:
 
 
 ::: {.sourceClojure}
@@ -548,27 +539,26 @@ Grey bands outlined in white, larger names:
 
 
 
+## Alluvial diagrams
+
+`plot/alluvial` draws a column per categorical variable of wide rows, with a stratum per level. Strands join
+neighbouring columns; a value weights them and one variable colours them all the way through. Use it to follow how
+groups split across several categories.
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#graph">Graph</a> – <code>:from</code> <code>:to</code> <code>:value</code> <code>:nodes</code> <code>:id</code></li><li><a href="reference.shared_options.html#sankey-layout">Sankey layout</a> – <code>:align</code> <code>:layer</code> <code>:node-width</code> <code>:gap</code> <code>:iterations</code> <code>:order</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#alluvial-graph">Alluvial graph</a> – <code>:variables</code> <code>:value</code> <code>:strand-color</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 ```
 
 
+These options set the strands' opacity, the strata's width and gaps, and the names under the columns. The plot
+below draws Titanic passengers by class, sex, age and survival, coloured by class:
 
-## alluvial
-
-A column per categorical variable of wide rows, a stratum per level and strands between neighbouring columns,
-weighted by a value and coloured by one variable all the way through.
-
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>opacity of the strands</td></tr><tr><td>:node-width</td><td>a number in (0 1)</td><td>0.12</td><td>stratum width, a fraction of the plot width</td></tr><tr><td>:gap</td><td>a non-negative finite number</td><td>0.03</td><td>least gap between the strata of an axis, a fraction of the plot height</td></tr><tr><td>:variable-names</td><td>sequential of any value or nil</td><td>the variables' accessor names (a keyword's name, else its text)</td><td>names under the columns, one per variable</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code></span></dt><dd><div class="option-example"><code>(plot/alluvial rows {:variables [:class :sex], :value :n, :alpha 1.0})</code></div><div class="option-text">The opacity of the strands.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:node-width</code><span class="option-default">Default: <code>0.12</code></span></dt><dd><div class="option-example"><code>(plot/alluvial rows {:variables [:class :sex], :value :n, :node-width 0.3})</code></div><div class="option-text">The width of each stratum, as a fraction of the plot width.<ul><li><a href="reference.types.html#open-fraction">open fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:gap</code><span class="option-default">Default: <code>0.03</code></span></dt><dd><div class="option-example"><code>(plot/alluvial rows {:variables [:class :sex], :value :n, :gap 0.2})</code></div><div class="option-text">The smallest gap between the strata of a column, as a fraction of the plot height.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:variable-names</code><span class="option-default">Default: The variables' accessor names: a keyword's name, else its text.</span></dt><dd><div class="option-example"><code>(plot/alluvial rows {:variables [:class :sex], :value :n, :variable-names ["Class" "Sex"]})</code></div><div class="option-text">The names under the columns, one per variable.<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
 ```
 
-:::
-
-
-Titanic passengers by class, sex, age and survival, coloured by class:
 
 
 ::: {.sourceClojure}
@@ -584,7 +574,7 @@ Titanic passengers by class, sex, age and survival, coloured by class:
 :::
 
 
-Opaque strands, wide strata with large gaps and names of your own under the columns:
+The next plot draws nearly opaque strands, wide strata with large gaps and names of your own under the columns:
 
 
 ::: {.sourceClojure}
@@ -602,19 +592,16 @@ Opaque strands, wide strata with large gaps and names of your own under the colu
 :::
 
 
-The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style), their names in the text role
-`:alluvial-label`:
+The strata draw in the theme style `[:chart :alluvial-stratum]` (a polygon style) and their names in the text
+role `:alluvial-label`:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color or :none</td><td>[150 150 150]</td><td>The fill colour; a mapped `:color` wins.</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>1.0</td><td>How opaque the fill is; it multiplies the fill colour's alpha.</td></tr><tr><td>:stroke-color</td><td>:color or a clojure2d color or :none</td><td>:white</td><td>The colour of the outline.</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>The width of the outline in pixels; `0` draws no outline.</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :alluvial-stratum]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[150 150 150]</code>) – The fill colour; a mapped <code>:color</code> wins.</li><li><code>:alpha</code> (default <code>1.0</code>) – How opaque the fill is; it multiplies the fill colour's alpha.</li><li><code>:stroke-color</code> (default <code>:white</code>) – The colour of the outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li></ul></div>
 ```
 
-:::
 
-
-Dark strata with light names:
+The plot below draws dark strata with light names:
 
 
 ::: {.sourceClojure}
@@ -630,12 +617,6 @@ Dark strata with light names:
 ::: {.clay-image}
 ![](reference.builders_graphs_files/image14.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#alluvial-graph">Alluvial graph</a> – <code>:variables</code> <code>:value</code> <code>:strand-color</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-```
 
 
 

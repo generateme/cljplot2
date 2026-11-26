@@ -500,11 +500,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#dendrogram" id="toc-dendrogram" class="nav-link active" data-scroll-target="#dendrogram"><span class="header-section-number">25.1</span> dendrogram</a></li>
-  <li><a href="#tree" id="toc-tree" class="nav-link" data-scroll-target="#tree"><span class="header-section-number">25.2</span> tree</a></li>
-  <li><a href="#clustered-heatmap" id="toc-clustered-heatmap" class="nav-link" data-scroll-target="#clustered-heatmap"><span class="header-section-number">25.3</span> clustered-heatmap</a></li>
-  <li><a href="#bundle" id="toc-bundle" class="nav-link" data-scroll-target="#bundle"><span class="header-section-number">25.4</span> bundle</a></li>
-  <li><a href="#sequences" id="toc-sequences" class="nav-link" data-scroll-target="#sequences"><span class="header-section-number">25.5</span> sequences</a></li>
+  <li><a href="#dendrograms" id="toc-dendrograms" class="nav-link active" data-scroll-target="#dendrograms"><span class="header-section-number">25.1</span> Dendrograms</a></li>
+  <li><a href="#node-link-trees" id="toc-node-link-trees" class="nav-link" data-scroll-target="#node-link-trees"><span class="header-section-number">25.2</span> Node-link trees</a></li>
+  <li><a href="#clustered-heatmaps" id="toc-clustered-heatmaps" class="nav-link" data-scroll-target="#clustered-heatmaps"><span class="header-section-number">25.3</span> Clustered heatmaps</a></li>
+  <li><a href="#edge-bundles" id="toc-edge-bundles" class="nav-link" data-scroll-target="#edge-bundles"><span class="header-section-number">25.4</span> Edge bundles</a></li>
+  <li><a href="#sequence-sunbursts" id="toc-sequence-sunbursts" class="nav-link" data-scroll-target="#sequence-sunbursts"><span class="header-section-number">25.5</span> Sequence sunbursts</a></li>
   </ul>
 </nav>
     </div>
@@ -542,7 +542,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Builders drawing a tree or using one: a dendrogram of a clustering or a hierarchy, a node-link tree, a heatmap ordered by clustering, edges bundled along a tree, and sequences as rings (a flow sunburst). Each takes its data and an options map and returns an ordinary plot map; the tree functions it forwards to are shared groups (Shared options), the trees themselves come from the tree data functions.</p>
+<p>These builders draw a tree or use one: a dendrogram of a clustering or a hierarchy, a node-link tree, a heatmap ordered by clustering, edges bundled along a tree, and sequences as rings. Use them for clusterings and hierarchies. Each returns an ordinary plot map; the Shared options chapter documents the tree options they pass on.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.builders-trees</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.ml.clustering <span class="at">:as</span> cl]</span>
@@ -807,7 +807,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> variables </span>[<span class="at">:mpg</span> <span class="at">:disp</span> <span class="at">:hp</span> <span class="at">:drat</span> <span class="at">:wt</span> <span class="at">:qsec</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The cars’ variables as z-scores, a row vector per car, clustered with complete linkage (fastmath <code>hclust</code>):</p>
+<p>The table below holds the cars’ variables as z-scores, a row vector per car; <code>car-clustering</code> clusters them with complete linkage (fastmath <code>hclust</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> standardized </span>(<span class="kw">apply</span> <span class="kw">mapv</span> <span class="kw">vector</span> (<span class="kw">map</span> (<span class="kw">fn</span> [k] (stats/standardize (<span class="kw">map</span> k mtcars))) variables)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -878,7 +878,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-names </span>(<span class="kw">mapv</span> <span class="at">:model</span> mtcars))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>A small hierarchy as rows of levels:</p>
+<p>The table below holds a small hierarchy of offices as rows of levels; the dendrograms, trees and edge bundles use it:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> offices </span>[{<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"Poland"</span> <span class="at">:city</span> <span class="st">"Warsaw"</span>} {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"Poland"</span> <span class="at">:city</span> <span class="st">"Krakow"</span>}</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"France"</span> <span class="at">:city</span> <span class="st">"Paris"</span>} {<span class="at">:region</span> <span class="st">"Europe"</span> <span class="at">:country</span> <span class="st">"France"</span> <span class="at">:city</span> <span class="st">"Lyon"</span>}</span>
@@ -938,399 +938,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> office-tree </span>(tree/from-levels offices {<span class="at">:hierarchy</span> [<span class="at">:region</span> <span class="at">:country</span> <span class="at">:city</span>]}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="dendrogram" class="level2" data-number="25.1">
-<h2 data-number="25.1" class="anchored" data-anchor-id="dendrogram"><span class="header-section-number">25.1</span> dendrogram</h2>
-<p>A dendrogram of a clustering (an <code>hclust</code> result, its observations named by <code>:leaf-names</code>) or of a tree (levels or parents) - branches at their merge heights, leaves along one axis.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:leaf-names</td>
-<td>sequential of any value or nil</td>
-<td>the observations' indices</td>
-<td>names of an hclust result's observations, in order (one per observation)</td>
-</tr>
-<tr class="even">
-<td>:horizontal</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>leaves on the left, heights growing right (not circular)</td>
-</tr>
-<tr class="odd">
-<td>:labels</td>
-<td>true or false</td>
-<td>true</td>
-<td>leaf names along the leaf axis (circular - outward around the circle)</td>
-</tr>
-<tr class="even">
-<td>:group-labels</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>names of the named groups at their nodes (level and parent trees)</td>
-</tr>
-<tr class="odd">
-<td>:line-style</td>
-<td>map of keyword to any value or nil</td>
-<td>theme [:chart :dendrogram-branch]</td>
-<td>line options of the branches, merged over the default</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds the cars’ z-scores as long rows, a row per car and variable; the clustered heatmaps use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:k</span> <span class="dv">3</span> <span class="at">:title</span> <span class="st">"complete linkage, 3 clusters"</span>})</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image0.png" class="img-fluid"></p>
-</div>
-<p>Horizontal, with thicker red branches (<code>:line-style</code>, merged over the default), and without leaf names (left); a hierarchy with its group names at their nodes (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:horizontal</span> <span class="va">true</span> <span class="at">:labels</span> <span class="va">false</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:line-style</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">60</span> <span class="dv">40</span>] <span class="at">:line-width</span> <span class="dv">2</span>}</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:title</span> <span class="st">":horizontal, :labels false, :line-style"</span>})</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/dendrogram office-tree {<span class="at">:horizontal</span> <span class="va">false</span> <span class="at">:group-labels</span> <span class="va">true</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:title</span> <span class="st">"a hierarchy, :group-labels true"</span>})]</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image1.png" class="img-fluid"></p>
-</div>
-<p>The branches draw in the theme style <code>[:chart :dendrogram-branch]</code> (a line style - its colour, width and dash shown; the clustered heatmap’s trees too), the group names in the text role <code>:dendrogram-group-label</code>:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[70 70 70]</td>
-<td>line colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:line-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>line width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>:none</td>
-<td>dash style of the line (a mapped :dash wins)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Thin blue branches through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:dendrogram-branch</span> {<span class="at">:color</span> [<span class="dv">40</span> <span class="dv">90</span> <span class="dv">160</span>] <span class="at">:line-width</span> <span class="fl">0.6</span>}}}})</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image2.png" class="img-fluid"></p>
-</div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-</section>
-<section id="tree" class="level2" data-number="25.2">
-<h2 data-number="25.2" class="anchored" data-anchor-id="tree"><span class="header-section-number">25.2</span> tree</h2>
-<p>A node-link tree: a point per node, links from parents to children, names beside the nodes; tidy (by depth) or cluster (leaves aligned), cartesian or circular (the Node-link tree layout group).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:labels</td>
-<td>true or false</td>
-<td>true</td>
-<td>node names (cartesian - leaves right of their node, groups left; circular - leaf names outward)</td>
-</tr>
-<tr class="even">
-<td>:node-points</td>
-<td>true or false</td>
-<td>true</td>
-<td>a point per node</td>
-</tr>
-<tr class="odd">
-<td>:mapping</td>
-<td>map of keyword to any value or nil</td>
-<td></td>
-<td>node aesthetics (:color, :size, :shape): accessors of the nodes (their row's columns, :depth, :leaf, :name)</td>
-</tr>
-<tr class="even">
-<td>:node-style</td>
-<td>map of keyword to any value or nil</td>
-<td>theme [:chart :tree-node]</td>
-<td>scatter options of the nodes, merged over the default</td>
-</tr>
-<tr class="odd">
-<td>:link-style</td>
-<td>map of keyword to any value or nil</td>
-<td>theme [:chart :tree-link]</td>
-<td>line options of the links, merged over the default</td>
-</tr>
-<tr class="even">
-<td>:leaf-names</td>
-<td>sequential of any value or nil</td>
-<td>the observations' indices</td>
-<td>names of an hclust result's observations, in order (one per observation)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree) {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image3.png" class="img-fluid"></p>
-</div>
-<p>Nodes coloured by depth through <code>:mapping</code>, larger nodes (<code>:node-style</code>) and dashed links (<code>:link-style</code>) (left); circular, neither names nor points - only the links (middle); a clustering’s tree named by <code>:labels</code> (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/tree office-tree {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:depth</span> <span class="va">%</span>))}</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:node-style</span> {<span class="at">:size</span> <span class="dv">12</span>}</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:link-style</span> {<span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>]}</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":mapping, :node-style, :link-style"</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree office-tree {<span class="at">:labels</span> <span class="va">false</span> <span class="at">:node-points</span> <span class="va">false</span> <span class="at">:circular</span> <span class="va">true</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":circular true, no names or points"</span>})</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:labels</span> <span class="va">true</span> <span class="at">:node-points</span> <span class="va">true</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:title</span> <span class="st">"a clustering, :labels"</span>})]</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image4.png" class="img-fluid"></p>
-</div>
-<p>The theme styles of a node-link tree - nodes in <code>[:chart :tree-node]</code> (scatter), links in <code>[:chart :tree-link]</code> (line - its colour, width and dash shown), names in the text role <code>:tree-label</code>:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:size</td>
-<td>a non-negative number</td>
-<td>7</td>
-<td>The point size in pixels; a mapped `:size` wins.</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:white</td>
-<td>The colour of each point's outline.</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>The width of the outline in pixels; `0` draws no outline.</td>
-</tr>
-<tr class="odd">
-<td>:shape</td>
-<td>a shape character or shape map</td>
-<td>\O</td>
-<td>The shape of every point; a mapped `:shape` wins.</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1] or nil</td>
-<td>The colours' own alpha.</td>
-<td>The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Small dark nodes through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:tree-node</span> {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:color</span> [<span class="dv">60</span> <span class="dv">60</span> <span class="dv">60</span>] <span class="at">:stroke-color</span> <span class="at">:none</span>}}}})</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image5.png" class="img-fluid"></p>
-</div>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[176 176 176]</td>
-<td>line colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:line-width</td>
-<td>a non-negative number</td>
-<td>0.9</td>
-<td>line width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>:none</td>
-<td>dash style of the line (a mapped :dash wins)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Darker, thicker links and bold names through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:tree-link</span> {<span class="at">:color</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] <span class="at">:line-width</span> <span class="dv">2</span>}}</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                   <span class="at">:text</span> {<span class="at">:tree-label</span> {<span class="at">:font-style</span> <span class="at">:bold</span>}}}})</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image6.png" class="img-fluid"></p>
-</div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-</section>
-<section id="clustered-heatmap" class="level2" data-number="25.3">
-<h2 data-number="25.3" class="anchored" data-anchor-id="clustered-heatmap"><span class="header-section-number">25.3</span> clustered-heatmap</h2>
-<p>Tiles of a value per row and column, rows and columns ordered by hierarchical clustering, their dendrograms beside the tiles; the data are long rows (<code>:row</code>, <code>:col</code>, <code>:value</code> accessors).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:row (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>accessor of a row's tile row</td>
-</tr>
-<tr class="even">
-<td>:col (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>accessor of a row's tile column</td>
-</tr>
-<tr class="odd">
-<td>:value (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>accessor of a row's tile value, a finite number</td>
-</tr>
-<tr class="even">
-<td>:method</td>
-<td>one of :single :complete :average :weighted :centroid :median :ward :ward-d :diana</td>
-<td>:complete</td>
-<td>fastmath hclust linkage of the rows and columns</td>
-</tr>
-<tr class="odd">
-<td>:distance</td>
-<td>one of :euclidean :chebyshev :manhattan :canberra :earth-movers or a function</td>
-<td>:euclidean</td>
-<td>fastmath hclust distance: a keyword or a function of two double arrays</td>
-</tr>
-<tr class="even">
-<td>:row-tree</td>
-<td>true or false</td>
-<td>true</td>
-<td>the rows' dendrogram right of the tiles (false - order only)</td>
-</tr>
-<tr class="odd">
-<td>:col-tree</td>
-<td>true or false</td>
-<td>true</td>
-<td>the columns' dendrogram above the tiles (false - order only)</td>
-</tr>
-<tr class="even">
-<td>:tree-size</td>
-<td>[a number in (0 1), a number in (0 1)]</td>
-<td>[0.2 0.2]</td>
-<td>[w h] - the dendrograms' share of the width (rows) and the height (columns), fractions in (0, 1)</td>
-</tr>
-<tr class="odd">
-<td>:row-annotations</td>
-<td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td>
-<td>no strips</td>
-<td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the tiles and the rows' tree, coloured by its values (categorical or continuous), with a legend</td>
-</tr>
-<tr class="even">
-<td>:col-annotations</td>
-<td>sequential of [a keyword, a function or a categorical marker of one, an aesthetic scale spec or nil] or nil</td>
-<td>no strips</td>
-<td>[[accessor colour-scale-spec] ...]: in order, a strip per accessor between the columns' tree and the tiles, coloured by its values (categorical or continuous), with a legend</td>
-</tr>
-<tr class="odd">
-<td>:annotation-size</td>
-<td>a positive number or nil</td>
-<td>16</td>
-<td>thickness of an annotation strip in pixels (not a fraction, as :tree-size)</td>
-</tr>
-<tr class="even">
-<td>:legend-span</td>
-<td>one of :row :matrix or nil</td>
-<td>:matrix with annotations, else :row</td>
-<td>height of the legend column: :row - beside the tiles' row; :matrix - one cell beside every row (the trees' and the strips' too), stacking the value legend over the annotations' legends</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-scores </span>(<span class="kw">vec</span> (<span class="kw">for</span> [[car row] (<span class="kw">map</span> <span class="kw">vector</span> car-names standardized) [k v] (<span class="kw">map</span> <span class="kw">vector</span> variables row)]</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                       {<span class="at">:car</span> car <span class="at">:variable</span> (<span class="kw">name</span> k) <span class="at">:z</span> v})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> car-scores </span>(<span class="kw">vec</span> (<span class="kw">for</span> [[car row] (<span class="kw">map</span> <span class="kw">vector</span> car-names standardized) [k v] (<span class="kw">map</span> <span class="kw">vector</span> variables row)]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                       {<span class="at">:car</span> car <span class="at">:variable</span> (<span class="kw">name</span> k) <span class="at">:z</span> v})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1827,60 +1438,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<p>The table below adds each car’s cylinders, transmission and horsepower and each variable’s kind; the annotated heatmaps use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                                                        <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image7.png" class="img-fluid"></p>
-</div>
-<p>The distances between rows and columns (<code>:distance</code>, here with average linkage) give different orders and trees:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:manhattan</span> <span class="at">:title</span> <span class="st">":distance :manhattan"</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:chebyshev</span> <span class="at">:title</span> <span class="st">":distance :chebyshev"</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:canberra</span> <span class="at">:title</span> <span class="st">":distance :canberra"</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:earth-movers</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":distance :earth-movers"</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})]</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">800</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image8.png" class="img-fluid"></p>
-</div>
-<p>Only the rows’ tree, wider (<code>:tree-size</code>), columns ordered without their tree (left); Ward linkage with the default euclidean distance, no trees - only the order (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:col-tree</span> <span class="va">false</span> <span class="at">:tree-size</span> [<span class="fl">0.35</span> <span class="fl">0.2</span>]</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":col-tree false, :tree-size [0.35 0.2]"</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:ward</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:row-tree</span> <span class="va">false</span> <span class="at">:col-tree</span> <span class="va">false</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":method :ward, no trees"</span>})]</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.15</span>]})</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image9.png" class="img-fluid"></p>
-</div>
-<p>Annotations (pheatmap’s <code>annotation_row</code> / <code>annotation_col</code>): <code>:row-annotations</code> and <code>:col-annotations</code> are vectors of <code>[accessor colour-scale-spec]</code> pairs (spec <code>nil</code> - the default scale), drawn in order; each draws a strip along the tile rows (between the tiles and the rows’ tree) or columns (under the columns’ tree), named beside it, and adds its legend to the legend column. The rows of one tile row (column) must agree on the value. <code>:annotation-size</code> is the strips’ thickness in pixels. With annotations the legend column spans every row (<code>:legend-span :matrix</code>, the default then): the value legend stretches over the room the annotations’ legends, each as tall as it needs, leave below it:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> annotated-scores </span>(<span class="kw">let</span> [car-info (<span class="kw">into</span> {} (<span class="kw">map</span> (<span class="kw">fn</span> [r] [(<span class="at">:model</span> r) r])) mtcars)]</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                        (<span class="kw">mapv</span> (<span class="kw">fn</span> [{<span class="at">:keys</span> [car variable] <span class="at">:as</span> r}]</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                (<span class="kw">assoc</span> r <span class="at">:cylinders</span> (<span class="kw">str</span> (<span class="at">:cyl</span> (car-info car)))</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:transmission</span> (<span class="kw">if</span> (<span class="kw">zero?</span> (<span class="at">:am</span> (car-info car))) <span class="st">"automatic"</span> <span class="st">"manual"</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:horsepower</span> (<span class="at">:hp</span> (car-info car))</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:kind</span> (<span class="kw">if</span> (#{<span class="st">"mpg"</span> <span class="st">"qsec"</span>} variable) <span class="st">"performance"</span> <span class="st">"engine"</span>)))</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                              car-scores)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> annotated-scores </span>(<span class="kw">let</span> [car-info (<span class="kw">into</span> {} (<span class="kw">map</span> (<span class="kw">fn</span> [r] [(<span class="at">:model</span> r) r])) mtcars)]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                        (<span class="kw">mapv</span> (<span class="kw">fn</span> [{<span class="at">:keys</span> [car variable] <span class="at">:as</span> r}]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                (<span class="kw">assoc</span> r <span class="at">:cylinders</span> (<span class="kw">str</span> (<span class="at">:cyl</span> (car-info car)))</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:transmission</span> (<span class="kw">if</span> (<span class="kw">zero?</span> (<span class="at">:am</span> (car-info car))) <span class="st">"automatic"</span> <span class="st">"manual"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:horsepower</span> (<span class="at">:hp</span> (car-info car))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:kind</span> (<span class="kw">if</span> (#{<span class="st">"mpg"</span> <span class="st">"qsec"</span>} variable) <span class="st">"performance"</span> <span class="st">"engine"</span>)))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                              car-scores)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2765,79 +2331,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<p>The table below holds calls between the offices’ cities; the edge bundles use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:cylinders</span> {<span class="at">:range</span> <span class="at">:set2</span>}] [<span class="at">:transmission</span> {<span class="at">:range</span> [<span class="st">"#999999"</span> <span class="st">"#e08214"</span>]}]]</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:col-annotations</span> [[<span class="at">:kind</span> {<span class="at">:range</span> <span class="at">:set1</span> <span class="at">:title</span> <span class="st">"variable kind"</span>}]]</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:annotation-size</span> <span class="dv">14</span> <span class="at">:legend-span</span> <span class="at">:matrix</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image10.png" class="img-fluid"></p>
-</div>
-<p>An annotation is coloured as any colour mapping: categorical values get a palette, numbers a gradient (here horsepower, a continuous colour bar). <code>:legend-span :row</code> keeps the legend cell beside the tiles’ row only:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:horsepower</span> {<span class="at">:range</span> <span class="at">:viridis/magma</span>}] [<span class="at">:cylinders</span> <span class="va">nil</span>]]</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:legend-span</span> <span class="at">:row</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image11.png" class="img-fluid"></p>
-</div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-</section>
-<section id="bundle" class="level2" data-number="25.4">
-<h2 data-number="25.4" class="anchored" data-anchor-id="bundle"><span class="header-section-number">25.4</span> bundle</h2>
-<p>Hierarchical edge bundling: edges between the leaves of a tree, each bent along the tree path between its ends, leaves around a circle. Edges name their leaves by key - a <code>tree/from-parents</code> node’s id, else the leaf’s name (<code>tree/from-levels</code>, <code>tree/from-hclust</code>): here the office tree from levels, edges between cities.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>0.4</td>
-<td>opacity of the edges (leaf points and legend keys stay opaque)</td>
-</tr>
-<tr class="even">
-<td>:color-by</td>
-<td>one of :group :none or nil</td>
-<td>:group</td>
-<td>edge and leaf colours: :group - the top-level group of their (source) leaf, with a legend; :none - one :edge-color, no legend</td>
-</tr>
-<tr class="odd">
-<td>:edge-color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>colour of the edges when not coloured by group</td>
-</tr>
-<tr class="even">
-<td>:labels</td>
-<td>true or false</td>
-<td>true</td>
-<td>leaf names outward around the circle</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> calls </span>[{<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Paris"</span>} {<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>} {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Lyon"</span>}</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Paris"</span> <span class="at">:to</span> <span class="st">"Osaka"</span>} {<span class="at">:from</span> <span class="st">"Lyon"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>}</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Tokyo"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Osaka"</span> <span class="at">:to</span> <span class="st">"Warsaw"</span>} {<span class="at">:from</span> <span class="st">"Delhi"</span> <span class="at">:to</span> <span class="st">"Paris"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> calls </span>[{<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Paris"</span>} {<span class="at">:from</span> <span class="st">"Warsaw"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>} {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Lyon"</span>}</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Krakow"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Paris"</span> <span class="at">:to</span> <span class="st">"Osaka"</span>} {<span class="at">:from</span> <span class="st">"Lyon"</span> <span class="at">:to</span> <span class="st">"Tokyo"</span>}</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>            {<span class="at">:from</span> <span class="st">"Tokyo"</span> <span class="at">:to</span> <span class="st">"Delhi"</span>} {<span class="at">:from</span> <span class="st">"Osaka"</span> <span class="at">:to</span> <span class="st">"Warsaw"</span>} {<span class="at">:from</span> <span class="st">"Delhi"</span> <span class="at">:to</span> <span class="st">"Paris"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2889,170 +2387,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<p>The table below holds visits to a website as sequences of pages; the sequence sunbursts use it:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image12.png" class="img-fluid"></p>
-</div>
-<p>One edge colour, more opaque, without leaf names (left); coloured by group (the default) and fainter (right):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/bundle calls office-tree {<span class="at">:color-by</span> <span class="at">:none</span> <span class="at">:edge-color</span> [<span class="dv">120</span> <span class="dv">60</span> <span class="dv">160</span>]</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:alpha</span> <span class="fl">0.8</span> <span class="at">:labels</span> <span class="va">false</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by :none, :alpha 0.8"</span>})</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/bundle calls office-tree {<span class="at">:alpha</span> <span class="fl">0.15</span> <span class="at">:title</span> <span class="st">":alpha 0.15"</span>})]</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image13.png" class="img-fluid"></p>
-</div>
-<p>The theme styles of edge bundling - edges in <code>[:chart :bundle-edge]</code> (line - its colour, width and dash shown), leaves in <code>[:chart :bundle-leaf]</code> (scatter):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]</td>
-<td>line colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:line-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>line width in pixels</td>
-</tr>
-<tr class="odd">
-<td>:dash</td>
-<td>:none, a dash style (:dashed :dot-dash :dot-dot-dash :dotted :long-dash :loose-dot :solid :two-dash) or a sequence of positive numbers or nil</td>
-<td>:none</td>
-<td>dash style of the line (a mapped :dash wins)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Thicker edges through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-edge</span> {<span class="at">:line-width</span> <span class="fl">2.5</span>}}}})</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image14.png" class="img-fluid"></p>
-</div>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:size</td>
-<td>a non-negative number</td>
-<td>3</td>
-<td>The point size in pixels; a mapped `:size` wins.</td>
-</tr>
-<tr class="even">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178 180]</td>
-<td>The colour of the points (in a 3D cloud, of every mark); a mapped `:color` wins.</td>
-</tr>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:none</td>
-<td>The colour of each point's outline.</td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>The width of the outline in pixels; `0` draws no outline.</td>
-</tr>
-<tr class="odd">
-<td>:shape</td>
-<td>a shape character or shape map</td>
-<td>\O</td>
-<td>The shape of every point; a mapped `:shape` wins.</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1] or nil</td>
-<td>The colours' own alpha.</td>
-<td>The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Large square leaves through the theme:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-leaf</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\s</span>}}}})</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.builders_trees_files/image15.png" class="img-fluid"></p>
-</div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#edge-bundling">Edge bundling</a> – <code>:from</code> <code>:to</code> <code>:beta</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
-</section>
-<section id="sequences" class="level2" data-number="25.5">
-<h2 data-number="25.5" class="anchored" data-anchor-id="sequences"><span class="header-section-number">25.5</span> sequences</h2>
-<p>A flow sunburst: sequences of steps (a string of steps with a separator) as rings from the centre, every step coloured by its name wherever it occurs, the end of a sequence a step of its own.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:inner-radius</td>
-<td>a finite number, &gt;= 0, &lt; 1</td>
-<td>0.3</td>
-<td>radius of the centre hole, a fraction of the outer one</td>
-</tr>
-<tr class="even">
-<td>:labels</td>
-<td>true or false</td>
-<td>false</td>
-<td>step names in the cells that fit</td>
-</tr>
-<tr class="odd">
-<td>:keep-end</td>
-<td>true or false</td>
-<td>true</td>
-<td>the end marker a step of its own, coloured and in the legend (false - sequences that end are their group's grey remainder)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> visits </span>[{<span class="at">:sequence</span> <span class="st">"home-search-product-end"</span> <span class="at">:n</span> <span class="dv">30</span>} {<span class="at">:sequence</span> <span class="st">"home-product-cart-end"</span> <span class="at">:n</span> <span class="dv">25</span>}</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-search-end"</span> <span class="at">:n</span> <span class="dv">20</span>} {<span class="at">:sequence</span> <span class="st">"home-end"</span> <span class="at">:n</span> <span class="dv">15</span>}</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-help-search-product-cart-end"</span> <span class="at">:n</span> <span class="dv">10</span>} {<span class="at">:sequence</span> <span class="st">"home-product-end"</span> <span class="at">:n</span> <span class="dv">18</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> visits </span>[{<span class="at">:sequence</span> <span class="st">"home-search-product-end"</span> <span class="at">:n</span> <span class="dv">30</span>} {<span class="at">:sequence</span> <span class="st">"home-product-cart-end"</span> <span class="at">:n</span> <span class="dv">25</span>}</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-search-end"</span> <span class="at">:n</span> <span class="dv">20</span>} {<span class="at">:sequence</span> <span class="st">"home-end"</span> <span class="at">:n</span> <span class="dv">15</span>}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>             {<span class="at">:sequence</span> <span class="st">"home-help-search-product-cart-end"</span> <span class="at">:n</span> <span class="dv">10</span>} {<span class="at">:sequence</span> <span class="st">"home-product-end"</span> <span class="at">:n</span> <span class="dv">18</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -3092,13 +2431,228 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+<section id="dendrograms" class="level2" data-number="25.1">
+<h2 data-number="25.1" class="anchored" data-anchor-id="dendrograms"><span class="header-section-number">25.1</span> Dendrograms</h2>
+<p><code>plot/dendrogram</code> draws a clustering (an <code>hclust</code> result) or a tree of levels or parents. It draws the branches at their merge heights and the leaves along one axis. Use it to show how observations join into clusters.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#dendrogram-layout">Dendrogram layout</a> – <code>:k</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options name an <code>hclust</code> result’s leaves, turn the dendrogram, write leaf and group names and style the branches. The plot below cuts the cars’ clustering into 3 clusters:</p>
+<dl class="options"><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:horizontal</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:horizontal true})</code></div><div class="option-text">Whether the leaves sit on the left with heights growing right; a circular dendrogram ignores it.<ul><li><code>false</code> – Leaves at the bottom, heights growing up.</li><li><code>true</code> – Leaves on the left.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:labels false})</code></div><div class="option-text">Writes the leaf names along the leaf axis, outward around a circular dendrogram.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:group-labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:group-labels true})</code></div><div class="option-text">Writes the names of named groups at their nodes. Only trees built from levels or parents name their groups; an <code>hclust</code> result's groups have no names.<ul><li><code>false</code> – No names.</li><li><code>true</code> – Writes the names.</li></ul></div></dd></div><div class="option-card"><dt><code>:line-style</code><span class="option-default">Default: The theme style <code>[:chart :dendrogram-branch]</code>.</span></dt><dd><div class="option-example"><code>(plot/dendrogram tree {:line-style {:line-width 4}})</code></div><div class="option-text">Line options of the branches, merged over the theme style <code>[:chart :dendrogram-branch]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:k</span> <span class="dv">3</span> <span class="at">:title</span> <span class="st">"complete linkage, 3 clusters"</span>})</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">900</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image0.png" class="img-fluid"></p>
+</div>
+<p>The left panel below turns the dendrogram horizontal with thicker red branches and no leaf names; the right one draws a hierarchy with its group names at their nodes:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:horizontal</span> <span class="va">true</span> <span class="at">:labels</span> <span class="va">false</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:line-style</span> {<span class="at">:color</span> [<span class="dv">200</span> <span class="dv">60</span> <span class="dv">40</span>] <span class="at">:line-width</span> <span class="dv">2</span>}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                                                   <span class="at">:title</span> <span class="st">":horizontal, :labels false, :line-style"</span>})</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/dendrogram office-tree {<span class="at">:horizontal</span> <span class="va">false</span> <span class="at">:group-labels</span> <span class="va">true</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                                                <span class="at">:title</span> <span class="st">"a hierarchy, :group-labels true"</span>})]</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image1.png" class="img-fluid"></p>
+</div>
+<p>The branches draw in the theme style <code>[:chart :dendrogram-branch]</code> (a line style the clustered heatmap’s trees use too) and the group names in the text role <code>:dendrogram-group-label</code>:</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :dendrogram-branch]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[70 70 70]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<p>The plot below draws thin blue branches through the theme:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/dendrogram car-clustering {<span class="at">:leaf-names</span> car-names</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                    <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:dendrogram-branch</span> {<span class="at">:color</span> [<span class="dv">40</span> <span class="dv">90</span> <span class="dv">160</span>] <span class="at">:line-width</span> <span class="fl">0.6</span>}}}})</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="node-link-trees" class="level2" data-number="25.2">
+<h2 data-number="25.2" class="anchored" data-anchor-id="node-link-trees"><span class="header-section-number">25.2</span> Node-link trees</h2>
+<p><code>plot/tree</code> draws a point per node of a tree, links from parents to children and names beside the nodes. The layout options (Node-link tree layout) make it a tidy tree or a cluster, cartesian or circular. Use it to show a hierarchy’s structure.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#node-link-tree-layout">Node-link tree layout</a> – <code>:layout</code> <code>:links</code> <code>:circular</code> <code>:span</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options write node names, draw node points, map node aesthetics and style the nodes and links. The plot below draws the office tree:</p>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree tree {:labels false})</code></div><div class="option-text">Writes the node names. A cartesian tree writes leaf names right of their nodes and group names left of them; a circular tree writes leaf names outward.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div><div class="option-card"><dt><code>:node-points</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/tree tree {:node-points false})</code></div><div class="option-text">Whether the plot draws a point per node.<ul><li><code>true</code> – Draws a point per node.</li><li><code>false</code> – Draws no points.</li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No node aesthetics.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:mapping {:color :depth}})</code></div><div class="option-text">Maps node aesthetics (<code>:color</code>, <code>:size</code>, <code>:shape</code>) to accessors of the nodes: their rows' columns, <code>:depth</code>, <code>:leaf</code> or <code>:name</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:node-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-node]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:node-style {:size 14}})</code></div><div class="option-text">Scatter options of the nodes, merged over the theme style <code>[:chart :tree-node]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:link-style</code><span class="option-default">Default: The theme style <code>[:chart :tree-link]</code>.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:link-style {:line-width 4}})</code></div><div class="option-text">Line options of the links, merged over the theme style <code>[:chart :tree-link]</code>.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:leaf-names</code><span class="option-default">Default: The observations' indices.</span></dt><dd><div class="option-example"><code>(plot/tree tree {:leaf-names ["a" "b" "c"]})</code></div><div class="option-text">The names of an <code>hclust</code> result's observations, in order, one per observation.<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree) {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image3.png" class="img-fluid"></p>
+</div>
+<p>The left panel below colours nodes by depth, enlarges them and dashes the links; the middle one draws only the links of a circular tree; the right one draws a clustering’s tree with names:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/tree office-tree {<span class="at">:mapping</span> {<span class="at">:color</span> #(<span class="kw">str</span> (<span class="at">:depth</span> <span class="va">%</span>))}</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:node-style</span> {<span class="at">:size</span> <span class="dv">12</span>}</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:link-style</span> {<span class="at">:dash</span> <span class="at">:dashed</span> <span class="at">:color</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>]}</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":mapping, :node-style, :link-style"</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree office-tree {<span class="at">:labels</span> <span class="va">false</span> <span class="at">:node-points</span> <span class="va">false</span> <span class="at">:circular</span> <span class="va">true</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">:title</span> <span class="st">":circular true, no names or points"</span>})</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                  (plot/tree car-clustering {<span class="at">:leaf-names</span> car-names <span class="at">:labels</span> <span class="va">true</span> <span class="at">:node-points</span> <span class="va">true</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:title</span> <span class="st">"a clustering, :labels"</span>})]</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">420</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image4.png" class="img-fluid"></p>
+</div>
+<p>A node-link tree draws in theme styles: the nodes in <code>[:chart :tree-node]</code> (a scatter style), the links in <code>[:chart :tree-link]</code> (a line style) and the names in the text role <code>:tree-label</code>:</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tree-node]</code>, not options</span></div><ul><li><code>:size</code> (default <code>7</code>) – The point size in pixels; a mapped <code>:size</code> wins.</li><li><code>:color</code> (default <code>[0 114 178]</code>) – The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.</li><li><code>:stroke-color</code> (default <code>:white</code>) – The colour of each point's outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li><li><code>:shape</code> (default <code>\O</code>) – The shape of every point; a mapped <code>:shape</code> wins.</li><li><code>:alpha</code> – The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</li></ul></div>
+<p>The plot below draws small dark nodes through the theme:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:tree-node</span> {<span class="at">:size</span> <span class="dv">5</span> <span class="at">:color</span> [<span class="dv">60</span> <span class="dv">60</span> <span class="dv">60</span>] <span class="at">:stroke-color</span> <span class="at">:none</span>}}}})</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image5.png" class="img-fluid"></p>
+</div>
+<p>The links’ theme style has these keys; the plot below draws darker, thicker links and bold names through the theme:</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :tree-link]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[176 176 176]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>0.9</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/tree office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:tree-link</span> {<span class="at">:color</span> [<span class="dv">90</span> <span class="dv">90</span> <span class="dv">90</span>] <span class="at">:line-width</span> <span class="dv">2</span>}}</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                                   <span class="at">:text</span> {<span class="at">:tree-label</span> {<span class="at">:font-style</span> <span class="at">:bold</span>}}}})</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">360</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image6.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="clustered-heatmaps" class="level2" data-number="25.3">
+<h2 data-number="25.3" class="anchored" data-anchor-id="clustered-heatmaps"><span class="header-section-number">25.3</span> Clustered heatmaps</h2>
+<p><code>plot/clustered-heatmap</code> draws a tile per row and column of long rows, coloured by a value. Hierarchical clustering orders the rows and the columns, and their dendrograms sit beside the tiles. Use it to find groups of similar rows and columns.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options name the tile row, column and value, set the clustering, the trees and their size, and add annotation strips. The plot below draws the cars’ z-scores:</p>
+<dl class="options"><div class="option-card"><dt><code>:row</code></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score})</code></div><div class="option-text">The accessor that returns each data row's tile row, e.g. <code>:car</code>.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:col</code></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score})</code></div><div class="option-text">The accessor that returns each data row's tile column, e.g. <code>:variable</code>.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:value</code></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score})</code></div><div class="option-text">The accessor that returns each data row's tile value, a finite number.<ul><li><a href="reference.types.html#accessor">accessor</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:complete</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :method :single})</code></div><div class="option-text">The fastmath <code>hclust</code> linkage of the rows and columns: how it measures the distance between two clusters from the distances between their members.<ul><li><code>:complete</code> – The farthest pair of members.</li><li><code>:single</code> – The nearest pair of members.</li><li><code>:average</code> – The mean distance between members (UPGMA).</li><li><code>:centroid</code> – The distance between the clusters' centroids.</li><li><code>:ward</code> – Ward's minimum variance on squared distances (R <code>ward.D2</code>).</li><li><code>:diana</code> – Divisive clustering: splits from one cluster down.</li><li class="option-other">Other fastmath linkages: the mean of the two merged clusters' distances (WPGMA), the distance between weighted centroids (WPGMC), and Ward's update on unsquared distances (R <code>ward.D</code>). <code>:weighted</code>, <code>:median</code>, <code>:ward-d</code></li></ul></div></dd></div><div class="option-card"><dt><code>:distance</code><span class="option-default">Default: <code>:euclidean</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :distance :chebyshev})</code></div><div class="option-text">The fastmath <code>hclust</code> distance between two rows or two columns.<ul><li><code>:euclidean</code> – The straight-line distance.</li><li><code>:chebyshev</code> – The largest difference in any position.</li><li><code>:manhattan</code> – The sum of the absolute differences.</li><li><code>:canberra</code> – The sum of absolute differences, each over the sum of the two values' absolute values.</li><li><code>:earth-movers</code> – The earth mover's distance between the two profiles.</li><li><a href="reference.types.html#function">function</a> – A function of two double arrays that returns their distance.</li></ul></div></dd></div><div class="option-card"><dt><code>:row-tree</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :row-tree false})</code></div><div class="option-text">Whether the plot draws the rows' dendrogram right of the tiles.<ul><li><code>true</code> – Draws the dendrogram.</li><li><code>false</code> – Only orders the rows.</li></ul></div></dd></div><div class="option-card"><dt><code>:col-tree</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :col-tree false})</code></div><div class="option-text">Whether the plot draws the columns' dendrogram above the tiles.<ul><li><code>true</code> – Draws the dendrogram.</li><li><code>false</code> – Only orders the columns.</li></ul></div></dd></div><div class="option-card"><dt><code>:tree-size</code><span class="option-default">Default: <code>[0.2 0.2]</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :tree-size [0.4 0.4]})</code></div><div class="option-text">The fractions <code>[w h]</code> of the plot the dendrograms take: <code>w</code> of the width for the rows' tree, <code>h</code> of the height for the columns' tree.<ul><li><span>pair of open fractions</span></li></ul></div></dd></div><div class="option-card"><dt><code>:row-annotations</code><span class="option-default">Default: No strips.</span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :row-annotations [[:origin nil]]})</code></div><div class="option-text">Adds a coloured strip per annotation, in order, between the tiles and the rows' tree. Each strip is coloured by its values and gets a legend.<ul><li><span>sequence of annotations</span></li></ul></div></dd></div><div class="option-card"><dt><code>:col-annotations</code><span class="option-default">Default: No strips.</span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :col-annotations [[:unit nil]]})</code></div><div class="option-text">Adds a coloured strip per annotation, in order, between the columns' tree and the tiles. Each strip is coloured by its values and gets a legend.<ul><li><span>sequence of annotations</span></li></ul></div></dd></div><div class="option-card"><dt><code>:annotation-size</code><span class="option-default">Default: <code>16</code></span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :row-annotations [[:origin nil]], :annotation-size 40})</code></div><div class="option-text">The thickness of an annotation strip in pixels.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:legend-span</code><span class="option-default">Default: <code>:matrix</code> with annotations, else <code>:row</code>.</span></dt><dd><div class="option-example"><code>(plot/clustered-heatmap rows {:row :car, :col :variable, :value :score, :legend-span :matrix})</code></div><div class="option-text">How far down the plot the legend column reaches; with annotations it stacks the value legend over the annotations' legends.<ul><li><code>:row</code> – One legend cell beside the tiles' row only.</li><li><code>:matrix</code> – One legend cell spanning every row, beside the trees and strips too.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                                                        <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image7.png" class="img-fluid"></p>
+</div>
+<p>The next panels use other distances between rows and columns, with average linkage; they give different orders and trees:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:manhattan</span> <span class="at">:title</span> <span class="st">":distance :manhattan"</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:chebyshev</span> <span class="at">:title</span> <span class="st">":distance :chebyshev"</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:canberra</span> <span class="at">:title</span> <span class="st">":distance :canberra"</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:average</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:distance</span> <span class="at">:earth-movers</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":distance :earth-movers"</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})]</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">800</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image8.png" class="img-fluid"></p>
+</div>
+<p>The left panel below draws only the rows’ tree, wider, and orders the columns without their tree; the right one uses Ward linkage and draws no trees, only the order:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:col-tree</span> <span class="va">false</span> <span class="at">:tree-size</span> [<span class="fl">0.35</span> <span class="fl">0.2</span>]</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":col-tree false, :tree-size [0.35 0.2]"</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:legend</span> <span class="va">false</span>}}})</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                  (plot/clustered-heatmap car-scores {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span> <span class="at">:method</span> <span class="at">:ward</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:row-tree</span> <span class="va">false</span> <span class="at">:col-tree</span> <span class="va">false</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                                                                      <span class="at">:title</span> <span class="st">":method :ward, no trees"</span>})]</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.15</span>]})</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image9.png" class="img-fluid"></p>
+</div>
+<p>Annotations, as pheatmap’s <code>annotation_row</code> and <code>annotation_col</code>, draw a strip per annotation along the tile rows or columns, named beside it, and add its legend to the legend column. The rows of one tile row or column must agree on the value. With annotations the legend column spans every row by default, so the value legend stretches over the room the annotations’ legends leave. The plot below annotates the cars by cylinders and transmission and the variables by kind:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:cylinders</span> {<span class="at">:range</span> <span class="at">:set2</span>}] [<span class="at">:transmission</span> {<span class="at">:range</span> [<span class="st">"#999999"</span> <span class="st">"#e08214"</span>]}]]</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:col-annotations</span> [[<span class="at">:kind</span> {<span class="at">:range</span> <span class="at">:set1</span> <span class="at">:title</span> <span class="st">"variable kind"</span>}]]</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:annotation-size</span> <span class="dv">14</span> <span class="at">:legend-span</span> <span class="at">:matrix</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image10.png" class="img-fluid"></p>
+</div>
+<p>An annotation is coloured as any colour mapping: categorical values get a palette, numbers a gradient. The plot below annotates horsepower with a colour bar and keeps the legend cell beside the tiles’ row only:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/clustered-heatmap annotated-scores</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                                           {<span class="at">:row</span> <span class="at">:car</span> <span class="at">:col</span> <span class="at">:variable</span> <span class="at">:value</span> <span class="at">:z</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:row-annotations</span> [[<span class="at">:horsepower</span> {<span class="at">:range</span> <span class="at">:viridis/magma</span>}] [<span class="at">:cylinders</span> <span class="va">nil</span>]]</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:legend-span</span> <span class="at">:row</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:range</span> <span class="at">:RColorBrewer/RdBu</span> <span class="at">:midpoint</span> <span class="dv">0</span> <span class="at">:reverse</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">"z-score"</span>}}})</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image11.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="edge-bundles" class="level2" data-number="25.4">
+<h2 data-number="25.4" class="anchored" data-anchor-id="edge-bundles"><span class="header-section-number">25.4</span> Edge bundles</h2>
+<p><code>plot/bundle</code> draws edges between the leaves of a tree around a circle, each edge bent along the tree path between its ends. An edge names its leaves by node id in a <code>tree/from-parents</code> tree, else by leaf name. Use it for many links between the members of a hierarchy.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#edge-bundling">Edge bundling</a> – <code>:from</code> <code>:to</code> <code>:beta</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options set the edges’ opacity and colours and the leaf names. The plot below bundles calls between the office tree’s cities:</p>
+<dl class="options"><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.4</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:alpha 1.0})</code></div><div class="option-text">The opacity of the edges; leaf points and legend keys stay opaque.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:color-by</code><span class="option-default">Default: <code>:group</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:color-by :none})</code></div><div class="option-text">How the plot colours the edges and leaves.<ul><li><code>:group</code> – Colours each edge by the top-level group of its source leaf and each leaf by its own group, with a legend.</li><li><code>:none</code> – Edges in <code>:edge-color</code>, leaves in the theme colour, without a legend.</li></ul></div></dd></div><div class="option-card"><dt><code>:edge-color</code><span class="option-default">Default: <code>[0 114 178]</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:color-by :none, :edge-color :darkorange})</code></div><div class="option-text">The colour of the edges with <code>:color-by :none</code>.<ul><li><code>:none</code> – No edges.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/bundle edges tree {:labels false})</code></div><div class="option-text">Writes the leaf names outward around the circle.<ul><li><code>true</code> – Writes the names.</li><li><code>false</code> – No names.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image12.png" class="img-fluid"></p>
+</div>
+<p>The left panel below draws one edge colour, more opaque, without leaf names; the right one colours by group (the default) and fades the edges:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [(plot/bundle calls office-tree {<span class="at">:color-by</span> <span class="at">:none</span> <span class="at">:edge-color</span> [<span class="dv">120</span> <span class="dv">60</span> <span class="dv">160</span>]</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:alpha</span> <span class="fl">0.8</span> <span class="at">:labels</span> <span class="va">false</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="at">:title</span> <span class="st">":color-by :none, :alpha 0.8"</span>})</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                                  (plot/bundle calls office-tree {<span class="at">:alpha</span> <span class="fl">0.15</span> <span class="at">:title</span> <span class="st">":alpha 0.15"</span>})]</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span> <span class="at">:widths</span> [<span class="dv">1</span> <span class="fl">1.3</span>]})</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">480</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image13.png" class="img-fluid"></p>
+</div>
+<p>An edge bundle draws in theme styles: the edges in <code>[:chart :bundle-edge]</code> (a line style) and the leaves in <code>[:chart :bundle-leaf]</code> (a scatter style):</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :bundle-edge]</code>, not options</span></div><ul><li><code>:color</code> (default <code>[0 114 178]</code>) – line colour (a mapped :color wins)</li><li><code>:line-width</code> (default <code>1</code>) – line width in pixels</li><li><code>:dash</code> (default <code>:none</code>) – dash style of the line (a mapped :dash wins)</li></ul></div>
+<p>The plot below draws thicker edges through the theme:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-edge</span> {<span class="at">:line-width</span> <span class="fl">2.5</span>}}}})</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image14.png" class="img-fluid"></p>
+</div>
+<p>The leaves’ theme style has these keys; the plot below draws large square leaves through the theme:</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :bundle-leaf]</code>, not options</span></div><ul><li><code>:size</code> (default <code>3</code>) – The point size in pixels; a mapped <code>:size</code> wins.</li><li><code>:color</code> (default <code>[0 114 178 180]</code>) – The colour of the points (in a 3D cloud, of every mark); a mapped <code>:color</code> wins.</li><li><code>:stroke-color</code> (default <code>:none</code>) – The colour of each point's outline.</li><li><code>:stroke-width</code> (default <code>1</code>) – The width of the outline in pixels; <code>0</code> draws no outline.</li><li><code>:shape</code> (default <code>\O</code>) – The shape of every point; a mapped <code>:shape</code> wins.</li><li><code>:alpha</code> – The opacity of every point (in a 3D cloud, of every mark) and its legend key; the outline keeps its own.</li></ul></div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/bundle calls office-tree {<span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:bundle-leaf</span> {<span class="at">:size</span> <span class="dv">8</span> <span class="at">:shape</span> <span class="ch">\s</span>}}}})</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">500</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.builders_trees_files/image15.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="sequence-sunbursts" class="level2" data-number="25.5">
+<h2 data-number="25.5" class="anchored" data-anchor-id="sequence-sunbursts"><span class="header-section-number">25.5</span> Sequence sunbursts</h2>
+<p><code>plot/sequences</code> draws sequences of steps as rings from the centre. A step keeps its name’s colour wherever it occurs, and the end of a sequence is a step of its own. Use it to show the paths through a process, e.g.&nbsp;visits to a website.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#sequences">Sequences</a> – <code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
+<p>These options set the centre hole, the step names and the end marker. The plot below draws the website visits:</p>
+<dl class="options"><div class="option-card"><dt><code>:inner-radius</code><span class="option-default">Default: <code>0.3</code></span></dt><dd><div class="option-example"><code>(plot/sequences rows {:inner-radius 0.6})</code></div><div class="option-text">The radius of the centre hole, as a fraction of the outer radius.<ul><li><span>finite number at least 0 and below 1</span></li></ul></div></dd></div><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/sequences rows {:labels true})</code></div><div class="option-text">Writes the step names in the cells they fit in.<ul><li><code>false</code> – No names.</li><li><code>true</code> – Writes the names.</li></ul></div></dd></div><div class="option-card"><dt><code>:keep-end</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/sequences rows {:keep-end false})</code></div><div class="option-text">Whether the end marker is a step of its own.<ul><li><code>true</code> – A step of its own, coloured and in the legend.</li><li><code>false</code> – Sequences that end leave their group's grey remainder.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span>}) {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image16.png" class="img-fluid"></p>
 </div>
-<p>A smaller hole - more room for the rings - and the step names in the cells where they fit (a larger image):</p>
+<p>The next plot draws a smaller hole, which leaves more room for the rings, and the step names in the cells where they fit; the larger image gives them room:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:inner-radius</span> <span class="fl">0.1</span> <span class="at">:labels</span> <span class="va">true</span> <span class="at">:title</span> <span class="st">":inner-radius 0.1, :labels true"</span>})</span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">600</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3106,7 +2660,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image17.png" class="img-fluid"></p>
 </div>
-<p>Ending sequences left as their group’s grey remainder, the end not a step of its own:</p>
+<p>With <code>:keep-end false</code> the end is not a step of its own, so sequences that end leave their group’s grey remainder:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:keep-end</span> <span class="va">false</span> <span class="at">:title</span> <span class="st">":keep-end false"</span>})</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">550</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3114,53 +2668,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image18.png" class="img-fluid"></p>
 </div>
-<p>The cells draw in the theme style <code>[:chart :sequences-cell]</code> (a partition style over <code>[:chart :partition]</code>):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-<th data-quarto-table-cell-role="th">Group</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:stroke-color</td>
-<td>a clojure2d color or :none</td>
-<td>:white</td>
-<td>The outline colour of the cells.</td>
-<td></td>
-</tr>
-<tr class="even">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>0.3</td>
-<td>The outline width of the cells in pixels; `0` draws no outline.</td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>:pattern</td>
-<td>a pattern name (:back-hatch :cross :dense-dots :diagonal-cross :dots :hatch :horizontal :solid :vertical) or a pattern map</td>
-<td>:solid</td>
-<td>pattern drawn over the fill (a mapped :pattern wins)</td>
-<td>Fill patterns</td>
-</tr>
-<tr class="even">
-<td>:pattern-color</td>
-<td>:darker or a clojure2d color or :none</td>
-<td>:darker</td>
-<td>pattern ink: a colour, :none or :darker (the darkened fill)</td>
-<td>Fill patterns</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Thick white cell borders through the theme:</p>
+<p>The cells draw in the theme style <code>[:chart :sequences-cell]</code> (a partition style):</p>
+<div class="mapping"><div class="mapping-title">Theme keys<span class="mapping-hint"> – set under <code>[:theme :chart :sequences-cell]</code>, not options</span></div><ul><li><code>:stroke-color</code> (default <code>:white</code>) – The outline colour of the cells.</li><li><code>:stroke-width</code> (default <code>0.3</code>) – The outline width of the cells in pixels; <code>0</code> draws no outline.</li><li><code>:pattern</code> (default <code>:solid</code>) – pattern drawn over the fill (a mapped :pattern wins)</li><li><code>:pattern-color</code> (default <code>:darker</code>) – pattern ink: a colour, :none or :darker (the darkened fill)</li></ul></div>
+<p>The plot below draws thick white cell outlines through the theme:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/sequences visits {<span class="at">:value</span> <span class="at">:n</span> <span class="at">:theme</span> {<span class="at">:chart</span> {<span class="at">:sequences-cell</span> {<span class="at">:stroke-width</span> <span class="dv">2</span>}}}})</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">450</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3168,7 +2678,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.builders_trees_files/image19.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#sequences">Sequences</a> – <code>:sequence</code> <code>:value</code> <code>:separator</code> <code>:end</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:scales</code> <code>:theme</code></li></ul></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/builders_trees.clj</small></small></pre></div>
 

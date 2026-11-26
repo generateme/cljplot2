@@ -11,6 +11,11 @@
     :correlation :pairwise :box :violin :extent :stripplot :beeswarm :dotplot :rug :histogram :density :ecdf :qq :pp
     :tile :bin2d :field :contour :parallel :cloud :surface :treemap :partition :pack :waffle :venn})
 
+(def migrated-builders
+  "Builders of `cljplot2.core` whose reference sections show option cards and follow the card rules of
+  `option-cards-test` - the builders' switch; `cljplot2.describe/concepts` names their sections by their symbols."
+  '#{network chord arc sankey alluvial dendrogram tree clustered-heatmap bundle sequences acf horizon})
+
 (defn error-data
   "`ex-data` of the `ExceptionInfo` thrown by calling `f`, `nil` when it doesn't throw one."
   [f]

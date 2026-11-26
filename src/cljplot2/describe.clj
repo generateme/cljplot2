@@ -48,6 +48,7 @@
             [cljplot2.graphics.draw :as draw]
             [cljplot2.graphics.polyline :as polyline]
             [cljplot2.graphics.shape :as shape]
+            [cljplot2.graphs :as graphs]
             [cljplot2.layout.plot-grid :as plot-grid]
             [cljplot2.multiplot :as multiplot]
             [cljplot2.pipeline :as pipeline]
@@ -70,7 +71,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def concepts
-  "Section titles of the reference part: chart kind, builder or function -> the concept its section is named after (the heading `## title`; the first sentence names the function). Kinds without an entry keep the kind's name (pages not yet rewritten)."
+  "Section titles of the reference part: chart kind (a keyword) or builder (a symbol of `cljplot2.core`) -> the concept its section is named after (the heading `## title`; the first sentence names the function). Entries without a title keep their name (pages not yet rewritten)."
   {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
    :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
    :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
@@ -78,7 +79,10 @@
    :beeswarm "Beeswarm plots" :dotplot "Dot plots" :rug "Rug plots" :histogram "Histograms" :density "Density curves"
    :ecdf "Empirical CDFs" :qq "Q-Q plots" :pp "P-P plots" :tile "Heatmaps" :bin2d "2D bins" :field "Raster fields"
    :contour "Contour lines" :parallel "Parallel coordinates" :cloud "3D clouds" :surface "3D surfaces" :treemap "Treemaps"
-   :partition "Icicles and sunbursts" :pack "Circle packing" :waffle "Waffle charts" :venn "Venn diagrams"})
+   :partition "Icicles and sunbursts" :pack "Circle packing" :waffle "Waffle charts" :venn "Venn diagrams"
+   'network "Networks" 'chord "Chord diagrams" 'arc "Arc diagrams" 'sankey "Sankey diagrams" 'alluvial "Alluvial diagrams"
+   'dendrogram "Dendrograms" 'tree "Node-link trees" 'clustered-heatmap "Clustered heatmaps" 'bundle "Edge bundles"
+   'sequences "Sequence sunbursts" 'acf "Autocorrelation plots" 'horizon "Horizon charts"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."
@@ -236,7 +240,7 @@
                [rng/schema polyline/fill-gradient-schema annotation/position curve/sample-step-schema text-chart/panel-position-schema
                 function-chart/functions-schema function-chart/span-schema function-chart/quantile-range-schema
                 kde/kernel-schema kde/bandwidth-rule-schema levels/bin-rule-schema levels/breaks-schema levels/quantile-bins
-                probability/distribution-schema parallel-chart/variable-schema])))
+                probability/distribution-schema parallel-chart/variable-schema graphs/annotation-schema])))
 
 (def ^:private bound-words
   "Comparator schema type -> the words of its bound in a short type text."

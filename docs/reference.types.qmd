@@ -69,6 +69,10 @@ How a value comes from a row: a key such as `:x`, a function of the row such as 
 
 A pair `[h v]`: `h` is `:left`, `:center` or `:right` and `v` is `:top`, `:middle` or `:bottom`, e.g. `[:center :middle]`.
 
+## annotation
+
+A pair `[accessor colour-scale-spec]` that adds a strip beside a clustered heatmap: the accessor returns each row's value and the spec sets the strip's colour scale (`nil` for the default), e.g. `[:group {:range :set2}]`.
+
 ## bandwidth rule
 
 A rule that picks the bandwidth from the sample: a fastmath selector, e.g. `:nrd0` (R's default) or `:sj` (Sheather-Jones).
