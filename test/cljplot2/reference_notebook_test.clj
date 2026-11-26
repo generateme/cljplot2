@@ -35,11 +35,11 @@
 (def ^:private chart-chapters
   "The chart chapters (R4), in reading order: page -> the chart kinds it documents (spec 6.3)."
   (array-map "charts_points_lines" [:scatter :line :segment :polygon :ribbon :candlestick]
-             "charts_annotations" [:rule :rect :text :image :function]
+             "charts_annotations" [:rule :rect :text :image]
              "charts_bars" [:bar :bullet]
              "charts_per_level" [:box :violin :extent :stripplot :beeswarm :dotplot :rug]
              "charts_one_variable" [:histogram :density :ecdf :qq :pp]
-             "charts_fitted_curves" [:smooth]
+             "charts_fitted_curves" [:smooth :function]
              "charts_bins_fields" [:tile :bin2d :field :contour]
              "charts_pairwise" [:correlation :pairwise]
              "charts_shares_sets" [:treemap :partition :pack :waffle :venn]

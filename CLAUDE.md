@@ -287,7 +287,7 @@ the theme: banned names, and one type family per name across all owners). One na
   class `data-table` - compact, left-aligned, scrolling, styled in `clay.edn` `:include-in-header`); a function's result
   is shown with `nu/result-table` (the same box, its call shown). Chart pages (`charts_*.clj`, ten chapters grouped by what
   they show: points, lines and areas; annotations; bars; distribution per level; distribution of one variable; fitted
-  curves; 2D bins and fields; pairwise statistics; shares and sets; multivariate and 3D - kinds per page in
+  and function curves; 2D bins and fields; pairwise statistics; shares and sets; multivariate and 3D - kinds per page in
   `reference-notebook-test/chart-chapters`): per kind a `;; ## concept` heading (`describe/concepts`, e.g.
   `## Smoothing`; its first sentence names the function and says what it's for), `nu/shared-groups` right after the
   opening sentences (a Shared options box, a point per group linking to its `###` heading there), its mapping list

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>19&nbsp; Fitted curves – cljplot2</title>
+<title>19&nbsp; Fitted and function curves – cljplot2</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -151,7 +151,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.charts_points_lines.html">Charts</a></li><li class="breadcrumb-item"><a href="./reference.charts_fitted_curves.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted curves</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.charts_points_lines.html">Charts</a></li><li class="breadcrumb-item"><a href="./reference.charts_fitted_curves.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted and function curves</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -313,7 +313,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_fitted_curves.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted curves</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted and function curves</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -509,15 +509,21 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
   <li><a href="#fit" id="toc-fit" class="nav-link" data-scroll-target="#fit"><span class="header-section-number">19.1.1</span> Fit</a></li>
   <li><a href="#band" id="toc-band" class="nav-link" data-scroll-target="#band"><span class="header-section-number">19.1.2</span> Band</a></li>
   </ul></li>
+  <li><a href="#function-curves" id="toc-function-curves" class="nav-link" data-scroll-target="#function-curves"><span class="header-section-number">19.2</span> Function curves</a>
+  <ul>
+  <li><a href="#curve" id="toc-curve" class="nav-link" data-scroll-target="#curve"><span class="header-section-number">19.2.1</span> Curve</a></li>
+  <li><a href="#gaps" id="toc-gaps" class="nav-link" data-scroll-target="#gaps"><span class="header-section-number">19.2.2</span> Gaps</a></li>
+  <li><a href="#extent" id="toc-extent" class="nav-link" data-scroll-target="#extent"><span class="header-section-number">19.2.3</span> Extent</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.charts_points_lines.html">Charts</a></li><li class="breadcrumb-item"><a href="./reference.charts_fitted_curves.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted curves</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reference.charts_points_lines.html">Charts</a></li><li class="breadcrumb-item"><a href="./reference.charts_fitted_curves.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted and function curves</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted curves</span></h1>
+<h1 class="title"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted and function curves</span></h1>
 </div>
 
 
@@ -546,7 +552,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>A curve fitted to scattered points shows their trend; <code>smooth</code> fits one per group and draws its uncertainty band.</p>
+<p>These charts draw curves: a trend fitted to scattered points (<code>smooth</code>, one per group with its uncertainty band) and curves of given functions, y = f(x) or parametric (<code>function</code>).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-fitted-curves</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [fastmath.core <span class="at">:as</span> m]</span>
@@ -1344,6 +1350,85 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_fitted_curves_files/image5.png" class="img-fluid"></p>
+</div>
+</section>
+</section>
+<section id="function-curves" class="level2" data-number="19.2">
+<h2 data-number="19.2" class="anchored" data-anchor-id="function-curves"><span class="header-section-number">19.2</span> Function curves</h2>
+<p><code>chart/function</code> draws curves of functions, y = f(x) or parametric [x y] = f(t), sampled over <code>:domain</code> (by default the panel’s x range) or, for parametric curves, over <code>:t</code>. It takes no data rows and, like an annotation, draws in every panel. Its own mapping can colour or dash several functions by their labels. Use it for a known curve, a model or a reference shape.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#line-style">Line style</a> – <code>:color</code> <code>:line-width</code> <code>:dash</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:legend</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:color</code> – Splits the rows, one per function, into groups, each with its own colour.</li><li><code>:dash</code> – Splits the rows, one per function, into groups, each with its own dash style.</li><li><code>:group</code> – Splits the rows into groups that look the same, one row per function.</li></ul></div>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> {<span class="st">"sin"</span> #(m/sin <span class="va">%</span>) <span class="st">"cos"</span> #(m/cos <span class="va">%</span>)}</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">:domain</span> [<span class="dv">0</span> m/TWO_PI]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">:mapping</span> {<span class="at">:color</span> <span class="at">:function</span> <span class="at">:dash</span> <span class="at">:function</span>}})]}</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_fitted_curves_files/image6.png" class="img-fluid"></p>
+</div>
+<section id="curve" class="level3" data-number="19.2.1">
+<h3 data-number="19.2.1" class="anchored" data-anchor-id="curve"><span class="header-section-number">19.2.1</span> Curve</h3>
+<p>These options give the functions, the range they are sampled over and how densely, the fill and the chart’s own mapping:</p>
+<dl class="options"><div class="option-card"><dt><code>:fill</code><span class="option-default">Default: <code>:none</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :fill :lightblue})</code></div><div class="option-text">The fill of the area between the curve and y = 0, or of the shape a parametric curve closes.<ul><li><code>:none</code> – No fill.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: No mapping: every function in the theme's style.</span></dt><dd><div class="option-example"><code>(chart/function {:f {"sin" (fn [x] (m/sin x)), "cos" (fn [x] (m/cos x))}, :mapping {:color :function}})</code></div><div class="option-text">The chart's own mapping of the functions, each a row <code>{:function label}</code>, e.g. <code>{:color :function}</code>. Of the plot's mapping only the facet keys apply.<ul><li><span>mapping</span></li></ul></div></dd></div><div class="option-card"><dt><code>:f</code><span class="option-default">Default: None; give <code>:f</code> or <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x))})</code></div><div class="option-text">The functions y = f(x) to draw.<ul><li><a href="reference.types.html#functions">functions</a></li></ul></div></dd></div><div class="option-card"><dt><code>:parametric</code><span class="option-default">Default: None; give <code>:f</code> or <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:t [0 6.3], :parametric (fn [t] [(m/cos t) (m/sin t)])})</code></div><div class="option-text">The functions [x y] = f(t) to draw, each returning a point.<ul><li><a href="reference.types.html#functions">functions</a></li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The plot's fixed x domain, else the panel's x range.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :domain [0 3]})</code></div><div class="option-text">The x range the <code>:f</code> functions are sampled over.<ul><li><a href="reference.types.html#span">span</a></li></ul></div></dd></div><div class="option-card"><dt><code>:t</code><span class="option-default">Default: None; <code>:parametric</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/function {:parametric (fn [t] [(m/cos t) (m/sin t)]), :t [0 3.2]})</code></div><div class="option-text">The t range the <code>:parametric</code> functions are sampled over.<ul><li><a href="reference.types.html#span">span</a></li></ul></div></dd></div><div class="option-card"><dt><code>:sample-step</code><span class="option-default">Default: One pixel for <code>:f</code>, <code>{:count 500}</code> for <code>:parametric</code>.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :sample-step 25})</code></div><div class="option-text">How densely the functions are sampled: pixels between samples along x, or <code>{:count n}</code> samples. <code>:parametric</code> takes only a count.<ul><li><a href="reference.types.html#sample-step">sample step</a></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(<span class="kw">*</span> <span class="va">%</span> <span class="va">%</span> <span class="fl">0.5</span>) <span class="at">:domain</span> [-<span class="dv">2</span> <span class="dv">2</span>] <span class="at">:fill</span> [<span class="dv">0</span> <span class="dv">114</span> <span class="dv">178</span> <span class="dv">60</span>]})]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":f, :fill"</span>}}</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/function {<span class="at">:parametric</span> (<span class="kw">fn</span> [t] [(m/sin (<span class="kw">*</span> <span class="dv">3</span> t)) (m/sin (<span class="kw">*</span> <span class="dv">4</span> t))])</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:t</span> [<span class="dv">0</span> m/TWO_PI] <span class="at">:fill</span> [<span class="dv">200</span> <span class="dv">80</span> <span class="dv">40</span> <span class="dv">60</span>]})]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:aspect</span> <span class="at">:iso</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":parametric (Lissajous)"</span>}}</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/sin <span class="va">%</span>) <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">10</span>] <span class="at">:sample-step</span> <span class="dv">25</span>})]</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":sample-step 25 px"</span>}}]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">320</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_fitted_curves_files/image7.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="gaps" class="level3" data-number="19.2.2">
+<h3 data-number="19.2.2" class="anchored" data-anchor-id="gaps"><span class="header-section-number">19.2.2</span> Gaps</h3>
+<p>These options handle a <code>nil</code> or non-finite result of a function:</p>
+<dl class="options"><div class="option-card"><dt><code>:bridge</code><span class="option-default">Default: <code>{:alpha-factor 0.3}</code> (theme)</span></dt><dd><div class="option-text">The style of the segments that bridge gaps with <code>:gaps :bridge</code>.</div></dd></div><div class="option-card"><dt><code>:bridge :alpha-factor</code><span class="option-default">Default: <code>0.3</code> (theme); passing <code>:bridge</code> replaces the theme's map entirely.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (&lt; 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.5}})</code></div><div class="option-text">The bridge's opacity, as a fraction of the line's alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :line-width</code><span class="option-default">Default: The line's width.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (&lt; 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.3, :line-width 3}})</code></div><div class="option-text">The bridge's line width in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:bridge :dash</code><span class="option-default">Default: The line's dash.</span></dt><dd><div class="option-example"><code>(chart/function {:gaps :bridge, :f (fn [x] (when-not (&lt; 2 x 3) (m/sin x))), :bridge {:alpha-factor 0.3, :dash :dotted}})</code></div><div class="option-text">The bridge's dash style.<ul><li><a href="reference.types.html#dash">dash</a></li></ul></div></dd></div><div class="option-card"><dt><code>:gaps</code><span class="option-default">Default: <code>:break</code></span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (when-not (&lt; 2 x 3) (m/sin x))), :gaps :bridge})</code></div><div class="option-text">How the curve handles a <code>nil</code> or non-finite result.<ul><li><code>:break</code> – Leaves empty space.</li><li><code>:bridge</code> – Joins the samples on both sides of the gap with a straight segment in the <code>:bridge</code> style.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/sqrt (<span class="kw">-</span> <span class="dv">1</span> (<span class="kw">*</span> <span class="va">%</span> <span class="va">%</span>))) <span class="at">:domain</span> [-<span class="dv">2</span> <span class="dv">2</span>]})]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gaps :break (default)"</span>}}</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(<span class="kw">when-not</span> (<span class="kw">&lt;</span> <span class="dv">1</span> <span class="va">%</span> <span class="dv">2</span>) (m/sin <span class="va">%</span>)) <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">6</span>]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                                             <span class="at">:gaps</span> <span class="at">:bridge</span> <span class="at">:bridge</span> {<span class="at">:alpha-factor</span> <span class="fl">0.6</span> <span class="at">:dash</span> <span class="at">:dotted</span>}})]</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":gaps :bridge"</span>}}]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">800</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_fitted_curves_files/image8.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="extent" class="level3" data-number="19.2.3">
+<h3 data-number="19.2.3" class="anchored" data-anchor-id="extent"><span class="header-section-number">19.2.3</span> Extent</h3>
+<p>These options pick the samples that set the y axis and the room around the curve. Here <code>tan</code> has poles: the default quantiles keep the axis readable, all samples stretch it, <code>:y-limits</code> sets it:</p>
+<dl class="options"><div class="option-card"><dt><code>:y-limits</code><span class="option-default">Default: No limits: <code>:y-extent</code> picks the samples.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :y-limits [-0.5 0.5]})</code></div><div class="option-text">Only samples within these limits count for the y extent; the panel's edge clips the rest of the curve.<ul><li><a href="reference.types.html#interval">interval</a></li></ul></div></dd></div><div class="option-card"><dt><code>:y-extent</code><span class="option-default">Default: <code>:quantiles</code></span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :y-extent {:quantiles [0.2 0.8]}})</code></div><div class="option-text">Which samples set the y extent when neither <code>:y-limits</code> nor a fixed y domain does.<ul><li><code>:quantiles</code> – The samples between the 1% and 99% quantiles, so a pole doesn't stretch the axis.</li><li><code>:min-max</code> – All samples.</li><li><code>:none</code> – None; other charts or the scale set the y range.</li><li><a href="reference.types.html#quantile-range">quantile range</a> – The samples between these quantiles.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on every side.</span></dt><dd><div class="option-example"><code>(chart/function {:f (fn [x] (m/sin x)), :domain [0 6], :padding {:x [0 0]}})</code></div><div class="option-text">Room around the sampled curve on x and y, as fractions of its span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/tan <span class="va">%</span>) <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">3</span>]})]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":y-extent :quantiles (default)"</span>}}</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/tan <span class="va">%</span>) <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">3</span>] <span class="at">:y-extent</span> <span class="at">:min-max</span>})]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":y-extent :min-max"</span>}}</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/tan <span class="va">%</span>) <span class="at">:domain</span> [<span class="dv">0</span> <span class="dv">3</span>] <span class="at">:y-limits</span> [-<span class="dv">5</span> <span class="dv">5</span>]})]</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":y-limits [-5 5]"</span>}}]</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">3</span>})</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_fitted_curves_files/image9.png" class="img-fluid"></p>
+</div>
+<p>With no padding on x the curve meets the panel’s sides; a quarter of the span on y leaves room above and below:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:charts</span> [(chart/function {<span class="at">:f</span> #(m/sin <span class="va">%</span>) <span class="at">:domain</span> [<span class="dv">0</span> <span class="fl">6.3</span>] <span class="at">:padding</span> {<span class="at">:x</span> [<span class="dv">0</span> <span class="dv">0</span>] <span class="at">:y</span> [<span class="fl">0.25</span> <span class="fl">0.25</span>]}})]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":padding {:x [0 0] :y [0.25 0.25]}"</span>}}</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">500</span> <span class="at">:height</span> <span class="dv">280</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_fitted_curves_files/image10.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_fitted_curves.clj</small></small></pre></div>

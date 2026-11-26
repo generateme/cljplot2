@@ -313,7 +313,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./reference.charts_fitted_curves.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted curves</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Fitted and function curves</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -4738,7 +4738,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <section id="recipes" class="level2" data-number="31.8">
 <h2 data-number="31.8" class="anchored" data-anchor-id="recipes"><span class="header-section-number">31.8</span> Recipes</h2>
 <p>Short compositions of the pieces documented in this part.</p>
-<p>A reference curve over a histogram: the <a href="reference.charts_one_variable.html#histograms">histogram</a> on the density scale (<code>:y :density</code>) and the normal density with the data’s mean and standard deviation as a <a href="reference.charts_annotations.html#function-curves">function</a> chart:</p>
+<p>A reference curve over a histogram: the <a href="reference.charts_one_variable.html#histograms">histogram</a> on the density scale (<code>:y :density</code>) and the normal density with the data’s mean and standard deviation as a <a href="reference.charts_fitted_curves.html#function-curves">function</a> chart:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (<span class="kw">let</span> [xs (<span class="kw">map</span> <span class="at">:waiting</span> faithful)</span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>                         normal (r/distribution <span class="at">:normal</span> {<span class="at">:mu</span> (stats/mean xs) <span class="at">:sd</span> (stats/stddev xs)})]</span>

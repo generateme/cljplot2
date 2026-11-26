@@ -307,7 +307,7 @@
 
 ;; A reference curve over a histogram: the [histogram](reference.charts_one_variable.html#histograms) on the
 ;; density scale (`:y :density`) and the normal density with the data's mean and standard deviation as a
-;; [function](reference.charts_annotations.html#function-curves) chart:
+;; [function](reference.charts_fitted_curves.html#function-curves) chart:
 
 (plot/render-image (let [xs (map :waiting faithful)
                          normal (r/distribution :normal {:mu (stats/mean xs) :sd (stats/stddev xs)})]

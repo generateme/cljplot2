@@ -99,8 +99,9 @@ The table below holds four made-up points in two groups; most plots of A plot is
   [points, lines and areas](reference.charts_points_lines.html), [annotations](reference.charts_annotations.html),
   [bars](reference.charts_bars.html), [distribution per level](reference.charts_per_level.html),
   [distribution of one variable](reference.charts_one_variable.html),
-  [fitted curves](reference.charts_fitted_curves.html), [2D bins and fields](reference.charts_bins_fields.html),
-  [pairwise statistics](reference.charts_pairwise.html), [shares and sets](reference.charts_shares_sets.html),
+  [fitted and function curves](reference.charts_fitted_curves.html),
+  [2D bins and fields](reference.charts_bins_fields.html), [pairwise statistics](reference.charts_pairwise.html),
+  [shares and sets](reference.charts_shares_sets.html),
   [multivariate and 3D](reference.charts_multivariate_3d.html).
 
 * **Builders** (from [Graphs](reference.builders_graphs.html)) - the functions turning rows into whole plots:

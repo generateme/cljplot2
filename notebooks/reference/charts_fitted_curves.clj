@@ -1,7 +1,7 @@
-;; # Fitted curves
+;; # Fitted and function curves
 
-;; A curve fitted to scattered points shows their trend; `smooth` fits one per group and draws its uncertainty
-;; band.
+;; These charts draw curves: a trend fitted to scattered points (`smooth`, one per group with its uncertainty band)
+;; and curves of given functions, y = f(x) or parametric (`function`).
 
 (ns reference.charts-fitted-curves
   (:require [fastmath.core :as m]
@@ -121,4 +121,75 @@
                                    :labels {:title ":band :none"}}]
                                  {:columns 2})
                    {:width 800 :height 300})
+
+;; ## Function curves
+
+;; `chart/function` draws curves of functions, y = f(x) or parametric [x y] = f(t), sampled over `:domain` (by
+;; default the panel's x range) or, for parametric curves, over `:t`. It takes no data rows and, like an annotation,
+;; draws in every panel. Its own mapping can colour or dash several functions by their labels. Use it for a known
+;; curve, a model or a reference shape.
+
+(nu/shared-groups (describe/options (chart/function)))
+
+(nu/mapping-list (describe/mapping (chart/function)))
+
+(plot/render-image {:charts [(chart/function {:f {"sin" #(m/sin %) "cos" #(m/cos %)}
+                                              :domain [0 m/TWO_PI]
+                                              :mapping {:color :function :dash :function}})]}
+                   {:width 600 :height 320})
+
+;; ### Curve
+
+;; These options give the functions, the range they are sampled over and how densely, the fill and the chart's own
+;; mapping:
+
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :curve)
+
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(* % % 0.5) :domain [-2 2] :fill [0 114 178 60]})]
+                                   :labels {:title ":f, :fill"}}
+                                  {:charts [(chart/function {:parametric (fn [t] [(m/sin (* 3 t)) (m/sin (* 4 t))])
+                                                             :t [0 m/TWO_PI] :fill [200 80 40 60]})]
+                                   :aspect :iso
+                                   :labels {:title ":parametric (Lissajous)"}}
+                                  {:charts [(chart/function {:f #(m/sin %) :domain [0 10] :sample-step 25})]
+                                   :labels {:title ":sample-step 25 px"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 320})
+
+;; ### Gaps
+
+;; These options handle a `nil` or non-finite result of a function:
+
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :gaps)
+
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/sqrt (- 1 (* % %))) :domain [-2 2]})]
+                                   :labels {:title ":gaps :break (default)"}}
+                                  {:charts [(chart/function {:f #(when-not (< 1 % 2) (m/sin %)) :domain [0 6]
+                                                             :gaps :bridge :bridge {:alpha-factor 0.6 :dash :dotted}})]
+                                   :labels {:title ":gaps :bridge"}}]
+                                 {:columns 2})
+                   {:width 800 :height 300})
+
+;; ### Extent
+
+;; These options pick the samples that set the y axis and the room around the curve. Here `tan` has poles: the default
+;; quantiles keep the axis readable, all samples stretch it, `:y-limits` sets it:
+
+(nu/option-cards 'chart/function (describe/own-rows (describe/options (chart/function))) :extent)
+
+(plot/render-image (plot/arrange [{:charts [(chart/function {:f #(m/tan %) :domain [0 3]})]
+                                   :labels {:title ":y-extent :quantiles (default)"}}
+                                  {:charts [(chart/function {:f #(m/tan %) :domain [0 3] :y-extent :min-max})]
+                                   :labels {:title ":y-extent :min-max"}}
+                                  {:charts [(chart/function {:f #(m/tan %) :domain [0 3] :y-limits [-5 5]})]
+                                   :labels {:title ":y-limits [-5 5]"}}]
+                                 {:columns 3})
+                   {:width 1000 :height 300})
+
+
+;; With no padding on x the curve meets the panel's sides; a quarter of the span on y leaves room above and below:
+
+(plot/render-image {:charts [(chart/function {:f #(m/sin %) :domain [0 6.3] :padding {:x [0 0] :y [0.25 0.25]}})]
+                    :labels {:title ":padding {:x [0 0] :y [0.25 0.25]}"}}
+                   {:width 500 :height 280})
 
