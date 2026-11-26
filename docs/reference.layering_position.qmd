@@ -54,7 +54,7 @@ code-block-background: true
 # Layering and position
 
 Charts are drawn in the order of `:charts`, each over the previous ones, and all of them share the plot's scales.
-Grouped marks of one chart are placed by its `:position` option: side by side, stacked, normalized or overlaid.
+Grouped marks of one chart are placed by its `:position` option: side by side, stacked, normalised or overlaid.
 
 
 ::: {.sourceClojure}
@@ -69,13 +69,7 @@ Grouped marks of one chart are placed by its `:position` option: side by side, s
 :::
 
 
-
-## Layers
-
-A layer is any chart; annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions or
-a function instead of data and inherit only the plot's facet keys. The positions of `rule`, `rect` and `text`
-count for the scales unless `:extent false`, an option of the
-[Annotation options](reference.shared_options.html#annotation-options) group.
+The table below holds the Old Faithful eruptions; Layers draws them:
 
 Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991; Azzalini & Bowman 1990); licence: Part of R (GPL-2 | GPL-3).
 
@@ -93,7 +87,66 @@ Data: Old Faithful geyser eruptions, R datasets package `faithful` (Härdle 1991
 ```
 
 
-The layers bottom to top: a shaded x range ([rect](reference.charts_annotations.html#rectangles) `:x [lo hi]`,
+The table below holds made-up sales of three products per quarter; Position of groups draws them:
+
+
+::: {.sourceClojure}
+```clojure
+(def sales (for [[qi q] (map-indexed vector ["Q1" "Q2" "Q3" "Q4"]) [i product] (map-indexed vector ["apples" "pears" "plums"])]
+             {:quarter q :product product :amount (+ 10 (* 7 i) (* 5 qi) (* 4 (mod (+ qi (* 2 i)) 3)))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>quarter</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>Q1</td><td>apples</td><td>10</td></tr><tr><td>Q1</td><td>pears</td><td>25</td></tr><tr><td>Q1</td><td>plums</td><td>28</td></tr><tr><td>Q2</td><td>apples</td><td>19</td></tr><tr><td>Q2</td><td>pears</td><td>22</td></tr><tr><td>Q2</td><td>plums</td><td>37</td></tr><tr><td>Q3</td><td>apples</td><td>28</td></tr><tr><td>Q3</td><td>pears</td><td>31</td></tr><tr><td>Q3</td><td>plums</td><td>34</td></tr><tr><td>Q4</td><td>apples</td><td>25</td></tr><tr><td>Q4</td><td>pears</td><td>40</td></tr><tr><td>Q4</td><td>plums</td><td>43</td></tr></tbody></table></div>
+```
+
+
+The table below holds 400 made-up values in two groups; Position of groups draws them as histograms:
+
+
+::: {.sourceClojure}
+```clojure
+(def two-groups (for [i (range 400)]
+                  {:g (if (even? i) "early" "late") :v (+ (if (even? i) 2.0 3.5) (* 0.25 (- (mod (* i 37) 17) 8)))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>v</th></tr></thead><tbody><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>early</td><td>2.75</td></tr><tr><td>late</td><td>5.0</td></tr><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>early</td><td>2.75</td></tr><tr><td>late</td><td>5.0</td></tr><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+The table below holds four made-up series over time; Position of groups draws them as streams:
+
+
+::: {.sourceClojure}
+```clojure
+(def streams (for [series ["a" "b" "c" "d"] t (range 30)]
+               {:series series :t t :v (+ 2 (m/sin (+ (* 0.3 t) (count series) (* 1.7 (int (first series))))))}))
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>series</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>2.568277227885458</td></tr><tr><td>a</td><td>1</td><td>2.299730964096259</td></tr><tr><td>a</td><td>2</td><td>2.0044106259584753</td></tr><tr><td>a</td><td>3</td><td>1.7086962997397457</td></tr><tr><td>a</td><td>4</td><td>1.4390032654896916</td></tr><tr><td>a</td><td>5</td><td>1.2194223987442154</td></tr><tr><td>a</td><td>6</td><td>1.0695682043627368</td></tr><tr><td>a</td><td>7</td><td>1.0028267112259202</td></tr><tr><td>a</td><td>8</td><td>1.0251597381427326</td></tr><tr><td>a</td><td>9</td><td>1.1345723423320555</td></tr><tr><td>a</td><td>10</td><td>1.3212910217198974</td></tr><tr><td>a</td><td>11</td><td>1.5686367527716687</td></tr><tr><td>a</td><td>12</td><td>1.8545148779902074</td></tr><tr><td>a</td><td>13</td><td>2.1533887558666667</td></tr><tr><td>a</td><td>14</td><td>2.4385608730117783</td></tr><tr><td>a</td><td>15</td><td>2.684557653515224</td></tr><tr><td>a</td><td>16</td><td>2.869404937614812</td></tr><tr><td>a</td><td>17</td><td>2.9765908679435658</td></tr><tr><td>a</td><td>18</td><td>2.9965408445718644</td></tr><tr><td>a</td><td>19</td><td>2.9274727955035407</td></tr><tr><td>a</td><td>20</td><td>2.775556363859854</td></tr><tr><td>a</td><td>21</td><td>2.5543617920342427</td></tr><tr><td>a</td><td>22</td><td>2.2836477323549147</td></tr><tr><td>a</td><td>23</td><td>1.987596265518499</td></tr><tr><td>a</td><td>24</td><td>1.6926527873419062</td></tr><tr><td>a</td><td>25</td><td>1.4251637203148255</td></tr><tr><td>a</td><td>26</td><td>1.2090230661451788</td></tr><tr><td>a</td><td>27</td><td>1.0635380257487868</td></tr><tr><td>a</td><td>28</td><td>1.0017043444932345</td></tr><tr><td>a</td><td>29</td><td>1.0290454409688556</td></tr><tr><td>b</td><td>0</td><td>1.1108019514138114</td></tr><tr><td>b</td><td>1</td><td>1.0153095168336712</td></tr><tr><td>b</td><td>2</td><td>1.0077765504591571</td></tr><tr><td>b</td><td>3</td><td>1.0888759497414373</td></tr><tr><td>b</td><td>4</td><td>1.251363346876995</td></tr><tr><td>b</td><td>5</td><td>1.4807242266080278</td></tr><tr><td>b</td><td>6</td><td>1.7564704646424676</td></tr><tr><td>b</td><td>7</td><td>2.053970470778235</td></tr><tr><td>b</td><td>8</td><td>2.3466494554970305</td></tr><tr><td>b</td><td>9</td><td>2.6083632767654117</td></tr><tr><td>b</td><td>10</td><td>2.815733818379028</td></tr><tr><td>b</td><td>11</td><td>2.9502372874570733</td></tr><tr><td>b</td><td>12</td><td>2.9998588896919247</td></tr><tr><td>b</td><td>13</td><td>2.960166075141548</td></tr><tr><td>b</td><td>14</td><td>2.834704484714564</td></tr><tr><td>b</td><td>15</td><td>2.6346812286276573</td></tr><tr><td>b</td><td>16</td><td>2.3779637886275764</td></tr><tr><td>b</td><td>17</td><td>2.087483969060531</td></tr><tr><td>b</td><td>18</td><td>1.7891894670865187</td></tr><tr><td>b</td><td>19</td><td>1.5097260421709686</td></tr><tr><td>b</td><td>20</td><td>1.2740573297492523</td></tr><tr><td>b</td><td>21</td><td>1.1032349140214026</td></tr><tr><td>b</td><td>22</td><td>1.0125178526323273</td></tr><tr><td>b</td><td>23</td><td>1.0100096304976978</td></tr><tr><td>b</td><td>24</td><td>1.0959342996306858</td></tr><tr><td>b</td><td>25</td><td>1.2626164652429068</td></tr><tr><td>b</td><td>26</td><td>1.4951669059015777</td></tr><tr><td>b</td><td>27</td><td>1.772812583336262</td></tr><tr><td>b</td><td>28</td><td>2.070752236080345</td></tr><tr><td>b</td><td>29</td><td>2.3623718022932767</td></tr><tr><td>c</td><td>0</td><td>1.6608593179118316</td></tr><tr><td>c</td><td>1</td><td>1.9540129305860816</td></tr><tr><td>c</td><td>2</td><td>2.251274431210004</td></tr><tr><td>c</td><td>3</td><td>2.526090335252343</td></tr><tr><td>c</td><td>4</td><td>2.753912156475747</td></tr><tr><td>c</td><td>5</td><td>2.914389250100985</td></tr><tr><td>c</td><td>6</td><td>2.9931866752955885</td></tr><tr><td>c</td><td>7</td><td>2.983265692745455</td></tr><tr><td>c</td><td>8</td><td>2.8855125142746076</td></tr><tr><td>c</td><td>9</td><td>2.708659140182343</td></tr><tr><td>c</td><td>10</td><td>2.468503355662514</td></tr><tr><td>c</td><td>11</td><td>2.1864975617020375</td></tr><tr><td>c</td><td>12</td><td>1.8878324959913335</td></tr><tr><td>c</td><td>13</td><td>1.5991870193506919</td></tr><tr><td>c</td><td>14</td><td>1.3463449725497316</td></tr><tr><td>c</td><td>15</td><td>1.1518919826020046</td></tr><tr><td>c</td><td>16</td><td>1.0331979559697153</td></tr><tr><td>c</td><td>17</td><td>1.0008654765512972</td></tr><tr><td>c</td><td>18</td><td>1.057782708438946</td></tr><tr><td>c</td><td>19</td><td>1.1988654048219423</td></tr><tr><td>c</td><td>20</td><td>1.4115110686121302</td></tr><tr><td>c</td><td>21</td><td>1.6767246959753275</td></tr><tr><td>c</td><td>22</td><td>1.9708155434519563</td></tr><tr><td>c</td><td>23</td><td>2.267513351513406</td></tr><tr><td>c</td><td>24</td><td>2.5403149886061005</td></tr><tr><td>c</td><td>25</td><td>2.764851896960406</td></tr><tr><td>c</td><td>26</td><td>2.921066863280322</td></tr><tr><td>c</td><td>27</td><td>2.9950056698719</td></tr><tr><td>c</td><td>28</td><td>2.9800635833506677</td></tr><tr><td>c</td><td>29</td><td>2.8775753358042824</td></tr><tr><td>d</td><td>0</td><td>2.9765908679435658</td></tr><tr><td>d</td><td>1</td><td>2.9965408445718644</td></tr><tr><td>d</td><td>2</td><td>2.9274727955035407</td></tr><tr><td>d</td><td>3</td><td>2.775556363859854</td></tr><tr><td>d</td><td>4</td><td>2.5543617920342663</td></tr><tr><td>d</td><td>5</td><td>2.2836477323549147</td></tr><tr><td>d</td><td>6</td><td>1.987596265518499</td></tr><tr><td>d</td><td>7</td><td>1.6926527873419062</td></tr><tr><td>d</td><td>8</td><td>1.4251637203148255</td></tr><tr><td>d</td><td>9</td><td>1.2090230661451962</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
+```
+
+
+
+## Layers
+
+A layer is any chart. Annotation charts (`rule`, `rect`, `text`, `function`, `image`) take literal positions, a
+function or their own `:data` and `:mapping`, and inherit only the plot's facet keys. The positions of `rule`, `rect` and `text` count
+for the scales unless `:extent false`, an option of the
+[Annotation options](reference.shared_options.html#annotation-options) group.
+
+The plot below draws, bottom to top, a shaded x range ([rect](reference.charts_annotations.html#rectangles) `:x [lo hi]`,
 `:fill`), the points, a smooth curve, a dashed [rule](reference.charts_annotations.html#reference-lines) at 70 minutes and
 a [text](reference.charts_annotations.html#text-labels) note at a literal position:
 
@@ -125,20 +178,7 @@ Bars, histograms, densities and lines combine groups through `:position` (each c
 takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and lines the streamgraph `:silhouette` /
 `:wiggle`; histograms and densities also `:mirror`.
 
-
-::: {.sourceClojure}
-```clojure
-(def sales (for [[qi q] (map-indexed vector ["Q1" "Q2" "Q3" "Q4"]) [i product] (map-indexed vector ["apples" "pears" "plums"])]
-             {:quarter q :product product :amount (+ 10 (* 7 i) (* 5 qi) (* 4 (mod (+ qi (* 2 i)) 3)))}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>quarter</th><th>product</th><th>amount</th></tr></thead><tbody><tr><td>Q1</td><td>apples</td><td>10</td></tr><tr><td>Q1</td><td>pears</td><td>25</td></tr><tr><td>Q1</td><td>plums</td><td>28</td></tr><tr><td>Q2</td><td>apples</td><td>19</td></tr><tr><td>Q2</td><td>pears</td><td>22</td></tr><tr><td>Q2</td><td>plums</td><td>37</td></tr><tr><td>Q3</td><td>apples</td><td>28</td></tr><tr><td>Q3</td><td>pears</td><td>31</td></tr><tr><td>Q3</td><td>plums</td><td>34</td></tr><tr><td>Q4</td><td>apples</td><td>25</td></tr><tr><td>Q4</td><td>pears</td><td>40</td></tr><tr><td>Q4</td><td>plums</td><td>43</td></tr></tbody></table></div>
-```
-
+The plots below draw the sales dodged, stacked and normalised:
 
 
 ::: {.sourceClojure}
@@ -160,23 +200,8 @@ takes): `:dodge`, `:stack`, `:normalize`, `:overlay`, and for densities and line
 :::
 
 
-`:overlay` draws the groups over each other, here translucent histograms; `:mirror` draws the second of two
-groups downward:
-
-
-::: {.sourceClojure}
-```clojure
-(def two-groups (for [i (range 400)]
-                  {:g (if (even? i) "early" "late") :v (+ (if (even? i) 2.0 3.5) (* 0.25 (- (mod (* i 37) 17) 8)))}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>g</th><th>v</th></tr></thead><tbody><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>early</td><td>2.75</td></tr><tr><td>late</td><td>5.0</td></tr><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>early</td><td>2.75</td></tr><tr><td>late</td><td>5.0</td></tr><tr><td>early</td><td>0.0</td></tr><tr><td>late</td><td>2.25</td></tr><tr><td>early</td><td>1.5</td></tr><tr><td>late</td><td>3.75</td></tr><tr><td>early</td><td>3.0</td></tr><tr><td>late</td><td>5.25</td></tr><tr><td>early</td><td>0.25</td></tr><tr><td>late</td><td>2.5</td></tr><tr><td>early</td><td>1.75</td></tr><tr><td>late</td><td>4.0</td></tr><tr><td>early</td><td>3.25</td></tr><tr><td>late</td><td>5.5</td></tr><tr><td>early</td><td>0.5</td></tr><tr><td>late</td><td>2.75</td></tr><tr><td>early</td><td>2.0</td></tr><tr><td>late</td><td>4.25</td></tr><tr><td>early</td><td>3.5</td></tr><tr><td>late</td><td>1.5</td></tr><tr><td>early</td><td>0.75</td></tr><tr><td>late</td><td>3.0</td></tr><tr><td>early</td><td>2.25</td></tr><tr><td>late</td><td>4.5</td></tr><tr><td>early</td><td>3.75</td></tr><tr><td>late</td><td>1.75</td></tr><tr><td>early</td><td>1.0</td></tr><tr><td>late</td><td>3.25</td></tr><tr><td>early</td><td>2.5</td></tr><tr><td>late</td><td>4.75</td></tr><tr><td>early</td><td>4.0</td></tr><tr><td>late</td><td>2.0</td></tr><tr><td>early</td><td>1.25</td></tr><tr><td>late</td><td>3.5</td></tr><tr><td>…</td><td>…</td></tr></tbody></table></div>
-```
-
+`:overlay` draws the groups over each other; `:mirror` draws the second of two groups downward. The plots below draw
+the two groups as translucent histograms both ways:
 
 
 ::: {.sourceClojure}
@@ -198,23 +223,9 @@ groups downward:
 :::
 
 
-Streamgraphs: the stack shifted around a centre line - `:silhouette` symmetric, `:wiggle` with the least
-movement (lines filled in their colour, [line](reference.charts_points_lines.html#line-charts) `:fill :color`):
-
-
-::: {.sourceClojure}
-```clojure
-(def streams (for [series ["a" "b" "c" "d"] t (range 30)]
-               {:series series :t t :v (+ 2 (m/sin (+ (* 0.3 t) (count series) (* 1.7 (int (first series))))))}))
-```
-:::
-
-
-
-```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>series</th><th>t</th><th>v</th></tr></thead><tbody><tr><td>a</td><td>0</td><td>2.568277227885458</td></tr><tr><td>a</td><td>1</td><td>2.299730964096259</td></tr><tr><td>a</td><td>2</td><td>2.0044106259584753</td></tr><tr><td>a</td><td>3</td><td>1.7086962997397457</td></tr><tr><td>a</td><td>4</td><td>1.4390032654896916</td></tr><tr><td>a</td><td>5</td><td>1.2194223987442154</td></tr><tr><td>a</td><td>6</td><td>1.0695682043627368</td></tr><tr><td>a</td><td>7</td><td>1.0028267112259202</td></tr><tr><td>a</td><td>8</td><td>1.0251597381427326</td></tr><tr><td>a</td><td>9</td><td>1.1345723423320555</td></tr><tr><td>a</td><td>10</td><td>1.3212910217198974</td></tr><tr><td>a</td><td>11</td><td>1.5686367527716687</td></tr><tr><td>a</td><td>12</td><td>1.8545148779902074</td></tr><tr><td>a</td><td>13</td><td>2.1533887558666667</td></tr><tr><td>a</td><td>14</td><td>2.4385608730117783</td></tr><tr><td>a</td><td>15</td><td>2.684557653515224</td></tr><tr><td>a</td><td>16</td><td>2.869404937614812</td></tr><tr><td>a</td><td>17</td><td>2.9765908679435658</td></tr><tr><td>a</td><td>18</td><td>2.9965408445718644</td></tr><tr><td>a</td><td>19</td><td>2.9274727955035407</td></tr><tr><td>a</td><td>20</td><td>2.775556363859854</td></tr><tr><td>a</td><td>21</td><td>2.5543617920342427</td></tr><tr><td>a</td><td>22</td><td>2.2836477323549147</td></tr><tr><td>a</td><td>23</td><td>1.987596265518499</td></tr><tr><td>a</td><td>24</td><td>1.6926527873419062</td></tr><tr><td>a</td><td>25</td><td>1.4251637203148255</td></tr><tr><td>a</td><td>26</td><td>1.2090230661451788</td></tr><tr><td>a</td><td>27</td><td>1.0635380257487868</td></tr><tr><td>a</td><td>28</td><td>1.0017043444932345</td></tr><tr><td>a</td><td>29</td><td>1.0290454409688556</td></tr><tr><td>b</td><td>0</td><td>1.1108019514138114</td></tr><tr><td>b</td><td>1</td><td>1.0153095168336712</td></tr><tr><td>b</td><td>2</td><td>1.0077765504591571</td></tr><tr><td>b</td><td>3</td><td>1.0888759497414373</td></tr><tr><td>b</td><td>4</td><td>1.251363346876995</td></tr><tr><td>b</td><td>5</td><td>1.4807242266080278</td></tr><tr><td>b</td><td>6</td><td>1.7564704646424676</td></tr><tr><td>b</td><td>7</td><td>2.053970470778235</td></tr><tr><td>b</td><td>8</td><td>2.3466494554970305</td></tr><tr><td>b</td><td>9</td><td>2.6083632767654117</td></tr><tr><td>b</td><td>10</td><td>2.815733818379028</td></tr><tr><td>b</td><td>11</td><td>2.9502372874570733</td></tr><tr><td>b</td><td>12</td><td>2.9998588896919247</td></tr><tr><td>b</td><td>13</td><td>2.960166075141548</td></tr><tr><td>b</td><td>14</td><td>2.834704484714564</td></tr><tr><td>b</td><td>15</td><td>2.6346812286276573</td></tr><tr><td>b</td><td>16</td><td>2.3779637886275764</td></tr><tr><td>b</td><td>17</td><td>2.087483969060531</td></tr><tr><td>b</td><td>18</td><td>1.7891894670865187</td></tr><tr><td>b</td><td>19</td><td>1.5097260421709686</td></tr><tr><td>b</td><td>20</td><td>1.2740573297492523</td></tr><tr><td>b</td><td>21</td><td>1.1032349140214026</td></tr><tr><td>b</td><td>22</td><td>1.0125178526323273</td></tr><tr><td>b</td><td>23</td><td>1.0100096304976978</td></tr><tr><td>b</td><td>24</td><td>1.0959342996306858</td></tr><tr><td>b</td><td>25</td><td>1.2626164652429068</td></tr><tr><td>b</td><td>26</td><td>1.4951669059015777</td></tr><tr><td>b</td><td>27</td><td>1.772812583336262</td></tr><tr><td>b</td><td>28</td><td>2.070752236080345</td></tr><tr><td>b</td><td>29</td><td>2.3623718022932767</td></tr><tr><td>c</td><td>0</td><td>1.6608593179118316</td></tr><tr><td>c</td><td>1</td><td>1.9540129305860816</td></tr><tr><td>c</td><td>2</td><td>2.251274431210004</td></tr><tr><td>c</td><td>3</td><td>2.526090335252343</td></tr><tr><td>c</td><td>4</td><td>2.753912156475747</td></tr><tr><td>c</td><td>5</td><td>2.914389250100985</td></tr><tr><td>c</td><td>6</td><td>2.9931866752955885</td></tr><tr><td>c</td><td>7</td><td>2.983265692745455</td></tr><tr><td>c</td><td>8</td><td>2.8855125142746076</td></tr><tr><td>c</td><td>9</td><td>2.708659140182343</td></tr><tr><td>c</td><td>10</td><td>2.468503355662514</td></tr><tr><td>c</td><td>11</td><td>2.1864975617020375</td></tr><tr><td>c</td><td>12</td><td>1.8878324959913335</td></tr><tr><td>c</td><td>13</td><td>1.5991870193506919</td></tr><tr><td>c</td><td>14</td><td>1.3463449725497316</td></tr><tr><td>c</td><td>15</td><td>1.1518919826020046</td></tr><tr><td>c</td><td>16</td><td>1.0331979559697153</td></tr><tr><td>c</td><td>17</td><td>1.0008654765512972</td></tr><tr><td>c</td><td>18</td><td>1.057782708438946</td></tr><tr><td>c</td><td>19</td><td>1.1988654048219423</td></tr><tr><td>c</td><td>20</td><td>1.4115110686121302</td></tr><tr><td>c</td><td>21</td><td>1.6767246959753275</td></tr><tr><td>c</td><td>22</td><td>1.9708155434519563</td></tr><tr><td>c</td><td>23</td><td>2.267513351513406</td></tr><tr><td>c</td><td>24</td><td>2.5403149886061005</td></tr><tr><td>c</td><td>25</td><td>2.764851896960406</td></tr><tr><td>c</td><td>26</td><td>2.921066863280322</td></tr><tr><td>c</td><td>27</td><td>2.9950056698719</td></tr><tr><td>c</td><td>28</td><td>2.9800635833506677</td></tr><tr><td>c</td><td>29</td><td>2.8775753358042824</td></tr><tr><td>d</td><td>0</td><td>2.9765908679435658</td></tr><tr><td>d</td><td>1</td><td>2.9965408445718644</td></tr><tr><td>d</td><td>2</td><td>2.9274727955035407</td></tr><tr><td>d</td><td>3</td><td>2.775556363859854</td></tr><tr><td>d</td><td>4</td><td>2.5543617920342663</td></tr><tr><td>d</td><td>5</td><td>2.2836477323549147</td></tr><tr><td>d</td><td>6</td><td>1.987596265518499</td></tr><tr><td>d</td><td>7</td><td>1.6926527873419062</td></tr><tr><td>d</td><td>8</td><td>1.4251637203148255</td></tr><tr><td>d</td><td>9</td><td>1.2090230661451962</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody></table></div>
-```
-
+A streamgraph shifts the stack around a centre line: `:silhouette` symmetrically, `:wiggle` with the least movement.
+The plots below draw the series stacked and both ways, the lines filled in their colour
+([line](reference.charts_points_lines.html#line-charts) `:fill :color`):
 
 
 ::: {.sourceClojure}

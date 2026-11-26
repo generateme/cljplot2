@@ -449,7 +449,7 @@
   Returns a closed map schema with rules: a valid `:domain` ([[domain-problem]]) and the options allowed by the kind known from the spec ([[option-problems]])."
   [k]
   (apply schema/with-rules
-         [:map {:closed true :cljplot2/type-doc "an aesthetic scale spec"}
+         [:map {:closed true :cljplot2/type-doc "an aesthetic scale spec" :cljplot2/type-name "aesthetic scale spec"}
           (schema/optional :kind {:cljplot2/section :levels :description "The scale kind: how the domain maps to attributes."
                                   :cljplot2/default-doc "`:linear` for numbers on `:color` or `:size`, dates on `:color` or a domain of two numbers; else `:ordinal`." :cljplot2/example :binned
                                   :cljplot2/value-meanings {:ordinal "Levels, one attribute each, in `:domain` order."

@@ -30,7 +30,7 @@
 (def migrated-builders
   "Builders of `cljplot2.core` whose reference sections show option cards and follow the card rules of
   `option-cards-test` - the builders' switch; `cljplot2.describe/concepts` names their sections by their symbols."
-  '#{network chord arc sankey alluvial dendrogram tree clustered-heatmap bundle sequences acf horizon})
+  '#{network chord arc sankey alluvial dendrogram tree clustered-heatmap bundle sequences acf horizon arrange pairs})
 
 (def migrated-functions
   "User-facing data functions (`:cljplot2/api`, qualified symbols) whose reference sections show option cards and
@@ -63,7 +63,8 @@
   cards (the mapping: mapping lists) and whose texts read in the card style - the schemas' switch: name -> the key
   paths migrated (`[]` - the whole schema; a path covers the entries below it)."
   {:mapping #{[]} :position-scale #{[]} :polar-coord #{[]} :color-scale #{[]} :shape-scale #{[]} :size-scale #{[]}
-   :dash-scale #{[]} :pattern-scale #{[]} :plot #{[:data] [:groups :na] [:aspect] [:flip] [:coord]}})
+   :dash-scale #{[]} :pattern-scale #{[]} :plot #{[]} :facets #{[]} :facet-scale #{[]} :margins #{[]} :margin-spec #{[]}
+   :labels #{[]} :label #{[]} :render-options #{[]}})
 
 (defn path-under?
   "Tests whether key `path` is `root` or lies below it (`[]` - every path)."

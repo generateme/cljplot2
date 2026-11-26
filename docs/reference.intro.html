@@ -505,7 +505,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
    
   <ul>
   <li><a href="#how-the-reference-is-organised" id="toc-how-the-reference-is-organised" class="nav-link active" data-scroll-target="#how-the-reference-is-organised"><span class="header-section-number">1.1</span> How the reference is organised</a></li>
-  <li><a href="#how-to-read-a-table" id="toc-how-to-read-a-table" class="nav-link" data-scroll-target="#how-to-read-a-table"><span class="header-section-number">1.2</span> How to read a table</a></li>
+  <li><a href="#how-to-read-a-card" id="toc-how-to-read-a-card" class="nav-link" data-scroll-target="#how-to-read-a-card"><span class="header-section-number">1.2</span> How to read a card</a></li>
   <li><a href="#a-plot-is-a-map" id="toc-a-plot-is-a-map" class="nav-link" data-scroll-target="#a-plot-is-a-map"><span class="header-section-number">1.3</span> A plot is a map</a>
   <ul>
   <li><a href="#content" id="toc-content" class="nav-link" data-scroll-target="#content"><span class="header-section-number">1.3.1</span> Content</a></li>
@@ -518,7 +518,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
   <li><a href="#render-options" id="toc-render-options" class="nav-link" data-scroll-target="#render-options"><span class="header-section-number">1.3.8</span> Render options</a></li>
   </ul></li>
   <li><a href="#the-pipeline" id="toc-the-pipeline" class="nav-link" data-scroll-target="#the-pipeline"><span class="header-section-number">1.4</span> The pipeline</a></li>
-  <li><a href="#the-tables-as-data" id="toc-the-tables-as-data" class="nav-link" data-scroll-target="#the-tables-as-data"><span class="header-section-number">1.5</span> The tables as data</a></li>
+  <li><a href="#the-cards-as-data" id="toc-the-cards-as-data" class="nav-link" data-scroll-target="#the-cards-as-data"><span class="header-section-number">1.5</span> The cards as data</a></li>
   </ul>
 </nav>
     </div>
@@ -556,7 +556,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme, every chart, builder and user-facing data function. The tables are generated from the library’s validating schemas, so they name exactly what <code>plot/build</code> accepts. Use cases and galleries show the options at work; these four parts say what exists.</p>
+<p>The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme, every chart, builder and user-facing data function. The option cards are generated from the library’s validating schemas, so they name exactly what <code>plot/build</code> accepts. Use cases and galleries show the options at work; these four parts say what exists.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.intro</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -565,73 +565,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            [cljplot2.pipeline <span class="at">:as</span> pipeline]</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="how-the-reference-is-organised" class="level2" data-number="1.1">
-<h2 data-number="1.1" class="anchored" data-anchor-id="how-the-reference-is-organised"><span class="header-section-number">1.1</span> How the reference is organised</h2>
-<ul>
-<li><p><strong>Concepts</strong> (this chapter and the next twelve) - rendering, data and mapping, types, aesthetics and legends, scales and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors and what the library doesn’t do.</p></li>
-<li><p><strong>Charts</strong> - the options of each chart kind, grouped by what they show: <a href="reference.charts_points_lines.html">points, lines and areas</a>, <a href="reference.charts_annotations.html">annotations</a>, <a href="reference.charts_bars.html">bars</a>, <a href="reference.charts_per_level.html">distribution per level</a>, <a href="reference.charts_one_variable.html">distribution of one variable</a>, <a href="reference.charts_fitted_curves.html">fitted curves</a>, <a href="reference.charts_bins_fields.html">2D bins and fields</a>, <a href="reference.charts_pairwise.html">pairwise statistics</a>, <a href="reference.charts_shares_sets.html">shares and sets</a>, <a href="reference.charts_multivariate_3d.html">multivariate and 3D</a>.</p></li>
-<li><p><strong>Builders</strong> (from <a href="reference.builders_graphs.html">Graphs</a>) - the functions turning rows into whole plots: networks, trees, series.</p></li>
-<li><p><strong>Data functions</strong> (from <a href="reference.data_levels.html">Levels</a>) - the user-facing functions preparing rows, and internal namespaces shown by example.</p></li>
-</ul>
-</section>
-<section id="how-to-read-a-table" class="level2" data-number="1.2">
-<h2 data-number="1.2" class="anchored" data-anchor-id="how-to-read-a-table"><span class="header-section-number">1.2</span> How to read a table</h2>
-<p>Each table is one group of related options, followed by an example using them - a chart or a value.</p>
-<ul>
-<li><p><strong>Option</strong> - the key; a nested key is listed after its map, with its full path (<code>:scales :x</code>). <code>(required)</code> marks a key that must be given.</p></li>
-<li><p><strong>Type</strong> - the values the schema accepts.</p></li>
-<li><p><strong>Default</strong> - the value used when the key is absent (style defaults come from the theme), and / or how a computed default is found. Empty: absent means not set - an optional feature off, or a map whose own keys have the defaults.</p></li>
-<li><p><strong>Description</strong> - what the key does.</p></li>
-<li><p><strong>Group</strong> - shown when a table mixes keys of a shared group (data and mapping, curves, strips …) with others; a group is described once, in the Shared options chapter.</p></li>
-</ul>
-<p>Some sections show options as cards instead: each gives the option’s default, what it does, the values or <a href="reference.types.html">types</a> it takes with their meanings, and an example.</p>
-</section>
-<section id="a-plot-is-a-map" class="level2" data-number="1.3">
-<h2 data-number="1.3" class="anchored" data-anchor-id="a-plot-is-a-map"><span class="header-section-number">1.3</span> A plot is a map</h2>
-<p><code>plot/render-image</code> takes a plot map and render options and returns a <code>java.awt.image.BufferedImage</code>. The plot keys come in groups; each has its chapter.</p>
-<section id="content" class="level3" data-number="1.3.1">
-<h3 data-number="1.3.1" class="anchored" data-anchor-id="content"><span class="header-section-number">1.3.1</span> Content</h3>
-<p>The rows, how their values map to dimensions, and the charts drawing them (Data and mapping chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:data</td>
-<td>a sequence of rows (maps) or a map of columns (sequences) or nil</td>
-<td>None: each chart brings its own `:data`.</td>
-<td>The rows or columns the charts read; a chart's own `:data` wins over it.</td>
-</tr>
-<tr class="even">
-<td>:mapping</td>
-<td>a mapping: key -&gt; accessor (a keyword or a function of a row) or nil</td>
-<td></td>
-<td>accessors of the dimensions the charts read (keywords or functions), merged under each chart's</td>
-</tr>
-<tr class="odd">
-<td>:charts</td>
-<td>vector of a chart value (see cljplot2.chart) or nil</td>
-<td></td>
-<td>the charts, drawn in order</td>
-</tr>
-<tr class="even">
-<td>:groups</td>
-<td>map</td>
-<td></td>
-<td>grouping options</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds four made-up points in two groups; most plots of A plot is a map draw them:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> points </span>[{<span class="at">:x</span> <span class="dv">1</span> <span class="at">:y</span> <span class="dv">2</span> <span class="at">:g</span> <span class="st">"a"</span>} {<span class="at">:x</span> <span class="dv">2</span> <span class="at">:y</span> <span class="dv">3</span> <span class="at">:g</span> <span class="st">"a"</span>} {<span class="at">:x</span> <span class="dv">3</span> <span class="at">:y</span> <span class="dv">1</span> <span class="at">:g</span> <span class="st">"b"</span>} {<span class="at">:x</span> <span class="dv">4</span> <span class="at">:y</span> <span class="dv">4</span> <span class="at">:g</span> <span class="st">"b"</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -670,6 +604,33 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
+<section id="how-the-reference-is-organised" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="how-the-reference-is-organised"><span class="header-section-number">1.1</span> How the reference is organised</h2>
+<ul>
+<li><p><strong>Concepts</strong> (this chapter and the next twelve) - rendering, data and mapping, types, aesthetics and legends, scales and coordinates, layering, labels and text, facets and multiplots, the theme, the shared option groups, errors and what the library doesn’t do.</p></li>
+<li><p><strong>Charts</strong> - the options of each chart kind, grouped by what they show: <a href="reference.charts_points_lines.html">points, lines and areas</a>, <a href="reference.charts_annotations.html">annotations</a>, <a href="reference.charts_bars.html">bars</a>, <a href="reference.charts_per_level.html">distribution per level</a>, <a href="reference.charts_one_variable.html">distribution of one variable</a>, <a href="reference.charts_fitted_curves.html">fitted curves</a>, <a href="reference.charts_bins_fields.html">2D bins and fields</a>, <a href="reference.charts_pairwise.html">pairwise statistics</a>, <a href="reference.charts_shares_sets.html">shares and sets</a>, <a href="reference.charts_multivariate_3d.html">multivariate and 3D</a>.</p></li>
+<li><p><strong>Builders</strong> (from <a href="reference.builders_graphs.html">Graphs</a>) - the functions turning rows into whole plots: networks, trees, series.</p></li>
+<li><p><strong>Data functions</strong> (from <a href="reference.data_levels.html">Levels</a>) - the user-facing functions preparing rows, and internal namespaces shown by example.</p></li>
+</ul>
+</section>
+<section id="how-to-read-a-card" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="how-to-read-a-card"><span class="header-section-number">1.2</span> How to read a card</h2>
+<p>Each group of cards holds related options and comes before an example that uses them - a plot or a value.</p>
+<ul>
+<li><p><strong>Header</strong> - the option’s key and its default. A nested key shows its path inside the group’s map (<code>:scales :x</code>), <code>(theme)</code> marks a default the theme holds, and a computed default is described in words. Keys without a default (required keys, and maps whose own keys follow) show none.</p></li>
+<li><p><strong>Example</strong> - for most options, a call that sets the option, or a plot map for plot keys (<code>{:scales {:x {:kind :log}}}</code>).</p></li>
+<li><p><strong>Text</strong> - what the option does, then a point per value or form with its meaning. An option of one form shows only its <a href="reference.types.html">type</a>, and a long list ends with its other values on one line.</p></li>
+</ul>
+<p>A chart’s, builder’s or data function’s section lists the shared groups of options it takes in a box linking to the Shared options chapter, its mapping keys in a Mapping box and its positional arguments in an Arguments box.</p>
+</section>
+<section id="a-plot-is-a-map" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="a-plot-is-a-map"><span class="header-section-number">1.3</span> A plot is a map</h2>
+<p><code>plot/render-image</code> takes a plot map and render options and returns a <code>java.awt.image.BufferedImage</code>. The plot keys come in groups; each has its chapter.</p>
+<section id="content" class="level3" data-number="1.3.1">
+<h3 data-number="1.3.1" class="anchored" data-anchor-id="content"><span class="header-section-number">1.3.1</span> Content</h3>
+<p>These keys hold the rows, how their values map to dimensions, and the charts drawing them (<a href="reference.data_mapping.html">Data and mapping</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:data</code><span class="option-default">Default: None: each chart brings its own <code>:data</code>.</span></dt><dd><div class="option-example"><code>{:data [{:x 1, :y 2} {:x 2, :y 3} {:x 3, :y 1}]}</code></div><div class="option-text">The rows or columns the charts read; a chart's own <code>:data</code> wins over it.<ul><li><a href="reference.types.html#data">data</a></li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: None: each chart brings its own <code>:mapping</code>.</span></dt><dd><div class="option-example"><code>{:mapping {:x :t, :y :v, :color :w}}</code></div><div class="option-text">The accessors of the dimensions the charts read, merged under each chart's own mapping (Data and mapping).<ul><li><span>mapping</span></li></ul></div></dd></div><div class="option-card"><dt><code>:charts</code><span class="option-default">Default: None: an empty panel.</span></dt><dd><div class="option-example"><code>{:charts [(chart/scatter)]}</code></div><div class="option-text">The charts, drawn in order: a later chart lies on top.<ul><li><span>vector of charts</span></li></ul></div></dd></div><div class="option-card"><dt><code>:groups</code></dt><dd><div class="option-text">How the rows' grouping treats missing values.</div></dd></div></dl>
+<p>The plot below draws the points as a line with points:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
@@ -692,29 +653,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="scales" class="level3" data-number="1.3.2">
 <h3 data-number="1.3.2" class="anchored" data-anchor-id="scales"><span class="header-section-number">1.3.2</span> Scales</h3>
-<p>How data values become positions, colours, shapes … (Scales and Aesthetics chapters).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:scales</td>
-<td>map</td>
-<td></td>
-<td>position, facet and aesthetic scale specs</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>This key turns data values into positions, colours, shapes …:</p>
+<dl class="options"><div class="option-card"><dt><code>:scales</code></dt><dd><div class="option-text">The scale specs by dimension: position, facet and aesthetic scales.</div></dd></div></dl>
+<p>The plot below fixes and reverses the y domain and names the colours and their legend:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
@@ -726,7 +667,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.intro_files/image2.png" class="img-fluid"></p>
 </div>
-<p>A logarithmic x scale spreads the small values:</p>
+<p>The <code>:scales</code> map takes a spec per dimension (<a href="reference.scales_axes_coords.html">Scales, axes and coordinates</a>, <a href="reference.facets_arrange.html">Facets, multiplots and margins</a>, <a href="reference.aesthetics_legends.html">Aesthetics and legends</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:scales :x</code><span class="option-default">Default: From the data.</span></dt><dd><div class="option-example"><code>{:scales {:x {:reverse true}}}</code></div><div class="option-text">The x position scale's spec (Scales, axes and coordinates).<ul><li><span>position scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :y</code><span class="option-default">Default: From the data.</span></dt><dd><div class="option-example"><code>{:scales {:y {:reverse true}}}</code></div><div class="option-text">The y position scale's spec (Scales, axes and coordinates).<ul><li><span>position scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet-col</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet-col {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet-col</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet-row</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet-row {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet-row</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :color</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:range [:gold :darkred]}}}</code></div><div class="option-text">The color aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :shape</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:shape {:range [\s \A]}}}</code></div><div class="option-text">The shape aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :size</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:size {:range [1 20]}}}</code></div><div class="option-text">The size aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :dash</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:dash {:range [:dotted :solid]}}}</code></div><div class="option-text">The dash aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :pattern</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:pattern {:range [:dots :cross]}}}</code></div><div class="option-text">The pattern aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div></dl>
+<p>The plot below spreads the small values with a logarithmic x scale:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> (<span class="kw">for</span> [i (<span class="kw">range</span> <span class="dv">1</span> <span class="dv">30</span>)] {<span class="at">:x</span> (<span class="kw">*</span> i i i) <span class="at">:y</span> i})</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
@@ -740,41 +683,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="coordinates" class="level3" data-number="1.3.3">
 <h3 data-number="1.3.3" class="anchored" data-anchor-id="coordinates"><span class="header-section-number">1.3.3</span> Coordinates</h3>
-<p>Cartesian (optionally flipped or with equal units) or polar (Scales chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:aspect</td>
-<td>one of :iso or nil</td>
-<td>Free: the panel takes the space it gets.</td>
-<td>The ratio of the panel's axes in data units.</td>
-</tr>
-<tr class="even">
-<td>:flip</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>Whether the `:x` scale is drawn vertically and the `:y` scale horizontally; scales, labels and theme keys keep their names.</td>
-</tr>
-<tr class="odd">
-<td>:coord</td>
-<td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td>
-<td>Cartesian.</td>
-<td>The coordinate system the panels map the position scales to.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These keys set the coordinates: cartesian, flipped or with equal units, or polar (<a href="reference.scales_axes_coords.html">Scales, axes and coordinates</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:aspect</code><span class="option-default">Default: Free: the panel takes the space it gets.</span></dt><dd><div class="option-example"><code>{:aspect :iso}</code></div><div class="option-text">The ratio of the panel's axes in data units.<ul><li><code>:iso</code> – Equal pixels per data unit on both linear axes; the panel shrinks to fit.</li></ul></div></dd></div><div class="option-card"><dt><code>:flip</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:flip true}</code></div><div class="option-text">Whether the <code>:x</code> scale is drawn vertically and the <code>:y</code> scale horizontally; scales, labels and theme keys keep their names.<ul><li><code>false</code> – <code>:x</code> horizontal, <code>:y</code> vertical.</li><li><code>true</code> – Flipped.</li></ul></div></dd></div><div class="option-card"><dt><code>:coord</code><span class="option-default">Default: Cartesian.</span></dt><dd><div class="option-example"><code>{:coord {:kind :polar}}</code></div><div class="option-text">The coordinate system the panels map the position scales to.<ul><li><span><code>{:kind :cartesian}</code></span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li><li><span>polar coord</span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li></ul></div></dd></div></dl>
+<p>The plot below flips the bars horizontal, their order reversed:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> [{<span class="at">:fruit</span> <span class="st">"apples"</span> <span class="at">:n</span> <span class="dv">3</span>} {<span class="at">:fruit</span> <span class="st">"pears"</span> <span class="at">:n</span> <span class="dv">5</span>} {<span class="at">:fruit</span> <span class="st">"plums"</span> <span class="at">:n</span> <span class="dv">2</span>}]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:fruit</span> <span class="at">:y</span> <span class="at">:n</span>}</span>
@@ -801,47 +712,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="layout" class="level3" data-number="1.3.4">
 <h3 data-number="1.3.4" class="anchored" data-anchor-id="layout"><span class="header-section-number">1.3.4</span> Layout</h3>
-<p>Panels split by data, several plots in a grid, charts beside the panel (Facets chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:facets</td>
-<td>map</td>
-<td></td>
-<td>facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights</td>
-</tr>
-<tr class="even">
-<td>:custom-grid</td>
-<td>map or nil</td>
-<td></td>
-<td>a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)</td>
-</tr>
-<tr class="odd">
-<td>:arrange</td>
-<td>an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels} or nil</td>
-<td></td>
-<td>a multiplot: sub-plots in a grid (only :labels {:title t} beside it)</td>
-</tr>
-<tr class="even">
-<td>:margins</td>
-<td>map</td>
-<td></td>
-<td>charts beside the panel sharing its scales (marginal plots)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These keys split the panel by data, put several plots in a grid or charts beside the panel (<a href="reference.facets_arrange.html">Facets, multiplots and margins</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:facets</code><span class="option-default">Default: One panel per facet level, sharing scales.</span></dt><dd><div class="option-example"><code>{:facets {:columns 1}}</code></div><div class="option-text">The facet layout: wrap shape, panel order, the NA panel, scale relations, strips and panel weights (Facets, multiplots and margins).</div></dd></div><div class="option-card"><dt><code>:custom-grid</code><span class="option-default">Default: None: the generated grid.</span></dt><dd><div class="option-text">A hand-written layout grid instead of the generated one; only <code>:labels {:title t}</code> may stand beside it.<ul><li><span>map</span> – Tracks and items of the <code>cljplot2.layout.grid</code> namespace doc (Facets, multiplots and margins).</li></ul></div></dd></div><div class="option-card"><dt><code>:arrange</code><span class="option-default">Default: None: a single plot.</span></dt><dd><div class="option-text">A multiplot: sub-plots in a grid; only <code>:labels {:title t}</code> may stand beside it (<code>plot/arrange</code> builds it).<ul><li><span>arrange map</span></li></ul></div></dd></div><div class="option-card"><dt><code>:margins</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:top (chart/density)}}</code></div><div class="option-text">Charts beside the panel, sharing its scales (Facets, multiplots and margins).</div></dd></div></dl>
+<p>The plot below splits the points into a panel per group:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:facet</span> <span class="at">:g</span>}</span>
@@ -851,7 +724,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.intro_files/image6.png" class="img-fluid"></p>
 </div>
-<p>Several plots in one image (<code>plot/arrange</code>, Facets chapter), here two columns weighted 3 : 2:</p>
+<p>The plot below puts two plots in one image with <code>plot/arrange</code>, in two columns weighted 3 : 2:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> points <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>} <span class="at">:charts</span> [(chart/line) (chart/scatter)]}</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> points <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:g</span>} <span class="at">:charts</span> [(chart/scatter)]}]</span>
@@ -864,29 +737,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="titles" class="level3" data-number="1.3.5">
 <h3 data-number="1.3.5" class="anchored" data-anchor-id="titles"><span class="header-section-number">1.3.5</span> Titles</h3>
-<p>The plot title and the axis titles (Labels chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:labels</td>
-<td>map</td>
-<td></td>
-<td>plot title and axis titles</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>This key holds the titles (<a href="reference.labels_text.html">Labels and text</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis titles the charts suggest.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title and the axis titles (Labels and text).</div></dd></div></dl>
+<p>The plot below names the plot and both axes:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
@@ -900,35 +753,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="legend" class="level3" data-number="1.3.6">
 <h3 data-number="1.3.6" class="anchored" data-anchor-id="legend"><span class="header-section-number">1.3.6</span> Legend</h3>
-<p>Legends are drawn for mapped aesthetics; these keys hide them or draw only them (Aesthetics chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:legend</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>draw the legends (false hides all)</td>
-</tr>
-<tr class="even">
-<td>:legend-only</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>draw only the legends (a legend cell of an :arrange)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Mapped aesthetics draw legends; these keys hide them or draw only them (<a href="reference.aesthetics_legends.html">Aesthetics and legends</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:legend</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:legend false}</code></div><div class="option-text">Whether the plot draws its legends.<ul><li><code>true</code> – Every scale's legend unless its own <code>:legend</code> is false.</li><li><code>false</code> – No legends.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend-only</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:legend-only true}</code></div><div class="option-text">Whether the plot draws only its legends, e.g. as a legend cell of an arrange.<ul><li><code>false</code> – The whole plot.</li><li><code>true</code> – Legends only: no panel or axes.</li></ul></div></dd></div></dl>
+<p>The plot below hides the legend of its colours:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
@@ -942,35 +769,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="style" class="level3" data-number="1.3.7">
 <h3 data-number="1.3.7" class="anchored" data-anchor-id="style"><span class="header-section-number">1.3.7</span> Style</h3>
-<p>The theme holds every style default; a plot overrides parts of it (Theme chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:alternate-panel</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>shade a single panel as an odd facet panel (theme [:panel :alternate-fill])</td>
-</tr>
-<tr class="even">
-<td>:theme</td>
-<td>any value</td>
-<td></td>
-<td>theme overrides, deep-merged over the default theme</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The theme holds every style default; these keys override parts of it for one plot (<a href="reference.theme.html">Theme</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:alternate-panel</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:alternate-panel true}</code></div><div class="option-text">Whether a single panel is shaded as an odd facet panel, with the theme's <code>[:panel :alternate-fill]</code>.<ul><li><code>false</code> – Not shaded.</li><li><code>true</code> – Shaded, e.g. a checkerboard of arranged cells.</li></ul></div></dd></div><div class="option-card"><dt><code>:theme</code><span class="option-default">Default: The default theme.</span></dt><dd><div class="option-example"><code>{:theme {:plot {:background :white}}}</code></div><div class="option-text">Theme overrides, deep-merged over the default theme (Theme).<ul><li><span>any value</span></li></ul></div></dd></div></dl>
+<p>The plot below gives the plot a white background and the panel a light fill and a border:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
@@ -985,29 +786,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="render-options" class="level3" data-number="1.3.8">
 <h3 data-number="1.3.8" class="anchored" data-anchor-id="render-options"><span class="header-section-number">1.3.8</span> Render options</h3>
-<p>Render options travel with the plot under <code>:options</code>; those given to <code>render-image</code> win (Render chapter).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:options</td>
-<td>map or nil</td>
-<td></td>
-<td>render options, merged under the ones given to build / render</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>This key lets a plot carry its render options (<a href="reference.render.html">Render</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:options</code><span class="option-default">Default: None: the defaults, or the render options given to <code>build</code>.</span></dt><dd><div class="option-example"><code>{:options {:debug true}}</code></div><div class="option-text">Render options, merged under those given to <code>build</code> or <code>render-image</code> (Render).<ul><li><span>map</span> – Keys of the render options.</li></ul></div></dd></div></dl>
+<p>The plot below carries its own size, so <code>render-image</code> takes no options:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span>}</span>
@@ -1021,11 +802,17 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="the-pipeline" class="level2" data-number="1.4">
 <h2 data-number="1.4" class="anchored" data-anchor-id="the-pipeline"><span class="header-section-number">1.4</span> The pipeline</h2>
-<p><code>plot/build</code> validates the plot first and throws an error listing the problems (Errors chapter). Then the plot passes through pure stages, each adding one key: <code>:split</code> (rows split per facet panel and group) → <code>:stats</code> (each chart’s computed data) → <code>:extents</code> → <code>:scale-specs</code> → <code>:grid</code> → <code>:layout</code> → <code>:finalized-scales</code> → <code>:subplots</code>. <code>plot/render</code> draws the result.</p>
+<p><code>plot/build</code> validates the plot first and throws an error listing the problems (<a href="reference.errors.html">Errors</a>). Then the plot passes through pure stages, each adding one key: <code>:split</code> (rows split per facet panel and group) → <code>:stats</code> (each chart’s computed data) → <code>:extents</code> → <code>:scale-specs</code> → <code>:grid</code> → <code>:layout</code> → <code>:finalized-scales</code> → <code>:subplots</code>. <code>plot/render</code> draws the result.</p>
 </section>
-<section id="the-tables-as-data" class="level2" data-number="1.5">
-<h2 data-number="1.5" class="anchored" data-anchor-id="the-tables-as-data"><span class="header-section-number">1.5</span> The tables as data</h2>
-<p>The tables come from <code>cljplot2.describe</code>, usable at the REPL too: <code>describe/options</code> takes a chart value, a builder or data function var or a schema; <code>describe/mapping</code> the mapping keys a chart reads; <code>describe/theme-rows</code> the theme; <code>describe/fragment-rows</code> a shared group; <code>describe/api-vars</code> lists the user-facing data functions, <code>describe/chart-constructors</code> the charts, <code>describe/attribute-values</code> the built-in shapes, dashes, patterns and cells. A row is a plain map; <code>:section</code> names its table slice:</p>
+<section id="the-cards-as-data" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="the-cards-as-data"><span class="header-section-number">1.5</span> The cards as data</h2>
+<p>The cards come from <code>cljplot2.describe</code>, which you can use at the REPL too:</p>
+<ul>
+<li><p><code>describe/options</code> returns the rows of a chart value, a builder or data function var, or a schema;</p></li>
+<li><p><code>describe/mapping</code> returns the mapping keys a chart reads, <code>describe/theme-rows</code> the theme’s rows and <code>describe/fragment-rows</code> a shared group’s;</p></li>
+<li><p><code>describe/api-vars</code> lists the user-facing data functions, <code>describe/chart-constructors</code> the charts and <code>describe/attribute-values</code> the built-in shapes, dashes, patterns and cells.</p></li>
+</ul>
+<p>A row is a plain map; <code>:section</code> names its slice of the options:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">first</span> (describe/options pipeline/plot-schema))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>

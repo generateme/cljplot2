@@ -559,6 +559,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            [cljplot2.pipeline <span class="at">:as</span> pipeline]</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>The table below holds the mtcars cars; every section draws them:</p>
 <p>Data: Motor Trend car road tests (1974), R datasets package <code>mtcars</code> (Henderson &amp; Velleman 1981); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> mtcars </span>(nu/dataset <span class="at">:mtcars</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1037,53 +1038,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </div>
 <section id="facet-shape" class="level2" data-number="9.1">
 <h2 data-number="9.1" class="anchored" data-anchor-id="facet-shape"><span class="header-section-number">9.1</span> Facet shape</h2>
-<p>Mapping <code>:facet</code> wraps one panel per level into rows and columns; <code>:facet-col</code> / <code>:facet-row</code> make a grid of them. The plot’s <code>:facets</code> map shapes the wrap and weights the panel columns and rows.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:columns</td>
-<td>a positive integer or nil</td>
-<td>the most square shape (from :rows when given)</td>
-<td>columns of a wrap layout</td>
-</tr>
-<tr class="even">
-<td>:rows</td>
-<td>a positive integer or nil</td>
-<td>the most square shape (from :columns when given)</td>
-<td>rows of a wrap layout</td>
-</tr>
-<tr class="odd">
-<td>:order</td>
-<td>one of :top-down :bottom-up or nil</td>
-<td>:top-down</td>
-<td>wrap panel order: :top-down (first level at the top) or :bottom-up (lattice's)</td>
-</tr>
-<tr class="even">
-<td>:widths</td>
-<td>sequential of a positive number (at least 1) or nil</td>
-<td>equal</td>
-<td>relative widths of the panel columns, one per column</td>
-</tr>
-<tr class="odd">
-<td>:heights</td>
-<td>sequential of a positive number (at least 1) or nil</td>
-<td>equal</td>
-<td>relative heights of the panel rows, one per row</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>Mapping <code>:facet</code> wraps one panel per level into rows and columns; <code>:facet-col</code> and <code>:facet-row</code> make a grid of them. These keys of the plot’s <code>:facets</code> map shape the wrap and weight the panel columns and rows. The plot below wraps the carburettor counts into four columns, filled from the bottom:</p>
+<dl class="options"><div class="option-card"><dt><code>:columns</code><span class="option-default">Default: The most square shape, from <code>:rows</code> when given.</span></dt><dd><div class="option-example"><code>{:facets {:columns 1}}</code></div><div class="option-text">The number of columns of a wrap layout.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:rows</code><span class="option-default">Default: The most square shape, from <code>:columns</code> when given.</span></dt><dd><div class="option-example"><code>{:facets {:rows 3}}</code></div><div class="option-text">The number of rows of a wrap layout.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:order</code><span class="option-default">Default: <code>:top-down</code></span></dt><dd><div class="option-example"><code>{:facets {:columns 2, :order :bottom-up}}</code></div><div class="option-text">The order in which a wrap layout fills its panels.<ul><li><code>:top-down</code> – The first level at the top left.</li><li><code>:bottom-up</code> – The first level at the bottom left, as lattice does.</li></ul></div></dd></div><div class="option-card"><dt><code>:widths</code><span class="option-default">Default: Equal.</span></dt><dd><div class="option-example"><code>{:facets {:widths [1 2 1]}}</code></div><div class="option-text">The relative widths of the panel columns, one per column.<ul><li><span>sequence of positive numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:heights</code><span class="option-default">Default: Equal.</span></dt><dd><div class="option-example"><code>{:facets {:columns 1, :heights [1 2 1]}}</code></div><div class="option-text">The relative heights of the panel rows, one per row.<ul><li><span>sequence of positive numbers</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:facet</span> <span class="at">:carb</span>}</span>
@@ -1097,53 +1053,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="facet-panels" class="level2" data-number="9.2">
 <h2 data-number="9.2" class="anchored" data-anchor-id="facet-panels"><span class="header-section-number">9.2</span> Facet panels</h2>
-<p>Panels share their position scales unless freed per axis (<code>:free</code> - each panel its data; <code>:sliced</code> - each panel its centre, the widest span); <code>nil</code> facet values get a panel of their own; strips can go.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:na-panel</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>give nil facet values a panel of their own (false - drop those rows)</td>
-</tr>
-<tr class="even">
-<td>:scales</td>
-<td>map</td>
-<td></td>
-<td>position scale relation between panels per axis</td>
-</tr>
-<tr class="odd">
-<td>:scales :x</td>
-<td>one of :free :same :sliced or nil</td>
-<td>:same</td>
-<td>x relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td>
-</tr>
-<tr class="even">
-<td>:scales :y</td>
-<td>one of :free :same :sliced or nil</td>
-<td>:same</td>
-<td>y relation: :same (one domain), :free (each panel's data) or :sliced (each panel's centre, the widest span)</td>
-</tr>
-<tr class="odd">
-<td>:strips</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>draw the facet strips</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These keys decide how the panels share their scales, what happens to <code>nil</code> facet values and whether the panels draw strips. The plot below frees the x scales of a grid (per column) and widens its last column with the shape key <code>:widths</code>:</p>
+<dl class="options"><div class="option-card"><dt><code>:na-panel</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:facets {:na-panel false}}</code></div><div class="option-text">Whether <code>nil</code> facet values get a panel of their own, the last.<ul><li><code>true</code> – An NA panel.</li><li><code>false</code> – Those rows are dropped.</li></ul></div></dd></div><div class="option-card"><dt><code>:scales</code></dt><dd><div class="option-text">How the panels share their position scales, per axis.</div></dd></div><div class="option-card"><dt><code>:scales :x</code><span class="option-default">Default: <code>:same</code></span></dt><dd><div class="option-example"><code>{:facets {:scales {:x :free}}}</code></div><div class="option-text">How the panels share the x scale.<ul><li><code>:same</code> – One domain for every panel.</li><li><code>:free</code> – Each panel's own data domain; in a facet grid each column's (x) or row's (y).</li><li><code>:sliced</code> – Each panel's own centre with the span of the widest panel; in a facet grid per column (x) or row (y).</li></ul></div></dd></div><div class="option-card"><dt><code>:scales :y</code><span class="option-default">Default: <code>:same</code></span></dt><dd><div class="option-example"><code>{:facets {:scales {:y :free}}}</code></div><div class="option-text">How the panels share the y scale.<ul><li><code>:same</code> – One domain for every panel.</li><li><code>:free</code> – Each panel's own data domain; in a facet grid each column's (x) or row's (y).</li><li><code>:sliced</code> – Each panel's own centre with the span of the widest panel; in a facet grid per column (x) or row (y).</li></ul></div></dd></div><div class="option-card"><dt><code>:strips</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:facets {:strips false}}</code></div><div class="option-text">Whether the panels draw their facet strips.<ul><li><code>true</code> – Strips drawn.</li><li><code>false</code> – No strips.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:facet-col</span> <span class="at">:cyl</span> <span class="at">:facet-row</span> <span class="at">:am</span>}</span>
@@ -1154,7 +1065,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image1.png" class="img-fluid"></p>
 </div>
-<p><code>:sliced</code>: every panel spans as much as the widest one, around its own data - the panels’ y ranges are comparable in size although they sit at different heights:</p>
+<p>In the plot below <code>:sliced</code> y scales give the panels y ranges of one size at different heights:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:facet</span> <span class="at">:cyl</span>}</span>
@@ -1168,53 +1079,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="facet-levels" class="level2" data-number="9.3">
 <h2 data-number="9.3" class="anchored" data-anchor-id="facet-levels"><span class="header-section-number">9.3</span> Facet levels</h2>
-<p>The facet levels have scales: <code>:scales {:facet spec}</code> (and <code>:facet-col</code> / <code>:facet-row</code>) order the panels and write the strip texts.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:domain</td>
-<td>sequential of any value (at least 1) or nil</td>
-<td>the data's levels, sorted (NA last)</td>
-<td>the facet levels in panel order (values outside are dropped)</td>
-</tr>
-<tr class="even">
-<td>:formatter</td>
-<td>a function</td>
-<td>(str level), "NA" for the NA level</td>
-<td>strip text of a level, a function of the level</td>
-</tr>
-<tr class="odd">
-<td>:order-by</td>
-<td>a function or nil</td>
-<td></td>
-<td>levels in ascending order of a function of each level's rows (not with :domain)</td>
-</tr>
-<tr class="even">
-<td>:descending</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>reverse the :order-by order (needs :order-by)</td>
-</tr>
-<tr class="odd">
-<td>:type</td>
-<td>:categorical</td>
-<td></td>
-<td>facets are always categorical (accepted for symmetry with other scales)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The facet levels have scales: <code>:scales {:facet spec}</code> (and <code>:facet-col</code>, <code>:facet-row</code>) order the panels and write the strip texts. The plot below orders the gears from five down and names them:</p>
+<dl class="options"><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The data's levels, sorted, the NA level last.</span></dt><dd><div class="option-example"><code>{:scales {:facet {:domain [2 1]}}}</code></div><div class="option-text">The facet levels in panel order; rows of other levels are dropped, but <code>nil</code> ones keep the NA panel unless <code>:na-panel</code> is false.<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:formatter</code><span class="option-default">Default: The level as text.</span></dt><dd><div class="option-example"><code>{:scales {:facet {:formatter (fn [level] (str "walk " level))}}}</code></div><div class="option-text">A function of a level that returns its strip text; the NA level stays <code>NA</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:order-by</code><span class="option-default">Default: The <code>:domain</code> order, else the levels sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet {:order-by (fn [rows] (- (reduce + (map :v rows))))}}}</code></div><div class="option-text">Orders the levels by a function of each level's rows, smallest first; it can't be combined with <code>:domain</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:descending</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:facet {:order-by (fn [rows] (reduce + (map :v rows))), :descending true}}}</code></div><div class="option-text">Whether <code>:order-by</code> puts the largest result first.<ul><li><code>false</code> – Smallest first.</li><li><code>true</code> – Largest first.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:facet</span> <span class="at">:gear</span>}</span>
@@ -1228,87 +1094,12 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="arrange" class="level2" data-number="9.4">
 <h2 data-number="9.4" class="anchored" data-anchor-id="arrange"><span class="header-section-number">9.4</span> Arrange</h2>
-<p><code>plot/arrange</code> puts plots in a grid; the panels align across rows and columns. Its options:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-<th data-quarto-table-cell-role="th">Group</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:columns</td>
-<td>a positive integer or nil</td>
-<td>One column, or as many as `:rows` needs.</td>
-<td>The number of grid columns.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="even">
-<td>:rows</td>
-<td>a positive integer or nil</td>
-<td>As many as the plots need in `:columns`.</td>
-<td>The number of grid rows.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="odd">
-<td>:widths</td>
-<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
-<td>Equal widths.</td>
-<td>The columns' relative widths, one per column.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="even">
-<td>:heights</td>
-<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
-<td>Equal heights.</td>
-<td>The rows' relative heights, one per row.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="odd">
-<td>:row-spans</td>
-<td>map of integer (at least 0) to a positive integer or nil</td>
-<td>Every plot spans one row.</td>
-<td>A map from a plot's index (not its cell's) to the number of rows the plot spans from its own row down; later plots skip the covered cells.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="even">
-<td>:align</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>Whether the sub-plots' panels line up in rows and columns.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="odd">
-<td>:equal-panels</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>Whether every aligned panel gets the same size and the gaps between panels are even; the plot builds twice.</td>
-<td>Multiplot layout</td>
-</tr>
-<tr class="even">
-<td>:title</td>
-<td>any value</td>
-<td>No title.</td>
-<td>The plot's title: a text or a label options map.</td>
-<td>Builder options</td>
-</tr>
-<tr class="odd">
-<td>:theme</td>
-<td>any value</td>
-<td>The default theme.</td>
-<td>A theme merged over the builder's own theme settings and the default theme for the built plot.</td>
-<td>Builder options</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><code>plot/arrange</code> puts plots in a grid; use it to show several plots in one image, their panels aligned across rows and columns.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#multiplot-layout">Multiplot layout</a> – <code>:columns</code> <code>:rows</code> <code>:widths</code> <code>:heights</code> <code>:row-spans</code> <code>:align</code> <code>:equal-panels</code></li><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code> <code>:theme</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>plots</code> – The plot maps of the cells, filled row by row.</li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map whose <code>:arrange</code> key holds the plots and the layout.</div></div>
+<p>The cards below show these groups as <code>plot/arrange</code> options:</p>
+<dl class="options"><div class="option-card"><dt><code>:columns</code><span class="option-default">Default: One column, or as many as <code>:rows</code> needs.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:columns 2})</code></div><div class="option-text">The number of grid columns.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:rows</code><span class="option-default">Default: As many as the plots need in <code>:columns</code>.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:rows 1})</code></div><div class="option-text">The number of grid rows.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:widths</code><span class="option-default">Default: Equal widths.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:columns 2, :widths [3 2]})</code></div><div class="option-text">The columns' relative widths, one per column.<ul><li><span>sequence of (positive number or :measured or [:fixed, non-negative number])</span> – Per column a weight, <code>:measured</code> - the width of its legend-only plots - or <code>[:fixed px]</code>, a width in pixels.</li></ul></div></dd></div><div class="option-card"><dt><code>:heights</code><span class="option-default">Default: Equal heights.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:heights [3 1]})</code></div><div class="option-text">The rows' relative heights, one per row.<ul><li><span>sequence of (positive number or :measured or [:fixed, non-negative number])</span> – Per row a weight, <code>:measured</code> - the height of its legend-only plots, scaled down to fit - or <code>[:fixed px]</code>, a height in pixels.</li></ul></div></dd></div><div class="option-card"><dt><code>:row-spans</code><span class="option-default">Default: Every plot spans one row.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:columns 2, :row-spans {0 2}})</code></div><div class="option-text">A map from a plot's index (not its cell's) to the number of rows the plot spans from its own row down; later plots skip the covered cells.<ul><li><span>map of integer at least 0 to positive integer</span></li></ul></div></dd></div><div class="option-card"><dt><code>:align</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(plot/arrange plots {:align false})</code></div><div class="option-text">Whether the sub-plots' panels line up in rows and columns.<ul><li><code>true</code> – Panels line up.</li><li><code>false</code> – Each sub-plot fills its cell on its own.</li></ul></div></dd></div><div class="option-card"><dt><code>:equal-panels</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(plot/arrange plots {:columns 2, :equal-panels true})</code></div><div class="option-text">Whether every aligned panel gets the same size and the gaps between panels are even; the plot builds twice.<ul><li><code>false</code> – Panels as the tracks fall.</li><li><code>true</code> – Equal panels and gaps.</li></ul></div></dd></div><div class="option-card"><dt><code>:title</code><span class="option-default">Default: No title.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:title "Friends"})</code></div><div class="option-text">The plot's title: a text or a label map.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:theme</code><span class="option-default">Default: The default theme.</span></dt><dd><div class="option-example"><code>(plot/arrange plots {:theme {:chart {:network-node {:color :black}}}})</code></div><div class="option-text">A theme merged over the builder's own theme settings and the default theme for the built plot.<ul><li><span>any value</span></li></ul></div></dd></div></dl>
+<p>The plot below puts three plots in a row weighted 2 : 1 : 1, under a title:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span>} <span class="at">:charts</span> [(chart/scatter)]}</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:mpg</span>} <span class="at">:charts</span> [(chart/histogram {<span class="at">:bins</span> <span class="dv">10</span>})]}</span>
@@ -1319,7 +1110,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image4.png" class="img-fluid"></p>
 </div>
-<p>A cell too small for its sub-plot’s axes, labels, legends and margins is an error naming the cell (<code>[:plot i]</code>, row by row; a nested cell by its whole path, outer cells first), its title - else its mapped <code>:x</code> / <code>:y</code> - its size and the pixels needed, keyed <code>:width</code> or <code>:height</code>. Eight plots side by side in 400 pixels:</p>
+<p><code>plot/build</code> throws an error when a cell is too small for its sub-plot’s axes, labels, legends and margins. The error names the cell (<code>[:plot i]</code>, row by row; a nested cell by its whole path, outer cells first), its title (else its mapped <code>:x</code> / <code>:y</code>), its size and the pixels it needs, under <code>:width</code> or <code>:height</code>. Below, eight plots stand side by side in 400 pixels:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">try</span> (plot/build (plot/arrange (<span class="kw">repeat</span> <span class="dv">8</span> {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span>} <span class="at">:charts</span> [(chart/scatter)]})</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                               {<span class="at">:columns</span> <span class="dv">8</span>})</span>
@@ -1343,71 +1134,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">:subplot</span> [<span class="at">:plot</span> <span class="dv">0</span>],</span>
 <span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">:subplot-path</span> [[<span class="at">:plot</span> <span class="dv">0</span>]]}}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>It returns a plot whose <code>:arrange</code> key holds the plots and the layout - also written by hand. Here a legend shown once, in its own cell: the two plots hide their legends (<code>:legend false</code>), a third plot draws only its legend (<code>:legend-only true</code> - no panel or axes, plot keys in the intro’s Legend slice) in a column sized to fit (<code>:measured</code>):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:plots (required)</td>
-<td>sequential of map (at least 1)</td>
-<td></td>
-<td>The sub-plots, filling the grid row by row; `plot/arrange` takes them as its first argument.</td>
-</tr>
-<tr class="even">
-<td>:columns</td>
-<td>a positive integer or nil</td>
-<td>One column, or as many as `:rows` needs.</td>
-<td>The number of grid columns.</td>
-</tr>
-<tr class="odd">
-<td>:rows</td>
-<td>a positive integer or nil</td>
-<td>As many as the plots need in `:columns`.</td>
-<td>The number of grid rows.</td>
-</tr>
-<tr class="even">
-<td>:widths</td>
-<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
-<td>Equal widths.</td>
-<td>The columns' relative widths, one per column.</td>
-</tr>
-<tr class="odd">
-<td>:heights</td>
-<td>sequential of a positive number or :measured or [:fixed, a non-negative number] or nil</td>
-<td>Equal heights.</td>
-<td>The rows' relative heights, one per row.</td>
-</tr>
-<tr class="even">
-<td>:row-spans</td>
-<td>map of integer (at least 0) to a positive integer or nil</td>
-<td>Every plot spans one row.</td>
-<td>A map from a plot's index (not its cell's) to the number of rows the plot spans from its own row down; later plots skip the covered cells.</td>
-</tr>
-<tr class="odd">
-<td>:align</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>Whether the sub-plots' panels line up in rows and columns.</td>
-</tr>
-<tr class="even">
-<td>:equal-panels</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>Whether every aligned panel gets the same size and the gaps between panels are even; the plot builds twice.</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><code>plot/arrange</code> returns a plot whose <code>:arrange</code> map holds the plots and the options above. You can also write that map by hand, with its plots under <code>:plots</code>:</p>
+<dl class="options"><div class="option-card"><dt><code>:plots</code></dt><dd><div class="option-text">The sub-plots, filling the grid row by row; <code>plot/arrange</code> takes them as its first argument.<ul><li><span>sequence of maps</span></li></ul></div></dd></div></dl>
+<p>The plot below shows a legend once, in its own cell: the two plots hide their legends (<code>:legend false</code>), and a third plot draws only its legend (<code>:legend-only true</code> - no panel or axes) in a column sized to fit (<code>:measured</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:arrange</span> {<span class="at">:plots</span> [{<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:gear</span>} <span class="at">:charts</span> [(chart/scatter)]</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:scales</span> {<span class="at">:color</span> {<span class="at">:type</span> <span class="at">:categorical</span>}} <span class="at">:legend</span> <span class="va">false</span>}</span>
@@ -1421,7 +1150,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image5.png" class="img-fluid"></p>
 </div>
-<p><code>:row-spans</code> lets a plot cover several rows from its own down (<code>{plot-index rows}</code> - keyed by the plot’s index, not its cell), and later plots skip the covered cells; without <code>:rows</code> a span reaching past the last row adds rows. Here one legend beside two rows of plots, its colour bar stretched over both:</p>
+<p>Without <code>:rows</code>, a <code>:row-spans</code> span that reaches past the last row adds rows. The plot below puts one legend beside two rows of plots and stretches its colour bar over both:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:wt</span>} <span class="at">:charts</span> [(chart/scatter)] <span class="at">:legend</span> <span class="va">false</span>}</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> mtcars <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:hp</span> <span class="at">:y</span> <span class="at">:mpg</span> <span class="at">:color</span> <span class="at">:wt</span>} <span class="at">:charts</span> [(chart/scatter)] <span class="at">:legend-only</span> <span class="va">true</span>}</span>
@@ -1435,53 +1164,12 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="scatter-plot-matrix" class="level2" data-number="9.5">
 <h2 data-number="9.5" class="anchored" data-anchor-id="scatter-plot-matrix"><span class="header-section-number">9.5</span> Scatter-plot matrix</h2>
-<p><code>plot/pairs</code> draws a cell for every pair of <code>:variables</code> (2 to 20 numeric columns); the cells below, above and on the diagonal take any charts. By default a scatter plot fills the cells below the diagonal, the correlation as a number those above, and a density the diagonal. Its variables:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:variables</td>
-<td>sequential of keyword (2..20) or nil</td>
-<td>required unless :row-variables and :column-variables are given</td>
-<td>the numeric columns, in matrix order (rows and columns)</td>
-</tr>
-<tr class="even">
-<td>:row-variables</td>
-<td>sequential of keyword (1..20) or nil</td>
-<td>:variables</td>
-<td>the numeric columns of the matrix rows, top to bottom (on y)</td>
-</tr>
-<tr class="odd">
-<td>:column-variables</td>
-<td>sequential of keyword (1..20) or nil</td>
-<td>:variables</td>
-<td>the numeric columns of the matrix columns, left to right (on x)</td>
-</tr>
-<tr class="even">
-<td>:mapping</td>
-<td>a mapping: key -&gt; accessor (a keyword or a function of a row) or nil</td>
-<td></td>
-<td>extra mapping of every cell (grouping aesthetics such as :color, :group)</td>
-</tr>
-<tr class="odd">
-<td>:variable-names</td>
-<td>map of keyword to a string, plot/math or plot/runs or nil</td>
-<td>the variable's name</td>
-<td>display names of the variables, {variable text}</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><code>plot/pairs</code> draws a cell for every pair of its variables (2 to 20 numeric columns); use it to see how several variables relate at once. By default a scatter plot fills the cells below the diagonal, the correlation as a number those above, and a density the diagonal.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#builder-options">Builder options</a> – <code>:title</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes before its options map</span></div><ul><li><code>rows</code> – The data: rows or columns.<div>Columns:<ul><li><em>a variable column</em> – Numbers of a variable named in <code>:variables</code> (or <code>:row-variables</code>, <code>:column-variables</code>); a row without a number there is left out of that variable's cells.</li></ul></div></li></ul><div class="mapping-returns"><strong>Returns</strong> – A plot map arranging a cell plot per pair of variables, with one legend.</div></div>
+<p>These options choose the variables:</p>
+<dl class="options"><div class="option-card"><dt><code>:variables</code><span class="option-default">Default: None: required unless <code>:row-variables</code> and <code>:column-variables</code> are given.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :c]})</code></div><div class="option-text">The numeric columns, in matrix order on the rows and the columns.<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:row-variables</code><span class="option-default">Default: <code>:variables</code>.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:column-variables [:a :b], :row-variables [:c :a]})</code></div><div class="option-text">The numeric columns of the matrix rows, top to bottom (on y).<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:column-variables</code><span class="option-default">Default: <code>:variables</code>.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:row-variables [:a :b], :column-variables [:c :a]})</code></div><div class="option-text">The numeric columns of the matrix columns, left to right (on x).<ul><li><span>sequence of keywords</span></li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :mapping {:color :g}})</code></div><div class="option-text">A mapping added to every cell, for grouping aesthetics such as <code>:color</code> or <code>:group</code>.<ul><li><span>mapping</span></li></ul></div></dd></div><div class="option-card"><dt><code>:variable-names</code><span class="option-default">Default: The variable's name.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :diagonal :names, :variable-names {:a "alpha"}})</code></div><div class="option-text">The names shown for the variables, <code>{variable text}</code>.<ul><li><span>map of keyword to string or formula value</span></li></ul></div></dd></div></dl>
+<p>The plot below draws four variables; its <code>:upper</code> spells out the default, a correlation chart:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs mtcars {<span class="at">:variables</span> [<span class="at">:mpg</span> <span class="at">:hp</span> <span class="at">:wt</span> <span class="at">:qsec</span>]</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:upper</span> [(chart/correlation)]})</span>
@@ -1501,53 +1189,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image8.png" class="img-fluid"></p>
 </div>
-<p>Its cells:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:lower</td>
-<td>:none, a chart or a vector of charts or nil or nil</td>
-<td>(chart/scatter)</td>
-<td>charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells</td>
-</tr>
-<tr class="even">
-<td>:upper</td>
-<td>:none, a chart or a vector of charts or nil or nil</td>
-<td>(chart/correlation {:glyph :number})</td>
-<td>charts above the diagonal (a square matrix only); :none - empty cells</td>
-</tr>
-<tr class="odd">
-<td>:diagonal</td>
-<td>:names, :none, a chart or a vector of charts or nil or nil</td>
-<td>(chart/density)</td>
-<td>charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells</td>
-</tr>
-<tr class="even">
-<td>:scales</td>
-<td>map</td>
-<td></td>
-<td>the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one</td>
-</tr>
-<tr class="odd">
-<td>:scales :color</td>
-<td>an aesthetic scale spec</td>
-<td></td>
-<td>the colour scale spec</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set what the cells draw. The plot below draws faded points below the diagonal, shaded correlations above it and the names on it:</p>
+<dl class="options"><div class="option-card"><dt><code>:lower</code><span class="option-default">Default: <code>(chart/scatter)</code>.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :lower (chart/line)})</code></div><div class="option-text">The charts below the diagonal of a square matrix; in a matrix that isn't square, every cell of two different variables.<ul><li><code>:none</code> – Empty cells.</li><li><span>chart</span> – One chart in every such cell, e.g. <code>(chart/scatter)</code>.</li><li><span>sequence of charts</span> – Charts layered in every such cell.</li></ul></div></dd></div><div class="option-card"><dt><code>:upper</code><span class="option-default">Default: <code>(chart/correlation {:glyph :number})</code>.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :upper :none})</code></div><div class="option-text">The charts above the diagonal, in a square matrix only.<ul><li><code>:none</code> – Empty cells.</li><li><span>chart</span> – One chart in every such cell, e.g. <code>(chart/scatter)</code>.</li><li><span>sequence of charts</span> – Charts layered in every such cell.</li></ul></div></dd></div><div class="option-card"><dt><code>:diagonal</code><span class="option-default">Default: <code>(chart/density)</code>.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :diagonal :names})</code></div><div class="option-text">The charts of the diagonal cells, whose row and column variable are the same; each cell has its own magnitude scale.<ul><li><code>:names</code> – The variable's name, in the text role <code>:pairs-name</code>.</li><li><code>:none</code> – Empty cells.</li><li><span>chart</span> – One chart in every such cell, e.g. <code>(chart/scatter)</code>.</li><li><span>sequence of charts</span> – Charts layered in every such cell.</li></ul></div></dd></div><div class="option-card"><dt><code>:scales</code></dt><dd><div class="option-text">The colour scale of every cell that colours, with one colour bar.</div></dd></div><div class="option-card"><dt><code>:scales :color</code><span class="option-default">Default: The computed range of the coloured statistic.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :upper (chart/correlation {:glyph :shade}), :scales {:color {:range [:white :darkred]}}})</code></div><div class="option-text">The colour scale spec; its <code>:domain</code> wins over the matrix's computed one.<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs mtcars {<span class="at">:variables</span> [<span class="at">:mpg</span> <span class="at">:hp</span> <span class="at">:wt</span>]</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:lower</span> (chart/scatter {<span class="at">:alpha</span> <span class="fl">0.6</span>})</span>
@@ -1559,7 +1202,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image9.png" class="img-fluid"></p>
 </div>
-<p><code>:lower</code>, <code>:upper</code> and <code>:diagonal</code> each take a chart, a vector of charts layered in each cell, or <code>:none</code> for empty cells:</p>
+<p>The plot below layers points and a linear fit below the diagonal and leaves the cells above it empty:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs mtcars {<span class="at">:variables</span> [<span class="at">:mpg</span> <span class="at">:hp</span> <span class="at">:wt</span>]</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">:lower</span> [(chart/scatter {<span class="at">:size</span> <span class="dv">4</span>}) (chart/smooth {<span class="at">:method</span> <span class="at">:lm</span>})]</span>
@@ -1570,45 +1213,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image10.png" class="img-fluid"></p>
 </div>
-<p>The matrix’s title, legend column and theme:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-<th data-quarto-table-cell-role="th">Group</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:legend-span</td>
-<td>one of :row :matrix or nil</td>
-<td>:row</td>
-<td>height of the legend column: :row - beside the first row, one row high; :matrix - beside the whole matrix (a legend taller than a row, e.g. of a many-variable matrix)</td>
-<td></td>
-</tr>
-<tr class="even">
-<td>:theme</td>
-<td>any value or nil</td>
-<td></td>
-<td>theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)</td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>:title</td>
-<td>any value</td>
-<td>No title.</td>
-<td>The plot's title: a text or a label options map.</td>
-<td>Builder options</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the matrix’s legend column and theme; the title is a builder option:</p>
+<dl class="options"><div class="option-card"><dt><code>:legend-span</code><span class="option-default">Default: <code>:row</code></span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :upper (chart/correlation {:glyph :shade}), :legend-span :matrix})</code></div><div class="option-text">The height of the legend column.<ul><li><code>:row</code> – Beside the first row, one row high.</li><li><code>:matrix</code> – Beside the whole matrix, for a legend taller than a row.</li></ul></div></dd></div><div class="option-card"><dt><code>:theme</code><span class="option-default">Default: The default theme.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :theme {:plot {:background :white}}})</code></div><div class="option-text">The theme of every cell and of the matrix; a <code>[:plot :margin]</code> or <code>[:multiplot :gap]</code> you give replaces the matrix's own tight spacing.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:title</code><span class="option-default">Default: No title.</span></dt><dd><div class="option-example"><code>(plot/pairs rows {:variables [:a :b :c], :title "Friends"})</code></div><div class="option-text">The plot's title: a text or a label map.<ul><li><span>any value</span></li></ul></div></dd></div></dl>
 <p>Only the outer cells have axes (x under the bottom row, y left of the left column), and every panel gets one size (the room between rows follows each row’s end tick labels), so a matrix of many variables fits a page - up to 20, though at that count tick labels get dense: give such a matrix a large image. Its rows are low, so a legend taller than a row goes beside the whole matrix with <code>:legend-span :matrix</code> (the default <code>:row</code> keeps it beside the first row) - here every numeric column of mtcars, with the r colour bar of the shaded correlations as tall as the matrix.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs mtcars {<span class="at">:variables</span> [<span class="at">:mpg</span> <span class="at">:cyl</span> <span class="at">:disp</span> <span class="at">:hp</span> <span class="at">:drat</span> <span class="at">:wt</span> <span class="at">:qsec</span> <span class="at">:vs</span> <span class="at">:am</span> <span class="at">:gear</span> <span class="at">:carb</span>]</span>
@@ -1624,47 +1230,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="margins" class="level2" data-number="9.6">
 <h2 data-number="9.6" class="anchored" data-anchor-id="margins"><span class="header-section-number">9.6</span> Margins</h2>
-<p><code>:margins</code> puts charts above (<code>:top</code>), right of (<code>:right</code>), below (<code>:bottom</code>) and left of (<code>:left</code>) a panel, sharing its horizontal / vertical scale; margin charts read the plot’s data with <code>:x</code> mapped to the shared dimension. A margin is a chart or a vector of charts …</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:top</td>
-<td>a chart, a vector of charts or {:charts c :size px :axis bool}</td>
-<td></td>
-<td>charts above the panel sharing its horizontal scale</td>
-</tr>
-<tr class="even">
-<td>:right</td>
-<td>a chart, a vector of charts or {:charts c :size px :axis bool}</td>
-<td></td>
-<td>charts right of the panel sharing its vertical scale</td>
-</tr>
-<tr class="odd">
-<td>:bottom</td>
-<td>a chart, a vector of charts or {:charts c :size px :axis bool}</td>
-<td></td>
-<td>charts below the panel (above its horizontal axis) sharing its horizontal scale</td>
-</tr>
-<tr class="even">
-<td>:left</td>
-<td>a chart, a vector of charts or {:charts c :size px :axis bool}</td>
-<td></td>
-<td>charts left of the panel (right of its vertical axis) sharing its vertical scale</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The plot’s <code>:margins</code> key puts charts beside a panel, sharing its horizontal or vertical scale; margin charts read the plot’s data with <code>:x</code> mapped to the shared dimension. These keys name the sides. The plot below draws a density and a rug above the panel:</p>
+<dl class="options"><div class="option-card"><dt><code>:top</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:top (chart/density)}}</code></div><div class="option-text">Charts above the panel, sharing its horizontal scale.<ul><li><span>chart</span> – One chart, e.g. <code>(chart/density)</code>.</li><li><span>vector of charts</span> – Charts layered in the margin.</li><li><span>margin spec</span> – The charts with the margin's thickness and axis: <code>{:charts c :size px :axis bool}</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:right</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:right (chart/density)}}</code></div><div class="option-text">Charts right of the panel, sharing its vertical scale.<ul><li><span>chart</span> – One chart, e.g. <code>(chart/density)</code>.</li><li><span>vector of charts</span> – Charts layered in the margin.</li><li><span>margin spec</span> – The charts with the margin's thickness and axis: <code>{:charts c :size px :axis bool}</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:bottom</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:bottom (chart/density)}}</code></div><div class="option-text">Charts below the panel, above its horizontal axis, sharing its horizontal scale.<ul><li><span>chart</span> – One chart, e.g. <code>(chart/density)</code>.</li><li><span>vector of charts</span> – Charts layered in the margin.</li><li><span>margin spec</span> – The charts with the margin's thickness and axis: <code>{:charts c :size px :axis bool}</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:left</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:left (chart/density)}}</code></div><div class="option-text">Charts left of the panel, right of its vertical axis, sharing its vertical scale.<ul><li><span>chart</span> – One chart, e.g. <code>(chart/density)</code>.</li><li><span>vector of charts</span> – Charts layered in the margin.</li><li><span>margin spec</span> – The charts with the margin's thickness and axis: <code>{:charts c :size px :axis bool}</code>.</li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span>}</span>
@@ -1675,41 +1242,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image12.png" class="img-fluid"></p>
 </div>
-<p>… or a map giving the margin’s thickness and the magnitude axis of histogram and density margins:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:charts (required)</td>
-<td>a chart value (see cljplot2.chart) or vector of a chart value (see cljplot2.chart) (at least 1)</td>
-<td></td>
-<td>a chart or a vector of charts</td>
-</tr>
-<tr class="even">
-<td>:size</td>
-<td>a positive number</td>
-<td>80</td>
-<td>margin thickness in pixels</td>
-</tr>
-<tr class="odd">
-<td>:axis</td>
-<td>true or false</td>
-<td>false</td>
-<td>draw the magnitude axis of histogram and density margins</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>A margin given as a map also sets its thickness and axis:</p>
+<dl class="options"><div class="option-card"><dt><code>:charts</code></dt><dd><div class="option-example"><code>{:margins {:right {:charts [(chart/density) (chart/rug)]}}}</code></div><div class="option-text">The margin's charts.<ul><li><span>chart</span> – One chart.</li><li><span>vector of charts</span> – Charts layered in the margin.</li></ul></div></dd></div><div class="option-card"><dt><code>:size</code><span class="option-default">Default: <code>80</code></span></dt><dd><div class="option-example"><code>{:margins {:right {:charts (chart/density), :size 40}}}</code></div><div class="option-text">The margin's thickness in pixels.<ul><li><a href="reference.types.html#positive-number">positive number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:axis</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:margins {:right {:charts (chart/density), :axis true}}}</code></div><div class="option-text">Whether histogram and density margins draw their magnitude axis.<ul><li><code>false</code> – No axis.</li><li><code>true</code> – The axis drawn.</li></ul></div></dd></div></dl>
+<p>The plot below draws a density above the panel and a thinner histogram with its axis on the right:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span>}</span>
@@ -1720,7 +1255,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <div class="clay-image">
 <p><img src="reference.facets_arrange_files/image13.png" class="img-fluid"></p>
 </div>
-<p>Bottom and left margins sit between the panel and its axes - the panel keeps its axes on the outer side - and their magnitudes grow away from the panel (bars hang down, densities grow to the left). A margin’s magnitude axis stays next to its own margin panel - with a left margin too, the bottom margin’s axis sits between the left margin and the panel - and its tick labels keep a gap from the panel axis’s labels:</p>
+<p>Bottom and left margins sit between the panel and its axes - the panel keeps its axes on the outer side. Their magnitudes grow away from the panel (bars hang down, densities grow to the left). A margin’s magnitude axis stays next to its own margin panel - with a left margin too, the bottom margin’s axis sits between the left margin and the panel - and its tick labels keep a gap from the panel axis’s labels:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> mtcars</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:wt</span> <span class="at">:y</span> <span class="at">:mpg</span>}</span>
@@ -1760,7 +1295,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="custom-grid" class="level2" data-number="9.7">
 <h2 data-number="9.7" class="anchored" data-anchor-id="custom-grid"><span class="header-section-number">9.7</span> Custom grid</h2>
-<p><code>:custom-grid</code> replaces the generated layout with a hand-written track grid (see the <code>cljplot2.layout.grid</code> namespace doc): columns and rows of <code>[:fixed px]</code>, <code>[:fraction f]</code>, <code>[:measured]</code> or <code>[:flexible w]</code> tracks and items placed on them - labels (<code>{:kind :label :text t :role r}</code>, the role required), or whole plots (<code>{:kind :plot :plot p}</code>). Only <code>:labels {:title t}</code> may accompany it; plots in a regular grid are simpler with <code>plot/arrange</code>.</p>
+<p><code>:custom-grid</code> replaces the generated layout with a hand-written track grid (see the <code>cljplot2.layout.grid</code> namespace doc): columns and rows of <code>[:fixed px]</code>, <code>[:fraction f]</code>, <code>[:measured]</code> or <code>[:flexible w]</code> tracks and items placed on them - labels (<code>{:kind :label :text t :role r}</code>, the role required), or whole plots (<code>{:kind :plot :plot p}</code>). Only <code>:labels {:title t}</code> may accompany it; plots in a regular grid are simpler with <code>plot/arrange</code>. The plot below puts a scatter plot and a narrower density over a note row:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:custom-grid</span> {<span class="at">:columns</span> [{<span class="at">:size</span> [<span class="at">:flexible</span> <span class="dv">2</span>]} {<span class="at">:size</span> [<span class="at">:flexible</span> <span class="dv">1</span>]}]</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">:rows</span> [{<span class="at">:size</span> [<span class="at">:flexible</span> <span class="dv">1</span>]} {<span class="at">:size</span> [<span class="at">:measured</span>]}]</span>

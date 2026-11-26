@@ -82,7 +82,7 @@
    :partition "Icicles and sunbursts" :pack "Circle packing" :waffle "Waffle charts" :venn "Venn diagrams"
    'network "Networks" 'chord "Chord diagrams" 'arc "Arc diagrams" 'sankey "Sankey diagrams" 'alluvial "Alluvial diagrams"
    'dendrogram "Dendrograms" 'tree "Node-link trees" 'clustered-heatmap "Clustered heatmaps" 'bundle "Edge bundles"
-   'sequences "Sequence sunbursts" 'acf "Autocorrelation plots" 'horizon "Horizon charts"
+   'sequences "Sequence sunbursts" 'acf "Autocorrelation plots" 'horizon "Horizon charts" 'arrange "Arrange" 'pairs "Scatter-plot matrix"
    'cljplot2.data.levels/bin "Binning" 'cljplot2.data.levels/categorical "Categorical mapping"
    'cljplot2.data.levels/order-levels "Level order" 'cljplot2.data.levels/rank-rows "Ranks" 'cljplot2.data.shingle/shingle "Shingles"
    'cljplot2.data.graph/graph "Graphs" 'cljplot2.data.graph/layout "Network layouts"
@@ -99,7 +99,7 @@
    'cljplot2.data.pairwise/matrix-rows "Statistic matrices"
    'cljplot2.data.field/domain-color "Domain colouring" 'cljplot2.data.contour/isolines "Isolines"
    'cljplot2.data.vector-field/arrows "Vector field arrows" 'cljplot2.data.vector-field/traces "Streamlines"
-   'cljplot2.data.vector-field/mapped-points "Mapped points"})
+   'cljplot2.data.vector-field/mapped-points "Mapped points" 'cljplot2.graphics.font/resolve-font "Fonts"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]]), with `:owner` - the user-facing data function whose options the group is (its reference section documents them) - or `:style true` - a group of chart style entries, their defaults in each chart's theme style."
@@ -413,7 +413,7 @@
 
   Parameters:
 
-  - `props` (map): the entry's properties - `:cljplot2/value-meanings` (value meanings, winning over the schema's; a `nil` key adds `nil` as a value), `:cljplot2/form-meanings`, `:cljplot2/other-values`.
+  - `props` (map): the entry's properties - `:cljplot2/value-meanings` (value meanings, winning over the schema's; a `nil` key adds `nil` as a value), `:cljplot2/form-meanings` (keyed by a form's short type text - for two forms of one malli type, e.g. two maps - or by its form key; the type text wins when both are given), `:cljplot2/other-values`.
   - `s`: the entry's malli schema.
 
   Returns `{:values [{:value v :meaning m} ...] :forms [{:form k :type text :meaning m} ...] :other-values text}` - each value and each form once, in schema order (`nil` first when documented), a value with the first meaning any part of the schema gives it; meanings `nil` when absent."
@@ -425,7 +425,9 @@
                    by-value (group-by :value entries)]
                (mapv (fn [v] (let [same (by-value v)] (or (first (filter :meaning same)) (first same))))
                      (distinct (map :value entries))))
-     :forms (into [] (comp (distinct) (map #(assoc % :meaning (get (:cljplot2/form-meanings props) (:form %) (:meaning %))))) forms)
+     :forms (into [] (comp (distinct) (map #(assoc % :meaning (let [form-meanings (:cljplot2/form-meanings props)]
+                                                               (get form-meanings (:type %) (get form-meanings (:form %) (:meaning %)))))))
+                  forms)
      :other-values (:cljplot2/other-values props)}))
 
 (defn example

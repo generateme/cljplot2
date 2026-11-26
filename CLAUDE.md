@@ -268,7 +268,7 @@ the theme: banned names, and one type family per name across all owners). One na
   chapter titles name their topic without the part's name; the galleries are lattice, Vega and cljplot;
   Quarto books have one level of parts), `notebooks/use_cases/*.clj` and
   `notebooks/galleries/*.clj` are Clay notebooks; order in `notebooks/chapters.edn`. Reference option tables come
-  only from `nu/options-table` (option cards on migrated pages - see below) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
+  only from `nu/options-table` (every page now shows option cards instead - see below; `option-cards-test` checks no page calls it) over `cljplot2.describe` rows (never hand-written; code hidden), one section at a
   time for sliced rows, each table with a sentence or two and followed by its example (a chart or a value);
   `reference-notebook-test` checks every schema of `describe/plot-level-schemas`, shared group, theme key (but
   `:chart`) and section has a table (cards on migrated pages) of at most 12 rows, each followed by an example. On every book page (reference, use cases, galleries;
@@ -374,7 +374,8 @@ the theme: banned names, and one type family per name across all owners). One na
   (`vector of open fractions`, never validation-message text; `:or` / `:multi` alternatives as `X or Y` (a `schema/forbidden` branch - a form rejected with its own message,
   e.g. histogram quantile bins - is none), a vector of them `vector of Xs or Ys`; `:int` / `:double` bounds as words
   (`integer at least 2`); rules of `schema/with-rules` (`schema/rule?`) are left out - the description states the
-  relation; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`, and with `:cljplot2/entries-fragment`
+  relation; form meanings are keyed by the form's short type text when two forms share a malli type (two maps: a
+  `chart` and a `margin spec`), else by form key; a map schema names itself with `:cljplot2/type-name`, e.g. `mapping`, and with `:cljplot2/entries-fragment`
   links its card form to the shared group documenting its keys - a text style, a grid line's line style). `option-cards-test` checks a migrated chart, builder or data function (card owners: fixture plots of charts, fixture
   calls of builders and data functions - a function's example must change its result, `:compare :value`): sentences, a
   meaning for every value of a list of at most 6 (a longer list's rest under `:other-values`), for every form of an

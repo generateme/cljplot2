@@ -53,10 +53,11 @@ code-block-background: true
 
 # Render
 
-Building and drawing a plot: `plot/build` (the built plot, data only), `plot/render` (a clojure2d canvas),
-`plot/render-image` (a `java.awt.image.BufferedImage`), `plot/cvd-image` (an image as seen with a colour vision
-deficiency) and `plot/save` (an image or canvas to a file). The first three take the same render options, as
-their second argument or under the plot's `:options` (merged under the argument).
+Five functions build and draw a plot: `plot/build` returns the built plot (data only), `plot/render` a clojure2d
+canvas, `plot/render-image` a `java.awt.image.BufferedImage`, `plot/cvd-image` an image as seen with a colour vision
+deficiency, and `plot/save` writes an image or canvas to a file. The first three take the same render options as
+their second argument; a plot may also carry them under its `:options` key, merged under the argument. The card
+examples set them under that key.
 
 
 ::: {.sourceClojure}
@@ -70,6 +71,8 @@ their second argument or under the plot's `:options` (merged under the argument)
 ```
 :::
 
+
+The table below holds the iris flowers; every section draws them (`iris-plot`):
 
 Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).
 
@@ -101,17 +104,13 @@ Data: Edgar Anderson's iris measurements, R datasets package `iris` (Anderson 19
 
 ## Size and quality
 
-The image size in pixels - the whole image, legends and titles included - and the rendering quality (clojure2d
-hints): `:low` draws without antialiasing (faster, jagged edges), `:mid` antialiased for speed, `:high`
-antialiased for quality, `:highest` adds exact stroke geometry (lines can look softer).
+These options set the image size in pixels - the whole image, legends and titles included - and the rendering
+quality, a clojure2d hint. The plot below draws without antialiasing:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:width</td><td>a positive integer</td><td>600</td><td>target width in pixels</td></tr><tr><td>:height</td><td>a positive integer</td><td>600</td><td>target height in pixels</td></tr><tr><td>:hint</td><td>one of :high :highest :low :mid</td><td>:high</td><td>rendering quality hint (antialiasing and text metrics)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:width</code><span class="option-default">Default: <code>600</code></span></dt><dd><div class="option-example"><code>{:options {:width 400}}</code></div><div class="option-text">The image width in pixels.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:height</code><span class="option-default">Default: <code>600</code></span></dt><dd><div class="option-example"><code>{:options {:height 300}}</code></div><div class="option-text">The image height in pixels.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:hint</code><span class="option-default">Default: <code>:high</code></span></dt><dd><div class="option-example"><code>{:options {:hint :low}}</code></div><div class="option-text">The rendering quality: antialiasing and text metrics.<ul><li><code>:high</code> – Antialiasing tuned for quality.</li><li><code>:low</code> – No antialiasing: faster, jagged edges.</li><li><code>:mid</code> – Antialiasing tuned for speed.</li><li><code>:highest</code> – As <code>:high</code> with exact stroke geometry; lines can look softer.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -127,7 +126,7 @@ antialiased for quality, `:highest` adds exact stroke geometry (lines can look s
 :::
 
 
-... against `:highest` - smooth edges and text:
+The plot below draws at `:highest`, with smooth edges and text:
 
 
 ::: {.sourceClojure}
@@ -145,16 +144,13 @@ antialiased for quality, `:highest` adds exact stroke geometry (lines can look s
 
 ## Inspection
 
-Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
+This option helps find out why a plot looks as it does. The plot below paints every layout item's box under its
 content - panel, axes, axis titles, legend (axis titles added here):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:debug</td><td>true or false or nil</td><td>false</td><td>paint every layout item's box (a distinct colour, its outline and id) under its content</td></tr><tr><td>:until</td><td>one of :split :stats :extents :scale-specs :grid :layout :finalized-scales :subplots</td><td></td><td>build stops after this pipeline stage (inspect the intermediate data)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:debug</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:options {:debug true}}</code></div><div class="option-text">Whether every layout item's box is painted under its content: a distinct colour, its outline and its id.<ul><li><code>false</code> – Not painted.</li><li><code>true</code> – The boxes painted.</li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -171,8 +167,15 @@ content - panel, axes, axis titles, legend (axis titles added here):
 :::
 
 
-`:until` stops the build after a stage; the built plot is data. Here the build stops after `:extents` - the
-extent of each mapped dimension:
+`plot/build` takes one more option, which a plot's `:options` ignores:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:until</code><span class="option-default">Default: Every stage.</span></dt><dd><div class="option-example"><code>(plot/build plot {:until :grid})</code></div><div class="option-text">The pipeline stage after which <code>build</code> stops, to inspect the intermediate data; only <code>build</code>'s own options take it, a plot's <code>:options</code> ignores it.<ul><li class="option-other">A stage of the pipeline, in order (Overview: The pipeline). <code>:split</code>, <code>:stats</code>, <code>:extents</code>, <code>:scale-specs</code>, <code>:grid</code>, <code>:layout</code>, <code>:finalized-scales</code>, <code>:subplots</code></li></ul></div></dd></div></dl>
+```
+
+
+The build below stops after `:extents`; that key holds the extent of each mapped dimension:
 
 
 ::: {.sourceClojure}
@@ -205,16 +208,13 @@ extent of each mapped dimension:
 
 ## Colour vision
 
-`:cvd` renders the plot as seen with a colour vision deficiency - a keyword, or `[keyword severity]` for the
-partial ones; `plot/cvd-image` converts any image. Red and green species, as rendered:
+With `:cvd` you see how the plot reads with a colour vision deficiency; `plot/cvd-image` converts any image. The plot
+below draws red and green species, as rendered:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:cvd</td><td>a clojure2d color vision deficiency: a keyword (:protanopia, :deuteranopia, :tritanopia, :achromatopsia) or [keyword severity] (:protanomaly, :deuteranomaly, :tritanomaly, :achromatomaly; severity in [0 1]) or nil</td><td></td><td>render as seen with a colour vision deficiency</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:cvd</code><span class="option-default">Default: None: as rendered.</span></dt><dd><div class="option-example"><code>{:options {:cvd :deuteranopia}}</code></div><div class="option-text">Renders the image as seen with a colour vision deficiency.<ul><li><a href="reference.types.html#colour-vision-deficiency">colour vision deficiency</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -238,7 +238,8 @@ partial ones; `plot/cvd-image` converts any image. Red and green species, as ren
 :::
 
 
-... and as seen with deuteranopia - setosa and versicolor turn into similar olive tones, virginica stays blue:
+The plot below draws them as seen with deuteranopia: setosa and versicolor turn into similar olive tones, virginica
+stays blue:
 
 
 ::: {.sourceClojure}
@@ -253,7 +254,7 @@ partial ones; `plot/cvd-image` converts any image. Red and green species, as ren
 :::
 
 
-A partial deficiency takes a severity in `[0 1]` - here deuteranomaly at half strength:
+A partial deficiency takes a severity in `[0 1]`; the plot below draws deuteranomaly at half strength:
 
 
 ::: {.sourceClojure}

@@ -24,7 +24,7 @@
   "Option entries every builder takes (a shared group, `:builder`): the plot title, scales deep-merged into the builder's and a theme; their values are validated with the built plot."
   (schema/in-fragment
    :builder
-   [(schema/optional :title {:description "The plot's title: a text or a label options map." :cljplot2/default-doc "No title." :cljplot2/example "Friends"} any?)
+   [(schema/optional :title {:description "The plot's title: a text or a label map." :cljplot2/default-doc "No title." :cljplot2/example "Friends"} any?)
     (schema/optional :scales {:description "Scale specs merged at every depth into the builder's own; the built plot checks them."
                               :cljplot2/default-doc "The builder's scales." :cljplot2/example {:size {:range [2 20]}} :cljplot2/example-context {:mapping {:size :degree}}}
                      any?)
@@ -178,50 +178,94 @@
   (when (and (some? upper) (not (square? options)))
     ":upper needs a square matrix (the same :row-variables and :column-variables in the same order); other matrices draw :lower in every cell of two different variables"))
 
+(def ^:private slot-form-meanings
+  "The meanings of a pairs slot's forms on its card (both a chart and a sequence of charts)."
+  {"chart" "One chart in every such cell, e.g. `(chart/scatter)`." :sequential "Charts layered in every such cell."})
+
+(def ^:private pairs-example-keys
+  "The required options of every pairs option example: the variables of the example rows (the cards' placeholder `rows` hold `:a :b :c`)."
+  {:variables [:a :b :c]})
+
+(defn- with-pairs-example-keys
+  "Gives a pairs options map schema with [[pairs-example-keys]] under the example context of each top-level entry but
+  the variables' own (they name the variables themselves); a nested entry (`[:scales :color]`) takes its container's
+  context.
+
+  Parameters:
+
+  - `schema-form` (vector): a `[:map props entry ...]` schema form.
+
+  Returns the form with the entries' example contexts merged over the keys."
+  [[map-type props & entries]]
+  (into [map-type props]
+        (map (fn [[k entry-props s :as entry]]
+               (if (#{:variables :row-variables :column-variables} k)
+                 entry
+                 [k (update entry-props :cljplot2/example-context #(merge pairs-example-keys %)) s])))
+        entries))
+
 (def pairs-options
   "Schema of the `options` of [[pairs]] (the variables' count and values are checked against the data); sections `:variables` (what the matrix shows), `:cells` (how its cells draw) and `:layout` (the matrix's title, legend column and theme)."
   (-> [:map {:closed true}]
       (into (schema/in-section
              :variables
-             [(schema/nilable :variables {:description "the numeric columns, in matrix order (rows and columns)"
-                                          :cljplot2/default-doc "required unless :row-variables and :column-variables are given"}
+             [(schema/nilable :variables {:description "The numeric columns, in matrix order on the rows and the columns."
+                                          :cljplot2/default-doc "None: required unless `:row-variables` and `:column-variables` are given."
+                                          :cljplot2/example [:a :c]}
                               [:sequential {:min 2 :max max-pairs-variables} keyword?])
-              (schema/nilable :row-variables {:description "the numeric columns of the matrix rows, top to bottom (on y)"
-                                              :cljplot2/default-doc ":variables"}
+              (schema/nilable :row-variables {:description "The numeric columns of the matrix rows, top to bottom (on y)."
+                                              :cljplot2/default-doc "`:variables`." :cljplot2/example [:c :a]
+                                              :cljplot2/example-context {:column-variables [:a :b]}}
                               [:sequential {:min 1 :max max-pairs-variables} keyword?])
-              (schema/nilable :column-variables {:description "the numeric columns of the matrix columns, left to right (on x)"
-                                                 :cljplot2/default-doc ":variables"}
+              (schema/nilable :column-variables {:description "The numeric columns of the matrix columns, left to right (on x)."
+                                                 :cljplot2/default-doc "`:variables`." :cljplot2/example [:c :a]
+                                                 :cljplot2/example-context {:row-variables [:a :b]}}
                               [:sequential {:min 1 :max max-pairs-variables} keyword?])
-              (schema/nilable :mapping {:description "extra mapping of every cell (grouping aesthetics such as :color, :group)"}
+              (schema/nilable :mapping {:description "A mapping added to every cell, for grouping aesthetics such as `:color` or `:group`."
+                                        :cljplot2/default-doc "None." :cljplot2/example {:color :g}}
                               data/mapping-schema)
-              (schema/nilable :variable-names {:description "display names of the variables, {variable text}"
-                                               :cljplot2/default-doc "the variable's name"}
+              (schema/nilable :variable-names {:description "The names shown for the variables, `{variable text}`."
+                                               :cljplot2/default-doc "The variable's name." :cljplot2/example {:a "alpha"}
+                                               :cljplot2/example-context {:diagonal :names}}
                               [:map-of keyword? text/label-text-schema])]))
       (into (schema/in-section
              :cells
-             [(schema/nilable :lower {:description "charts below the diagonal of a square matrix; off-diagonal (every cell of two different variables) in a matrix that isn't square; :none - empty cells"
-                                      :cljplot2/default-doc "(chart/scatter)"}
+             [(schema/nilable :lower {:description "The charts below the diagonal of a square matrix; in a matrix that isn't square, every cell of two different variables."
+                                      :cljplot2/default-doc "`(chart/scatter)`." :cljplot2/example '(chart/line)
+                                      :cljplot2/value-meanings {:none "Empty cells."}
+                                      :cljplot2/form-meanings slot-form-meanings}
                               slot-schema)
-              (schema/nilable :upper {:description "charts above the diagonal (a square matrix only); :none - empty cells"
-                                      :cljplot2/default-doc "(chart/correlation {:glyph :number})"}
+              (schema/nilable :upper {:description "The charts above the diagonal, in a square matrix only."
+                                      :cljplot2/default-doc "`(chart/correlation {:glyph :number})`." :cljplot2/example :none
+                                      :cljplot2/value-meanings {:none "Empty cells."}
+                                      :cljplot2/form-meanings slot-form-meanings}
                               slot-schema)
-              (schema/nilable :diagonal {:description "charts of the diagonal cells - a cell whose row and column variable are the same (in their own magnitude scale); :names - the variable's name (text role :pairs-name); :none - empty cells"
-                                         :cljplot2/default-doc "(chart/density)"}
+              (schema/nilable :diagonal {:description "The charts of the diagonal cells, whose row and column variable are the same; each cell has its own magnitude scale."
+                                         :cljplot2/default-doc "`(chart/density)`." :cljplot2/example :names
+                                         :cljplot2/value-meanings {:names "The variable's name, in the text role `:pairs-name`." :none "Empty cells."}
+                                         :cljplot2/form-meanings slot-form-meanings}
                               [:maybe [:multi {:dispatch #(cond (#{:names :none} %) :keyword (map? %) :chart :else :charts)
                                                :cljplot2/type-doc ":names, :none, a chart or a vector of charts"}
                                        [:keyword [:enum :names :none]]
                                        [:chart pipeline/chart-schema]
                                        [:charts [:sequential pipeline/chart-schema]]]])
-              (schema/nilable :scales {:description "the colour scale of every cell that colours (one colour bar), {:color spec}; its :domain wins over the matrix's computed one"}
-                              [:map {:closed true} (schema/optional :color {:description "the colour scale spec"} (aesthetic/scale-spec-schema :color))])]))
+              (schema/nilable :scales {:description "The colour scale of every cell that colours, with one colour bar."}
+                              [:map {:closed true} (schema/optional :color {:description "The colour scale spec; its `:domain` wins over the matrix's computed one."
+                                                                            :cljplot2/default-doc "The computed range of the coloured statistic."
+                                                                            :cljplot2/example {:range [:white :darkred]}
+                                                                            :cljplot2/example-context {:upper '(chart/correlation {:glyph :shade})}}
+                                                     (aesthetic/scale-spec-schema :color))])]))
       (into (schema/in-section
              :layout
-             [(schema/nilable :legend-span {:description "height of the legend column: :row - beside the first row, one row high; :matrix - beside the whole matrix (a legend taller than a row, e.g. of a many-variable matrix)"
-                                            :default :row}
+             [(schema/nilable :legend-span {:description "The height of the legend column." :default :row
+                                            :cljplot2/example-context {:upper '(chart/correlation {:glyph :shade})}
+                                            :cljplot2/value-meanings {:row "Beside the first row, one row high." :matrix "Beside the whole matrix, for a legend taller than a row."}}
                               [:enum :row :matrix])
-              (schema/nilable :theme {:description "theme of every cell and of the matrix (a [:plot :margin] or [:multiplot :gap] given wins over the cells' facet-like spacing)"}
+              (schema/nilable :theme {:description "The theme of every cell and of the matrix; a `[:plot :margin]` or `[:multiplot :gap]` you give replaces the matrix's own tight spacing."
+                                      :cljplot2/default-doc "The default theme." :cljplot2/example {:plot {:background :white}}}
                               any?)]))
       (into (schema/in-section :layout (builder-entries-of [:title])))
+      (with-pairs-example-keys)
       (schema/with-rules [pairs-variables-problem [:variables]] [pairs-upper-problem [:upper]])))
 
 (def ^{:private true :const true :tag 'double} outer-share-divisor

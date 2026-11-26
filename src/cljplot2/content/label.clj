@@ -59,12 +59,21 @@
 (def label-options
   "Schema of the label options given by users (plot `:labels` maps, label content in custom grids): `:text`, `:role`, `:rotation`,
   `:align` and the style overrides of [[cljplot2.theme/style-keys]]."
-  (-> [:map {:closed true :cljplot2/type-doc "a label options map (:text, :role, :rotation, text style keys)"}
-       (schema/optional :kind {:cljplot2/section :label :description "content kind (labels only)"} [:= :label])
-       (schema/optional :text {:cljplot2/section :label :description "the text: any value converted with str, a plot/math formula or plot/runs pieces (\\n breaks lines)"} any?)
-       (schema/optional :role {:cljplot2/section :label :description "theme text role styling the label (:title, :axis-title, ... or a role of your theme)"}
+  (-> [:map {:closed true :cljplot2/type-doc "a label options map (:text, :role, :rotation, text style keys)" :cljplot2/type-name "label map"}
+       (schema/optional :kind {:cljplot2/section :label :description "The content kind of a custom grid's label item; a plot label needs none."
+                               :cljplot2/internal true}
+                        [:= :label])
+       (schema/optional :text {:cljplot2/section :label :description "The text: any value as `str`, or a `plot/math` or `plot/runs` value; a newline breaks lines."
+                               :cljplot2/default-doc "None: an empty label." :cljplot2/example "Walks"}
+                        any?)
+       (schema/optional :role {:cljplot2/section :label :description "The theme text role whose style the label takes: `:title`, `:axis-title` ... or a role of your theme."
+                               :cljplot2/default-doc "`:title` for the plot title, `:axis-title` for axis titles; a custom grid's label has none and must give it." :cljplot2/example :tick-label
+                               :cljplot2/example-context {:text "Walks"}}
                         keyword?)
-       (schema/optional :rotation {:cljplot2/section :label :description "clockwise degrees (270 reads bottom to top)" :default 0} [:enum 0 90 270])]
+       (schema/optional :rotation {:cljplot2/section :label :description "The label's clockwise turn in degrees." :cljplot2/default-doc "`0`; `270` for the y axis title." :cljplot2/example 90
+                                   :cljplot2/example-context {:text "Walks"}
+                                   :cljplot2/value-meanings {0 "Horizontal." 90 "Turned clockwise, reading top to bottom." 270 "Turned counter-clockwise, reading bottom to top."}}
+                        [:enum 0 90 270])]
       (into (map (fn [[k props s]] [k (assoc props :cljplot2/section :text-style) s])) theme/text-style-overrides)))
 
 (defn label-options?

@@ -510,7 +510,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
   <li><a href="#long-axis-titles" id="toc-long-axis-titles" class="nav-link" data-scroll-target="#long-axis-titles"><span class="header-section-number">8.4</span> Long axis titles</a></li>
   <li><a href="#text-in-the-panel" id="toc-text-in-the-panel" class="nav-link" data-scroll-target="#text-in-the-panel"><span class="header-section-number">8.5</span> Text in the panel</a></li>
   <li><a href="#formulas" id="toc-formulas" class="nav-link" data-scroll-target="#formulas"><span class="header-section-number">8.6</span> Formulas</a></li>
-  <li><a href="#fontresolve-font" id="toc-fontresolve-font" class="nav-link" data-scroll-target="#fontresolve-font"><span class="header-section-number">8.7</span> font/resolve-font</a></li>
+  <li><a href="#fonts" id="toc-fonts" class="nav-link" data-scroll-target="#fonts"><span class="header-section-number">8.7</span> Fonts</a></li>
   </ul>
 </nav>
     </div>
@@ -560,43 +560,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>            [cljplot2.layout.plot-grid <span class="at">:as</span> plot-grid]</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            [notebook-utils <span class="at">:as</span> nu]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="plot-labels" class="level2" data-number="8.1">
-<h2 data-number="8.1" class="anchored" data-anchor-id="plot-labels"><span class="header-section-number">8.1</span> Plot labels</h2>
-<p>The plot title and the axis titles. Axis titles are absent unless given, except that statistical charts (histogram, density, ecdf, qq …) suggest one for their computed axis.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:title</td>
-<td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td>
-<td></td>
-<td>plot title above the panels (role :title)</td>
-</tr>
-<tr class="even">
-<td>:x</td>
-<td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td>
-<td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td>
-<td>x axis title (role :axis-title; too long - wrapped, shrunk, then cut to the panels' width)</td>
-</tr>
-<tr class="odd">
-<td>:y</td>
-<td>a label options map (:text, :role, :rotation, text style keys) or any value or nil</td>
-<td>the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none</td>
-<td>y axis title (role :axis-title, rotated 270; too long - wrapped, shrunk, then cut to the panels' height)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>The table below holds the iris flowers; most sections draw them:</p>
 <p>Data: Edgar Anderson’s iris measurements, R datasets package <code>iris</code> (Anderson 1935; Fisher 1936); licence: Part of R (GPL-2 | GPL-3).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> iris </span>(nu/dataset <span class="at">:iris</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1325,119 +1289,10 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
+<p>The table below holds three made-up series; the section on text in the panel draws them:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris sepals"</span> <span class="at">:x</span> <span class="st">"sepal length [cm]"</span> <span class="at">:y</span> <span class="st">"sepal width [cm]"</span>}}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image0.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="label-maps" class="level2" data-number="8.2">
-<h2 data-number="8.2" class="anchored" data-anchor-id="label-maps"><span class="header-section-number">8.2</span> Label maps</h2>
-<p>A label is a string or a label map: the text, the theme text role whose style is the base (<code>:title</code> for the title, <code>:axis-title</code> for axis titles, or a role of your theme) and a rotation. Plot labels get their role from their place; a label in a custom grid (Facets chapter) must name one. Here the y title is horizontal and styled as a tick label.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:kind</td>
-<td>:label</td>
-<td></td>
-<td>content kind (labels only)</td>
-</tr>
-<tr class="even">
-<td>:text</td>
-<td>any value</td>
-<td></td>
-<td>the text: any value converted with str, a plot/math formula or plot/runs pieces (\n breaks lines)</td>
-</tr>
-<tr class="odd">
-<td>:role</td>
-<td>keyword</td>
-<td></td>
-<td>theme text role styling the label (:title, :axis-title, ... or a role of your theme)</td>
-</tr>
-<tr class="even">
-<td>:rotation</td>
-<td>one of 0 90 270</td>
-<td>0</td>
-<td>clockwise degrees (270 reads bottom to top)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> {<span class="at">:text</span> <span class="st">"petal length</span><span class="sc">\n</span><span class="st">[cm]"</span>}</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"petal</span><span class="sc">\n</span><span class="st">width"</span> <span class="at">:rotation</span> <span class="dv">0</span> <span class="at">:role</span> <span class="at">:tick-label</span>}}}</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image1.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="label-style" class="level2" data-number="8.3">
-<h2 data-number="8.3" class="anchored" data-anchor-id="label-style"><span class="header-section-number">8.3</span> Label style</h2>
-<p>The keys of the <a href="reference.shared_options.html#text-style">Text style</a> group in a label map override its role’s style for this label only:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> {<span class="at">:text</span> <span class="st">"Iris sepals"</span> <span class="at">:size</span> <span class="dv">18</span> <span class="at">:align</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">120</span>]</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>] <span class="at">:inset</span> <span class="dv">6</span>}</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"sepal width [cm]"</span> <span class="at">:font-style</span> <span class="at">:italic</span>}}}</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image2.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="long-axis-titles" class="level2" data-number="8.4">
-<h2 data-number="8.4" class="anchored" data-anchor-id="long-axis-titles"><span class="header-section-number">8.4</span> Long axis titles</h2>
-<p>An axis title longer than its panels - the width under them, the height beside them; one title spans all facet panels - is fitted to them: wrapped at word boundaries (a line into at most three, the title’s row or column grows), then drawn smaller down to the <code>:axis-title</code> text role’s <code>:min-size</code> (8 points by default, theme <code>[:text :axis-title :min-size]</code> - every text role takes one, see the Theme chapter), then cut with an ellipsis. Line breaks you give are kept, and a title that fits is drawn as given. Fitting is always on: earlier versions clipped such titles. A title rotated across its own track (a y title with <code>:rotation 0</code>) isn’t fitted.</p>
-<p>Wrapped titles beside a small panel; on the right a word too long for the panel shrinks to the least size and is cut (<code>:min-size 10</code>):</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"wrapped"</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal length of the iris flowers, measured in centimetres"</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width of the flowers in centimetres"</span>}}</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"shrunk and cut"</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal_length_in_centimetres_of_the_flowers_of_three_iris_species"</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width"</span>}</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:axis-title</span> {<span class="at">:min-size</span> <span class="dv">10</span>}}}}]</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image3.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="text-in-the-panel" class="level2" data-number="8.5">
-<h2 data-number="8.5" class="anchored" data-anchor-id="text-in-the-panel"><span class="header-section-number">8.5</span> Text in the panel</h2>
-<p>The <code>text</code> chart writes literal text or a mapped <code>:label</code>; <code>:anchor</code>, <code>:offset</code> and <code>:rotation</code> place it, <code>:select :last</code> labels the end of each group (e.g.&nbsp;line ends). Its full table is on the chart’s page (<a href="reference.charts_annotations.html#text-labels">text</a>).</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> series </span>(<span class="kw">for</span> [[i g] (map-indexed <span class="kw">vector</span> [<span class="st">"alpha"</span> <span class="st">"beta"</span> <span class="st">"gamma"</span>]) t (<span class="kw">range</span> <span class="dv">10</span>)]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> (<span class="kw">*</span> t (<span class="kw">inc</span> i) <span class="fl">0.5</span>) (<span class="kw">*</span> <span class="dv">3</span> i))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> series </span>(<span class="kw">for</span> [[i g] (map-indexed <span class="kw">vector</span> [<span class="st">"alpha"</span> <span class="st">"beta"</span> <span class="st">"gamma"</span>]) t (<span class="kw">range</span> <span class="dv">10</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:g</span> g <span class="at">:t</span> t <span class="at">:v</span> (<span class="kw">+</span> (<span class="kw">*</span> t (<span class="kw">inc</span> i) <span class="fl">0.5</span>) (<span class="kw">*</span> <span class="dv">3</span> i))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1604,28 +1459,11 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
+<p>The table below holds made-up decays at two rates, the rates named by formulas; the formula section draws them:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> series</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:label</span> <span class="at">:g</span>} <span class="at">:select</span> <span class="at">:last</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]})</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> [<span class="at">:panel</span> <span class="fl">0.02</span>] <span class="at">:y</span> [<span class="at">:panel</span> <span class="fl">0.95</span>] <span class="at">:text</span> <span class="st">"literal text in panel units"</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:font-style</span> <span class="at">:italic</span>})]</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:legend</span> <span class="va">false</span>}</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image4.png" class="img-fluid"></p>
-</div>
-</section>
-<section id="formulas" class="level2" data-number="8.6">
-<h2 data-number="8.6" class="anchored" data-anchor-id="formulas"><span class="header-section-number">8.6</span> Formulas</h2>
-<p>Any text can hold LaTeX formulas, typeset at the text’s size and colour (bold in a bold role): <code>plot/math</code> is one formula, <code>plot/runs</code> puts text and formulas on one baseline, and in strings <code>$...$</code> is a formula. The scale formatter <code>:power-math</code> writes log ticks as typeset powers.</p>
-<p>Formulas in the title, the axis titles, the tick labels, the legend and a text chart:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> decay</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">vec</span> (<span class="kw">for</span> [rate [<span class="fl">0.5</span> <span class="fl">1.0</span>] t (<span class="kw">range</span> <span class="fl">0.0</span> <span class="fl">10.5</span> <span class="fl">0.5</span>)]</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>         {<span class="at">:t</span> t <span class="at">:n</span> (<span class="kw">*</span> <span class="fl">1000.0</span> (m/exp (<span class="kw">-</span> (<span class="kw">*</span> rate t)))) <span class="at">:rate</span> (<span class="kw">str</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">lambda = "</span> rate <span class="st">"$"</span>)})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> decay</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">vec</span> (<span class="kw">for</span> [rate [<span class="fl">0.5</span> <span class="fl">1.0</span>] t (<span class="kw">range</span> <span class="fl">0.0</span> <span class="fl">10.5</span> <span class="fl">0.5</span>)]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>         {<span class="at">:t</span> t <span class="at">:n</span> (<span class="kw">*</span> <span class="fl">1000.0</span> (m/exp (<span class="kw">-</span> (<span class="kw">*</span> rate t)))) <span class="at">:rate</span> (<span class="kw">str</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">lambda = "</span> rate <span class="st">"$"</span>)})))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1852,26 +1690,11 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
+<p>The table below holds made-up masses whose names hold formulas; the formula section draws them:</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> decay</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:n</span> <span class="at">:color</span> <span class="at">:rate</span>}</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> <span class="fl">5.5</span> <span class="at">:y</span> <span class="fl">200.0</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:text</span> (plot/runs <span class="st">"half-life "</span> (plot/math <span class="st">"t_{1/2} = </span><span class="sc">\\</span><span class="st">frac{</span><span class="sc">\\</span><span class="st">ln 2}{</span><span class="sc">\\</span><span class="st">lambda}"</span>))})]</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power-math</span>}}</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> (plot/runs <span class="st">"Exponential decay "</span> (plot/math <span class="st">"N(t) = N_0 e^{-</span><span class="sc">\\</span><span class="st">lambda t}"</span>))</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> (plot/math <span class="st">"t"</span>)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> (plot/math <span class="st">"N(t)"</span>)}}</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="clay-image">
-<p><img src="reference.labels_text_files/image5.png" class="img-fluid"></p>
-</div>
-<p>A dollar pair has no space inside and its closing dollar isn’t followed by a digit, so <code>cost $5 to $10</code> stays text; <code>\$</code> is always a literal dollar. <code>:dollar-math false</code> (a text role, a label map or a text chart) keeps every dollar literal, as on the right - strips, value labels, a rotated two-line title and turned tick labels:</p>
-<div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> masses</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:part</span> <span class="st">"$m_1$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">alpha$ set"</span> <span class="at">:kg</span> <span class="fl">1.25</span>} {<span class="at">:part</span> <span class="st">"$m_2$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">alpha$ set"</span> <span class="at">:kg</span> <span class="fl">2.5</span>}</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:part</span> <span class="st">"$m_1$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">beta$ set"</span> <span class="at">:kg</span> <span class="fl">0.75</span>} {<span class="at">:part</span> <span class="st">"$m_2$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">beta$ set"</span> <span class="at">:kg</span> <span class="fl">1.75</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> masses</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  [{<span class="at">:part</span> <span class="st">"$m_1$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">alpha$ set"</span> <span class="at">:kg</span> <span class="fl">1.25</span>} {<span class="at">:part</span> <span class="st">"$m_2$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">alpha$ set"</span> <span class="at">:kg</span> <span class="fl">2.5</span>}</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>   {<span class="at">:part</span> <span class="st">"$m_1$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">beta$ set"</span> <span class="at">:kg</span> <span class="fl">0.75</span>} {<span class="at">:part</span> <span class="st">"$m_2$"</span> <span class="at">:group</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">beta$ set"</span> <span class="at">:kg</span> <span class="fl">1.75</span>}])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -1908,6 +1731,115 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
+<section id="plot-labels" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="plot-labels"><span class="header-section-number">8.1</span> Plot labels</h2>
+<p>These keys of the plot’s <code>:labels</code> map hold the plot title and the axis titles. The plot below names all three:</p>
+<dl class="options"><div class="option-card"><dt><code>:title</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title above the panels, in the text role <code>:title</code>.<ul><li><span>label map</span> – The text with its role, rotation and text style keys (Label maps).</li><li><span>any value</span> – A text: any value as <code>str</code>, or a <code>plot/math</code> or <code>plot/runs</code> value.</li></ul></div></dd></div><div class="option-card"><dt><code>:x</code><span class="option-default">Default: The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none.</span></dt><dd><div class="option-example"><code>{:labels {:x "time"}}</code></div><div class="option-text">The x axis title, in the text role <code>:axis-title</code>; a title too long for its axis is wrapped, shrunk, then cut.<ul><li><span>label map</span> – The text with its role, rotation and text style keys (Label maps).</li><li><span>any value</span> – A text: any value as <code>str</code>, or a <code>plot/math</code> or <code>plot/runs</code> value.</li></ul></div></dd></div><div class="option-card"><dt><code>:y</code><span class="option-default">Default: The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none.</span></dt><dd><div class="option-example"><code>{:labels {:y "value"}}</code></div><div class="option-text">The y axis title, in the text role <code>:axis-title</code> turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut.<ul><li><span>label map</span> – The text with its role, rotation and text style keys (Label maps).</li><li><span>any value</span> – A text: any value as <code>str</code>, or a <code>plot/math</code> or <code>plot/runs</code> value.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"Iris sepals"</span> <span class="at">:x</span> <span class="st">"sepal length [cm]"</span> <span class="at">:y</span> <span class="st">"sepal width [cm]"</span>}}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image0.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="label-maps" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="label-maps"><span class="header-section-number">8.2</span> Label maps</h2>
+<p>A label is a string or a label map. These keys of a label map give its text, its rotation and the theme text role it takes its style from; a label in a custom grid (<a href="reference.facets_arrange.html#custom-grid">Facets, multiplots and margins</a>) must name its role. In the plot below the y title is horizontal and styled as a tick label:</p>
+<dl class="options"><div class="option-card"><dt><code>:text</code><span class="option-default">Default: None: an empty label.</span></dt><dd><div class="option-example"><code>{:labels {:title {:text "Walks"}}}</code></div><div class="option-text">The text: any value as <code>str</code>, or a <code>plot/math</code> or <code>plot/runs</code> value; a newline breaks lines.<ul><li><span>any value</span></li></ul></div></dd></div><div class="option-card"><dt><code>:role</code><span class="option-default">Default: <code>:title</code> for the plot title, <code>:axis-title</code> for axis titles; a custom grid's label has none and must give it.</span></dt><dd><div class="option-example"><code>{:labels {:title {:text "Walks", :role :tick-label}}}</code></div><div class="option-text">The theme text role whose style the label takes: <code>:title</code>, <code>:axis-title</code> ... or a role of your theme.<ul><li><span>keyword</span></li></ul></div></dd></div><div class="option-card"><dt><code>:rotation</code><span class="option-default">Default: <code>0</code>; <code>270</code> for the y axis title.</span></dt><dd><div class="option-example"><code>{:labels {:title {:text "Walks", :rotation 90}}}</code></div><div class="option-text">The label's clockwise turn in degrees.<ul><li><code>0</code> – Horizontal.</li><li><code>90</code> – Turned clockwise, reading top to bottom.</li><li><code>270</code> – Turned counter-clockwise, reading bottom to top.</li></ul></div></dd></div></dl>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:petal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:x</span> {<span class="at">:text</span> <span class="st">"petal length</span><span class="sc">\n</span><span class="st">[cm]"</span>}</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"petal</span><span class="sc">\n</span><span class="st">width"</span> <span class="at">:rotation</span> <span class="dv">0</span> <span class="at">:role</span> <span class="at">:tick-label</span>}}}</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image1.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="label-style" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="label-style"><span class="header-section-number">8.3</span> Label style</h2>
+<p>The keys of the <a href="reference.shared_options.html#text-style">Text style</a> group in a label map override its role’s style for this label only:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> {<span class="at">:text</span> <span class="st">"Iris sepals"</span> <span class="at">:size</span> <span class="dv">18</span> <span class="at">:align</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:color</span> [<span class="dv">40</span> <span class="dv">40</span> <span class="dv">120</span>]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:background</span> [<span class="dv">230</span> <span class="dv">230</span> <span class="dv">245</span>] <span class="at">:inset</span> <span class="dv">6</span>}</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> {<span class="at">:text</span> <span class="st">"sepal width [cm]"</span> <span class="at">:font-style</span> <span class="at">:italic</span>}}}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image2.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="long-axis-titles" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="long-axis-titles"><span class="header-section-number">8.4</span> Long axis titles</h2>
+<p>An axis title longer than its panels - the width under them, the height beside them; one title spans all facet panels - is fitted to them: wrapped at word boundaries (a line into at most three, the title’s row or column grows), then drawn smaller down to the <code>:axis-title</code> text role’s <code>:min-size</code> (8 points by default, theme <code>[:text :axis-title :min-size]</code> - every text role takes one, see the Theme chapter), then cut with an ellipsis. Line breaks you give are kept, and a title that fits is drawn as given. Fitting is always on: earlier versions clipped such titles. A title rotated across its own track (a y title with <code>:rotation 0</code>) isn’t fitted.</p>
+<p>Wrapped titles beside a small panel; on the right a word too long for the panel shrinks to the least size and is cut (<code>:min-size 10</code>):</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"wrapped"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal length of the iris flowers, measured in centimetres"</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width of the flowers in centimetres"</span>}}</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> iris</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:sepal-width</span>}</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/scatter)]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">"shrunk and cut"</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:x</span> <span class="st">"sepal_length_in_centimetres_of_the_flowers_of_three_iris_species"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">:y</span> <span class="st">"sepal width"</span>}</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:theme</span> {<span class="at">:text</span> {<span class="at">:axis-title</span> {<span class="at">:min-size</span> <span class="dv">10</span>}}}}]</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">700</span> <span class="at">:height</span> <span class="dv">300</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image3.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="text-in-the-panel" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="text-in-the-panel"><span class="header-section-number">8.5</span> Text in the panel</h2>
+<p>The <code>text</code> chart writes literal text or a mapped <code>:label</code>; <code>:anchor</code>, <code>:offset</code> and <code>:rotation</code> place it, <code>:select :last</code> labels the end of each group (e.g.&nbsp;line ends). Its full table is on the chart’s page (<a href="reference.charts_annotations.html#text-labels">text</a>). The plot below labels each line’s end and writes a note in panel units:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> series</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:color</span> <span class="at">:g</span>}</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:v</span> <span class="at">:label</span> <span class="at">:g</span>} <span class="at">:select</span> <span class="at">:last</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]})</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> [<span class="at">:panel</span> <span class="fl">0.02</span>] <span class="at">:y</span> [<span class="at">:panel</span> <span class="fl">0.95</span>] <span class="at">:text</span> <span class="st">"literal text in panel units"</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>] <span class="at">:font-style</span> <span class="at">:italic</span>})]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:legend</span> <span class="va">false</span>}</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">350</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image4.png" class="img-fluid"></p>
+</div>
+</section>
+<section id="formulas" class="level2" data-number="8.6">
+<h2 data-number="8.6" class="anchored" data-anchor-id="formulas"><span class="header-section-number">8.6</span> Formulas</h2>
+<p>Any text can hold LaTeX formulas, typeset at the text’s size and colour (bold in a bold role): <code>plot/math</code> is one formula, <code>plot/runs</code> puts text and formulas on one baseline, and in strings <code>$...$</code> is a formula. The scale formatter <code>:power-math</code> writes log ticks as typeset powers.</p>
+<p>The plot below puts formulas in the title, the axis titles, the tick labels, the legend and a text chart:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> decay</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:t</span> <span class="at">:y</span> <span class="at">:n</span> <span class="at">:color</span> <span class="at">:rate</span>}</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:charts</span> [(chart/line)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                             (chart/text {<span class="at">:x</span> <span class="fl">5.5</span> <span class="at">:y</span> <span class="fl">200.0</span> <span class="at">:anchor</span> [<span class="at">:left</span> <span class="at">:middle</span>]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">:text</span> (plot/runs <span class="st">"half-life "</span> (plot/math <span class="st">"t_{1/2} = </span><span class="sc">\\</span><span class="st">frac{</span><span class="sc">\\</span><span class="st">ln 2}{</span><span class="sc">\\</span><span class="st">lambda}"</span>))})]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:scales</span> {<span class="at">:y</span> {<span class="at">:kind</span> <span class="at">:log</span> <span class="at">:formatter</span> <span class="at">:power-math</span>}}</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:labels</span> {<span class="at">:title</span> (plot/runs <span class="st">"Exponential decay "</span> (plot/math <span class="st">"N(t) = N_0 e^{-</span><span class="sc">\\</span><span class="st">lambda t}"</span>))</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:x</span> (plot/math <span class="st">"t"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">:y</span> (plot/math <span class="st">"N(t)"</span>)}}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">600</span> <span class="at">:height</span> <span class="dv">380</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.labels_text_files/image5.png" class="img-fluid"></p>
+</div>
+<p>A dollar pair has no space inside and its closing dollar isn’t followed by a digit, so <code>cost $5 to $10</code> stays text; <code>\$</code> is always a literal dollar. <code>:dollar-math false</code> (a text role, a label map or a text chart) keeps every dollar literal, as on the right - strips, value labels, a rotated two-line title and turned tick labels:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> [masses-plot (<span class="kw">fn</span> [title theme]</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                    {<span class="at">:data</span> masses</span>
@@ -1926,21 +1858,21 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <p><img src="reference.labels_text_files/image6.png" class="img-fluid"></p>
 </div>
 </section>
-<section id="fontresolve-font" class="level2" data-number="8.7">
-<h2 data-number="8.7" class="anchored" data-anchor-id="fontresolve-font"><span class="header-section-number">8.7</span> font/resolve-font</h2>
-<p>A text style’s <code>:font</code> is a family name or a <code>java.awt.Font</code>; <code>resolve-font</code> turns a name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>.</p>
+<section id="fonts" class="level2" data-number="8.7">
+<h2 data-number="8.7" class="anchored" data-anchor-id="fonts"><span class="header-section-number">8.7</span> Fonts</h2>
+<p><code>font/resolve-font</code> turns a family name, a style (<code>:plain</code>, <code>:bold</code>, <code>:italic</code>, <code>:bold-italic</code>) and a size in points into the <code>java.awt.Font</code> drawn; use it to see which font a name gives or to hand a text style a font object, since a style’s <code>:font</code> takes a family name or a <code>java.awt.Font</code>. Bundled families (<code>"DejaVu Sans Mono"</code> - the default theme’s font, <code>"Noto Emoji"</code>) win over installed ones, so plots render alike on every platform; installed and logical families (<code>"Serif"</code>, <code>"SansSerif"</code> …) work too, an unknown name throws <code>{:key :font}</code>.</p>
 <div class="mapping"><div class="mapping-title">Arguments<span class="mapping-hint"> – what the call takes</span></div><ul><li><code>font</code> – A bundled font family name as written, an installed or logical (<code>SansSerif</code>) family name in any case, or a <code>java.awt.Font</code>, whose size and style are replaced.</li><li><code>font-style</code> – A font style: <code>:plain</code>, <code>:bold</code>, <code>:italic</code> or <code>:bold-italic</code>.</li><li><code>size</code> – The size in points, a positive number.</li></ul><div class="mapping-returns"><strong>Returns</strong> – The font, a <code>java.awt.Font</code>.</div></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"DejaVu Sans Mono"</span> <span class="at">:bold</span> <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x29f9a15e</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x4f5ec85b</span> <span class="st">"java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(font/resolve-font <span class="st">"Serif"</span> <span class="at">:italic</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="printedClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x70ef09cd</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>#object[java.awt.Font <span class="bn">0x55f96b7c</span> <span class="st">"java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A resolved font (here a bundled bold face) in a label, and a logical family by name for the axis titles:</p>
 <div class="sourceClojure">

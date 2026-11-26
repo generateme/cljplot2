@@ -297,12 +297,11 @@
         (is (card-theme-entry? [:text :title :size]))
         (is (not (card-theme-entry? [:no-such-key])))))
     (when (= :plot n)
-      (testing "boundary: a migrated path covers its entries, not its container or siblings"
+      (testing "boundary: a whole migrated schema ([]) covers its nested entries; an unmigrated schema none"
         (is (migrated-path? :plot [:groups :na]))
-        (is (not (migrated-path? :plot [:groups])))
-        (is (not (migrated-path? :plot [:legend])))
-        (is (migrated-path? :position-scale [:ticks-params :unit]) "a whole schema ([]) covers nested entries")
-        (is (not (migrated-path? :facets [:scales])) "an unmigrated schema")))
+        (is (migrated-path? :facets [:scales :x]))
+        (is (migrated-path? :plot [:margins :right]))
+        (is (not (migrated-path? :coord [:kind])))))
     (testing (str n ": readable type texts")
       (is (= [] (vec (keep #(when (re-find #":cljplot2\.|#object|\[:(cat|\?|\*|\+|fn|map|and|or|maybe|enum)\b|\w\?(,| |$)" (:type %))
                               [(:path %) (:type %)])

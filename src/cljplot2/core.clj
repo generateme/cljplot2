@@ -64,7 +64,9 @@
   - `options` (map, optional): grid shape, track weights, panel alignment, `:title`, `:theme`.
 
   See [[cljplot2.multiplot/arrange]]."
-  {:cljplot2/options multiplot/arrange-options}
+  {:cljplot2/options multiplot/arrange-options
+   :cljplot2/arguments [{:name 'plots :description "The plot maps of the cells, filled row by row."}]
+   :cljplot2/returns "A plot map whose `:arrange` key holds the plots and the layout."}
   ([plots] (multiplot/arrange plots))
   ([plots options] (multiplot/arrange plots options)))
 
@@ -77,7 +79,10 @@
   - `options` (map): `:variables` (required), the charts of the `:lower`, `:upper` and `:diagonal` cells (`:none` - empty cells), `:mapping`, `:variable-names`, `:title`, `:theme`.
 
   Returns a plot map. See [[cljplot2.multiplot/pairs]]."
-  {:cljplot2/options multiplot/pairs-options}
+  {:cljplot2/options multiplot/pairs-options
+   :cljplot2/arguments [{:name 'rows :description "The data: rows or columns."
+                         :columns {"a variable column" "Numbers of a variable named in `:variables` (or `:row-variables`, `:column-variables`); a row without a number there is left out of that variable's cells."}}]
+   :cljplot2/returns "A plot map arranging a cell plot per pair of variables, with one legend."}
   [rows options]
   (multiplot/pairs rows options))
 

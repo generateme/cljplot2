@@ -1623,44 +1623,59 @@
 (def ^:private chart-schemas
   "Schema of a chart value's `:schema`: malli schemas of its options, theme style and merged mapping."
   [:map {:closed true}
-   (schema/optional :options {:description "schema of the chart's options"} schema/malli-schema)
-   (schema/optional :style {:description "schema of the chart's theme style [:chart kind]"} schema/malli-schema)
-   (schema/optional :mapping {:description "schema of the merged mapping"} schema/malli-schema)])
+   (schema/optional :options {:description "The schema of the chart's options."} schema/malli-schema)
+   (schema/optional :style {:description "The schema of the chart's theme style `[:chart kind]`."} schema/malli-schema)
+   (schema/optional :mapping {:description "The schema of the chart's merged mapping."} schema/malli-schema)])
 
 (def chart-schema
   "Schema of a chart value, see [[cljplot2.chart]]; open (a chart value may carry the user's own keys)."
-  [:map {:cljplot2/type-doc "a chart value (see cljplot2.chart)"}
-   (schema/nilable :kind {:description "chart kind, the key of its theme style [:chart kind]"} keyword?)
-   (schema/nilable :options {:description "the chart's options"} :map)
-   [:compute {:description "(compute chart split env) - the chart's statistics for every panel"} schema/function]
-   [:draw {:description "(draw chart computed canvas box scales env) - draws one panel"} schema/function]
-   (schema/nilable :legend {:description "(legend chart attributes canvas box env) - draws a legend key glyph"} schema/function)
-   (schema/optional :inherit-mapping {:description "which plot mapping keys the chart takes: all, or only the facet keys (annotations)"
+  [:map {:cljplot2/type-doc "a chart value (see cljplot2.chart)" :cljplot2/type-name "chart"}
+   (schema/nilable :kind {:description "The chart kind, the key of its theme style `[:chart kind]`."} keyword?)
+   (schema/nilable :options {:description "The chart's options."} :map)
+   [:compute {:description "`(compute chart split env)`: the chart's statistics for every panel."} schema/function]
+   [:draw {:description "`(draw chart computed canvas box scales env)`: draws one panel."} schema/function]
+   (schema/nilable :legend {:description "`(legend chart attributes canvas box env)`: draws a legend key glyph."} schema/function)
+   (schema/optional :inherit-mapping {:description "Which plot mapping keys the chart takes: all, or only the facet keys (annotations)."
                                       :default :all}
                     [:enum :all :facets])
-   (schema/optional :coords {:description "coordinate systems the chart draws in" :cljplot2/default-doc "#{:cartesian}"}
+   (schema/optional :coords {:description "The coordinate systems the chart draws in." :cljplot2/default-doc "`#{:cartesian}`."}
                     [:set [:enum :cartesian :polar :three-d]])
-   (schema/nilable :primitives {:description "3D charts: (primitives chart computed point scales env) - the panel's 3D primitives"}
+   (schema/nilable :primitives {:description "`(primitives chart computed point scales env)`: the panel's 3D primitives, for 3D charts."}
                    schema/function)
-   (schema/nilable :schema {:description "malli schemas of the chart's :options, :style and :mapping, checked by build"}
+   (schema/nilable :schema {:description "The malli schemas of the chart's `:options`, `:style` and `:mapping`, checked by `build`."}
                    chart-schemas)])
 
 (def ^:private scales-schema
   "Schema of plot `:scales`: position (`:x`, `:y`), facet and aesthetic scale specs."
   (-> [:map {:closed true}]
-      (into (map #(schema/optional % {:description (str "the " (name %) " position scale")} scale/scale-spec-schema)) [:x :y])
-      (into (map #(schema/optional % {:description (str "the " (name %) " facet levels (order, strip text)")} facet/scale-spec-schema))
+      (into (map (fn [[k example]]
+                   (schema/optional k {:description (str "The " (name k) " position scale's spec (Scales, axes and coordinates).")
+                                       :cljplot2/default-doc "From the data." :cljplot2/example example}
+                                    scale/scale-spec-schema))
+                 {:x {:reverse true} :y {:reverse true}}))
+      (into (map #(schema/optional % {:description (str "The spec of the `" % "` levels: their panel order and strip texts (Facets, multiplots and margins).")
+                                      :cljplot2/default-doc "The data's levels, sorted." :cljplot2/example {:domain [2 1]}}
+                                   facet/scale-spec-schema))
             [:facet :facet-col :facet-row])
-      (into (map #(schema/optional % {:description (str "the " (name %) " aesthetic scale")} (aesthetic/scale-spec-schema %)))
-            aesthetic/dims)))
+      (into (map (fn [[k example]]
+                   (schema/optional k {:description (str "The " (name k) " aesthetic scale's spec (Aesthetics and legends).")
+                                       :cljplot2/default-doc "From the data and the theme's `:palette`." :cljplot2/example {:range example}}
+                                    (aesthetic/scale-spec-schema k)))
+                 {:color [:gold :darkred] :shape [\s \A] :size [1 20] :dash [:dotted :solid] :pattern [:dots :cross]}))))
 
 (def margin-spec-schema
   "Schema of a plot margin as a map `{:charts c :size px :axis bool}` (the other forms of a margin are its charts alone)."
-  [:map {:closed true}
-   [:charts {:description "a chart or a vector of charts"}
+  [:map {:closed true :cljplot2/type-name "margin spec"}
+   [:charts {:description "The margin's charts." :cljplot2/example '[(chart/density) (chart/rug)]
+             :cljplot2/form-meanings {"chart" "One chart." :vector "Charts layered in the margin."}}
     [:multi {:dispatch chart/chart-value?} [true chart-schema] [false [:vector {:min 1} chart-schema]]]]
-   (schema/optional :size {:description "margin thickness in pixels" :default 80} schema/pos)
-   (schema/optional :axis {:description "draw the magnitude axis of histogram and density margins" :default false} schema/bool)])
+   (schema/optional :size {:description "The margin's thickness in pixels." :default 80 :cljplot2/example 40
+                           :cljplot2/example-context {:charts '(chart/density)}}
+                    schema/pos)
+   (schema/optional :axis {:description "Whether histogram and density margins draw their magnitude axis." :default false
+                           :cljplot2/example-context {:charts '(chart/density)}
+                           :cljplot2/value-meanings {true "The axis drawn." false "No axis."}}
+                    schema/bool)])
 
 (def ^:private margin-schema
   "Schema of one plot margin: a chart, a vector of charts or a [[margin-spec-schema]] map."
@@ -1670,13 +1685,26 @@
    [:charts [:vector {:min 1} chart-schema]]
    [:spec margin-spec-schema]])
 
+(def ^:private margin-form-meanings
+  "The meanings of a margin's forms on its card (keyed by the forms' short type texts: two of them are maps)."
+  {"chart" "One chart, e.g. `(chart/density)`." :vector "Charts layered in the margin."
+   "margin spec" "The charts with the margin's thickness and axis: `{:charts c :size px :axis bool}`."})
+
 (def margins-schema
   "Schema of plot `:margins`: `{:top m :right m :bottom m :left m}`, `m` - a chart, a vector of charts or `{:charts c :size px :axis bool}`."
   [:map {:closed true}
-   (schema/optional :top {:description "charts above the panel sharing its horizontal scale"} margin-schema)
-   (schema/optional :right {:description "charts right of the panel sharing its vertical scale"} margin-schema)
-   (schema/optional :bottom {:description "charts below the panel (above its horizontal axis) sharing its horizontal scale"} margin-schema)
-   (schema/optional :left {:description "charts left of the panel (right of its vertical axis) sharing its vertical scale"} margin-schema)])
+   (schema/optional :top {:description "Charts above the panel, sharing its horizontal scale." :cljplot2/default-doc "None."
+                          :cljplot2/example '(chart/density) :cljplot2/form-meanings margin-form-meanings}
+                    margin-schema)
+   (schema/optional :right {:description "Charts right of the panel, sharing its vertical scale." :cljplot2/default-doc "None."
+                            :cljplot2/example '(chart/density) :cljplot2/form-meanings margin-form-meanings}
+                    margin-schema)
+   (schema/optional :bottom {:description "Charts below the panel, above its horizontal axis, sharing its horizontal scale." :cljplot2/default-doc "None."
+                             :cljplot2/example '(chart/density) :cljplot2/form-meanings margin-form-meanings}
+                    margin-schema)
+   (schema/optional :left {:description "Charts left of the panel, right of its vertical axis, sharing its vertical scale." :cljplot2/default-doc "None."
+                           :cljplot2/example '(chart/density) :cljplot2/form-meanings margin-form-meanings}
+                    margin-schema)])
 
 (def plot-schema
   "Schema of a plot map (keys in the namespace doc); `:theme` and `:options` are checked merged ([[cljplot2.theme/theme-schema]], [[options-schema]])."
@@ -1685,21 +1713,31 @@
                           :cljplot2/default-doc "None: each chart brings its own `:data`."
                           :cljplot2/example [{:x 1 :y 2} {:x 2 :y 3} {:x 3 :y 1}]}
                    data/data-schema)
-   (schema/nilable :mapping {:cljplot2/section :content :description "accessors of the dimensions the charts read (keywords or functions), merged under each chart's"}
+   (schema/nilable :mapping {:cljplot2/section :content :description "The accessors of the dimensions the charts read, merged under each chart's own mapping (Data and mapping)."
+                             :cljplot2/default-doc "None: each chart brings its own `:mapping`." :cljplot2/example {:x :t :y :v :color :w}}
                    data/mapping-schema)
-   (schema/nilable :charts {:cljplot2/section :content :description "the charts, drawn in order"} [:vector chart-schema])
-   (schema/nilable :scales {:cljplot2/section :scales :description "position, facet and aesthetic scale specs"} scales-schema)
-   (schema/nilable :facets {:cljplot2/section :layout :description "facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights"}
+   (schema/nilable :charts {:cljplot2/section :content :description "The charts, drawn in order: a later chart lies on top."
+                            :cljplot2/default-doc "None: an empty panel." :cljplot2/example '[(chart/scatter)]}
+                   [:vector chart-schema])
+   (schema/nilable :scales {:cljplot2/section :scales :description "The scale specs by dimension: position, facet and aesthetic scales."}
+                   scales-schema)
+   (schema/nilable :facets {:cljplot2/section :layout :description "The facet layout: wrap shape, panel order, the NA panel, scale relations, strips and panel weights (Facets, multiplots and margins)."
+                            :cljplot2/default-doc "One panel per facet level, sharing scales." :cljplot2/example {:columns 1}}
                    facet/facet-options)
-   (schema/nilable :groups {:cljplot2/section :content :description "grouping options"}
+   (schema/nilable :groups {:cljplot2/section :content :description "How the rows' grouping treats missing values."}
                    [:map {:closed true}
                     (schema/nilable :na {:description "Whether rows with a `nil` aesthetic or `:group` value form their own NA level." :default true
                                          :cljplot2/value-meanings {true "An NA level in the `[:palette :na]` colour, listed last in the legend." false "The rows are dropped."}}
                                     schema/bool)])
-   (schema/nilable :legend {:cljplot2/section :legend :description "draw the legends (false hides all)" :default true} schema/bool)
-   (schema/nilable :legend-only {:cljplot2/section :legend :description "draw only the legends (a legend cell of an :arrange)" :default false} schema/bool)
-   (schema/nilable :alternate-panel {:cljplot2/section :style :description "shade a single panel as an odd facet panel (theme [:panel :alternate-fill])"
-                                     :default false}
+   (schema/nilable :legend {:cljplot2/section :legend :description "Whether the plot draws its legends." :default true
+                            :cljplot2/value-meanings {true "Every scale's legend unless its own `:legend` is false." false "No legends."}}
+                   schema/bool)
+   (schema/nilable :legend-only {:cljplot2/section :legend :description "Whether the plot draws only its legends, e.g. as a legend cell of an arrange." :default false
+                                 :cljplot2/value-meanings {true "Legends only: no panel or axes." false "The whole plot."}}
+                   schema/bool)
+   (schema/nilable :alternate-panel {:cljplot2/section :style :description "Whether a single panel is shaded as an odd facet panel, with the theme's `[:panel :alternate-fill]`."
+                                     :default false
+                                     :cljplot2/value-meanings {true "Shaded, e.g. a checkerboard of arranged cells." false "Not shaded."}}
                    schema/bool)
    (schema/nilable :aspect {:cljplot2/section :coordinates :description "The ratio of the panel's axes in data units."
                             :cljplot2/default-doc "Free: the panel takes the space it gets."
@@ -1712,29 +1750,49 @@
                            :cljplot2/default-doc "Cartesian." :cljplot2/example {:kind :polar}
                            :cljplot2/form-meanings {:map "Cartesian `{:kind :cartesian}`, or a polar coord whose keys the cards below list."}}
                    coord/coord-schema)
-   (schema/nilable :labels {:cljplot2/section :titles :description "plot title and axis titles"} plot-grid/labels-schema)
-   (schema/nilable :custom-grid {:cljplot2/section :layout :description "a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)"}
+   (schema/nilable :labels {:cljplot2/section :titles :description "The plot title and the axis titles (Labels and text)."
+                            :cljplot2/default-doc "No title; the axis titles the charts suggest." :cljplot2/example {:title "Walks"}}
+                   plot-grid/labels-schema)
+   (schema/nilable :custom-grid {:cljplot2/section :layout :description "A hand-written layout grid instead of the generated one; only `:labels {:title t}` may stand beside it."
+                                 :cljplot2/default-doc "None: the generated grid." :cljplot2/no-example true
+                                 :cljplot2/form-meanings {:map "Tracks and items of the `cljplot2.layout.grid` namespace doc (Facets, multiplots and margins)."}}
                    :map)
-   (schema/nilable :arrange {:cljplot2/section :layout :description "a multiplot: sub-plots in a grid (only :labels {:title t} beside it)"}
+   (schema/nilable :arrange {:cljplot2/section :layout :description "A multiplot: sub-plots in a grid; only `:labels {:title t}` may stand beside it (`plot/arrange` builds it)."
+                             :cljplot2/default-doc "None: a single plot." :cljplot2/no-example true}
                    plot-grid/arrange-schema)
-   (schema/nilable :margins {:cljplot2/section :layout :description "charts beside the panel sharing its scales (marginal plots)"} margins-schema)
-   (schema/optional :alignment-padding {:description "pixels added to the generated grid's margins by multiplot alignment"
+   (schema/nilable :margins {:cljplot2/section :layout :description "Charts beside the panel, sharing its scales (Facets, multiplots and margins)."
+                             :cljplot2/default-doc "None." :cljplot2/example '{:top (chart/density)}}
+                   margins-schema)
+   (schema/optional :alignment-padding {:description "The pixels multiplot alignment adds to the generated grid's margins."
                                         :cljplot2/internal true}
                     [:map-of keyword? number?])
-   (schema/nilable :options {:cljplot2/section :render :description "render options, merged under the ones given to build / render"} :map)
-   (schema/optional :theme {:cljplot2/section :style :description "theme overrides, deep-merged over the default theme"} any?)])
+   (schema/nilable :options {:cljplot2/section :render :description "Render options, merged under those given to `build` or `render-image` (Render)."
+                             :cljplot2/default-doc "None: the defaults, or the render options given to `build`." :cljplot2/example {:debug true}
+                             :cljplot2/form-meanings {:map "Keys of the render options."}}
+                   :map)
+   (schema/optional :theme {:cljplot2/section :style :description "Theme overrides, deep-merged over the default theme (Theme)."
+                            :cljplot2/default-doc "The default theme." :cljplot2/example {:plot {:background :white}}}
+                    any?)])
 
 (def options-schema
   "Schema of the merged render options of `build` (see [[default-options]]): image size and hint, `:debug` and `:cvd` (used by [[cljplot2.render/render]]) and `:until`."
   [:map {:closed true :cljplot2/merged true}
-   [:width {:cljplot2/section :image :description "target width in pixels" :default 600} schema/pos-int]
-   [:height {:cljplot2/section :image :description "target height in pixels" :default 600} schema/pos-int]
-   [:hint {:cljplot2/section :image :description "rendering quality hint (antialiasing and text metrics)" :default :high} (into [:enum] (sort measure/rendering-hints))]
-   (schema/nilable :debug {:cljplot2/section :inspection :description "paint every layout item's box (a distinct colour, its outline and id) under its content"
-                           :default false}
+   [:width {:cljplot2/section :image :description "The image width in pixels." :default 600 :cljplot2/example 400} schema/pos-int]
+   [:height {:cljplot2/section :image :description "The image height in pixels." :default 600 :cljplot2/example 300} schema/pos-int]
+   [:hint {:cljplot2/section :image :description "The rendering quality: antialiasing and text metrics." :default :high
+           :cljplot2/value-meanings {:low "No antialiasing: faster, jagged edges." :mid "Antialiasing tuned for speed." :high "Antialiasing tuned for quality."
+                                     :highest "As `:high` with exact stroke geometry; lines can look softer."}}
+    [:enum :low :mid :high :highest]]
+   (schema/nilable :debug {:cljplot2/section :inspection :description "Whether every layout item's box is painted under its content: a distinct colour, its outline and its id."
+                           :default false
+                           :cljplot2/value-meanings {true "The boxes painted." false "Not painted."}}
                    schema/bool)
-   (schema/nilable :cvd {:cljplot2/section :color-vision :description "render as seen with a colour vision deficiency"} schema/cvd-deficiency)
-   (schema/optional :until {:cljplot2/section :inspection :description "build stops after this pipeline stage (inspect the intermediate data)"}
+   (schema/nilable :cvd {:cljplot2/section :color-vision :description "Renders the image as seen with a colour vision deficiency."
+                         :cljplot2/default-doc "None: as rendered." :cljplot2/example :deuteranopia}
+                   schema/cvd-deficiency)
+   (schema/optional :until {:cljplot2/section :build :description "The pipeline stage after which `build` stops, to inspect the intermediate data; only `build`'s own options take it, a plot's `:options` ignores it."
+                            :cljplot2/default-doc "Every stage." :cljplot2/example :grid
+                            :cljplot2/other-values "A stage of the pipeline, in order (Overview: The pipeline)."}
                     (into [:enum] stage-order))])
 
 (def default-options

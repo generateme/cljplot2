@@ -234,7 +234,7 @@
     selected))
 
 (defn options-table
-  "Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`), its code
+  "Unused since every page shows option cards ([[option-cards]]); 8.4 removes it. Table of option `rows` (from `cljplot2.describe`: `options`, `mapping`, `fragment-rows`, `theme-rows`), its code
   hidden: option path, type, default (value and / or text) and description; with `section` only the rows of that
   slice (`:section`, see `cljplot2.describe`). A Group column - the shared group's title, documented once in the
   Shared options chapter - when the rows mix groups (rows of one group are named by the text around the table).

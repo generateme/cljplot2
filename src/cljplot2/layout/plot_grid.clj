@@ -84,21 +84,23 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:private plot-labels
-  "Plot label key -> grid item id, content defaults, placement and description, in item order."
+  "Plot label key -> grid item id, content defaults, placement, and its card texts (description, default text, example), in item order."
   [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title
-            :description "plot title above the panels (role :title)"}]
+            :description "The plot title above the panels, in the text role `:title`." :default-doc "None." :example "Walks"}]
    [:x {:id :x-title :defaults {:role :axis-title :fit true} :column :panel :row :x-title
-        :description "x axis title (role :axis-title; too long - wrapped, shrunk, then cut to the panels' width)"
-        :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]
+        :description "The x axis title, in the text role `:axis-title`; a title too long for its axis is wrapped, shrunk, then cut."
+        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none." :example "time"}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270 :fit true} :column :y-title :row :panel
-        :description "y axis title (role :axis-title, rotated 270; too long - wrapped, shrunk, then cut to the panels' height)"
-        :default-doc "the first chart's suggested title (histogram, density, ecdf, qq, pp ...), else none"}]])
+        :description "The y axis title, in the text role `:axis-title` turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut."
+        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none." :example "value"}]])
 
 (def labels-schema
   "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/label-options]]; `nil` - no label."
   (into [:map {:closed true}]
-        (map (fn [[k {:keys [description default-doc]}]]
-               (schema/nilable k (cond-> {:description description} default-doc (assoc :cljplot2/default-doc default-doc))
+        (map (fn [[k {:keys [description default-doc example]}]]
+               (schema/nilable k {:description description :cljplot2/default-doc default-doc :cljplot2/example example
+                                  :cljplot2/form-meanings {"label map" "The text with its role, rotation and text style keys (Label maps)."
+                                                           "any value" "A text: any value as `str`, or a `plot/math` or `plot/runs` value."}}
                                [:multi {:dispatch label/label-options?} [true label/label-options] [false any?]])))
         plot-labels))
 
@@ -1096,12 +1098,13 @@
 (def arrange-schema
   "Plot `:arrange`, see [[cljplot2.multiplot/arrange]]; the plots are validated when built as sub-plots."
   (schema/with-rules
-   (conj (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels}"}]
+   (conj (into [:map {:closed true :cljplot2/type-doc "an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels}"
+                      :cljplot2/type-name "arrange map"}]
                arrange-entries)
          (schema/optional :gap-padding {:cljplot2/internal true
-                                        :description "cell id -> {:right :bottom} pixels evening the gaps between an :equal-panels arrange's panels"}
-                          [:map-of any? [:map [:right {:description "pixels added right of the cell's panels"} :int]
-                                         [:bottom {:description "pixels added below the cell's panels"} :int]]]))
+                                        :description "Cell id -> `{:right :bottom}`: the pixels evening the gaps between an `:equal-panels` arrange's panels."}
+                          [:map-of any? [:map [:right {:description "The pixels added right of the cell's panels."} :int]
+                                         [:bottom {:description "The pixels added below the cell's panels."} :int]]]))
    [arrange-problem]))
 
 (defn- arrange-weights

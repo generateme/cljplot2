@@ -1,7 +1,7 @@
 ;; # Overview
 
 ;; The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme,
-;; every chart, builder and user-facing data function. The tables are generated from the library's validating
+;; every chart, builder and user-facing data function. The option cards are generated from the library's validating
 ;; schemas, so they name exactly what `plot/build` accepts. Use cases and galleries show the options at work; these
 ;; four parts say what exists.
 
@@ -11,6 +11,12 @@
             [cljplot2.describe :as describe]
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
+
+;; The table below holds four made-up points in two groups; most plots of A plot is a map draw them:
+
+(def points [{:x 1 :y 2 :g "a"} {:x 2 :y 3 :g "a"} {:x 3 :y 1 :g "b"} {:x 4 :y 4 :g "b"}])
+
+(nu/data-table points)
 
 ;; ## How the reference is organised
 
@@ -29,22 +35,20 @@
 ;; * **Data functions** (from [Levels](reference.data_levels.html)) - the user-facing functions preparing rows, and
 ;;   internal namespaces shown by example.
 
-;; ## How to read a table
+;; ## How to read a card
 
-;; Each table is one group of related options, followed by an example using them - a chart or a value.
+;; Each group of cards holds related options and comes before an example that uses them - a plot or a value.
 
-;; * **Option** - the key; a nested key is listed after its map, with its full path (`:scales :x`). `(required)`
-;;   marks a key that must be given.
-;; * **Type** - the values the schema accepts.
-;; * **Default** - the value used when the key is absent (style defaults come from the theme), and / or how a
-;;   computed default is found. Empty: absent means not set - an optional feature off, or a map whose own keys
-;;   have the defaults.
-;; * **Description** - what the key does.
-;; * **Group** - shown when a table mixes keys of a shared group (data and mapping, curves, strips ...) with others;
-;;   a group is described once, in the Shared options chapter.
+;; * **Header** - the option's key and its default. A nested key shows its path inside the group's map
+;;   (`:scales :x`), `(theme)` marks a default the theme holds, and a computed default is described in words. Keys
+;;   without a default (required keys, and maps whose own keys follow) show none.
+;; * **Example** - for most options, a call that sets the option, or a plot map for plot keys
+;;   (`{:scales {:x {:kind :log}}}`).
+;; * **Text** - what the option does, then a point per value or form with its meaning. An option of one form shows
+;;   only its [type](reference.types.html), and a long list ends with its other values on one line.
 
-;; Some sections show options as cards instead: each gives the option's default, what it does, the values or
-;; [types](reference.types.html) it takes with their meanings, and an example.
+;; A chart's, builder's or data function's section lists the shared groups of options it takes in a box linking to
+;; the Shared options chapter, its mapping keys in a Mapping box and its positional arguments in an Arguments box.
 
 ;; ## A plot is a map
 
@@ -53,13 +57,12 @@
 
 ;; ### Content
 
-;; The rows, how their values map to dimensions, and the charts drawing them (Data and mapping chapter).
+;; These keys hold the rows, how their values map to dimensions, and the charts drawing them
+;; ([Data and mapping](reference.data_mapping.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :content)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :content)
 
-(def points [{:x 1 :y 2 :g "a"} {:x 2 :y 3 :g "a"} {:x 3 :y 1 :g "b"} {:x 4 :y 4 :g "b"}])
-
-(nu/data-table points)
+;; The plot below draws the points as a line with points:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y}
@@ -75,9 +78,11 @@
 
 ;; ### Scales
 
-;; How data values become positions, colours, shapes ... (Scales and Aesthetics chapters).
+;; This key turns data values into positions, colours, shapes ...:
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :scales)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :scales)
+
+;; The plot below fixes and reverses the y domain and names the colours and their legend:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y :color :g}
@@ -86,7 +91,13 @@
                              :color {:range [:darkorange :teal] :title "group"}}}
                    {:width 500 :height 300})
 
-;; A logarithmic x scale spreads the small values:
+;; The `:scales` map takes a spec per dimension
+;; ([Scales, axes and coordinates](reference.scales_axes_coords.html), [Facets, multiplots and margins](reference.facets_arrange.html),
+;; [Aesthetics and legends](reference.aesthetics_legends.html)):
+
+(nu/option-cards [] (describe/rows-under (describe/options pipeline/plot-schema) [:scales]))
+
+;; The plot below spreads the small values with a logarithmic x scale:
 
 (plot/render-image {:data (for [i (range 1 30)] {:x (* i i i) :y i})
                     :mapping {:x :x :y :y}
@@ -96,9 +107,12 @@
 
 ;; ### Coordinates
 
-;; Cartesian (optionally flipped or with equal units) or polar (Scales chapter).
+;; These keys set the coordinates: cartesian, flipped or with equal units, or polar
+;; ([Scales, axes and coordinates](reference.scales_axes_coords.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :coordinates)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :coordinates)
+
+;; The plot below flips the bars horizontal, their order reversed:
 
 (plot/render-image {:data [{:fruit "apples" :n 3} {:fruit "pears" :n 5} {:fruit "plums" :n 2}]
                     :mapping {:x :fruit :y :n}
@@ -119,16 +133,19 @@
 
 ;; ### Layout
 
-;; Panels split by data, several plots in a grid, charts beside the panel (Facets chapter).
+;; These keys split the panel by data, put several plots in a grid or charts beside the panel
+;; ([Facets, multiplots and margins](reference.facets_arrange.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :layout)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :layout)
+
+;; The plot below splits the points into a panel per group:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y :facet :g}
                     :charts [(chart/line) (chart/scatter)]}
                    {:width 500 :height 300})
 
-;; Several plots in one image (`plot/arrange`, Facets chapter), here two columns weighted 3 : 2:
+;; The plot below puts two plots in one image with `plot/arrange`, in two columns weighted 3 : 2:
 
 (plot/render-image (plot/arrange [{:data points :mapping {:x :x :y :y} :charts [(chart/line) (chart/scatter)]}
                                   {:data points :mapping {:x :x :y :y :color :g} :charts [(chart/scatter)]}]
@@ -137,9 +154,11 @@
 
 ;; ### Titles
 
-;; The plot title and the axis titles (Labels chapter).
+;; This key holds the titles ([Labels and text](reference.labels_text.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :titles)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :titles)
+
+;; The plot below names the plot and both axes:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y}
@@ -149,9 +168,12 @@
 
 ;; ### Legend
 
-;; Legends are drawn for mapped aesthetics; these keys hide them or draw only them (Aesthetics chapter).
+;; Mapped aesthetics draw legends; these keys hide them or draw only them
+;; ([Aesthetics and legends](reference.aesthetics_legends.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :legend)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :legend)
+
+;; The plot below hides the legend of its colours:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y :color :g}
@@ -161,9 +183,11 @@
 
 ;; ### Style
 
-;; The theme holds every style default; a plot overrides parts of it (Theme chapter).
+;; The theme holds every style default; these keys override parts of it for one plot ([Theme](reference.theme.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :style)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :style)
+
+;; The plot below gives the plot a white background and the panel a light fill and a border:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y}
@@ -174,9 +198,11 @@
 
 ;; ### Render options
 
-;; Render options travel with the plot under `:options`; those given to `render-image` win (Render chapter).
+;; This key lets a plot carry its render options ([Render](reference.render.html)):
 
-(nu/options-table (describe/top-level-rows (describe/options pipeline/plot-schema)) :render)
+(nu/option-cards [] (describe/top-level-rows (describe/options pipeline/plot-schema)) :render)
+
+;; The plot below carries its own size, so `render-image` takes no options:
 
 (plot/render-image {:data points
                     :mapping {:x :x :y :y}
@@ -185,17 +211,21 @@
 
 ;; ## The pipeline
 
-;; `plot/build` validates the plot first and throws an error listing the problems (Errors chapter). Then the plot
+;; `plot/build` validates the plot first and throws an error listing the problems ([Errors](reference.errors.html)). Then the plot
 ;; passes through pure stages, each adding one key: `:split` (rows split per facet panel and group) → `:stats`
 ;; (each chart's computed data) → `:extents` → `:scale-specs` → `:grid` → `:layout` → `:finalized-scales` →
 ;; `:subplots`. `plot/render` draws the result.
 
-;; ## The tables as data
+;; ## The cards as data
 
-;; The tables come from `cljplot2.describe`, usable at the REPL too: `describe/options` takes a chart value, a
-;; builder or data function var or a schema; `describe/mapping` the mapping keys a chart reads; `describe/theme-rows`
-;; the theme; `describe/fragment-rows` a shared group; `describe/api-vars` lists the user-facing data functions,
-;; `describe/chart-constructors` the charts, `describe/attribute-values` the built-in shapes, dashes, patterns and
-;; cells. A row is a plain map; `:section` names its table slice:
+;; The cards come from `cljplot2.describe`, which you can use at the REPL too:
+;;
+;; * `describe/options` returns the rows of a chart value, a builder or data function var, or a schema;
+;; * `describe/mapping` returns the mapping keys a chart reads, `describe/theme-rows` the theme's rows and
+;;   `describe/fragment-rows` a shared group's;
+;; * `describe/api-vars` lists the user-facing data functions, `describe/chart-constructors` the charts and
+;;   `describe/attribute-values` the built-in shapes, dashes, patterns and cells.
+;;
+;; A row is a plain map; `:section` names its slice of the options:
 
 (first (describe/options pipeline/plot-schema))

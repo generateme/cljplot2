@@ -54,7 +54,7 @@ code-block-background: true
 # Overview
 
 The reference lists every option of cljplot2: the plot map, render options, scales, facets, labels, the theme,
-every chart, builder and user-facing data function. The tables are generated from the library's validating
+every chart, builder and user-facing data function. The option cards are generated from the library's validating
 schemas, so they name exactly what `plot/build` accepts. Use cases and galleries show the options at work; these
 four parts say what exists.
 
@@ -69,6 +69,22 @@ four parts say what exists.
             [notebook-utils :as nu]))
 ```
 :::
+
+
+The table below holds four made-up points in two groups; most plots of A plot is a map draw them:
+
+
+::: {.sourceClojure}
+```clojure
+(def points [{:x 1 :y 2 :g "a"} {:x 2 :y 3 :g "a"} {:x 3 :y 1 :g "b"} {:x 4 :y 4 :g "b"}])
+```
+:::
+
+
+
+```{=html}
+<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>g</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>a</td></tr><tr><td>2</td><td>3</td><td>a</td></tr><tr><td>3</td><td>1</td><td>b</td></tr><tr><td>4</td><td>4</td><td>b</td></tr></tbody></table></div>
+```
 
 
 
@@ -94,25 +110,23 @@ four parts say what exists.
   internal namespaces shown by example.
 
 
-## How to read a table
+## How to read a card
 
-Each table is one group of related options, followed by an example using them - a chart or a value.
+Each group of cards holds related options and comes before an example that uses them - a plot or a value.
 
 
-* **Option** - the key; a nested key is listed after its map, with its full path (`:scales :x`). `(required)`
-  marks a key that must be given.
+* **Header** - the option's key and its default. A nested key shows its path inside the group's map
+  (`:scales :x`), `(theme)` marks a default the theme holds, and a computed default is described in words. Keys
+  without a default (required keys, and maps whose own keys follow) show none.
 
-* **Type** - the values the schema accepts.
-* **Default** - the value used when the key is absent (style defaults come from the theme), and / or how a
-  computed default is found. Empty: absent means not set - an optional feature off, or a map whose own keys
-  have the defaults.
+* **Example** - for most options, a call that sets the option, or a plot map for plot keys
+  (`{:scales {:x {:kind :log}}}`).
 
-* **Description** - what the key does.
-* **Group** - shown when a table mixes keys of a shared group (data and mapping, curves, strips ...) with others;
-  a group is described once, in the Shared options chapter.
+* **Text** - what the option does, then a point per value or form with its meaning. An option of one form shows
+  only its [type](reference.types.html), and a long list ends with its other values on one line.
 
-Some sections show options as cards instead: each gives the option's default, what it does, the values or
-[types](reference.types.html) it takes with their meanings, and an example.
+A chart's, builder's or data function's section lists the shared groups of options it takes in a box linking to
+the Shared options chapter, its mapping keys in a Mapping box and its positional arguments in an Arguments box.
 
 
 ## A plot is a map
@@ -123,30 +137,16 @@ keys come in groups; each has its chapter.
 
 ### Content
 
-The rows, how their values map to dimensions, and the charts drawing them (Data and mapping chapter).
-
-::: {.clay-table}
-
-```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:data</td><td>a sequence of rows (maps) or a map of columns (sequences) or nil</td><td>None: each chart brings its own `:data`.</td><td>The rows or columns the charts read; a chart's own `:data` wins over it.</td></tr><tr><td>:mapping</td><td>a mapping: key -> accessor (a keyword or a function of a row) or nil</td><td></td><td>accessors of the dimensions the charts read (keywords or functions), merged under each chart's</td></tr><tr><td>:charts</td><td>vector of a chart value (see cljplot2.chart) or nil</td><td></td><td>the charts, drawn in order</td></tr><tr><td>:groups</td><td>map</td><td></td><td>grouping options</td></tr></tbody></table>
-```
-
-:::
-
-
-
-::: {.sourceClojure}
-```clojure
-(def points [{:x 1 :y 2 :g "a"} {:x 2 :y 3 :g "a"} {:x 3 :y 1 :g "b"} {:x 4 :y 4 :g "b"}])
-```
-:::
-
+These keys hold the rows, how their values map to dimensions, and the charts drawing them
+([Data and mapping](reference.data_mapping.html)):
 
 
 ```{=html}
-<div class="data-table"><table class="table table-hover table-responsive clay-table"><thead><tr><th>x</th><th>y</th><th>g</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>a</td></tr><tr><td>2</td><td>3</td><td>a</td></tr><tr><td>3</td><td>1</td><td>b</td></tr><tr><td>4</td><td>4</td><td>b</td></tr></tbody></table></div>
+<dl class="options"><div class="option-card"><dt><code>:data</code><span class="option-default">Default: None: each chart brings its own <code>:data</code>.</span></dt><dd><div class="option-example"><code>{:data [{:x 1, :y 2} {:x 2, :y 3} {:x 3, :y 1}]}</code></div><div class="option-text">The rows or columns the charts read; a chart's own <code>:data</code> wins over it.<ul><li><a href="reference.types.html#data">data</a></li></ul></div></dd></div><div class="option-card"><dt><code>:mapping</code><span class="option-default">Default: None: each chart brings its own <code>:mapping</code>.</span></dt><dd><div class="option-example"><code>{:mapping {:x :t, :y :v, :color :w}}</code></div><div class="option-text">The accessors of the dimensions the charts read, merged under each chart's own mapping (Data and mapping).<ul><li><span>mapping</span></li></ul></div></dd></div><div class="option-card"><dt><code>:charts</code><span class="option-default">Default: None: an empty panel.</span></dt><dd><div class="option-example"><code>{:charts [(chart/scatter)]}</code></div><div class="option-text">The charts, drawn in order: a later chart lies on top.<ul><li><span>vector of charts</span></li></ul></div></dd></div><div class="option-card"><dt><code>:groups</code></dt><dd><div class="option-text">How the rows' grouping treats missing values.</div></dd></div></dl>
 ```
 
+
+The plot below draws the points as a line with points:
 
 
 ::: {.sourceClojure}
@@ -185,16 +185,15 @@ The same rows under another mapping - `:x` and `:y` swapped - give another plot:
 
 ### Scales
 
-How data values become positions, colours, shapes ... (Scales and Aesthetics chapters).
+This key turns data values into positions, colours, shapes ...:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:scales</td><td>map</td><td></td><td>position, facet and aesthetic scale specs</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:scales</code></dt><dd><div class="option-text">The scale specs by dimension: position, facet and aesthetic scales.</div></dd></div></dl>
 ```
 
-:::
 
+The plot below fixes and reverses the y domain and names the colours and their legend:
 
 
 ::: {.sourceClojure}
@@ -214,7 +213,17 @@ How data values become positions, colours, shapes ... (Scales and Aesthetics cha
 :::
 
 
-A logarithmic x scale spreads the small values:
+The `:scales` map takes a spec per dimension
+([Scales, axes and coordinates](reference.scales_axes_coords.html), [Facets, multiplots and margins](reference.facets_arrange.html),
+[Aesthetics and legends](reference.aesthetics_legends.html)):
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:scales :x</code><span class="option-default">Default: From the data.</span></dt><dd><div class="option-example"><code>{:scales {:x {:reverse true}}}</code></div><div class="option-text">The x position scale's spec (Scales, axes and coordinates).<ul><li><span>position scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :y</code><span class="option-default">Default: From the data.</span></dt><dd><div class="option-example"><code>{:scales {:y {:reverse true}}}</code></div><div class="option-text">The y position scale's spec (Scales, axes and coordinates).<ul><li><span>position scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet-col</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet-col {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet-col</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :facet-row</code><span class="option-default">Default: The data's levels, sorted.</span></dt><dd><div class="option-example"><code>{:scales {:facet-row {:domain [2 1]}}}</code></div><div class="option-text">The spec of the <code>:facet-row</code> levels: their panel order and strip texts (Facets, multiplots and margins).<ul><li><span>facet scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :color</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:range [:gold :darkred]}}}</code></div><div class="option-text">The color aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :shape</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:shape {:range [\s \A]}}}</code></div><div class="option-text">The shape aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :size</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:size {:range [1 20]}}}</code></div><div class="option-text">The size aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :dash</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:dash {:range [:dotted :solid]}}}</code></div><div class="option-text">The dash aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div><div class="option-card"><dt><code>:scales :pattern</code><span class="option-default">Default: From the data and the theme's <code>:palette</code>.</span></dt><dd><div class="option-example"><code>{:scales {:pattern {:range [:dots :cross]}}}</code></div><div class="option-text">The pattern aesthetic scale's spec (Aesthetics and legends).<ul><li><span>aesthetic scale spec</span></li></ul></div></dd></div></dl>
+```
+
+
+The plot below spreads the small values with a logarithmic x scale:
 
 
 ::: {.sourceClojure}
@@ -236,16 +245,16 @@ A logarithmic x scale spreads the small values:
 
 ### Coordinates
 
-Cartesian (optionally flipped or with equal units) or polar (Scales chapter).
+These keys set the coordinates: cartesian, flipped or with equal units, or polar
+([Scales, axes and coordinates](reference.scales_axes_coords.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:aspect</td><td>one of :iso or nil</td><td>Free: the panel takes the space it gets.</td><td>The ratio of the panel's axes in data units.</td></tr><tr><td>:flip</td><td>true or false or nil</td><td>false</td><td>Whether the `:x` scale is drawn vertically and the `:y` scale horizontally; scales, labels and theme keys keep their names.</td></tr><tr><td>:coord</td><td>{:kind :cartesian} or a polar coord {:kind :polar ...} or nil</td><td>Cartesian.</td><td>The coordinate system the panels map the position scales to.</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:aspect</code><span class="option-default">Default: Free: the panel takes the space it gets.</span></dt><dd><div class="option-example"><code>{:aspect :iso}</code></div><div class="option-text">The ratio of the panel's axes in data units.<ul><li><code>:iso</code> – Equal pixels per data unit on both linear axes; the panel shrinks to fit.</li></ul></div></dd></div><div class="option-card"><dt><code>:flip</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:flip true}</code></div><div class="option-text">Whether the <code>:x</code> scale is drawn vertically and the <code>:y</code> scale horizontally; scales, labels and theme keys keep their names.<ul><li><code>false</code> – <code>:x</code> horizontal, <code>:y</code> vertical.</li><li><code>true</code> – Flipped.</li></ul></div></dd></div><div class="option-card"><dt><code>:coord</code><span class="option-default">Default: Cartesian.</span></dt><dd><div class="option-example"><code>{:coord {:kind :polar}}</code></div><div class="option-text">The coordinate system the panels map the position scales to.<ul><li><span><code>{:kind :cartesian}</code></span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li><li><span>polar coord</span> – Cartesian <code>{:kind :cartesian}</code>, or a polar coord whose keys the cards below list.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
+The plot below flips the bars horizontal, their order reversed:
 
 
 ::: {.sourceClojure}
@@ -289,16 +298,16 @@ The same bars in polar coordinates - a rose (bars filling their band, `:width 1.
 
 ### Layout
 
-Panels split by data, several plots in a grid, charts beside the panel (Facets chapter).
+These keys split the panel by data, put several plots in a grid or charts beside the panel
+([Facets, multiplots and margins](reference.facets_arrange.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:facets</td><td>map</td><td></td><td>facet layout: wrap shape, order, NA panel, scale relations, strips, panel weights</td></tr><tr><td>:custom-grid</td><td>map or nil</td><td></td><td>a hand-written layout grid instead of the generated one (only :labels {:title t} beside it)</td></tr><tr><td>:arrange</td><td>an arrange map {:plots :columns :rows :widths :heights :row-spans :align :equal-panels} or nil</td><td></td><td>a multiplot: sub-plots in a grid (only :labels {:title t} beside it)</td></tr><tr><td>:margins</td><td>map</td><td></td><td>charts beside the panel sharing its scales (marginal plots)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:facets</code><span class="option-default">Default: One panel per facet level, sharing scales.</span></dt><dd><div class="option-example"><code>{:facets {:columns 1}}</code></div><div class="option-text">The facet layout: wrap shape, panel order, the NA panel, scale relations, strips and panel weights (Facets, multiplots and margins).</div></dd></div><div class="option-card"><dt><code>:custom-grid</code><span class="option-default">Default: None: the generated grid.</span></dt><dd><div class="option-text">A hand-written layout grid instead of the generated one; only <code>:labels {:title t}</code> may stand beside it.<ul><li><span>map</span> – Tracks and items of the <code>cljplot2.layout.grid</code> namespace doc (Facets, multiplots and margins).</li></ul></div></dd></div><div class="option-card"><dt><code>:arrange</code><span class="option-default">Default: None: a single plot.</span></dt><dd><div class="option-text">A multiplot: sub-plots in a grid; only <code>:labels {:title t}</code> may stand beside it (<code>plot/arrange</code> builds it).<ul><li><span>arrange map</span></li></ul></div></dd></div><div class="option-card"><dt><code>:margins</code><span class="option-default">Default: None.</span></dt><dd><div class="option-example"><code>{:margins {:top (chart/density)}}</code></div><div class="option-text">Charts beside the panel, sharing its scales (Facets, multiplots and margins).</div></dd></div></dl>
 ```
 
-:::
 
+The plot below splits the points into a panel per group:
 
 
 ::: {.sourceClojure}
@@ -316,7 +325,7 @@ Panels split by data, several plots in a grid, charts beside the panel (Facets c
 :::
 
 
-Several plots in one image (`plot/arrange`, Facets chapter), here two columns weighted 3 : 2:
+The plot below puts two plots in one image with `plot/arrange`, in two columns weighted 3 : 2:
 
 
 ::: {.sourceClojure}
@@ -337,16 +346,15 @@ Several plots in one image (`plot/arrange`, Facets chapter), here two columns we
 
 ### Titles
 
-The plot title and the axis titles (Labels chapter).
+This key holds the titles ([Labels and text](reference.labels_text.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:labels</td><td>map</td><td></td><td>plot title and axis titles</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis titles the charts suggest.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title and the axis titles (Labels and text).</div></dd></div></dl>
 ```
 
-:::
 
+The plot below names the plot and both axes:
 
 
 ::: {.sourceClojure}
@@ -368,16 +376,16 @@ The plot title and the axis titles (Labels chapter).
 
 ### Legend
 
-Legends are drawn for mapped aesthetics; these keys hide them or draw only them (Aesthetics chapter).
+Mapped aesthetics draw legends; these keys hide them or draw only them
+([Aesthetics and legends](reference.aesthetics_legends.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:legend</td><td>true or false or nil</td><td>true</td><td>draw the legends (false hides all)</td></tr><tr><td>:legend-only</td><td>true or false or nil</td><td>false</td><td>draw only the legends (a legend cell of an :arrange)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:legend</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:legend false}</code></div><div class="option-text">Whether the plot draws its legends.<ul><li><code>true</code> – Every scale's legend unless its own <code>:legend</code> is false.</li><li><code>false</code> – No legends.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend-only</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:legend-only true}</code></div><div class="option-text">Whether the plot draws only its legends, e.g. as a legend cell of an arrange.<ul><li><code>false</code> – The whole plot.</li><li><code>true</code> – Legends only: no panel or axes.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
+The plot below hides the legend of its colours:
 
 
 ::: {.sourceClojure}
@@ -399,16 +407,15 @@ Legends are drawn for mapped aesthetics; these keys hide them or draw only them 
 
 ### Style
 
-The theme holds every style default; a plot overrides parts of it (Theme chapter).
+The theme holds every style default; these keys override parts of it for one plot ([Theme](reference.theme.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:alternate-panel</td><td>true or false or nil</td><td>false</td><td>shade a single panel as an odd facet panel (theme [:panel :alternate-fill])</td></tr><tr><td>:theme</td><td>any value</td><td></td><td>theme overrides, deep-merged over the default theme</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:alternate-panel</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:alternate-panel true}</code></div><div class="option-text">Whether a single panel is shaded as an odd facet panel, with the theme's <code>[:panel :alternate-fill]</code>.<ul><li><code>false</code> – Not shaded.</li><li><code>true</code> – Shaded, e.g. a checkerboard of arranged cells.</li></ul></div></dd></div><div class="option-card"><dt><code>:theme</code><span class="option-default">Default: The default theme.</span></dt><dd><div class="option-example"><code>{:theme {:plot {:background :white}}}</code></div><div class="option-text">Theme overrides, deep-merged over the default theme (Theme).<ul><li><span>any value</span></li></ul></div></dd></div></dl>
 ```
 
-:::
 
+The plot below gives the plot a white background and the panel a light fill and a border:
 
 
 ::: {.sourceClojure}
@@ -431,16 +438,15 @@ The theme holds every style default; a plot overrides parts of it (Theme chapter
 
 ### Render options
 
-Render options travel with the plot under `:options`; those given to `render-image` win (Render chapter).
+This key lets a plot carry its render options ([Render](reference.render.html)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:options</td><td>map or nil</td><td></td><td>render options, merged under the ones given to build / render</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:options</code><span class="option-default">Default: None: the defaults, or the render options given to <code>build</code>.</span></dt><dd><div class="option-example"><code>{:options {:debug true}}</code></div><div class="option-text">Render options, merged under those given to <code>build</code> or <code>render-image</code> (Render).<ul><li><span>map</span> – Keys of the render options.</li></ul></div></dd></div></dl>
 ```
 
-:::
 
+The plot below carries its own size, so `render-image` takes no options:
 
 
 ::: {.sourceClojure}
@@ -461,19 +467,25 @@ Render options travel with the plot under `:options`; those given to `render-ima
 
 ## The pipeline
 
-`plot/build` validates the plot first and throws an error listing the problems (Errors chapter). Then the plot
+`plot/build` validates the plot first and throws an error listing the problems ([Errors](reference.errors.html)). Then the plot
 passes through pure stages, each adding one key: `:split` (rows split per facet panel and group) → `:stats`
 (each chart's computed data) → `:extents` → `:scale-specs` → `:grid` → `:layout` → `:finalized-scales` →
 `:subplots`. `plot/render` draws the result.
 
 
-## The tables as data
+## The cards as data
 
-The tables come from `cljplot2.describe`, usable at the REPL too: `describe/options` takes a chart value, a
-builder or data function var or a schema; `describe/mapping` the mapping keys a chart reads; `describe/theme-rows`
-the theme; `describe/fragment-rows` a shared group; `describe/api-vars` lists the user-facing data functions,
-`describe/chart-constructors` the charts, `describe/attribute-values` the built-in shapes, dashes, patterns and
-cells. A row is a plain map; `:section` names its table slice:
+The cards come from `cljplot2.describe`, which you can use at the REPL too:
+
+
+* `describe/options` returns the rows of a chart value, a builder or data function var, or a schema;
+* `describe/mapping` returns the mapping keys a chart reads, `describe/theme-rows` the theme's rows and
+  `describe/fragment-rows` a shared group's;
+
+* `describe/api-vars` lists the user-facing data functions, `describe/chart-constructors` the charts and
+  `describe/attribute-values` the built-in shapes, dashes, patterns and cells.
+
+A row is a plain map; `:section` names its slice of the options:
 
 
 ::: {.sourceClojure}

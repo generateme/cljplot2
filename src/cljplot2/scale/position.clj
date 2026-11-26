@@ -180,7 +180,7 @@
   the axis (no track, ticks, tick labels) but keeps the grid lines, `:axis :no-grid` keeps the axis without grid lines
   (e.g. a tick per category of many; default true; axis titles are separate, `:labels`)."
   (apply schema/with-rules
-   (into [:map {:closed true :cljplot2/type-doc "a position scale spec"}
+   (into [:map {:closed true :cljplot2/type-doc "a position scale spec" :cljplot2/type-name "position scale spec"}
           (schema/optional :kind {:cljplot2/section :kind-domain :description "The scale kind: how data values map to positions along the axis."
                                   :cljplot2/default-doc "From the data: `:linear` for numbers, `:bands` for levels, `:datetime` for `java.time` values."
                                   :cljplot2/example :log

@@ -1,9 +1,10 @@
 ;; # Render
 
-;; Building and drawing a plot: `plot/build` (the built plot, data only), `plot/render` (a clojure2d canvas),
-;; `plot/render-image` (a `java.awt.image.BufferedImage`), `plot/cvd-image` (an image as seen with a colour vision
-;; deficiency) and `plot/save` (an image or canvas to a file). The first three take the same render options, as
-;; their second argument or under the plot's `:options` (merged under the argument).
+;; Five functions build and draw a plot: `plot/build` returns the built plot (data only), `plot/render` a clojure2d
+;; canvas, `plot/render-image` a `java.awt.image.BufferedImage`, `plot/cvd-image` an image as seen with a colour vision
+;; deficiency, and `plot/save` writes an image or canvas to a file. The first three take the same render options as
+;; their second argument; a plot may also carry them under its `:options` key, merged under the argument. The card
+;; examples set them under that key.
 
 (ns reference.render
   (:require [cljplot2.chart :as chart]
@@ -11,6 +12,8 @@
             [cljplot2.describe :as describe]
             [cljplot2.pipeline :as pipeline]
             [notebook-utils :as nu]))
+
+;; The table below holds the iris flowers; every section draws them (`iris-plot`):
 
 (nu/source-note {:dataset :iris})
 
@@ -25,49 +28,52 @@
 
 ;; ## Size and quality
 
-;; The image size in pixels - the whole image, legends and titles included - and the rendering quality (clojure2d
-;; hints): `:low` draws without antialiasing (faster, jagged edges), `:mid` antialiased for speed, `:high`
-;; antialiased for quality, `:highest` adds exact stroke geometry (lines can look softer).
+;; These options set the image size in pixels - the whole image, legends and titles included - and the rendering
+;; quality, a clojure2d hint. The plot below draws without antialiasing:
 
-(nu/options-table (describe/options pipeline/options-schema) :image)
+(nu/option-cards [:options] (describe/options pipeline/options-schema) :image)
 
 (plot/render-image iris-plot {:width 500 :height 300 :hint :low})
 
-;; ... against `:highest` - smooth edges and text:
+;; The plot below draws at `:highest`, with smooth edges and text:
 
 (plot/render-image iris-plot {:width 500 :height 300 :hint :highest})
 
 ;; ## Inspection
 
-;; Two aids for finding out why a plot looks as it does. `:debug true` paints every layout item's box under its
+;; This option helps find out why a plot looks as it does. The plot below paints every layout item's box under its
 ;; content - panel, axes, axis titles, legend (axis titles added here):
 
-(nu/options-table (describe/options pipeline/options-schema) :inspection)
+(nu/option-cards [:options] (describe/options pipeline/options-schema) :inspection)
 
 (plot/render-image (assoc iris-plot :labels {:x "sepal length" :y "petal length"})
                    {:width 500 :height 300 :debug true})
 
-;; `:until` stops the build after a stage; the built plot is data. Here the build stops after `:extents` - the
-;; extent of each mapped dimension:
+;; `plot/build` takes one more option, which a plot's `:options` ignores:
+
+(nu/option-cards '(plot/build plot) (describe/options pipeline/options-schema) :build)
+
+;; The build below stops after `:extents`; that key holds the extent of each mapped dimension:
 
 (:extents (plot/build iris-plot {:until :extents}))
 
 ;; ## Colour vision
 
-;; `:cvd` renders the plot as seen with a colour vision deficiency - a keyword, or `[keyword severity]` for the
-;; partial ones; `plot/cvd-image` converts any image. Red and green species, as rendered:
+;; With `:cvd` you see how the plot reads with a colour vision deficiency; `plot/cvd-image` converts any image. The plot
+;; below draws red and green species, as rendered:
 
-(nu/options-table (describe/options pipeline/options-schema) :color-vision)
+(nu/option-cards [:options] (describe/options pipeline/options-schema) :color-vision)
 
 (def red-green-plot (assoc iris-plot :scales {:color {:range [[215 48 39] [26 152 80] [0 114 178]]}}))
 
 (plot/render-image red-green-plot {:width 500 :height 300})
 
-;; ... and as seen with deuteranopia - setosa and versicolor turn into similar olive tones, virginica stays blue:
+;; The plot below draws them as seen with deuteranopia: setosa and versicolor turn into similar olive tones, virginica
+;; stays blue:
 
 (plot/render-image red-green-plot {:width 500 :height 300 :cvd :deuteranopia})
 
-;; A partial deficiency takes a severity in `[0 1]` - here deuteranomaly at half strength:
+;; A partial deficiency takes a severity in `[0 1]`; the plot below draws deuteranomaly at half strength:
 
 (plot/render-image red-green-plot {:width 500 :height 300 :cvd [:deuteranomaly 0.5]})
 

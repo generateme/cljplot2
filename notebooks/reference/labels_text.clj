@@ -13,18 +13,42 @@
             [cljplot2.layout.plot-grid :as plot-grid]
             [notebook-utils :as nu]))
 
-;; ## Plot labels
-
-;; The plot title and the axis titles. Axis titles are absent unless given, except that statistical charts
-;; (histogram, density, ecdf, qq ...) suggest one for their computed axis.
-
-(nu/options-table (describe/options plot-grid/labels-schema))
+;; The table below holds the iris flowers; most sections draw them:
 
 (nu/source-note {:dataset :iris})
 
 (def iris (nu/dataset :iris))
 
 (nu/data-table iris)
+
+;; The table below holds three made-up series; the section on text in the panel draws them:
+
+(def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
+              {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))
+
+(nu/data-table series)
+
+;; The table below holds made-up decays at two rates, the rates named by formulas; the formula section draws them:
+
+(def decay
+  (vec (for [rate [0.5 1.0] t (range 0.0 10.5 0.5)]
+         {:t t :n (* 1000.0 (m/exp (- (* rate t)))) :rate (str "$\\lambda = " rate "$")})))
+
+(nu/data-table decay)
+
+;; The table below holds made-up masses whose names hold formulas; the formula section draws them:
+
+(def masses
+  [{:part "$m_1$" :group "$\\alpha$ set" :kg 1.25} {:part "$m_2$" :group "$\\alpha$ set" :kg 2.5}
+   {:part "$m_1$" :group "$\\beta$ set" :kg 0.75} {:part "$m_2$" :group "$\\beta$ set" :kg 1.75}])
+
+(nu/data-table masses)
+
+;; ## Plot labels
+
+;; These keys of the plot's `:labels` map hold the plot title and the axis titles. The plot below names all three:
+
+(nu/option-cards [:labels] (describe/options plot-grid/labels-schema))
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :color :species}
@@ -34,12 +58,11 @@
 
 ;; ## Label maps
 
-;; A label is a string or a label map: the text, the theme text role whose style is the base (`:title` for the
-;; title, `:axis-title` for axis titles, or a role of your theme) and a rotation. Plot labels get their role from
-;; their place; a label in a custom grid (Facets chapter) must name one. Here the y title is horizontal and
-;; styled as a tick label.
+;; A label is a string or a label map. These keys of a label map give its text, its rotation and the theme text role it
+;; takes its style from; a label in a custom grid
+;; ([Facets, multiplots and margins](reference.facets_arrange.html#custom-grid)) must name its role. In the plot below the y title is horizontal and styled as a tick label:
 
-(nu/options-table (describe/options label/label-options) :label)
+(nu/option-cards [:labels :title] (describe/options label/label-options) :label)
 
 (plot/render-image {:data iris
                     :mapping {:x :petal-length :y :petal-width}
@@ -93,12 +116,8 @@
 
 ;; The `text` chart writes literal text or a mapped `:label`; `:anchor`, `:offset` and `:rotation` place it,
 ;; `:select :last` labels the end of each group (e.g. line ends). Its full table is on the chart's page
-;; ([text](reference.charts_annotations.html#text-labels)).
-
-(def series (for [[i g] (map-indexed vector ["alpha" "beta" "gamma"]) t (range 10)]
-              {:g g :t t :v (+ (* t (inc i) 0.5) (* 3 i))}))
-
-(nu/data-table series)
+;; ([text](reference.charts_annotations.html#text-labels)). The plot below labels each line's end and writes a note
+;; in panel units:
 
 (plot/render-image {:data series
                     :mapping {:x :t :y :v :color :g}
@@ -115,13 +134,7 @@
 ;; formula, `plot/runs` puts text and formulas on one baseline, and in strings `$...$` is a formula. The scale
 ;; formatter `:power-math` writes log ticks as typeset powers.
 
-;; Formulas in the title, the axis titles, the tick labels, the legend and a text chart:
-
-(def decay
-  (vec (for [rate [0.5 1.0] t (range 0.0 10.5 0.5)]
-         {:t t :n (* 1000.0 (m/exp (- (* rate t)))) :rate (str "$\\lambda = " rate "$")})))
-
-(nu/data-table decay)
+;; The plot below puts formulas in the title, the axis titles, the tick labels, the legend and a text chart:
 
 (plot/render-image {:data decay
                     :mapping {:x :t :y :n :color :rate}
@@ -138,12 +151,6 @@
 ;; text; `\$` is always a literal dollar. `:dollar-math false` (a text role, a label map or a text chart) keeps every
 ;; dollar literal, as on the right - strips, value labels, a rotated two-line title and turned tick labels:
 
-(def masses
-  [{:part "$m_1$" :group "$\\alpha$ set" :kg 1.25} {:part "$m_2$" :group "$\\alpha$ set" :kg 2.5}
-   {:part "$m_1$" :group "$\\beta$ set" :kg 0.75} {:part "$m_2$" :group "$\\beta$ set" :kg 1.75}])
-
-(nu/data-table masses)
-
 (let [masses-plot (fn [title theme]
                     {:data masses
                      :mapping {:x :part :y :kg :facet-col :group}
@@ -157,10 +164,11 @@
                                    {:columns 2})
                      {:width 760 :height 360}))
 
-;; ## font/resolve-font
+;; ## Fonts
 
-;; A text style's `:font` is a family name or a `java.awt.Font`; `resolve-font` turns a name, a style (`:plain`,
-;; `:bold`, `:italic`, `:bold-italic`) and a size in points into the `java.awt.Font` drawn. Bundled families
+;; `font/resolve-font` turns a family name, a style (`:plain`, `:bold`, `:italic`, `:bold-italic`) and a size in points
+;; into the `java.awt.Font` drawn; use it to see which font a name gives or to hand a text style a font object, since
+;; a style's `:font` takes a family name or a `java.awt.Font`. Bundled families
 ;; (`"DejaVu Sans Mono"` - the default theme's font, `"Noto Emoji"`) win over installed ones, so plots render alike on
 ;; every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) work too, an unknown name throws
 ;; `{:key :font}`.

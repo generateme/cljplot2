@@ -218,7 +218,7 @@
 ;; ## Facets
 
 ;; These keys split the plot into panels: a wrap of panels or a grid of columns and rows
-;; ([Facets and arrange](reference.facets_arrange.html)). The plot below draws a panel per species:
+;; ([Facets, multiplots and margins](reference.facets_arrange.html)). The plot below draws a panel per species:
 
 (nu/plot-mapping-list (describe/options rows/mapping-schema) :facet)
 
