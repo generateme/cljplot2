@@ -82,12 +82,14 @@
 
   Parameters:
 
-  - `label` (string): the label.
+  - `label`: the label - a string, or a formula or runs value.
   - `value-text`: the value's text - a string, or a formula or runs value (see [[cljplot2.data.text/label-text]]).
 
-  Returns a string, or a runs value when `value-text` is a formula or runs value (see [[cljplot2.data.text/runs]])."
+  Returns a string, or a runs value when the label or `value-text` is a formula or runs value (see [[cljplot2.data.text/runs]])."
   [label value-text]
-  (if (text/formula-text? value-text) (text/runs label ": " value-text) (str label ": " value-text)))
+  (if (or (text/formula-text? label) (text/formula-text? value-text))
+    (text/runs label ": " value-text)
+    (str label ": " value-text)))
 
 (defn value-lines
   "Gives the text lines of a cell: a first line, and a line per group in the group's colour.

@@ -1,6 +1,6 @@
 ;; # Bars
 
-;; Charts that draw bars along a categorical axis: a summary of each level's values (`bar`) or a measure against
+;; These charts draw bars along a categorical axis: a summary of each level's values (`bar`) or a measure against
 ;; qualitative ranges and targets (`bullet`). Use them to compare amounts across levels.
 
 (ns reference.charts-bars
@@ -27,12 +27,15 @@
 
 (nu/data-table mtcars-cyl)
 
-;; ## bar
+;; ## Bar charts
 
-;; A bar per level (and group) whose length summarises the item's rows - their sum by default, or a count of
-;; them; vertical bars take the levels on x, horizontal ones on y.
+;; `chart/bar` draws a bar per level and group; by default its length is the sum of its rows' values, and it can also
+;; summarise or count the rows. Use it to compare amounts across categories. Levels on x give vertical bars, levels
+;; on y horizontal ones.
 
-(nu/options-table (describe/mapping (chart/bar)))
+(nu/shared-groups (describe/options (chart/bar)))
+
+(nu/mapping-list (describe/mapping (chart/bar)))
 
 (plot/render-image {:data sales
                     :mapping {:x :quarter :y :amount :color :product}
@@ -42,10 +45,10 @@
 
 ;; ### Style
 
-;; The fill and outline used when nothing is mapped, the opacity of overlaid groups, and the 0 line drawn over
-;; mirrored bars (`:mirror` - [Mirrored strips](reference.shared_options.html#mirrored-strips)):
+;; These options set the fill and outline of unmapped bars, the opacity of overlaid groups and the 0 line over
+;; mirrored bars (`:mirror`, see [Mirrored strips](reference.shared_options.html#mirrored-strips)):
 
-(nu/options-table (describe/own-rows (describe/options (chart/bar))) :style)
+(nu/option-cards 'chart/bar (describe/own-rows (describe/options (chart/bar))) :style)
 
 (def pyramid (for [[i age] (map-indexed vector ["0-19" "20-39" "40-59" "60-79" "80+"])
                    sex ["female" "male"]]
@@ -72,10 +75,10 @@
 
 ;; ### Bars
 
-;; What a bar's length is (`:stat`), how the groups of one level share its band, widths by the item's size, the
-;; order of negative stacked parts, and the padding:
+;; These options set the bars' length, colour value and width, how the groups of a level share its band, and the
+;; padding:
 
-(nu/options-table (describe/own-rows (describe/options (chart/bar))) :bars)
+(nu/option-cards 'chart/bar (describe/own-rows (describe/options (chart/bar))) :bars)
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-length}
@@ -93,8 +96,8 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; Every `:stat`: summaries of the mapped values (`:sum` - the default, `:mean`, `:median`) and counts of the rows,
-;; needing no values (`:count`, `:percent` of the panel's rows, `:pmf` - shares summing to 1):
+;; Each `:stat` in turn: on the left, summaries of the iris sepal lengths; on the right, counts of the cars per
+;; number of cylinders:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-length}
@@ -119,9 +122,9 @@
                                  {:columns 5})
                    {:width 1000 :height 280})
 
-;; Groups side by side (`:dodge`, the default for several groups of a level) or stacked; with negative values a
-;; stack grows both ways from 0 - `:negative-order :reverse` puts the last group nearest 0 below it. Mirrored bars
-;; drop their 0 line with `:zero-line false`, and `:padding` widens the value axis (here 30% past the longest bar):
+;; The first image draws a balance side by side, then stacked: with negative values a stack grows both ways from 0,
+;; and `:negative-order :reverse` puts the last group nearest 0. The second image draws mirrored bars without their 0
+;; line (left) and leaves 30% past the longest bar with `:padding` (right):
 
 (def balance [{:month "Jan" :item "sales" :eur 40} {:month "Jan" :item "costs" :eur -25} {:month "Jan" :item "tax" :eur -8}
               {:month "Feb" :item "sales" :eur 55} {:month "Feb" :item "costs" :eur -30} {:month "Feb" :item "tax" :eur -12}
@@ -159,10 +162,9 @@
                                  {:columns 2})
                    {:width 900 :height 300})
 
-;; A numeric `:color` doesn't group the bars: each bar is filled by its own colour value - `:color-stat` over its
-;; rows' colour values (default the bar's `:stat`, `:mean` for counts) - with a colour bar. Mapped to the values with
-;; `:sum` it colours each bar by its length; stacked segments (groups from `:group` or a categorical aesthetic) take
-;; their own colours; a count can be coloured by a summary of another column:
+;; A numeric `:color` doesn't group the bars: each bar takes its own colour value, shown on a colour bar. On the left
+;; `:color-stat :sum` colours each bar by its length. In the middle each stacked segment takes the mean of its own
+;; rows. On the right the bars count rows and take their colour from a summary of another column:
 
 (plot/render-image (plot/arrange [{:data sales
                                    :mapping {:x :quarter :y :amount :color :amount}
@@ -180,7 +182,7 @@
                    {:width 1000 :height 320})
 
 ;; An explicit colour `:domain` never drops rows: every bar keeps its length, and a bar whose colour value lies
-;; outside the domain is drawn in the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
+;; outside the domain takes the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
 ;; bar's colour value as `:color-value`:
 
 (plot/render-image {:data sales
@@ -192,9 +194,9 @@
 
 ;; ### Labels
 
-;; Each bar's length written past its end or in its middle, formatted or as the text a function returns:
+;; These options turn on a label at each bar, set its text and place it:
 
-(nu/options-table (describe/own-rows (describe/options (chart/bar))) :labels)
+(nu/option-cards 'chart/bar (describe/own-rows (describe/options (chart/bar))) :labels)
 
 (plot/render-image (plot/arrange [{:data sales
                                    :mapping {:x :quarter :y :amount :color :product}
@@ -213,9 +215,8 @@
                                  {:columns 3})
                    {:width 1000 :height 320})
 
-;; Where labels sit: past the bar's end (`:end`, the default unstacked) or inside it (`:center`, the default
-;; stacked; `:base` - at its base, shown further down); with the value and the row count (`:n-label`) the two
-;; texts join side by side or one above the other (`:label-stack`):
+;; The first two panels place labels past the bar's end and in its middle; the last two join a value and a row count
+;; (`:n-label`) side by side and one above the other:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :species :y :sepal-length}
@@ -238,10 +239,9 @@
                                  {:columns 2})
                    {:width 900 :height 560})
 
-;; `:base` writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment's
-;; own base when stacked. With 0 outside the value domain (e.g. `:scales {:x {:domain [4 nil]}}`) the label sits at
-;; the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where
-;; labels rarely fit their wedge and are skipped:
+;; A `:base` label starts at the end of the bar nearer 0, each stacked segment's at its own base. With 0 outside the value domain (e.g.
+;; `:scales {:x {:domain [4 nil]}}`) the label sits at the visible end nearest 0. In a polar plot with the values on
+;; the radius the bases meet at the centre, where labels rarely fit their wedge, so the chart leaves them out:
 
 (plot/render-image (plot/arrange [{:data iris
                                    :mapping {:x :sepal-length :y :species}
@@ -254,8 +254,8 @@
                                  {:columns 2 :widths [1 1.3]})
                    {:width 900 :height 320})
 
-;; In a polar plot `:outer` puts the labels past the outer radius, with a leader line from each bar
-;; (`:label-leader`):
+;; In a polar plot `:outer` places the labels past the outer radius; on the right `:label-leader` adds a line from
+;; each bar:
 
 (plot/render-image (plot/arrange [{:data sales
                                    :mapping {:x :quarter :y :amount}
@@ -270,14 +270,15 @@
                                  {:columns 2})
                    {:width 800 :height 400})
 
-(nu/shared-groups (describe/options (chart/bar)))
+;; ## Bullet charts
 
-;; ## bullet
+;; `chart/bullet` draws a measure bar over shaded qualitative ranges, with marker lines across them. Use it to show a
+;; measure against its targets. Each row holds a level's ranges, measures and markers (here percents of a plan, so
+;; the levels share one axis).
 
-;; A measure bar over shaded qualitative ranges, with marker lines (targets) - a row per level holding vectors of
-;; ranges, measures and markers (here percents of a plan, so the levels share one axis).
+(nu/shared-groups (describe/options (chart/bullet)))
 
-(nu/options-table (describe/mapping (chart/bullet)))
+(nu/mapping-list (describe/mapping (chart/bullet)))
 
 (def kpis [{:kpi "revenue" :ranges [60 80 100] :measures [92 75] :markers [95]}
            {:kpi "profit" :ranges [50 75 100] :measures [68 60] :markers [80]}
@@ -292,10 +293,11 @@
                     :labels {:x "% of plan"}}
                    {:width 600 :height 260})
 
-;; Its options: the shades of ranges and measures (from the first to the last), the measure bar's width, the
-;; markers' colour, width and length, and the padding (left: 20% past the largest value):
+;; These options set the colours of the ranges and measures and the sizes of the measure bars and markers. On the
+;; left the bars are thin, the markers hidden and `:padding` leaves 20% past the largest value; on the right every
+;; colour and size is set:
 
-(nu/options-table (describe/own-rows (describe/options (chart/bullet))))
+(nu/option-cards 'chart/bullet (describe/own-rows (describe/options (chart/bullet))))
 
 (plot/render-image (plot/arrange [{:data kpis
                                    :mapping {:y :kpi :ranges :ranges :measures :measures :markers :markers}
@@ -313,4 +315,3 @@
                                  {:columns 2})
                    {:width 900 :height 260})
 
-(nu/shared-groups (describe/options (chart/bullet)))

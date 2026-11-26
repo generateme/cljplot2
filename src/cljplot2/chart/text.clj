@@ -221,7 +221,7 @@
                                        schema/finite-pos)
                        (schema/nilable :label-leader {:cljplot2/section :crowding :description "Draws a line in the label's colour from a label's point to the label when `:overlapping-labels :repel` moved it more than 6 pixels."
                                                       :default false
-                                                      :cljplot2/value-meanings {true "Draws the lines." false "No lines."}
+                                                      :cljplot2/value-meanings {true "Draws the lines." false "Draws no lines."}
                                                       :cljplot2/example-context {:x 5 :y [5 5.1] :text ["first" "second"] :anchor [:left :middle] :offset [4 0]
                                                                                  :overlapping-labels :repel}}
                                        schema/bool)

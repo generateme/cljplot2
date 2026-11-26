@@ -37,10 +37,11 @@
 
 (def ^:private style-entries
   "Style entries of the pairwise chart (theme `[:chart :pairwise]`)."
-  [(schema/optional :color {:description "one fixed colour: the shade's (text over it by contrast), the :number text's"
-                             :cljplot2/default-doc (str "ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the "
-                                                        ":pairwise text role's colour, group lines mapped")}
-                    schema/color)])
+  [(schema/optional :color {:description "One fixed colour for the shade or the `:number` text, in place of the colour scale. Text over a shade takes the `:pairwise` text role's colour, black or white by default."
+                             :cljplot2/default-doc (str "The theme's colour only for a shade when the plot maps an aesthetic; otherwise a shade shows the value on the colour "
+                                                        "scale. `:number` takes the `:pairwise` text role's colour, a group line its group's colour (the text's colour for `:group`).")
+                             :cljplot2/example :orange :cljplot2/example-context {:glyph :shade}}
+                    schema/solid-color)])
 
 (def schemas
   "Schemas of the pairwise chart: `:style` (theme `[:chart :pairwise]`), `:options`, `:mapping` (merged)."
@@ -49,26 +50,35 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :method {:description "the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)"
-                                                :default :pearson}
+                (conj (schema/optional :method {:description "Which statistic the chart computes, of the x sample against the y sample."
+                                                :default :pearson
+                                                :cljplot2/value-meanings (pairwise/statistic-meanings [:pearson :spearman :kendall :rmse :cohens-d])
+                                                :cljplot2/other-values "Other statistics of `pairwise/statistics`; the `pairwise/matrix-rows` section lists them all with what they measure."
+                                                :cljplot2/form-meanings {::schema/function "A function of the two samples `(f xs ys)` that returns a number."}}
                                        pairwise/method-schema)
-                      (schema/nilable :label {:description "the statistic's label (text, colour bar title)"
-                                              :cljplot2/default-doc "the statistic's label, value for a function"}
-                                      string?)
-                      (schema/optional :glyph {:description "how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)"
-                                               :default :number}
+                      (schema/nilable :label {:description "The statistic's name in the text and the colour bar title; `$...$` in it and `plot/math` values draw as formulas."
+                                              :cljplot2/default-doc "The statistic's label, e.g. `Pearson`; `value` for a function."
+                                              :cljplot2/form-meanings {:string "A text, e.g. `r`." :fn "A `plot/math` or `plot/runs` value."}
+                                              :cljplot2/example "r"}
+                                      text/label-text-schema)
+                      (schema/optional :glyph {:description "How the chart draws the value."
+                                               :default :number
+                                               :cljplot2/value-meanings {:number "As text, the label and the value, a line per group."
+                                                                         :shade "The whole panel in the value's colour."
+                                                                         :shade-number "Both: the text over the shade."}}
                                        (into [:enum] glyphs))
-                      (schema/nilable :value-format {:description "the text of a value: a format string or a function of the number (a throw or nil - NA)"
-                                                     :cljplot2/default-doc "at most 2 decimals, whole numbers without them"}
+                      (schema/nilable :value-format {:description "The text of a value: a format string or a function of the number; a function that throws or returns `nil` shows `NA`."
+                                                     :cljplot2/default-doc "At most 2 decimals, whole numbers without them."
+                                                     :cljplot2/example "%.4f"}
                                       schema/number-format)
                       (schema/nilable :text-template {:description "the widest text a cell's line holds, so cells get one font size (set by pairs)"
                                                       :cljplot2/internal true}
                                       string?)))
    :mapping [:maybe [:map
-                     [:x {:description "first sample, the statistic's xs (numbers)"} schema/accessor]
-                     [:y {:description "second sample, the statistic's ys (numbers)"} schema/accessor]
-                     (schema/nilable :color {:description "categorical groups, each a line of the :number glyph in its colour"} schema/accessor)
-                     (schema/nilable :group {:description "groups without a visual aesthetic, each a line of the :number glyph"} schema/accessor)]]})
+                     [:x {:description "The x sample, the statistic's `xs`."} schema/accessor]
+                     [:y {:description "The y sample, the statistic's `ys`."} schema/accessor]
+                     (schema/nilable :color {:description "Splits the rows into groups, each a line of the `:number` text in its own colour."} schema/accessor)
+                     (schema/nilable :group {:description "Splits the rows into groups that look the same, each a line of the `:number` text."} schema/accessor)]]})
 
 (defn value-domain
   "Gives the colour domain of a statistic's values.

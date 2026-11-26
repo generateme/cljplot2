@@ -54,7 +54,7 @@
 
 ;; ### Grouped, stacked, percent
 
-;; R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars.html#bar) `:position`
+;; R Graph Gallery's specie × condition values (seeded): the [bar](reference.charts_bars.html#bar-charts) `:position`
 ;; `:dodge` compares the groups, `:stack` the totals, `:normalize` the shares; facets give a panel per specie; negative
 ;; values stack downward from 0.
 

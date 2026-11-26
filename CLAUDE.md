@@ -106,7 +106,8 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   cartesian; negative - a mapping error); a radar tick label crossed by another spoke's path is
   dropped (except at a spoke's inner end).
 - Pairwise statistics: the registry `cljplot2.data.pairwise/statistics` (fastmath functions with labels, families,
-  symmetry, paired or independent samples, `:signed`) serves `chart/pairwise` and `chart/correlation` (one
+  symmetry, paired or independent samples, `:signed`, descriptions - the option cards' `:method` meanings through
+  `pairwise/statistic-meanings`) serves `chart/pairwise` and `chart/correlation` (one
   statistic per panel, cells of `plot/pairs`; shared cell parts in `cljplot2.chart.statistic-cell`) and
   `pairwise/matrix-rows` (a standalone matrix is `chart/tile` over its rows). A cell is always f(x sample, y sample) -
   in `pairs` f(column variable, row variable). Paired statistics take pairwise-complete rows, independent-sample ones

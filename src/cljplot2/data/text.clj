@@ -99,7 +99,7 @@
   "Schema of a text given as a string or as a formula or runs value of this namespace (legend titles, pairs variable names)."
   [:or {:cljplot2/type-doc "a string, plot/math or plot/runs"}
    :string
-   [:fn {:error/message "should be a string, a plot/math or a plot/runs value"} formula-text?]])
+   [:fn {:error/message "should be a string, a plot/math or a plot/runs value" :cljplot2/type-name "formula value"} formula-text?]])
 
 (defn source-text
   "Gives the source of a text as one string, for messages.

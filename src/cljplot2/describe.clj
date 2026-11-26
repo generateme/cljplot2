@@ -70,7 +70,8 @@
   "Section titles of the reference part: chart kind, builder or function -> the concept its section is named after (the heading `## title`; the first sentence names the function). Kinds without an entry keep the kind's name (pages not yet rewritten)."
   {:scatter "Scatter plots" :line "Line charts" :segment "Line segments" :polygon "Polygons" :ribbon "Bands"
    :candlestick "Candlestick charts" :smooth "Smoothing" :rule "Reference lines" :rect "Rectangles" :text "Text labels"
-   :image "Images" :function "Function curves"})
+   :image "Images" :function "Function curves" :bar "Bar charts" :bullet "Bullet charts" :correlation "Correlation cells"
+   :pairwise "Statistic cells"})
 
 (def fragments
   "Shared groups of options (`:cljplot2/fragment` of their entries): keyword -> `{:title t :doc d :entries [entry ...]}` (the group's map entries, see [[fragment-rows]])."

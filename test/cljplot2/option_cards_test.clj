@@ -13,6 +13,7 @@
             [fastmath.random :as r]
             [malli.core :as malli]
             [cljplot2.chart :as chart]
+            [cljplot2.data.pairwise :as pairwise]
             [cljplot2.describe :as describe]
             [cljplot2.schema :as schema]
             [cljplot2.core :as plot]
@@ -244,9 +245,14 @@
                 :let [example (evaluated (describe/example-options options row))]]
           (is (malli/validate options-schema example) (str (:path row) " " example)))))))
 
+(def ^:private correlated
+  "Rows of two related variables, the fixture of the statistic cells."
+  (map (fn [i] {:x i :y (m/+ i (m/* 4.0 (m/sin (m/* 1.7 i))))}) (range 20)))
+
 (def ^:private example-fixtures
   "Kind -> a small plot (`:data`, `:mapping`, `:scales`) on which every option example of the kind changes the picture:
-  unsorted x, two groups, a missing y, up and down candles; annotation charts draw from their examples' options, on
+  unsorted x, two groups, a missing y, up and down candles, bars of two groups below 0, two bullets, two related
+  variables (statistic cells); annotation charts draw from their examples' options, on
   fixed scales where an example adds no extent (rule, text, function)."
   (let [xs [3 1 4 2 6 5 8 7]
         rows (for [g ["a" "b"] [i x] (map-indexed vector xs)]
@@ -266,7 +272,14 @@
      :rect {}
      :text {:scales {:x {:domain [0 10]} :y {:domain [0 10]}}}
      :image {}
-     :function {:scales {:x {:domain [0 6]}}}}))
+     :function {:scales {:x {:domain [0 6]}}}
+     :bar {:data [{:k "a" :v 3 :g "p"} {:k "a" :v 1 :g "p"} {:k "a" :v 2 :g "q"} {:k "b" :v 5 :g "p"} {:k "b" :v -2 :g "q"}
+                  {:k "c" :v 4 :g "q"} {:k "d" :v -1 :g "p"} {:k "d" :v -2 :g "q"}]
+           :mapping {:x :k :y :v :group :g}}
+     :bullet {:data [{:k "revenue" :r [60 80 100] :m [92 75] :t [95]} {:k "costs" :r [50 75 100] :m [70 60] :t [80]}]
+              :mapping {:y :k :ranges :r :measures :m :markers :t}}
+     :correlation {:data correlated :mapping {:x :x :y :y}}
+     :pairwise {:data correlated :mapping {:x :x :y :y}}}))
 
 (defn- without-option
   "`options` without the option at `path`: removed, or - nested in a container - back at the container's map default
@@ -281,9 +294,11 @@
       :else (update-in options (pop path) dissoc (peek path)))))
 
 (def ^:private inert-in-fixtures
-  "`[kind path]` -> why the option's example acts only beyond a chart's own options (no pixels change in the fixture)."
+  "`[kind path]` -> why the option's example acts only beyond a chart's own options (a plot scale or coord): no pixels
+  change in the fixture, or the example needs a plot the fixture isn't."
   {[:smooth [:stat-space]] "acts only on a :log axis, a plot scale"
-   [:scatter [:descending]] "acts only where points of different colours overlap"})
+   [:scatter [:descending]] "acts only where points of different colours overlap"
+   [:bar [:label-leader]] "its example (:outer labels) throws outside a polar plot, a plot :coord"})
 
 (def ^:private needed-to-draw
   "`[kind path]` -> why the chart draws nothing without the option: its example has no picture to compare with, so it
@@ -381,3 +396,7 @@
   (testing "boundary: use case and gallery pages - a renamed gallery fails, existing pages pass"
     (is (= [["galleries.cljplot_extras" nil]]
            (broken-links "(galleries.cljplot_extras.html) (galleries.cljplot.html) (use_cases.flow.html)")))))
+
+(deftest statistic-descriptions-test
+  (testing "every built-in statistic says what it measures (its card meaning, `pairwise/statistic-meanings`)"
+    (is (every? #(seq (:description %)) (vals pairwise/statistics)))))

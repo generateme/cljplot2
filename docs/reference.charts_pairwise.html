@@ -500,8 +500,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#correlation" id="toc-correlation" class="nav-link active" data-scroll-target="#correlation"><span class="header-section-number">21.1</span> correlation</a></li>
-  <li><a href="#pairwise" id="toc-pairwise" class="nav-link" data-scroll-target="#pairwise"><span class="header-section-number">21.2</span> pairwise</a></li>
+  <li><a href="#correlation-cells" id="toc-correlation-cells" class="nav-link active" data-scroll-target="#correlation-cells"><span class="header-section-number">21.1</span> Correlation cells</a></li>
+  <li><a href="#statistic-cells" id="toc-statistic-cells" class="nav-link" data-scroll-target="#statistic-cells"><span class="header-section-number">21.2</span> Statistic cells</a></li>
   </ul>
 </nav>
     </div>
@@ -539,7 +539,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Charts that draw one statistic of two variables as a single glyph or cell filling the panel: the correlation (<code>correlation</code>) or any other pairwise statistic (<code>pairwise</code>). They’re the cells of a scatter-plot matrix (<a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a>).</p>
+<p>These charts draw one statistic of two variables as a single glyph or cell filling the panel: the correlation (<code>correlation</code>) or any other pairwise statistic (<code>pairwise</code>). They’re the cells of a scatter-plot matrix (<a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a>).</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-pairwise</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -1275,49 +1275,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="correlation" class="level2" data-number="21.1">
-<h2 data-number="21.1" class="anchored" data-anchor-id="correlation"><span class="header-section-number">21.1</span> correlation</h2>
-<p>The correlation coefficient r of two variables drawn as one glyph filling the panel - a cell of a correlogram (<code>plot/pairs</code>). Alone it writes r, one line per group.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>first variable (numbers)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>second variable (numbers)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>categorical groups, each a line of the :number glyph in its colour</td>
-</tr>
-<tr class="even">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each a line of the :number glyph</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="correlation-cells" class="level2" data-number="21.1">
+<h2 data-number="21.1" class="anchored" data-anchor-id="correlation-cells"><span class="header-section-number">21.1</span> Correlation cells</h2>
+<p><code>chart/correlation</code> draws the correlation coefficient r of two variables as one glyph filling the panel. Use it as the cell of a correlogram (<code>plot/pairs</code>); by default it writes r, a line per group.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The first variable's values.</li><li><code>:y</code> <span class="required">required</span> – The second variable's values.</li><li><code>:color</code> – Splits the rows into groups, each a line of the <code>:number</code> text in its own colour.</li><li><code>:group</code> – Splits the rows into groups that look the same, each a line of the <code>:number</code> text.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
@@ -1327,60 +1289,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image0.png" class="img-fluid"></p>
 </div>
-<p>Its options: the coefficient, the glyph and its colours (by default r on a diverging scale):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]; grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the :correlation text role's colour, group lines mapped or black</td>
-<td>one fixed glyph colour, the :number text's too</td>
-</tr>
-<tr class="even">
-<td>:stroke-color</td>
-<td>:darker or a clojure2d color or :none</td>
-<td>:darker</td>
-<td>outline colour: a colour, :none or :darker (the darkened fill)</td>
-</tr>
-<tr class="odd">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>outline width in pixels</td>
-</tr>
-<tr class="even">
-<td>:method</td>
-<td>one of :pearson :spearman :kendall</td>
-<td>:pearson</td>
-<td>correlation coefficient: :pearson, :spearman or :kendall</td>
-</tr>
-<tr class="odd">
-<td>:glyph</td>
-<td>one of :number :shade :square :circle :ellipse :pie</td>
-<td>:number</td>
-<td>how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), :square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)</td>
-</tr>
-<tr class="even">
-<td>:glyph-size</td>
-<td>a number in [0 1]</td>
-<td>0.9</td>
-<td>glyph side (:square, :circle, :ellipse, :pie) as a fraction of the panel's shorter side</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Every glyph, for one pair of variables (r about 0.82):</p>
+<p>Its options pick the coefficient and how the chart draws it:</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme); The theme's colour only for a glyph when the plot maps an aesthetic; otherwise a glyph shows r on a diverging colour scale. <code>:number</code> takes the <code>:correlation</code> text role's colour, a group line its group's colour (the text's colour for <code>:group</code>).</span></dt><dd><div class="option-example"><code>(chart/correlation {:glyph :circle, :color :orange})</code></div><div class="option-text">One fixed colour for the glyph or the <code>:number</code> text, in place of the colour scale.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/correlation {:glyph :circle, :stroke-color :none})</code></div><div class="option-text">The outline colour of the <code>:square</code>, <code>:circle</code>, <code>:ellipse</code> and <code>:pie</code> glyphs.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/correlation {:glyph :circle, :stroke-width 4})</code></div><div class="option-text">The outline width of the <code>:square</code>, <code>:circle</code>, <code>:ellipse</code> and <code>:pie</code> glyphs in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:pearson</code></span></dt><dd><div class="option-example"><code>(chart/correlation {:method :spearman})</code></div><div class="option-text">Which correlation coefficient the chart computes as r.<ul><li><code>:pearson</code> – Pearson correlation.</li><li><code>:spearman</code> – Spearman rank correlation.</li><li><code>:kendall</code> – Kendall rank correlation (tau).</li></ul></div></dd></div><div class="option-card"><dt><code>:glyph</code><span class="option-default">Default: <code>:number</code></span></dt><dd><div class="option-example"><code>(chart/correlation {:glyph :shade})</code></div><div class="option-text">How the chart draws r.<ul><li><code>:number</code> – As text, the method and r, a line per group.</li><li><code>:shade</code> – The whole panel in r's colour.</li><li><code>:square</code> – A square with its area proportional to |r|.</li><li><code>:circle</code> – A circle with its area proportional to |r|.</li><li><code>:ellipse</code> – The normal contour of r: a circle at 0, narrower towards ±1, rising for a positive r.</li><li><code>:pie</code> – A disk filled |r| of the way round, clockwise for a positive r.</li></ul></div></dd></div><div class="option-card"><dt><code>:glyph-size</code><span class="option-default">Default: <code>0.9</code></span></dt><dd><div class="option-example"><code>(chart/correlation {:glyph :circle, :glyph-size 0.5})</code></div><div class="option-text">The size of the <code>:square</code>, <code>:circle</code>, <code>:ellipse</code> and <code>:pie</code> glyphs, as a fraction of the panel's shorter side.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div></dl>
+<p>Each of the six glyphs shows the same pair of variables (r about 0.82):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:glyph</span> <span class="at">:number</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":glyph :number"</span>}}</span>
@@ -1400,7 +1311,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image1.png" class="img-fluid"></p>
 </div>
-<p>The three coefficients of the same pair (Kendall’s tau, counting concordant pairs, is the lowest), and a smaller glyph in one fixed colour with a thick outline:</p>
+<p>The three coefficients differ for the same pair (Kendall’s tau, which compares concordant with discordant pairs, is the lowest). On the right a smaller glyph has one fixed colour and a thick outline:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-width</span>}</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/correlation {<span class="at">:method</span> <span class="at">:pearson</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":method :pearson"</span>}}</span>
@@ -1418,7 +1329,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image2.png" class="img-fluid"></p>
 </div>
-<p>In a correlogram - a <a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a> matrix with correlation glyphs below (<code>:lower</code>) and above (<code>:upper</code>) the diagonal, and the variables’ names on it (<code>:diagonal :names</code>):</p>
+<p>A correlogram is a <a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a> matrix of these cells: here ellipses below the diagonal (<code>:lower</code>), Spearman squares above it (<code>:upper</code>) and the variables’ names on it (<code>:diagonal :names</code>):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:lower</span> (chart/correlation {<span class="at">:glyph</span> <span class="at">:ellipse</span> <span class="at">:stroke-color</span> <span class="at">:none</span>})</span>
@@ -1430,51 +1341,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image3.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 </section>
-<section id="pairwise" class="level2" data-number="21.2">
-<h2 data-number="21.2" class="anchored" data-anchor-id="pairwise"><span class="header-section-number">21.2</span> pairwise</h2>
-<p>Any statistic of two variables drawn as one cell filling the panel: an error, an association, an effect size, a distance (the keys of <code>cljplot2.data.pairwise/statistics</code>, listed with <a href="reference.data_sets_series.html#pairwisematrix-rows"><code>pairwise/matrix-rows</code></a> in the Data functions part) or a function of the two samples - always of the x sample against the y sample. Unlike r the values have no fixed range. Alone it writes the value, one line per group.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>first sample, the statistic's xs (numbers)</td>
-</tr>
-<tr class="even">
-<td>:y (required)</td>
-<td>a keyword, a function or a categorical marker of one</td>
-<td></td>
-<td>second sample, the statistic's ys (numbers)</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>categorical groups, each a line of the :number glyph in its colour</td>
-</tr>
-<tr class="even">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic, each a line of the :number glyph</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="statistic-cells" class="level2" data-number="21.2">
+<h2 data-number="21.2" class="anchored" data-anchor-id="statistic-cells"><span class="header-section-number">21.2</span> Statistic cells</h2>
+<p><code>chart/pairwise</code> draws a statistic of two variables as one cell filling the panel: an error, an association, an effect size, a distance or a function of the two samples, always of the x sample against the y sample. Use it as the cell of a <code>plot/pairs</code> matrix; by default it writes the value, a line per group. Unlike r the values have no fixed range. The <a href="reference.data_sets_series.html#pairwisematrix-rows"><code>pairwise/matrix-rows</code></a> section lists the built-in statistics.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x sample, the statistic's <code>xs</code>.</li><li><code>:y</code> <span class="required">required</span> – The y sample, the statistic's <code>ys</code>.</li><li><code>:color</code> – Splits the rows into groups, each a line of the <code>:number</code> text in its own colour.</li><li><code>:group</code> – Splits the rows into groups that look the same, each a line of the <code>:number</code> text.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> iris</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span> <span class="at">:color</span> <span class="at">:species</span>}</span>
@@ -1484,54 +1356,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image4.png" class="img-fluid"></p>
 </div>
-<p>Its options: the statistic and its label, the glyph (by default <code>:number</code> - the text alone; a shade colours the value on the colour scale over the panels’ range, symmetric around 0 on a diverging palette for a signed statistic), and the number format:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color or :none</td>
-<td>[0 114 178]; ungrouped shades: the value on the colour scale; grouped shades: the theme's; :number: the :pairwise text role's colour, group lines mapped</td>
-<td>one fixed colour: the shade's (text over it by contrast), the :number text's</td>
-</tr>
-<tr class="even">
-<td>:method</td>
-<td>one of :ameasure :canberra :chebyshev :cliffs-delta :cohens-d :cosine :covariance :euclidean :glass-delta :hedges-g :kendall :mae :manhattan :mape :me :means-ratio :mse :pearson :r2 :rmse :spearman or a function</td>
-<td>:pearson</td>
-<td>the statistic: a key of pairwise/statistics or a function of two samples (f xs ys)</td>
-</tr>
-<tr class="odd">
-<td>:label</td>
-<td>string or nil</td>
-<td>the statistic's label, value for a function</td>
-<td>the statistic's label (text, colour bar title)</td>
-</tr>
-<tr class="even">
-<td>:glyph</td>
-<td>one of :number :shade :shade-number</td>
-<td>:number</td>
-<td>how the value is drawn: :number (text, a line per group), :shade (the panel in the value's colour) or :shade-number (both)</td>
-</tr>
-<tr class="odd">
-<td>:value-format</td>
-<td>a number format string or a function or nil</td>
-<td>at most 2 decimals, whole numbers without them</td>
-<td>the text of a value: a format string or a function of the number (a throw or nil - NA)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>The glyphs for one pair (sepal against petal length): the mean absolute error as text, shaded and both, the signed mean error shaded on the diverging palette, a user function with its label and format, and one fixed colour (the text over a shade is black or white by the fill):</p>
+<p>Its options pick the statistic and how the chart draws and writes it. The chart colours a shade by its value on a colour scale over the panels’ values; a signed statistic takes a diverging palette centred on 0:</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme); The theme's colour only for a shade when the plot maps an aesthetic; otherwise a shade shows the value on the colour scale. <code>:number</code> takes the <code>:pairwise</code> text role's colour, a group line its group's colour (the text's colour for <code>:group</code>).</span></dt><dd><div class="option-example"><code>(chart/pairwise {:glyph :shade, :color :orange})</code></div><div class="option-text">One fixed colour for the shade or the <code>:number</code> text, in place of the colour scale. Text over a shade takes the <code>:pairwise</code> text role's colour, black or white by default.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:method</code><span class="option-default">Default: <code>:pearson</code></span></dt><dd><div class="option-example"><code>(chart/pairwise {:method :cohens-d})</code></div><div class="option-text">Which statistic the chart computes, of the x sample against the y sample.<ul><li><code>:pearson</code> – Pearson correlation.</li><li><code>:cohens-d</code> – Standardised mean difference over the pooled standard deviation.</li><li><code>:kendall</code> – Kendall rank correlation (tau).</li><li><code>:rmse</code> – Root mean squared error.</li><li><code>:spearman</code> – Spearman rank correlation.</li><li class="option-other">Other statistics of <code>pairwise/statistics</code>; the <code>pairwise/matrix-rows</code> section lists them all with what they measure. <code>:ameasure</code>, <code>:canberra</code>, <code>:chebyshev</code>, <code>:cliffs-delta</code>, <code>:cosine</code>, <code>:covariance</code>, <code>:euclidean</code>, <code>:glass-delta</code>, <code>:hedges-g</code>, <code>:mae</code>, <code>:manhattan</code>, <code>:mape</code>, <code>:me</code>, <code>:means-ratio</code>, <code>:mse</code>, <code>:r2</code></li><li><a href="reference.types.html#function">function</a> – A function of the two samples <code>(f xs ys)</code> that returns a number.</li></ul></div></dd></div><div class="option-card"><dt><code>:label</code><span class="option-default">Default: The statistic's label, e.g. <code>Pearson</code>; <code>value</code> for a function.</span></dt><dd><div class="option-example"><code>(chart/pairwise {:label "r"})</code></div><div class="option-text">The statistic's name in the text and the colour bar title; <code>$...$</code> in it and <code>plot/math</code> values draw as formulas.<ul><li><span>string</span> – A text, e.g. <code>r</code>.</li><li><span>formula value</span> – A <code>plot/math</code> or <code>plot/runs</code> value.</li></ul></div></dd></div><div class="option-card"><dt><code>:glyph</code><span class="option-default">Default: <code>:number</code></span></dt><dd><div class="option-example"><code>(chart/pairwise {:glyph :shade})</code></div><div class="option-text">How the chart draws the value.<ul><li><code>:number</code> – As text, the label and the value, a line per group.</li><li><code>:shade</code> – The whole panel in the value's colour.</li><li><code>:shade-number</code> – Both: the text over the shade.</li></ul></div></dd></div><div class="option-card"><dt><code>:value-format</code><span class="option-default">Default: At most 2 decimals, whole numbers without them.</span></dt><dd><div class="option-example"><code>(chart/pairwise {:value-format "%.4f"})</code></div><div class="option-text">The text of a value: a format string or a function of the number; a function that throws or returns <code>nil</code> shows <code>NA</code>.<ul><li><a href="reference.types.html#number-format">number format</a></li></ul></div></dd></div></dl>
+<p>For one pair (sepal against petal length) the first three panels show the mean absolute error as text, as a shade and as both. The last three show the signed mean error on the diverging palette, a user function with its label and format, and one fixed colour:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:petal-length</span>}</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/pairwise {<span class="at">:method</span> <span class="at">:mae</span> <span class="at">:glyph</span> <span class="at">:number</span>})] <span class="at">:labels</span> {<span class="at">:title</span> <span class="st">":number"</span>}}</span>
@@ -1554,7 +1381,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image5.png" class="img-fluid"></p>
 </div>
-<p>In a <a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a> matrix every cell shows the statistic of its column variable against its row variable, so the mirrored cells of the asymmetric mean error have opposite signs - shaded below, as text above, the names on the diagonal (<code>:diagonal :names</code>). The statistic is computed once for the matrix: every shaded cell is coloured on its range (symmetric around 0 for the signed mean error) and the one colour bar agrees; the cells share one text size:</p>
+<p>In a <a href="reference.facets_arrange.html#scatter-plot-matrix"><code>plot/pairs</code></a> matrix every cell shows the statistic of its column variable against its row variable, so the mirrored cells of the antisymmetric mean error have opposite signs - shaded below, as text above, the names on the diagonal (<code>:diagonal :names</code>). <code>plot/pairs</code> computes the statistic once for the matrix, so every shaded cell and the single colour bar use its range; the cells share one text size:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/pairs iris {<span class="at">:variables</span> [<span class="at">:sepal-length</span> <span class="at">:sepal-width</span> <span class="at">:petal-length</span> <span class="at">:petal-width</span>]</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">:lower</span> (chart/pairwise {<span class="at">:method</span> <span class="at">:me</span> <span class="at">:glyph</span> <span class="at">:shade-number</span>})</span>
@@ -1566,7 +1393,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_pairwise_files/image6.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li></ul></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_pairwise.clj</small></small></pre></div>
 

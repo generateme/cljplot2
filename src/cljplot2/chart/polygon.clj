@@ -36,7 +36,7 @@
    (schema/optional :alpha {:description "How opaque the fill is; it multiplies the fill colour's alpha." :cljplot2/example 0.5} schema/fraction)
    (schema/optional :stroke-color {:description "The colour of the outline." :cljplot2/value-meanings {:color "The group's colour, not faded by `:alpha`." :none "No outline."} :cljplot2/example :black}
                     [:or [:= :color] schema/color])
-   (schema/optional :stroke-width {:description "The width of the outline in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)])
+   (schema/optional :stroke-width {:description "The width of the outline in pixels; `0` draws no outline." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)])
 
 (def schemas
   "Schemas of the polygon chart: `:style` (theme `[:chart :polygon]`), `:options`, `:mapping` (merged)."

@@ -500,13 +500,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#bar" id="toc-bar" class="nav-link active" data-scroll-target="#bar"><span class="header-section-number">16.1</span> bar</a>
+  <li><a href="#bar-charts" id="toc-bar-charts" class="nav-link active" data-scroll-target="#bar-charts"><span class="header-section-number">16.1</span> Bar charts</a>
   <ul>
   <li><a href="#style" id="toc-style" class="nav-link" data-scroll-target="#style"><span class="header-section-number">16.1.1</span> Style</a></li>
   <li><a href="#bars" id="toc-bars" class="nav-link" data-scroll-target="#bars"><span class="header-section-number">16.1.2</span> Bars</a></li>
   <li><a href="#labels" id="toc-labels" class="nav-link" data-scroll-target="#labels"><span class="header-section-number">16.1.3</span> Labels</a></li>
   </ul></li>
-  <li><a href="#bullet" id="toc-bullet" class="nav-link" data-scroll-target="#bullet"><span class="header-section-number">16.2</span> bullet</a></li>
+  <li><a href="#bullet-charts" id="toc-bullet-charts" class="nav-link" data-scroll-target="#bullet-charts"><span class="header-section-number">16.2</span> Bullet charts</a></li>
   </ul>
 </nav>
     </div>
@@ -544,7 +544,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
-<p>Charts that draw bars along a categorical axis: a summary of each level’s values (<code>bar</code>) or a measure against qualitative ranges and targets (<code>bullet</code>). Use them to compare amounts across levels.</p>
+<p>These charts draw bars along a categorical axis: a summary of each level’s values (<code>bar</code>) or a measure against qualitative ranges and targets (<code>bullet</code>). Use them to compare amounts across levels.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> reference.charts-bars</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span> [cljplot2.chart <span class="at">:as</span> chart]</span>
@@ -1506,55 +1506,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<section id="bar" class="level2" data-number="16.1">
-<h2 data-number="16.1" class="anchored" data-anchor-id="bar"><span class="header-section-number">16.1</span> bar</h2>
-<p>A bar per level (and group) whose length summarises the item’s rows - their sum by default, or a count of them; vertical bars take the levels on x, horizontal ones on y.</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:x</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>x position: the levels (categorical) of vertical bars or the values of horizontal ones</td>
-</tr>
-<tr class="even">
-<td>:y</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>y position: the values of vertical bars or the levels (categorical) of horizontal ones</td>
-</tr>
-<tr class="odd">
-<td>:color</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>fill colour: categorical values group the bars (legend keys), numeric ones colour each bar by its value (a colour bar)</td>
-</tr>
-<tr class="even">
-<td>:pattern</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>fill pattern per group (gives legend keys)</td>
-</tr>
-<tr class="odd">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic (dodged, stacked or mirrored as other groups)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="bar-charts" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="bar-charts"><span class="header-section-number">16.1</span> Bar charts</h2>
+<p><code>chart/bar</code> draws a bar per level and group; by default its length is the sum of its rows’ values, and it can also summarise or count the rows. Use it to compare amounts across categories. Levels on x give vertical bars, levels on y horizontal ones.</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The levels of vertical bars, or the values of horizontal ones.</li><li><code>:y</code> – The values of vertical bars, or the levels of horizontal ones.</li><li><code>:color</code> – Fills the bars: categorical values split the rows into groups, each with its own fill; numbers colour each bar by its value, with a colour bar.</li><li><code>:pattern</code> – Splits the rows into groups, each with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged, stacked or mirrored as other groups.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> sales</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
@@ -1567,59 +1523,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="style" class="level3" data-number="16.1.1">
 <h3 data-number="16.1.1" class="anchored" data-anchor-id="style"><span class="header-section-number">16.1.1</span> Style</h3>
-<p>The fill and outline used when nothing is mapped, the opacity of overlaid groups, and the 0 line drawn over mirrored bars (<code>:mirror</code> - <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a>):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:color</td>
-<td>a clojure2d color</td>
-<td>[0 114 178]</td>
-<td>bar fill colour (a mapped :color wins)</td>
-</tr>
-<tr class="even">
-<td>:stroke-color</td>
-<td>:darker or a clojure2d color or :none</td>
-<td>:darker</td>
-<td>outline colour: a colour, :none or :darker (the darkened fill)</td>
-</tr>
-<tr class="odd">
-<td>:stroke-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>outline width in pixels</td>
-</tr>
-<tr class="even">
-<td>:alpha</td>
-<td>a number in [0 1]</td>
-<td>0.6</td>
-<td>fill opacity of overlaid groups sharing a level</td>
-</tr>
-<tr class="odd">
-<td>:zero-line-color</td>
-<td>a clojure2d color or :none</td>
-<td>:black</td>
-<td>colour of the 0 line drawn over mirrored bars</td>
-</tr>
-<tr class="even">
-<td>:zero-line-width</td>
-<td>a non-negative number</td>
-<td>1</td>
-<td>width in pixels of the 0 line drawn over mirrored bars</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the fill and outline of unmapped bars, the opacity of overlaid groups and the 0 line over mirrored bars (<code>:mirror</code>, see <a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a>):</p>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:color :orange})</code></div><div class="option-text">The fill colour of the bars; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:stroke-color :none})</code></div><div class="option-text">The outline colour of the bars.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:stroke-width 3})</code></div><div class="option-text">The outline width in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:position :overlay, :alpha 0.2})</code></div><div class="option-text">The opacity of the fill with <code>:position :overlay</code> when some level holds two or more groups; then every bar is see-through, its legend key too.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line-color :none})</code></div><div class="option-text">The colour of the 0 line drawn over mirrored bars.<ul><li><code>:none</code> – No line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line-width 4})</code></div><div class="option-text">The width of the 0 line over mirrored bars, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> pyramid </span>(<span class="kw">for</span> [[i age] (map-indexed <span class="kw">vector</span> [<span class="st">"0-19"</span> <span class="st">"20-39"</span> <span class="st">"40-59"</span> <span class="st">"60-79"</span> <span class="st">"80+"</span>])</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                   sex [<span class="st">"female"</span> <span class="st">"male"</span>]]</span>
@@ -1714,65 +1619,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="bars" class="level3" data-number="16.1.2">
 <h3 data-number="16.1.2" class="anchored" data-anchor-id="bars"><span class="header-section-number">16.1.2</span> Bars</h3>
-<p>What a bar’s length is (<code>:stat</code>), how the groups of one level share its band, widths by the item’s size, the order of negative stacked parts, and the padding:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:stat</td>
-<td>one of :count :mean :median :percent :pmf :sum or a function</td>
-<td>:sum</td>
-<td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td>
-</tr>
-<tr class="even">
-<td>:color-stat</td>
-<td>one of :mean :median :sum or a function or nil</td>
-<td>the :stat of value stats, :mean for count stats</td>
-<td>a bar's colour value from its rows' values of a linear or binned :color: :sum, :mean, :median or a function of the values</td>
-</tr>
-<tr class="odd">
-<td>:position</td>
-<td>one of :dodge :normalize :overlay :stack</td>
-<td>:dodge when a level holds two or more groups, else :overlay</td>
-<td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td>
-</tr>
-<tr class="even">
-<td>:zero-line</td>
-<td>true or false or nil</td>
-<td>true</td>
-<td>draw the 0 line on top of mirrored bars (with :mirror only)</td>
-</tr>
-<tr class="odd">
-<td>:varwidth</td>
-<td>true or false or a keyword, a function or a categorical marker of one or nil</td>
-<td>false</td>
-<td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td>
-</tr>
-<tr class="even">
-<td>:negative-order</td>
-<td>one of :forward :reverse</td>
-<td>:forward</td>
-<td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the bars’ length, colour value and width, how the groups of a level share its band, and the padding:</p>
+<dl class="options"><div class="option-card"><dt><code>:stat</code><span class="option-default">Default: <code>:sum</code></span></dt><dd><div class="option-example"><code>(chart/bar {:stat :count})</code></div><div class="option-text">How each bar's length comes from its rows.<ul><li><code>:sum</code> – The sum of the values; one row per bar gives its value.</li><li><code>:count</code> – The number of rows; the bars need no values.</li><li><code>:mean</code> – The mean of the values.</li><li><code>:median</code> – The median of the values.</li><li><code>:percent</code> – The rows' share of their group's rows in the panel, in percent.</li><li><code>:pmf</code> – The rows' share of their group's rows in the panel, as a fraction.</li><li><a href="reference.types.html#function">function</a> – A function of the values that returns a finite number.</li></ul></div></dd></div><div class="option-card"><dt><code>:color-stat</code><span class="option-default">Default: The bar's <code>:stat</code>; <code>:mean</code> for a count.</span></dt><dd><div class="option-example"><code>(chart/bar {:mapping {:color :v}, :color-stat :mean})</code></div><div class="option-text">How a bar's colour value comes from its rows when the mapped <code>:color</code> holds numbers.<ul><li><code>:mean</code> – The mean of the colour values.</li><li><code>:median</code> – The median of the colour values.</li><li><code>:sum</code> – The sum of the colour values.</li><li><a href="reference.types.html#function">function</a> – A function of the colour values that returns a number.</li></ul></div></dd></div><div class="option-card"><dt><code>:position</code><span class="option-default">Default: <code>:dodge</code> when a level holds two or more groups, else <code>:overlay</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:position :stack})</code></div><div class="option-text">How the groups of one level share its band.<ul><li><code>:dodge</code> – Side by side.</li><li><code>:normalize</code> – End to end, each level summing to 1.</li><li><code>:overlay</code> – On top of each other, see-through by <code>:alpha</code> when a level holds two or more groups.</li><li><code>:stack</code> – End to end, in group order; negative bars stack the other way from 0.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line false})</code></div><div class="option-text">Draws the 0 line over mirrored bars.<ul><li><code>true</code> – Draws the line.</li><li><code>false</code> – Draws no line.</li></ul></div></dd></div><div class="option-card"><dt><code>:varwidth</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:varwidth true})</code></div><div class="option-text">How wide each bar is relative to the widest one.<ul><li><code>false</code> – Every bar equally wide.</li><li><code>true</code> – By the square root of each bar's count of values.</li><li><a href="reference.types.html#accessor">accessor</a> – By each bar's sum of this row value, e.g. <code>:weight</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:negative-order</code><span class="option-default">Default: <code>:forward</code></span></dt><dd><div class="option-example"><code>(chart/bar {:position :stack, :negative-order :reverse})</code></div><div class="option-text">The order of the stacked groups below 0.<ul><li><code>:forward</code> – The group order.</li><li><code>:reverse</code> – The last group nearest 0, so the groups of an ordered scale diverge from the middle, as in Likert charts.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on the values' axis, none at the side the bars grow from, none for <code>:normalize</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:padding {:y [0 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
@@ -1793,7 +1641,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image2.png" class="img-fluid"></p>
 </div>
-<p>Every <code>:stat</code>: summaries of the mapped values (<code>:sum</code> - the default, <code>:mean</code>, <code>:median</code>) and counts of the rows, needing no values (<code>:count</code>, <code>:percent</code> of the panel’s rows, <code>:pmf</code> - shares summing to 1):</p>
+<p>Each <code>:stat</code> in turn: on the left, summaries of the iris sepal lengths; on the right, counts of the cars per number of cylinders:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
@@ -1821,7 +1669,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image3.png" class="img-fluid"></p>
 </div>
-<p>Groups side by side (<code>:dodge</code>, the default for several groups of a level) or stacked; with negative values a stack grows both ways from 0 - <code>:negative-order :reverse</code> puts the last group nearest 0 below it. Mirrored bars drop their 0 line with <code>:zero-line false</code>, and <code>:padding</code> widens the value axis (here 30% past the longest bar):</p>
+<p>The first image draws a balance side by side, then stacked: with negative values a stack grows both ways from 0, and <code>:negative-order :reverse</code> puts the last group nearest 0. The second image draws mirrored bars without their 0 line (left) and leaves 30% past the longest bar with <code>:padding</code> (right):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> balance </span>[{<span class="at">:month</span> <span class="st">"Jan"</span> <span class="at">:item</span> <span class="st">"sales"</span> <span class="at">:eur</span> <span class="dv">40</span>} {<span class="at">:month</span> <span class="st">"Jan"</span> <span class="at">:item</span> <span class="st">"costs"</span> <span class="at">:eur</span> -<span class="dv">25</span>} {<span class="at">:month</span> <span class="st">"Jan"</span> <span class="at">:item</span> <span class="st">"tax"</span> <span class="at">:eur</span> -<span class="dv">8</span>}</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>              {<span class="at">:month</span> <span class="st">"Feb"</span> <span class="at">:item</span> <span class="st">"sales"</span> <span class="at">:eur</span> <span class="dv">55</span>} {<span class="at">:month</span> <span class="st">"Feb"</span> <span class="at">:item</span> <span class="st">"costs"</span> <span class="at">:eur</span> -<span class="dv">30</span>} {<span class="at">:month</span> <span class="st">"Feb"</span> <span class="at">:item</span> <span class="st">"tax"</span> <span class="at">:eur</span> -<span class="dv">12</span>}</span>
@@ -1925,7 +1773,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image5.png" class="img-fluid"></p>
 </div>
-<p>A numeric <code>:color</code> doesn’t group the bars: each bar is filled by its own colour value - <code>:color-stat</code> over its rows’ colour values (default the bar’s <code>:stat</code>, <code>:mean</code> for counts) - with a colour bar. Mapped to the values with <code>:sum</code> it colours each bar by its length; stacked segments (groups from <code>:group</code> or a categorical aesthetic) take their own colours; a count can be coloured by a summary of another column:</p>
+<p>A numeric <code>:color</code> doesn’t group the bars: each bar takes its own colour value, shown on a colour bar. On the left <code>:color-stat :sum</code> colours each bar by its length. In the middle each stacked segment takes the mean of its own rows. On the right the bars count rows and take their colour from a summary of another column:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:amount</span>}</span>
@@ -1945,7 +1793,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image6.png" class="img-fluid"></p>
 </div>
-<p>An explicit colour <code>:domain</code> never drops rows: every bar keeps its length, and a bar whose colour value lies outside the domain is drawn in the NA colour (Q4’s mean, 45.7, is above 40). A <code>:value-label</code> function reads the bar’s colour value as <code>:color-value</code>:</p>
+<p>An explicit colour <code>:domain</code> never drops rows: every bar keeps its length, and a bar whose colour value lies outside the domain takes the NA colour (Q4’s mean, 45.7, is above 40). A <code>:value-label</code> function reads the bar’s colour value as <code>:color-value</code>:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> sales</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:amount</span>}</span>
@@ -1960,53 +1808,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="labels" class="level3" data-number="16.1.3">
 <h3 data-number="16.1.3" class="anchored" data-anchor-id="labels"><span class="header-section-number">16.1.3</span> Labels</h3>
-<p>Each bar’s length written past its end or in its middle, formatted or as the text a function returns:</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:label-stack</td>
-<td>one of :horizontal :vertical</td>
-<td>along the bars: :horizontal for horizontal bars, :vertical for vertical ones</td>
-<td>how the value and n texts of one label are joined: :horizontal (side by side) or :vertical (one above the other)</td>
-</tr>
-<tr class="even">
-<td>:value-label</td>
-<td>true or false or a function or nil</td>
-<td>false</td>
-<td>write each bar's length (true) or the text a function of {:value :n :share :level :group} returns</td>
-</tr>
-<tr class="odd">
-<td>:label-position</td>
-<td>one of :end :center :base :outer</td>
-<td>:center for :stack / :normalize, else :end</td>
-<td>where labels sit: :end (past the bar's end), :center (in the bar), :base (in the bar at its base) or :outer (polar only: past the outer radius)</td>
-</tr>
-<tr class="even">
-<td>:label-leader</td>
-<td>true or false or nil</td>
-<td>false</td>
-<td>draw a line from the bar's outer edge to its :outer label</td>
-</tr>
-<tr class="odd">
-<td>:value-format</td>
-<td>a number format string or a function</td>
-<td>whole numbers as integers, else the fewest digits telling the labels apart</td>
-<td>text of the value labels: a format string or a function of the number</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options turn on a label at each bar, set its text and place it:</p>
+<dl class="options"><div class="option-card"><dt><code>:label-stack</code><span class="option-default">Default: Along the bars: side by side for horizontal bars, one above the other for vertical ones.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :n-label true, :label-stack :horizontal})</code></div><div class="option-text">How the value text and the n text of one label sit together when both <code>:value-label</code> and <code>:n-label</code> are on.<ul><li><code>:horizontal</code> – Side by side.</li><li><code>:vertical</code> – One above the other.</li></ul></div></dd></div><div class="option-card"><dt><code>:value-label</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true})</code></div><div class="option-text">Writes a label at each bar: its length, or the text a function returns.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The bar's length, signed as its value.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:value :n :share :level :group}</code> that returns the text, e.g. a share in percent; <code>nil</code> writes none.</li></ul></div></dd></div><div class="option-card"><dt><code>:label-position</code><span class="option-default">Default: <code>:center</code> for <code>:stack</code> and <code>:normalize</code>, else <code>:end</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :label-position :center})</code></div><div class="option-text">Where the labels sit. The chart leaves out a label inside a bar that doesn't fit there.<ul><li><code>:end</code> – Past the bar's end.</li><li><code>:center</code> – In the middle of the bar.</li><li><code>:base</code> – Inside the bar at the end nearer 0.</li><li><code>:outer</code> – Past the outer radius, in a polar plot only, e.g. pie labels.</li></ul></div></dd></div><div class="option-card"><dt><code>:label-leader</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :label-position :outer, :label-leader true})</code></div><div class="option-text">In a polar plot, draws a line from each bar's outer edge to its <code>:outer</code> label, which then sits further out.<ul><li><code>false</code> – Draws no lines.</li><li><code>true</code> – Draws the lines.</li></ul></div></dd></div><div class="option-card"><dt><code>:value-format</code><span class="option-default">Default: Whole numbers as integers, else the fewest digits that tell the labels apart.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :value-format "%.1f"})</code></div><div class="option-text">The text of the value labels: a format string or a function of the number.<ul><li><a href="reference.types.html#number-format">number format</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span> <span class="at">:color</span> <span class="at">:product</span>}</span>
@@ -2028,7 +1831,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image8.png" class="img-fluid"></p>
 </div>
-<p>Where labels sit: past the bar’s end (<code>:end</code>, the default unstacked) or inside it (<code>:center</code>, the default stacked; <code>:base</code> - at its base, shown further down); with the value and the row count (<code>:n-label</code>) the two texts join side by side or one above the other (<code>:label-stack</code>):</p>
+<p>The first two panels place labels past the bar’s end and in its middle; the last two join a value and a row count (<code>:n-label</code>) side by side and one above the other:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:species</span> <span class="at">:y</span> <span class="at">:sepal-length</span>}</span>
@@ -2054,7 +1857,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image9.png" class="img-fluid"></p>
 </div>
-<p><code>:base</code> writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment’s own base when stacked. With 0 outside the value domain (e.g.&nbsp;<code>:scales {:x {:domain [4 nil]}}</code>) the label sits at the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where labels rarely fit their wedge and are skipped:</p>
+<p>A <code>:base</code> label starts at the end of the bar nearer 0, each stacked segment’s at its own base. With 0 outside the value domain (e.g. <code>:scales {:x {:domain [4 nil]}}</code>) the label sits at the visible end nearest 0. In a polar plot with the values on the radius the bases meet at the centre, where labels rarely fit their wedge, so the chart leaves them out:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> iris</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:sepal-length</span> <span class="at">:y</span> <span class="at">:species</span>}</span>
@@ -2070,7 +1873,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image10.png" class="img-fluid"></p>
 </div>
-<p>In a polar plot <code>:outer</code> puts the labels past the outer radius, with a leader line from each bar (<code>:label-leader</code>):</p>
+<p>In a polar plot <code>:outer</code> places the labels past the outer radius; on the right <code>:label-leader</code> adds a line from each bar:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> sales</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:quarter</span> <span class="at">:y</span> <span class="at">:amount</span>}</span>
@@ -2088,64 +1891,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image11.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li></ul></div>
 </section>
 </section>
-<section id="bullet" class="level2" data-number="16.2">
-<h2 data-number="16.2" class="anchored" data-anchor-id="bullet"><span class="header-section-number">16.2</span> bullet</h2>
-<p>A measure bar over shaded qualitative ranges, with marker lines (targets) - a row per level holding vectors of ranges, measures and markers (here percents of a plan, so the levels share one axis).</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:ranges</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>qualitative ranges of a level: a number or a vector of them (one row per level and group)</td>
-</tr>
-<tr class="even">
-<td>:measures</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>measures of a level: a number or a vector of them, the first the current value</td>
-</tr>
-<tr class="odd">
-<td>:markers</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>marker values of a level: a number or a vector of them</td>
-</tr>
-<tr class="even">
-<td>:y</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>levels on the categorical axis (absent - one bullet)</td>
-</tr>
-<tr class="odd">
-<td>:x</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>levels of vertical bullets (values aren't read from it)</td>
-</tr>
-<tr class="even">
-<td>:group</td>
-<td>a keyword, a function or a categorical marker of one or nil</td>
-<td></td>
-<td>groups without a visual aesthetic (dodged as other groups)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<section id="bullet-charts" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="bullet-charts"><span class="header-section-number">16.2</span> Bullet charts</h2>
+<p><code>chart/bullet</code> draws a measure bar over shaded qualitative ranges, with marker lines across them. Use it to show a measure against its targets. Each row holds a level’s ranges, measures and markers (here percents of a plan, so the levels share one axis).</p>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code></li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:ranges</code> – The qualitative ranges of a level: a number or a vector of them, one row per level and group.</li><li><code>:measures</code> – The measures of a level: a number or a vector of them, the first the current value.</li><li><code>:markers</code> – The markers of a level: a number or a vector of them, e.g. targets.</li><li><code>:y</code> – The levels of horizontal bullets; with neither <code>:x</code> nor <code>:y</code> the chart draws one bullet.</li><li><code>:x</code> – The levels of vertical bullets; the chart reads no values from it.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged as other groups.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> kpis </span>[{<span class="at">:kpi</span> <span class="st">"revenue"</span> <span class="at">:ranges</span> [<span class="dv">60</span> <span class="dv">80</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">92</span> <span class="dv">75</span>] <span class="at">:markers</span> [<span class="dv">95</span>]}</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>           {<span class="at">:kpi</span> <span class="st">"profit"</span> <span class="at">:ranges</span> [<span class="dv">50</span> <span class="dv">75</span> <span class="dv">100</span>] <span class="at">:measures</span> [<span class="dv">68</span> <span class="dv">60</span>] <span class="at">:markers</span> [<span class="dv">80</span>]}</span>
@@ -2196,65 +1948,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image12.png" class="img-fluid"></p>
 </div>
-<p>Its options: the shades of ranges and measures (from the first to the last), the measure bar’s width, the markers’ colour, width and length, and the padding (left: 20% past the largest value):</p>
-<div class="clay-table">
-<div class="table-responsive">
-<table class="table table-hover clay-table caption-top">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">Option</th>
-<th data-quarto-table-cell-role="th">Type</th>
-<th data-quarto-table-cell-role="th">Default</th>
-<th data-quarto-table-cell-role="th">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>:range-colors</td>
-<td>[a clojure2d color or :none, a clojure2d color or :none]</td>
-<td>[[204 204 204] [238 238 238]]</td>
-<td>[first last] colours shading the ranges from the smallest to the largest</td>
-</tr>
-<tr class="even">
-<td>:measure-colors</td>
-<td>[a clojure2d color or :none, a clojure2d color or :none]</td>
-<td>[[0 114 178] [176 196 222]]</td>
-<td>[first last] colours shading the measures from the first (the current value) to the last</td>
-</tr>
-<tr class="odd">
-<td>:measure-fraction</td>
-<td>a number in [0 1]</td>
-<td>0.35</td>
-<td>measure bar width, a fraction of the item slot</td>
-</tr>
-<tr class="even">
-<td>:marker-color</td>
-<td>a clojure2d color or :none</td>
-<td>:black</td>
-<td>marker line colour</td>
-</tr>
-<tr class="odd">
-<td>:marker-width</td>
-<td>a non-negative number</td>
-<td>2</td>
-<td>marker line width in pixels (0 - no markers)</td>
-</tr>
-<tr class="even">
-<td>:marker-length</td>
-<td>a number in [0 1]</td>
-<td>0.7</td>
-<td>marker line length, a fraction of the item slot</td>
-</tr>
-<tr class="odd">
-<td>:padding</td>
-<td>map of one of :x :y to [lo hi], non-negative numbers</td>
-<td>values 0.05 on a side holding values, 0 on the side of 0</td>
-<td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p>These options set the colours of the ranges and measures and the sizes of the measure bars and markers. On the left the bars are thin, the markers hidden and <code>:padding</code> leaves 20% past the largest value; on the right every colour and size is set:</p>
+<dl class="options"><div class="option-card"><dt><code>:range-colors</code><span class="option-default">Default: <code>[[204 204 204] [238 238 238]]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:range-colors [:lightblue :white]})</code></div><div class="option-text">Two colours shading the ranges: the first for the smallest, the last for the largest, blends between them. A single range takes the first.<ul><li><span>pair of solid colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:measure-colors</code><span class="option-default">Default: <code>[[0 114 178] [176 196 222]]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:measure-colors [:orange :gold]})</code></div><div class="option-text">Two colours for the measure bars: the first for the first measure (the current value), the last for the last, blends between them. A single measure takes the first.<ul><li><span>pair of solid colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:measure-fraction</code><span class="option-default">Default: <code>0.35</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:measure-fraction 0.7})</code></div><div class="option-text">The width of the measure bars, as a fraction of the bullet's slot.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-color :red})</code></div><div class="option-text">The colour of the marker lines.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-width</code><span class="option-default">Default: <code>2</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-width 5})</code></div><div class="option-text">The width of the marker lines in pixels; <code>0</code> draws no markers.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-length</code><span class="option-default">Default: <code>0.7</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-length 0.3})</code></div><div class="option-text">The length of the marker lines, as a fraction of the bullet's slot.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on a side holding values, none on the side of 0.</span></dt><dd><div class="option-example"><code>(chart/bullet {:padding {:x [0 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> kpis</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:y</span> <span class="at">:kpi</span> <span class="at">:ranges</span> <span class="at">:ranges</span> <span class="at">:measures</span> <span class="at">:measures</span> <span class="at">:markers</span> <span class="at">:markers</span>}</span>
@@ -2275,7 +1970,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="clay-image">
 <p><img src="reference.charts_bars_files/image13.png" class="img-fluid"></p>
 </div>
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code></li></ul></div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_bars.clj</small></small></pre></div>
 

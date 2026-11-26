@@ -46,7 +46,7 @@
   (conj band-style-entries
         (schema/optional :stroke-color {:description "The colour of both edges." :cljplot2/value-meanings {:color "The band colour." :none "No edges."} :cljplot2/example :black}
                          [:or [:= :color] schema/color])
-        (schema/optional :stroke-width {:description "The width of the edges in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+        (schema/optional :stroke-width {:description "The width of the edges in pixels; `0` draws no edges." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
         (schema/nilable :dash {:description "The dash style of the edges; a mapped `:dash` wins." :cljplot2/example :dashed :cljplot2/example-context {:stroke-color :black}} schema/dash)))
 
 (def schemas

@@ -49,7 +49,7 @@ code-block-background: true
 
 # Bars
 
-Charts that draw bars along a categorical axis: a summary of each level's values (`bar`) or a measure against
+These charts draw bars along a categorical axis: a summary of each level's values (`bar`) or a measure against
 qualitative ranges and targets (`bullet`). Use them to compare amounts across levels.
 
 
@@ -113,18 +113,22 @@ Data: Motor Trend car road tests (1974), R datasets package `mtcars` (Henderson 
 
 
 
-## bar
+## Bar charts
 
-A bar per level (and group) whose length summarises the item's rows - their sum by default, or a count of
-them; vertical bars take the levels on x, horizontal ones on y.
+`chart/bar` draws a bar per level and group; by default its length is the sum of its rows' values, and it can also
+summarise or count the rows. Use it to compare amounts across categories. Levels on x give vertical bars, levels
+on y horizontal ones.
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>x position: the levels (categorical) of vertical bars or the values of horizontal ones</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>y position: the values of vertical bars or the levels (categorical) of horizontal ones</td></tr><tr><td>:color</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill colour: categorical values group the bars (legend keys), numeric ones colour each bar by its value (a colour bar)</td></tr><tr><td>:pattern</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>fill pattern per group (gives legend keys)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (dodged, stacked or mirrored as other groups)</td></tr></tbody></table>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li></ul></div>
 ```
 
-:::
+
+
+```{=html}
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The levels of vertical bars, or the values of horizontal ones.</li><li><code>:y</code> – The values of vertical bars, or the levels of horizontal ones.</li><li><code>:color</code> – Fills the bars: categorical values split the rows into groups, each with its own fill; numbers colour each bar by its value, with a colour bar.</li><li><code>:pattern</code> – Splits the rows into groups, each with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged, stacked or mirrored as other groups.</li></ul></div>
+```
 
 
 
@@ -147,16 +151,13 @@ them; vertical bars take the levels on x, horizontal ones on y.
 
 ### Style
 
-The fill and outline used when nothing is mapped, the opacity of overlaid groups, and the 0 line drawn over
-mirrored bars (`:mirror` - [Mirrored strips](reference.shared_options.html#mirrored-strips)):
+These options set the fill and outline of unmapped bars, the opacity of overlaid groups and the 0 line over
+mirrored bars (`:mirror`, see [Mirrored strips](reference.shared_options.html#mirrored-strips)):
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:color</td><td>a clojure2d color</td><td>[0 114 178]</td><td>bar fill colour (a mapped :color wins)</td></tr><tr><td>:stroke-color</td><td>:darker or a clojure2d color or :none</td><td>:darker</td><td>outline colour: a colour, :none or :darker (the darkened fill)</td></tr><tr><td>:stroke-width</td><td>a non-negative number</td><td>1</td><td>outline width in pixels</td></tr><tr><td>:alpha</td><td>a number in [0 1]</td><td>0.6</td><td>fill opacity of overlaid groups sharing a level</td></tr><tr><td>:zero-line-color</td><td>a clojure2d color or :none</td><td>:black</td><td>colour of the 0 line drawn over mirrored bars</td></tr><tr><td>:zero-line-width</td><td>a non-negative number</td><td>1</td><td>width in pixels of the 0 line drawn over mirrored bars</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:color</code><span class="option-default">Default: <code>[0 114 178]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:color :orange})</code></div><div class="option-text">The fill colour of the bars; a mapped <code>:color</code> wins.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>:darker</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:stroke-color :none})</code></div><div class="option-text">The outline colour of the bars.<ul><li><code>:darker</code> – The fill colour, darkened.</li><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:stroke-width 3})</code></div><div class="option-text">The outline width in pixels; <code>0</code> draws no outline.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:alpha</code><span class="option-default">Default: <code>0.6</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:position :overlay, :alpha 0.2})</code></div><div class="option-text">The opacity of the fill with <code>:position :overlay</code> when some level holds two or more groups; then every bar is see-through, its legend key too.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line-color :none})</code></div><div class="option-text">The colour of the 0 line drawn over mirrored bars.<ul><li><code>:none</code> – No line.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line-width</code><span class="option-default">Default: <code>1</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line-width 4})</code></div><div class="option-text">The width of the 0 line over mirrored bars, in pixels.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -206,16 +207,13 @@ mirrored bars (`:mirror` - [Mirrored strips](reference.shared_options.html#mirro
 
 ### Bars
 
-What a bar's length is (`:stat`), how the groups of one level share its band, widths by the item's size, the
-order of negative stacked parts, and the padding:
+These options set the bars' length, colour value and width, how the groups of a level share its band, and the
+padding:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:stat</td><td>one of :count :mean :median :percent :pmf :sum or a function</td><td>:sum</td><td>bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)</td></tr><tr><td>:color-stat</td><td>one of :mean :median :sum or a function or nil</td><td>the :stat of value stats, :mean for count stats</td><td>a bar's colour value from its rows' values of a linear or binned :color: :sum, :mean, :median or a function of the values</td></tr><tr><td>:position</td><td>one of :dodge :normalize :overlay :stack</td><td>:dodge when a level holds two or more groups, else :overlay</td><td>how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)</td></tr><tr><td>:zero-line</td><td>true or false or nil</td><td>true</td><td>draw the 0 line on top of mirrored bars (with :mirror only)</td></tr><tr><td>:varwidth</td><td>true or false or a keyword, a function or a categorical marker of one or nil</td><td>false</td><td>bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it</td></tr><tr><td>:negative-order</td><td>one of :forward :reverse</td><td>:forward</td><td>order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:stat</code><span class="option-default">Default: <code>:sum</code></span></dt><dd><div class="option-example"><code>(chart/bar {:stat :count})</code></div><div class="option-text">How each bar's length comes from its rows.<ul><li><code>:sum</code> – The sum of the values; one row per bar gives its value.</li><li><code>:count</code> – The number of rows; the bars need no values.</li><li><code>:mean</code> – The mean of the values.</li><li><code>:median</code> – The median of the values.</li><li><code>:percent</code> – The rows' share of their group's rows in the panel, in percent.</li><li><code>:pmf</code> – The rows' share of their group's rows in the panel, as a fraction.</li><li><a href="reference.types.html#function">function</a> – A function of the values that returns a finite number.</li></ul></div></dd></div><div class="option-card"><dt><code>:color-stat</code><span class="option-default">Default: The bar's <code>:stat</code>; <code>:mean</code> for a count.</span></dt><dd><div class="option-example"><code>(chart/bar {:mapping {:color :v}, :color-stat :mean})</code></div><div class="option-text">How a bar's colour value comes from its rows when the mapped <code>:color</code> holds numbers.<ul><li><code>:mean</code> – The mean of the colour values.</li><li><code>:median</code> – The median of the colour values.</li><li><code>:sum</code> – The sum of the colour values.</li><li><a href="reference.types.html#function">function</a> – A function of the colour values that returns a number.</li></ul></div></dd></div><div class="option-card"><dt><code>:position</code><span class="option-default">Default: <code>:dodge</code> when a level holds two or more groups, else <code>:overlay</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:position :stack})</code></div><div class="option-text">How the groups of one level share its band.<ul><li><code>:dodge</code> – Side by side.</li><li><code>:normalize</code> – End to end, each level summing to 1.</li><li><code>:overlay</code> – On top of each other, see-through by <code>:alpha</code> when a level holds two or more groups.</li><li><code>:stack</code> – End to end, in group order; negative bars stack the other way from 0.</li></ul></div></dd></div><div class="option-card"><dt><code>:zero-line</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/bar {:mirror :group, :zero-line false})</code></div><div class="option-text">Draws the 0 line over mirrored bars.<ul><li><code>true</code> – Draws the line.</li><li><code>false</code> – Draws no line.</li></ul></div></dd></div><div class="option-card"><dt><code>:varwidth</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:varwidth true})</code></div><div class="option-text">How wide each bar is relative to the widest one.<ul><li><code>false</code> – Every bar equally wide.</li><li><code>true</code> – By the square root of each bar's count of values.</li><li><a href="reference.types.html#accessor">accessor</a> – By each bar's sum of this row value, e.g. <code>:weight</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:negative-order</code><span class="option-default">Default: <code>:forward</code></span></dt><dd><div class="option-example"><code>(chart/bar {:position :stack, :negative-order :reverse})</code></div><div class="option-text">The order of the stacked groups below 0.<ul><li><code>:forward</code> – The group order.</li><li><code>:reverse</code> – The last group nearest 0, so the groups of an ordered scale diverge from the middle, as in Likert charts.</li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on the values' axis, none at the side the bars grow from, none for <code>:normalize</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:padding {:y [0 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -245,8 +243,8 @@ order of negative stacked parts, and the padding:
 :::
 
 
-Every `:stat`: summaries of the mapped values (`:sum` - the default, `:mean`, `:median`) and counts of the rows,
-needing no values (`:count`, `:percent` of the panel's rows, `:pmf` - shares summing to 1):
+Each `:stat` in turn: on the left, summaries of the iris sepal lengths; on the right, counts of the cars per
+number of cylinders:
 
 
 ::: {.sourceClojure}
@@ -282,9 +280,9 @@ needing no values (`:count`, `:percent` of the panel's rows, `:pmf` - shares sum
 :::
 
 
-Groups side by side (`:dodge`, the default for several groups of a level) or stacked; with negative values a
-stack grows both ways from 0 - `:negative-order :reverse` puts the last group nearest 0 below it. Mirrored bars
-drop their 0 line with `:zero-line false`, and `:padding` widens the value axis (here 30% past the longest bar):
+The first image draws a balance side by side, then stacked: with negative values a stack grows both ways from 0,
+and `:negative-order :reverse` puts the last group nearest 0. The second image draws mirrored bars without their 0
+line (left) and leaves 30% past the longest bar with `:padding` (right):
 
 
 ::: {.sourceClojure}
@@ -354,10 +352,9 @@ drop their 0 line with `:zero-line false`, and `:padding` widens the value axis 
 :::
 
 
-A numeric `:color` doesn't group the bars: each bar is filled by its own colour value - `:color-stat` over its
-rows' colour values (default the bar's `:stat`, `:mean` for counts) - with a colour bar. Mapped to the values with
-`:sum` it colours each bar by its length; stacked segments (groups from `:group` or a categorical aesthetic) take
-their own colours; a count can be coloured by a summary of another column:
+A numeric `:color` doesn't group the bars: each bar takes its own colour value, shown on a colour bar. On the left
+`:color-stat :sum` colours each bar by its length. In the middle each stacked segment takes the mean of its own
+rows. On the right the bars count rows and take their colour from a summary of another column:
 
 
 ::: {.sourceClojure}
@@ -386,7 +383,7 @@ their own colours; a count can be coloured by a summary of another column:
 
 
 An explicit colour `:domain` never drops rows: every bar keeps its length, and a bar whose colour value lies
-outside the domain is drawn in the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
+outside the domain takes the NA colour (Q4's mean, 45.7, is above 40). A `:value-label` function reads the
 bar's colour value as `:color-value`:
 
 
@@ -410,15 +407,12 @@ bar's colour value as `:color-value`:
 
 ### Labels
 
-Each bar's length written past its end or in its middle, formatted or as the text a function returns:
+These options turn on a label at each bar, set its text and place it:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:label-stack</td><td>one of :horizontal :vertical</td><td>along the bars: :horizontal for horizontal bars, :vertical for vertical ones</td><td>how the value and n texts of one label are joined: :horizontal (side by side) or :vertical (one above the other)</td></tr><tr><td>:value-label</td><td>true or false or a function or nil</td><td>false</td><td>write each bar's length (true) or the text a function of {:value :n :share :level :group} returns</td></tr><tr><td>:label-position</td><td>one of :end :center :base :outer</td><td>:center for :stack / :normalize, else :end</td><td>where labels sit: :end (past the bar's end), :center (in the bar), :base (in the bar at its base) or :outer (polar only: past the outer radius)</td></tr><tr><td>:label-leader</td><td>true or false or nil</td><td>false</td><td>draw a line from the bar's outer edge to its :outer label</td></tr><tr><td>:value-format</td><td>a number format string or a function</td><td>whole numbers as integers, else the fewest digits telling the labels apart</td><td>text of the value labels: a format string or a function of the number</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:label-stack</code><span class="option-default">Default: Along the bars: side by side for horizontal bars, one above the other for vertical ones.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :n-label true, :label-stack :horizontal})</code></div><div class="option-text">How the value text and the n text of one label sit together when both <code>:value-label</code> and <code>:n-label</code> are on.<ul><li><code>:horizontal</code> – Side by side.</li><li><code>:vertical</code> – One above the other.</li></ul></div></dd></div><div class="option-card"><dt><code>:value-label</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true})</code></div><div class="option-text">Writes a label at each bar: its length, or the text a function returns.<ul><li><code>false</code> – No labels.</li><li><code>true</code> – The bar's length, signed as its value.</li><li><a href="reference.types.html#function">function</a> – A function of <code>{:value :n :share :level :group}</code> that returns the text, e.g. a share in percent; <code>nil</code> writes none.</li></ul></div></dd></div><div class="option-card"><dt><code>:label-position</code><span class="option-default">Default: <code>:center</code> for <code>:stack</code> and <code>:normalize</code>, else <code>:end</code>.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :label-position :center})</code></div><div class="option-text">Where the labels sit. The chart leaves out a label inside a bar that doesn't fit there.<ul><li><code>:end</code> – Past the bar's end.</li><li><code>:center</code> – In the middle of the bar.</li><li><code>:base</code> – Inside the bar at the end nearer 0.</li><li><code>:outer</code> – Past the outer radius, in a polar plot only, e.g. pie labels.</li></ul></div></dd></div><div class="option-card"><dt><code>:label-leader</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :label-position :outer, :label-leader true})</code></div><div class="option-text">In a polar plot, draws a line from each bar's outer edge to its <code>:outer</code> label, which then sits further out.<ul><li><code>false</code> – Draws no lines.</li><li><code>true</code> – Draws the lines.</li></ul></div></dd></div><div class="option-card"><dt><code>:value-format</code><span class="option-default">Default: Whole numbers as integers, else the fewest digits that tell the labels apart.</span></dt><dd><div class="option-example"><code>(chart/bar {:value-label true, :value-format "%.1f"})</code></div><div class="option-text">The text of the value labels: a format string or a function of the number.<ul><li><a href="reference.types.html#number-format">number format</a></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -449,9 +443,8 @@ Each bar's length written past its end or in its middle, formatted or as the tex
 :::
 
 
-Where labels sit: past the bar's end (`:end`, the default unstacked) or inside it (`:center`, the default
-stacked; `:base` - at its base, shown further down); with the value and the row count (`:n-label`) the two
-texts join side by side or one above the other (`:label-stack`):
+The first two panels place labels past the bar's end and in its middle; the last two join a value and a row count
+(`:n-label`) side by side and one above the other:
 
 
 ::: {.sourceClojure}
@@ -485,10 +478,9 @@ texts join side by side or one above the other (`:label-stack`):
 :::
 
 
-`:base` writes the label inside the bar at its base (the end nearer 0), reading from the axis - each segment's
-own base when stacked. With 0 outside the value domain (e.g. `:scales {:x {:domain [4 nil]}}`) the label sits at
-the visible end nearest 0; in a polar plot with the values on the radius the bases meet at the centre, where
-labels rarely fit their wedge and are skipped:
+A `:base` label starts at the end of the bar nearer 0, each stacked segment's at its own base. With 0 outside the value domain (e.g.
+`:scales {:x {:domain [4 nil]}}`) the label sits at the visible end nearest 0. In a polar plot with the values on
+the radius the bases meet at the centre, where labels rarely fit their wedge, so the chart leaves them out:
 
 
 ::: {.sourceClojure}
@@ -512,8 +504,8 @@ labels rarely fit their wedge and are skipped:
 :::
 
 
-In a polar plot `:outer` puts the labels past the outer radius, with a leader line from each bar
-(`:label-leader`):
+In a polar plot `:outer` places the labels past the outer radius; on the right `:label-leader` adds a line from
+each bar:
 
 
 ::: {.sourceClojure}
@@ -540,24 +532,22 @@ In a polar plot `:outer` puts the labels past the outer radius, with a leader li
 
 
 
+## Bullet charts
+
+`chart/bullet` draws a measure bar over shaded qualitative ranges, with marker lines across them. Use it to show a
+measure against its targets. Each row holds a level's ranges, measures and markers (here percents of a plan, so
+the levels share one axis).
+
+
 ```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#fill-patterns">Fill patterns</a> – <code>:pattern</code> <code>:pattern-color</code></li><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:n-label</code> <code>:n-format</code> <code>:level-axis</code></li><li><a href="reference.shared_options.html#mirrored-strips">Mirrored strips</a> – <code>:mirror</code></li><li><a href="reference.shared_options.html#rounded-corners">Rounded corners</a> – <code>:corner-radius</code> <code>:corner-radius-end</code></li></ul></div>
+<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code></li></ul></div>
 ```
 
 
 
-## bullet
-
-A measure bar over shaded qualitative ranges, with marker lines (targets) - a row per level holding vectors of
-ranges, measures and markers (here percents of a plan, so the levels share one axis).
-
-::: {.clay-table}
-
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:ranges</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>qualitative ranges of a level: a number or a vector of them (one row per level and group)</td></tr><tr><td>:measures</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>measures of a level: a number or a vector of them, the first the current value</td></tr><tr><td>:markers</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>marker values of a level: a number or a vector of them</td></tr><tr><td>:y</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels on the categorical axis (absent - one bullet)</td></tr><tr><td>:x</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>levels of vertical bullets (values aren't read from it)</td></tr><tr><td>:group</td><td>a keyword, a function or a categorical marker of one or nil</td><td></td><td>groups without a visual aesthetic (dodged as other groups)</td></tr></tbody></table>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:ranges</code> – The qualitative ranges of a level: a number or a vector of them, one row per level and group.</li><li><code>:measures</code> – The measures of a level: a number or a vector of them, the first the current value.</li><li><code>:markers</code> – The markers of a level: a number or a vector of them, e.g. targets.</li><li><code>:y</code> – The levels of horizontal bullets; with neither <code>:x</code> nor <code>:y</code> the chart draws one bullet.</li><li><code>:x</code> – The levels of vertical bullets; the chart reads no values from it.</li><li><code>:group</code> – Splits the rows into groups that look the same, dodged as other groups.</li></ul></div>
 ```
-
-:::
 
 
 
@@ -594,16 +584,14 @@ ranges, measures and markers (here percents of a plan, so the levels share one a
 :::
 
 
-Its options: the shades of ranges and measures (from the first to the last), the measure bar's width, the
-markers' colour, width and length, and the padding (left: 20% past the largest value):
+These options set the colours of the ranges and measures and the sizes of the measure bars and markers. On the
+left the bars are thin, the markers hidden and `:padding` leaves 20% past the largest value; on the right every
+colour and size is set:
 
-::: {.clay-table}
 
 ```{=html}
-<table class="table table-hover table-responsive clay-table"><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td>:range-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[204 204 204] [238 238 238]]</td><td>[first last] colours shading the ranges from the smallest to the largest</td></tr><tr><td>:measure-colors</td><td>[a clojure2d color or :none, a clojure2d color or :none]</td><td>[[0 114 178] [176 196 222]]</td><td>[first last] colours shading the measures from the first (the current value) to the last</td></tr><tr><td>:measure-fraction</td><td>a number in [0 1]</td><td>0.35</td><td>measure bar width, a fraction of the item slot</td></tr><tr><td>:marker-color</td><td>a clojure2d color or :none</td><td>:black</td><td>marker line colour</td></tr><tr><td>:marker-width</td><td>a non-negative number</td><td>2</td><td>marker line width in pixels (0 - no markers)</td></tr><tr><td>:marker-length</td><td>a number in [0 1]</td><td>0.7</td><td>marker line length, a fraction of the item slot</td></tr><tr><td>:padding</td><td>map of one of :x :y to [lo hi], non-negative numbers</td><td>values 0.05 on a side holding values, 0 on the side of 0</td><td>padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)</td></tr></tbody></table>
+<dl class="options"><div class="option-card"><dt><code>:range-colors</code><span class="option-default">Default: <code>[[204 204 204] [238 238 238]]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:range-colors [:lightblue :white]})</code></div><div class="option-text">Two colours shading the ranges: the first for the smallest, the last for the largest, blends between them. A single range takes the first.<ul><li><span>pair of solid colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:measure-colors</code><span class="option-default">Default: <code>[[0 114 178] [176 196 222]]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:measure-colors [:orange :gold]})</code></div><div class="option-text">Two colours for the measure bars: the first for the first measure (the current value), the last for the last, blends between them. A single measure takes the first.<ul><li><span>pair of solid colours</span></li></ul></div></dd></div><div class="option-card"><dt><code>:measure-fraction</code><span class="option-default">Default: <code>0.35</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:measure-fraction 0.7})</code></div><div class="option-text">The width of the measure bars, as a fraction of the bullet's slot.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-color</code><span class="option-default">Default: <code>:black</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-color :red})</code></div><div class="option-text">The colour of the marker lines.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-width</code><span class="option-default">Default: <code>2</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-width 5})</code></div><div class="option-text">The width of the marker lines in pixels; <code>0</code> draws no markers.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:marker-length</code><span class="option-default">Default: <code>0.7</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/bullet {:marker-length 0.3})</code></div><div class="option-text">The length of the marker lines, as a fraction of the bullet's slot.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:padding</code><span class="option-default">Default: <code>0.05</code> on a side holding values, none on the side of 0.</span></dt><dd><div class="option-example"><code>(chart/bullet {:padding {:x [0 0.3]}})</code></div><div class="option-text">Room around the data on x and y, as fractions of the data span.<ul><li><span>map of <code>:x</code> or <code>:y</code> to padding</span></li></ul></div></dd></div></dl>
 ```
-
-:::
 
 
 
@@ -631,12 +619,6 @@ markers' colour, width and length, and the padding (left: 20% past the largest v
 ::: {.clay-image}
 ![](reference.charts_bars_files/image13.png)
 :::
-
-
-
-```{=html}
-<div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#strip-options">Strip options</a> – <code>:place</code> <code>:width</code> <code>:thickness</code> <code>:position</code> <code>:dodge-gap</code> <code>:bottom-share</code> <code>:level-axis</code></li></ul></div>
-```
 
 
 

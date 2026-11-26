@@ -316,3 +316,23 @@
     (let [rs (pw/matrix-rows [{:a 1 :b 2 :c 1} {:a 2 :b 2 :c 3} {:a 3 :b 2 :c 2}] {:variables [:a :b :c] :method :pearson})]
       (is (some (comp nil? :value) rs))
       (is (some? (plot/render {:data rs :mapping {:x (comp name :x) :y (comp name :y) :color :value} :charts [(chart/tile)]} size))))))
+
+(deftest statistic-meanings-test
+  (testing "a meaning is the registry's description as a sentence"
+    (is (= {:mae "Mean absolute error." :cliffs-delta "P(x > y) - P(x < y), non-parametric."}
+           (pw/statistic-meanings [:mae :cliffs-delta]))))
+  (testing "boundary: no keys; an unknown key throws {:key :statistic}"
+    (is (= {} (pw/statistic-meanings [])))
+    (is (= :statistic (:key (error-data #(pw/statistic-meanings [:nope])))))))
+
+(deftest statistic-cell-options-test
+  (let [rows (map (fn [i] {:x i :y (m/* 2.0 i)}) (range 10))
+        draw (fn [c] (plot/render-image {:data rows :mapping {:x :x :y :y} :charts [c]} size))]
+    (testing "a formula label draws (string with dollars, plot/math)"
+      (is (some? (draw (chart/pairwise {:label "$\\rho$"}))))
+      (is (some? (draw (chart/pairwise {:label (plot/math "\\rho")})))))
+    (testing "boundary: :none isn't a colour of a statistic cell or a bullet (a schema error, not a draw error)"
+      (is (:errors (error-data #(plot/build {:data rows :mapping {:x :x :y :y} :charts [(chart/pairwise {:color :none})]}))))
+      (is (:errors (error-data #(plot/build {:data rows :mapping {:x :x :y :y} :charts [(chart/correlation {:color :none})]}))))
+      (is (:errors (error-data #(plot/build {:data [{:k "a" :r [1 2] :m [1] :t [2]}] :mapping {:y :k :ranges :r :measures :m :markers :t}
+                                           :charts [(chart/bullet {:marker-color :none})]})))))))

@@ -38,7 +38,7 @@
 
 (nu/data-table (levels/bin mtcars :hp {:as :hp-bin :bins 5 :digits 2}))
 
-;; Bins are levels: counted by a [bar](reference.charts_bars.html#bar) chart (`:stat :count`), in interval
+;; Bins are levels: counted by a [bar](reference.charts_bars.html#bar-charts) chart (`:stat :count`), in interval
 ;; order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin
 ;; (right):
 

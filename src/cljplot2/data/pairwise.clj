@@ -3,8 +3,9 @@
 
   A paired statistic takes the rows where both of its values are finite numbers (pairwise-complete rows); an independent-sample statistic (two groups compared, e.g. an effect size) takes each variable's own finite values. Fewer than 2 values in a sample, a non-finite result or a statistic that throws give `##NaN`. Statistics are computed by fastmath; [[statistics]] lists the built-in ones with their labels, families, how they behave when the samples swap (`:symmetry`) and whether zero is their neutral value (`:signed`).
 
-  Functions: [[statistics]] - the built-in statistics; [[pair-samples]], [[statistic-samples]] - the samples of two accessors; [[statistic-label]], [[statistic-symmetry]], [[signed-statistic?]], [[statistic-value]] - one statistic; [[cell-values]] - the values of chosen cells; [[matrix-rows]] - the rows of a statistic matrix (a standalone matrix is `chart/tile` over them; the `pairwise` chart draws one pair per panel)."
-  (:require [fastmath.core :as m]
+  Functions: [[statistics]] - the built-in statistics, [[statistic-meanings]] - what they measure, as sentences; [[pair-samples]], [[statistic-samples]] - the samples of two accessors; [[statistic-label]], [[statistic-symmetry]], [[signed-statistic?]], [[statistic-value]] - one statistic; [[cell-values]] - the values of chosen cells; [[matrix-rows]] - the rows of a statistic matrix (a standalone matrix is `chart/tile` over them; the `pairwise` chart draws one pair per panel)."
+  (:require [clojure.string :as str]
+            [fastmath.core :as m]
             [fastmath.distance :as dist]
             [fastmath.stats :as stats]
             [cljplot2.data.rows :as data]
@@ -35,7 +36,7 @@
    :pearson {:fn stats/pearson-correlation :label "Pearson" :family :association :symmetry :symmetric :samples :paired :signed true :description "Pearson correlation"}
    :spearman {:fn stats/spearman-correlation :label "Spearman" :family :association :symmetry :symmetric :samples :paired :signed true :description "Spearman rank correlation"}
    :kendall {:fn stats/kendall-correlation :label "Kendall" :family :association :symmetry :symmetric :samples :paired :signed true :description "Kendall rank correlation (tau)"}
-   :cohens-d {:fn stats/cohens-d :label "Cohen's d" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "standardized mean difference, pooled standard deviation"}
+   :cohens-d {:fn stats/cohens-d :label "Cohen's d" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "standardised mean difference over the pooled standard deviation"}
    :hedges-g {:fn stats/hedges-g-corrected :label "Hedges' g" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "Cohen's d corrected for small-sample bias"}
    :glass-delta {:fn stats/glass-delta :label "Glass's Δ" :family :effect-size :symmetry :asymmetric :samples :independent :signed true :description "mean difference over the standard deviation of ys"}
    :cliffs-delta {:fn stats/cliffs-delta :label "Cliff's δ" :family :effect-size :symmetry :antisymmetric :samples :independent :signed true :description "P(x > y) - P(x < y), non-parametric"}
@@ -46,6 +47,22 @@
    :chebyshev {:fn dist/chebyshev :label "Chebyshev" :family :distance :symmetry :symmetric :samples :paired :description "Chebyshev distance"}
    :canberra {:fn dist/canberra :label "Canberra" :family :distance :symmetry :symmetric :samples :paired :description "Canberra distance"}
    :cosine {:fn dist/cosine :label "Cosine" :family :distance :symmetry :symmetric :samples :paired :signed true :description "cosine similarity"}})
+
+(defn statistic-meanings
+  "Gives what statistics measure, as sentences for option cards: each key's `:description` in [[statistics]], capitalised, with a period.
+
+  Parameters:
+
+  - `ks` (sequence of keywords): keys of [[statistics]].
+
+  Returns a map key -> sentence, e.g. `{:mae \"Mean absolute error.\"}`. Throws `ex-info {:key :statistic}` for a key that isn't in [[statistics]] or has no description."
+  [ks]
+  (into {} (map (fn [k]
+                  (let [description (get-in statistics [k :description])]
+                    (when-not (seq description)
+                      (schema/fail! (str "Not a built-in statistic with a description: " k) {:key :statistic :value k}))
+                    [k (str (str/upper-case (subs description 0 1)) (subs description 1) ".")])))
+        ks))
 
 (def method-schema
   "Schema of a statistic: a key of [[statistics]] or a function of two samples `(f xs ys)` giving a number."
@@ -97,7 +114,7 @@
   Parameters:
 
   - `method`: a key of [[statistics]] or a function.
-  - `label` (string or `nil`): an explicit label, which wins.
+  - `label` (a text or `nil`): an explicit label, which wins - a string, or a formula or runs value.
 
   Returns `label`, else the statistic's `:label`; a function without a label gives `value`."
   [method label]

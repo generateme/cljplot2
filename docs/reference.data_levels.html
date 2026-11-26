@@ -2306,7 +2306,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<p>Bins are levels: counted by a <a href="reference.charts_bars.html#bar">bar</a> chart (<code>:stat :count</code>), in interval order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin (right):</p>
+<p>Bins are levels: counted by a <a href="reference.charts_bars.html#bar-charts">bar</a> chart (<code>:stat :count</code>), in interval order. Explicit breaks (left), quantile bins of equal counts (middle), and the series name printed in every bin (right):</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> (levels/bin mtcars <span class="at">:hp</span> {<span class="at">:as</span> <span class="at">:bin</span> <span class="at">:bins</span> [<span class="dv">50</span> <span class="dv">100</span> <span class="dv">150</span> <span class="dv">200</span> <span class="dv">350</span>]})</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:bin</span>}</span>

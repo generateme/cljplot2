@@ -45,7 +45,7 @@
                     schema/fraction)
    (schema/optional :line-width {:description "The width in pixels of the wicks, or of the bars with `:style :ohlc`." :cljplot2/example 2} schema/non-neg)
    (schema/optional :stroke-color {:description "The colour of each body's outline." :cljplot2/value-meanings {:none "No outline."} :cljplot2/example :black} schema/color)
-   (schema/optional :stroke-width {:description "The width of the body outline in pixels." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
+   (schema/optional :stroke-width {:description "The width of the body outline in pixels; `0` draws no outline." :cljplot2/example 2 :cljplot2/example-context {:stroke-color :black}} schema/non-neg)
    (schema/optional :up-pattern {:description "The fill pattern drawn over the bodies of up candles." :cljplot2/example :hatch} schema/pattern)
    (schema/optional :down-pattern {:description "The fill pattern drawn over the bodies of down candles." :cljplot2/example :dots} schema/pattern)
    (schema/optional :pattern-color {:description "The colour of the pattern's ink." :cljplot2/value-meanings {:darker "The body colour, darkened." :none "No pattern drawn."} :cljplot2/example :black :cljplot2/example-context {:up-pattern :hatch}} draw/stroke-color)])

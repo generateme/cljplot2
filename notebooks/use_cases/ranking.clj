@@ -258,7 +258,7 @@
 
 ;; ### Mirrored bars
 
-;; The [bar](reference.charts_bars.html#bar) `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
+;; The [bar](reference.charts_bars.html#bar-charts) `:mirror` turns the second level of a two-level variable the other way: back-to-back bars, with value tick labels
 ;; as magnitudes. Answers for and against eight proposals, stacked by how sure people were: the mirror on `:group`
 ;; (for / against), four colours - two blues, two reds - on `:color`.
 

@@ -49,12 +49,17 @@
 
 (def ^:private style-entries
   "Style entries of the correlation chart (theme `[:chart :correlation]`)."
-  [(schema/optional :color {:description "one fixed glyph colour, the :number text's too"
-                             :cljplot2/default-doc (str "grouped shape glyphs: the theme's; ungrouped: r on a diverging scale; :number: the "
-                                                        ":correlation text role's colour, group lines mapped or black")}
-                    schema/color)
-   (schema/optional :stroke-color {:description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-   (schema/optional :stroke-width {:description "outline width in pixels"} schema/non-neg)])
+  [(schema/optional :color {:description "One fixed colour for the glyph or the `:number` text, in place of the colour scale."
+                             :cljplot2/default-doc (str "The theme's colour only for a glyph when the plot maps an aesthetic; otherwise a glyph shows r on a diverging colour "
+                                                        "scale. `:number` takes the `:correlation` text role's colour, a group line its group's colour (the text's colour for `:group`).")
+                             :cljplot2/example :orange :cljplot2/example-context {:glyph :circle}}
+                    schema/solid-color)
+   (schema/optional :stroke-color {:description "The outline colour of the `:square`, `:circle`, `:ellipse` and `:pie` glyphs."
+                                    :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No outline."}
+                                    :cljplot2/example-context {:glyph :circle}}
+                    draw/stroke-color)
+   (schema/optional :stroke-width {:description "The outline width of the `:square`, `:circle`, `:ellipse` and `:pie` glyphs in pixels; `0` draws no outline." :cljplot2/example 4 :cljplot2/example-context {:glyph :circle}}
+                    schema/non-neg)])
 
 (def ^{:private true :const true :tag 'double} default-glyph-size
   "Glyph side as a fraction of the panel's shorter side, unless `:glyph-size` says otherwise."
@@ -67,21 +72,27 @@
                 (into style-entries)
                 (into data/common-options)
                 (into theme/theme-style-entries)
-                (conj (schema/optional :method {:description "correlation coefficient: :pearson, :spearman or :kendall"
-                                                :default :pearson}
+                (conj (schema/optional :method {:description "Which correlation coefficient the chart computes as r."
+                                                :default :pearson
+                                                :cljplot2/value-meanings (pairwise/statistic-meanings [:pearson :spearman :kendall])}
                                         [:enum :pearson :spearman :kendall])
-                      (schema/optional :glyph {:description (str "how r is drawn: :number (text, a line per group), :shade (the panel in r's colour), "
-                                                                 ":square / :circle (area ~ |r|), :ellipse (normal contour) or :pie (a disk filled |r|)")
-                                               :default :number}
+                      (schema/optional :glyph {:description "How the chart draws r."
+                                               :default :number
+                                               :cljplot2/value-meanings {:number "As text, the method and r, a line per group."
+                                                                         :shade "The whole panel in r's colour."
+                                                                         :square "A square with its area proportional to |r|."
+                                                                         :circle "A circle with its area proportional to |r|."
+                                                                         :ellipse "The normal contour of r: a circle at 0, narrower towards ±1, rising for a positive r."
+                                                                         :pie "A disk filled |r| of the way round, clockwise for a positive r."}}
                                        (into [:enum] glyphs))
-                      (schema/optional :glyph-size {:description "glyph side (:square, :circle, :ellipse, :pie) as a fraction of the panel's shorter side"
-                                                    :default default-glyph-size}
+                      (schema/optional :glyph-size {:description "The size of the `:square`, `:circle`, `:ellipse` and `:pie` glyphs, as a fraction of the panel's shorter side."
+                                                    :default default-glyph-size :cljplot2/example 0.5 :cljplot2/example-context {:glyph :circle}}
                                        schema/fraction)))
    :mapping [:maybe [:map
-                     [:x {:description "first variable (numbers)"} schema/accessor]
-                     [:y {:description "second variable (numbers)"} schema/accessor]
-                     (schema/nilable :color {:description "categorical groups, each a line of the :number glyph in its colour"} schema/accessor)
-                     (schema/nilable :group {:description "groups without a visual aesthetic, each a line of the :number glyph"} schema/accessor)]]})
+                     [:x {:description "The first variable's values."} schema/accessor]
+                     [:y {:description "The second variable's values."} schema/accessor]
+                     (schema/nilable :color {:description "Splits the rows into groups, each a line of the `:number` text in its own colour."} schema/accessor)
+                     (schema/nilable :group {:description "Splits the rows into groups that look the same, each a line of the `:number` text."} schema/accessor)]]})
 
 (defn computed-aesthetics
   "Gives the correlation chart's computed aesthetics.

@@ -116,12 +116,20 @@
 
 (def ^:private style-entries
   "Map entries of the bar style (theme `[:chart :bar]`, also options)."
-  (into [(schema/optional :color {:cljplot2/section :style :description "bar fill colour (a mapped :color wins)"} schema/solid-color)
-         (schema/optional :stroke-color {:cljplot2/section :style :description "outline colour: a colour, :none or :darker (the darkened fill)"} draw/stroke-color)
-         (schema/optional :stroke-width {:cljplot2/section :style :description "outline width in pixels"} schema/non-neg)
-         (schema/optional :alpha {:cljplot2/section :style :description "fill opacity of overlaid groups sharing a level"} schema/fraction)
-         (schema/optional :zero-line-color {:cljplot2/section :style :description "colour of the 0 line drawn over mirrored bars"} schema/color)
-         (schema/optional :zero-line-width {:cljplot2/section :style :description "width in pixels of the 0 line drawn over mirrored bars"} schema/non-neg)]
+  (into [(schema/optional :color {:cljplot2/section :style :description "The fill colour of the bars; a mapped `:color` wins." :cljplot2/example :orange} schema/solid-color)
+         (schema/optional :stroke-color {:cljplot2/section :style :description "The outline colour of the bars."
+                                         :cljplot2/value-meanings {:darker "The fill colour, darkened." :none "No outline."}}
+                          draw/stroke-color)
+         (schema/optional :stroke-width {:cljplot2/section :style :description "The outline width in pixels; `0` draws no outline." :cljplot2/example 3} schema/non-neg)
+         (schema/optional :alpha {:cljplot2/section :style :description "The opacity of the fill with `:position :overlay` when some level holds two or more groups; then every bar is see-through, its legend key too."
+                                  :cljplot2/example 0.2 :cljplot2/example-context {:position :overlay}}
+                          schema/fraction)
+         (schema/optional :zero-line-color {:cljplot2/section :style :description "The colour of the 0 line drawn over mirrored bars."
+                                            :cljplot2/value-meanings {:none "No line."} :cljplot2/example-context {:mirror :group}}
+                          schema/color)
+         (schema/optional :zero-line-width {:cljplot2/section :style :description "The width of the 0 line over mirrored bars, in pixels."
+                                            :cljplot2/example 4 :cljplot2/example-context {:mirror :group}}
+                          schema/non-neg)]
         draw/pattern-style-entries))
 
 (def schemas
@@ -133,53 +141,81 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into (remove #(= :position (first %)) strip/options))
-                (conj (schema/optional :stat {:cljplot2/section :bars :description "bar length from the item's rows: :sum, :mean, :median or a function of the values, or a count measure :count, :percent, :pmf (no values needed)"
-                                              :default :sum}
+                (conj (schema/optional :stat {:cljplot2/section :bars :description "How each bar's length comes from its rows."
+                                              :default :sum
+                                              :cljplot2/value-meanings {:sum "The sum of the values; one row per bar gives its value." :mean "The mean of the values."
+                                                                        :median "The median of the values." :count "The number of rows; the bars need no values."
+                                                                        :percent "The rows' share of their group's rows in the panel, in percent."
+                                                                        :pmf "The rows' share of their group's rows in the panel, as a fraction."}
+                                              :cljplot2/form-meanings {::schema/function "A function of the values that returns a finite number."}}
                                        [:or (into [:enum] (sort (into count-stats (keys value-stats)))) schema/function])
-                      (schema/nilable :color-stat {:cljplot2/section :bars :description "a bar's colour value from its rows' values of a linear or binned :color: :sum, :mean, :median or a function of the values"
-                                                    :cljplot2/default-doc "the :stat of value stats, :mean for count stats"}
+                      (schema/nilable :color-stat {:cljplot2/section :bars :description "How a bar's colour value comes from its rows when the mapped `:color` holds numbers."
+                                                    :cljplot2/default-doc "The bar's `:stat`; `:mean` for a count."
+                                                    :cljplot2/value-meanings {:sum "The sum of the colour values." :mean "The mean of the colour values."
+                                                                              :median "The median of the colour values."}
+                                                    :cljplot2/form-meanings {::schema/function "A function of the colour values that returns a number."}
+                                                    :cljplot2/example-context {:mapping {:color :v}}}
                                        [:or (into [:enum] (sort (keys value-stats))) schema/function])
-                      (schema/optional :position {:cljplot2/section :bars :description "how groups of one level share its band: :dodge (side by side), :overlay (on top of each other), :stack or :normalize (stacked, each level summing to 1)"
-                                                  :cljplot2/default-doc ":dodge when a level holds two or more groups, else :overlay"}
+                      (schema/optional :position {:cljplot2/section :bars :description "How the groups of one level share its band."
+                                                  :cljplot2/default-doc "`:dodge` when a level holds two or more groups, else `:overlay`."
+                                                  :cljplot2/value-meanings {:dodge "Side by side." :overlay "On top of each other, see-through by `:alpha` when a level holds two or more groups."
+                                                                            :stack "End to end, in group order; negative bars stack the other way from 0."
+                                                                            :normalize "End to end, each level summing to 1."}
+                                                  :cljplot2/example :stack}
                                        (into [:enum] (sort positions)))
                       strip/mirror-option
-                      (schema/optional :label-stack {:cljplot2/section :labels :description "how the value and n texts of one label are joined: :horizontal (side by side) or :vertical (one above the other)"
-                                                     :cljplot2/default-doc "along the bars: :horizontal for horizontal bars, :vertical for vertical ones"}
+                      (schema/optional :label-stack {:cljplot2/section :labels :description "How the value text and the n text of one label sit together when both `:value-label` and `:n-label` are on."
+                                                     :cljplot2/default-doc "Along the bars: side by side for horizontal bars, one above the other for vertical ones."
+                                                     :cljplot2/value-meanings {:horizontal "Side by side." :vertical "One above the other."}
+                                                     :cljplot2/example-context {:value-label true :n-label true}}
                                        [:enum :horizontal :vertical])
-                      (schema/nilable :zero-line {:cljplot2/section :bars :description "draw the 0 line on top of mirrored bars (with :mirror only)"
-                                                  :default true}
+                      (schema/nilable :zero-line {:cljplot2/section :bars :description "Draws the 0 line over mirrored bars."
+                                                  :default true :cljplot2/value-meanings {true "Draws the line." false "Draws no line."}
+                                                  :cljplot2/example-context {:mirror :group}}
                                       schema/bool)
-                      (schema/nilable :varwidth {:cljplot2/section :bars :description "bar widths relative to the widest: true - by the square root of the count, a keyword or function of a row - by the item's sum of it"
-                                                 :default false}
+                      (schema/nilable :varwidth {:cljplot2/section :bars :description "How wide each bar is relative to the widest one."
+                                                 :default false
+                                                 :cljplot2/value-meanings {true "By the square root of each bar's count of values." false "Every bar equally wide."}
+                                                 :cljplot2/form-meanings {::schema/accessor "By each bar's sum of this row value, e.g. `:weight`."}}
                                       [:or schema/bool schema/accessor])
-                      (schema/nilable :value-label {:cljplot2/section :labels :description "write each bar's length (true) or the text a function of {:value :n :share :level :group} returns"
-                                                    :default false}
+                      (schema/nilable :value-label {:cljplot2/section :labels :description "Writes a label at each bar: its length, or the text a function returns."
+                                                    :default false
+                                                    :cljplot2/value-meanings {true "The bar's length, signed as its value." false "No labels."}
+                                                    :cljplot2/form-meanings {::schema/function "A function of `{:value :n :share :level :group}` that returns the text, e.g. a share in percent; `nil` writes none."}}
                                       [:or schema/bool schema/function])
-                      (schema/optional :label-position {:cljplot2/section :labels :description "where labels sit: :end (past the bar's end), :center (in the bar), :base (in the bar at its base) or :outer (polar only: past the outer radius)"
-                                                        :cljplot2/default-doc ":center for :stack / :normalize, else :end"}
+                      (schema/optional :label-position {:cljplot2/section :labels :description "Where the labels sit. The chart leaves out a label inside a bar that doesn't fit there."
+                                                        :cljplot2/default-doc "`:center` for `:stack` and `:normalize`, else `:end`."
+                                                        :cljplot2/value-meanings {:end "Past the bar's end." :center "In the middle of the bar." :base "Inside the bar at the end nearer 0."
+                                                                                  :outer "Past the outer radius, in a polar plot only, e.g. pie labels."}
+                                                        :cljplot2/example :center :cljplot2/example-context {:value-label true}}
                                        [:enum :end :center :base :outer])
-                      (schema/optional :negative-order {:cljplot2/section :bars :description "order of the groups below 0 with :stack: :forward (group order) or :reverse (the last group nearest 0)"
-                                                        :default :forward}
+                      (schema/optional :negative-order {:cljplot2/section :bars :description "The order of the stacked groups below 0."
+                                                        :default :forward
+                                                        :cljplot2/value-meanings {:forward "The group order." :reverse "The last group nearest 0, so the groups of an ordered scale diverge from the middle, as in Likert charts."}
+                                                        :cljplot2/example-context {:position :stack}}
                                        [:enum :forward :reverse])
-                      (schema/nilable :label-leader {:cljplot2/section :labels :description "draw a line from the bar's outer edge to its :outer label"
-                                                     :default false}
+                      (schema/nilable :label-leader {:cljplot2/section :labels :description "In a polar plot, draws a line from each bar's outer edge to its `:outer` label, which then sits further out."
+                                                     :default false :cljplot2/value-meanings {true "Draws the lines." false "Draws no lines."}
+                                                     :cljplot2/example-context {:value-label true :label-position :outer}}
                                       schema/bool)
-                      (schema/optional :value-format {:cljplot2/section :labels :description "text of the value labels: a format string or a function of the number"
-                                                      :cljplot2/default-doc "whole numbers as integers, else the fewest digits telling the labels apart"}
+                      (schema/optional :value-format {:cljplot2/section :labels :description "The text of the value labels: a format string or a function of the number."
+                                                      :cljplot2/default-doc "Whole numbers as integers, else the fewest digits that tell the labels apart."
+                                                      :cljplot2/example "%.1f" :cljplot2/example-context {:value-label true}}
                                        schema/number-format)
-                      (schema/optional :padding {:cljplot2/section :bars :description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)"
-                                                 :cljplot2/default-doc "values 0.05, 0 at the baseline side the bars grow from, 0 for :normalize"}
+                      (schema/optional :padding {:cljplot2/section :bars :description "Room around the data on x and y, as fractions of the data span."
+                                                 :cljplot2/default-doc "`0.05` on the values' axis, none at the side the bars grow from, none for `:normalize`."
+                                                 :cljplot2/example {:y [0 0.3]}}
                                        data/position-padding)
                       draw/corner-radius-option
                       draw/corner-radius-end-option))
    :mapping [:map
-             (schema/nilable :x {:description "x position: the levels (categorical) of vertical bars or the values of horizontal ones"}
+             (schema/nilable :x {:description "The levels of vertical bars, or the values of horizontal ones."}
                              schema/accessor)
-             (schema/nilable :y {:description "y position: the values of vertical bars or the levels (categorical) of horizontal ones"}
+             (schema/nilable :y {:description "The values of vertical bars, or the levels of horizontal ones."}
                              schema/accessor)
-             (schema/nilable :color {:description "fill colour: categorical values group the bars (legend keys), numeric ones colour each bar by its value (a colour bar)"} schema/accessor)
-             (schema/nilable :pattern {:description "fill pattern per group (gives legend keys)"} schema/accessor)
-             (schema/nilable :group {:description "groups without a visual aesthetic (dodged, stacked or mirrored as other groups)"}
+             (schema/nilable :color {:description "Fills the bars: categorical values split the rows into groups, each with its own fill; numbers colour each bar by its value, with a colour bar."} schema/accessor)
+             (schema/nilable :pattern {:description "Splits the rows into groups, each with its own fill pattern."} schema/accessor)
+             (schema/nilable :group {:description "Splits the rows into groups that look the same, dodged, stacked or mirrored as other groups."}
                              schema/accessor)]})
 
 (defn- check-options!

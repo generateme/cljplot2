@@ -51,14 +51,16 @@
 
 (def ^:private style-entries
   "Map entries of the bullet style (theme `[:chart :bullet]`, also options)."
-  [(schema/optional :range-colors {:description "[first last] colours shading the ranges from the smallest to the largest"}
-                    [:tuple schema/color schema/color])
-   (schema/optional :measure-colors {:description "[first last] colours shading the measures from the first (the current value) to the last"}
-                    [:tuple schema/color schema/color])
-   (schema/optional :measure-fraction {:description "measure bar width, a fraction of the item slot"} schema/fraction)
-   (schema/optional :marker-color {:description "marker line colour"} schema/color)
-   (schema/optional :marker-width {:description "marker line width in pixels (0 - no markers)"} schema/non-neg)
-   (schema/optional :marker-length {:description "marker line length, a fraction of the item slot"} schema/fraction)])
+  [(schema/optional :range-colors {:description "Two colours shading the ranges: the first for the smallest, the last for the largest, blends between them. A single range takes the first."
+                                   :cljplot2/example [:lightblue :white]}
+                    [:tuple schema/solid-color schema/solid-color])
+   (schema/optional :measure-colors {:description "Two colours for the measure bars: the first for the first measure (the current value), the last for the last, blends between them. A single measure takes the first."
+                                     :cljplot2/example [:orange :gold]}
+                    [:tuple schema/solid-color schema/solid-color])
+   (schema/optional :measure-fraction {:description "The width of the measure bars, as a fraction of the bullet's slot." :cljplot2/example 0.7} schema/fraction)
+   (schema/optional :marker-color {:description "The colour of the marker lines." :cljplot2/example :red} schema/solid-color)
+   (schema/optional :marker-width {:description "The width of the marker lines in pixels; `0` draws no markers." :cljplot2/example 5} schema/non-neg)
+   (schema/optional :marker-length {:description "The length of the marker lines, as a fraction of the bullet's slot." :cljplot2/example 0.3} schema/fraction)])
 
 (def schemas
   "Schemas of the bullet chart: `:style` (theme `[:chart :bullet]`), `:options`, `:mapping` (merged)."
@@ -68,19 +70,20 @@
                 (into data/common-options)
                 (into theme/theme-style-entries)
                 (into (remove #(#{:n-label :n-format} (first %)) strip/options))
-                (conj (schema/optional :padding {:description "padding of the data span per position axis, {:x [lo hi] :y [lo hi]} fractions of the span (strip frame: :x the values)"
-                                                 :cljplot2/default-doc "values 0.05 on a side holding values, 0 on the side of 0"}
+                (conj (schema/optional :padding {:description "Room around the data on x and y, as fractions of the data span."
+                                                 :cljplot2/default-doc "`0.05` on a side holding values, none on the side of 0."
+                                                 :cljplot2/example {:x [0 0.3]}}
                                        data/position-padding)))
    :mapping (schema/with-rules [:map
-                                (schema/nilable :ranges {:description "qualitative ranges of a level: a number or a vector of them (one row per level and group)"}
+                                (schema/nilable :ranges {:description "The qualitative ranges of a level: a number or a vector of them, one row per level and group."}
                                                 schema/accessor)
-                                (schema/nilable :measures {:description "measures of a level: a number or a vector of them, the first the current value"}
+                                (schema/nilable :measures {:description "The measures of a level: a number or a vector of them, the first the current value."}
                                                 schema/accessor)
-                                (schema/nilable :markers {:description "marker values of a level: a number or a vector of them"}
+                                (schema/nilable :markers {:description "The markers of a level: a number or a vector of them, e.g. targets."}
                                                 schema/accessor)
-                                (schema/nilable :y {:description "levels on the categorical axis (absent - one bullet)"} schema/accessor)
-                                (schema/nilable :x {:description "levels of vertical bullets (values aren't read from it)"} schema/accessor)
-                                (schema/nilable :group {:description "groups without a visual aesthetic (dodged as other groups)"} schema/accessor)]
+                                (schema/nilable :y {:description "The levels of horizontal bullets; with neither `:x` nor `:y` the chart draws one bullet."} schema/accessor)
+                                (schema/nilable :x {:description "The levels of vertical bullets; the chart reads no values from it."} schema/accessor)
+                                (schema/nilable :group {:description "Splits the rows into groups that look the same, dodged as other groups."} schema/accessor)]
               [#(when-not (some (fn [k] (some? (get % k))) value-keys)
                   "should map :ranges, :measures or :markers")
                nil]
