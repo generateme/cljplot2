@@ -61,8 +61,9 @@
   skipped). At compute [[kept-value?]] decides whether a row stays: a value outside an explicit domain drops its row,
   counted in `:dropped`, unless `:out-of-domain` is `:as-na` or `:clamp`, so extents cover only what is drawn;
   [[scale-spec]] then reports in `:outside` which ends the kept data pass, for the legends. Without the option each
-  chart keeps its own behaviour: most drop the row, bar draws the NA colour, charts computing their colour skip the
-  mark uncounted.
+  chart behaves as under `:drop` (a mark of several rows - bar, polygon, a line's size - is judged by its one value,
+  see [[cljplot2.data.group/kept-marks]]), except bar, which draws the NA colour; charts computing their colour skip
+  the mark uncounted.
 
   Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]], [[titled-spec]]; schemas [[scale-spec-schema]], [[palette-schema]] (named types [[palette]], [[size-range]]); values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
 
@@ -492,9 +493,9 @@
                                    :cljplot2/default-doc "The data's levels, sorted, or `[min max]`." :cljplot2/example [0 10]}
                           [:sequential any?])
           (schema/nilable :out-of-domain {:cljplot2/section :levels :description "What a chart does with a value outside an explicit `:domain`."
-                                           :cljplot2/default-doc "Most charts drop the value's row and count it; bar draws the bar in the NA colour; charts computing their colour (bin2d, field, contour, surface, statistic cells) skip the mark."
+                                           :cljplot2/default-doc "As `:drop`, but bar draws the bar in the NA colour."
                                            :cljplot2/example :as-na :cljplot2/example-context {:domain [1 3]}
-                                           :cljplot2/value-meanings {:drop "Drops the value's row, counted in `:dropped`; a chart computing its colour skips the mark, a hierarchy coloured by name keeps the node in the NA colour."
+                                           :cljplot2/value-meanings {:drop "Drops the value's row, counted in `:dropped`; a mark judged by one value (a bar, a polygon, a line's linear size) is dropped whole, and a line coloured along its length or a trail breaks. A chart computing its colour skips the mark; a hierarchy coloured by name keeps the node NA."
                                                                      :as-na "Draws the value in the NA attribute (colour, shape, size, dash or pattern) and keeps its row; the legend adds an `outside` entry when such values exist."
                                                                      :clamp "Draws the value in the attribute of the nearer domain end and keeps its row; linear and binned scales only."}}
                            [:enum :drop :as-na :clamp])
@@ -642,14 +643,14 @@
 
   - `spec` (map): the scale spec - `:domain`, `:kind`, `:bins`.
 
-  Returns a non-empty `:domain` (`[nil nil]` - none; for a binned scale with a breaks vector the `nil` end of a partial one is the breaks'); else, for a binned scale with a breaks vector, its ends `[first last]`; else `nil`."
+  Returns, for a binned scale with a breaks vector, the breaks' ends `[first last]` - the domain [[scale-spec]] gives that scale, so a value is kept exactly when it falls in a bin (a given end of an explicit `:domain` must equal them, see [[option-problems]]); else a non-empty `:domain` (`[nil nil]` - none); else `nil`."
   [{:keys [kind bins] :as spec}]
   (let [domain (data/given-domain (:domain spec))
         breaks-ends (when (and (= :binned kind) (vector? bins) (m/>= (count bins) 2)) [(first bins) (peek bins)])]
     (cond
-      (and (seq domain) breaks-ends (m/== 2 (count domain))) (mapv #(if (some? %1) %1 %2) domain breaks-ends)
+      breaks-ends breaks-ends
       (seq domain) domain
-      :else breaks-ends)))
+      :else nil)))
 
 (defn in-domain?
   "Tests whether a data value of an aesthetic is inside the explicit domain of the plot's scale.
@@ -660,7 +661,7 @@
   - `spec` (map): the plot's scale spec (may be `{}`).
   - `v`: the data value.
 
-  Returns a truthy value when `v` is in the domain, else a falsy one: ordinal - one of the levels (numbers equal as doubles); linear / binned - a number within `[lo hi]` (binned: also the ends of a `:bins` breaks vector; a partial domain - its given end only). Always truthy without an explicit domain (a data domain holds all data; identity scales have none), for `nil` (NA is handled separately) and for a malformed domain (rejected later by [[scale-spec]]).
+  Returns a truthy value when `v` is in the domain, else a falsy one: ordinal - one of the levels (numbers equal as doubles); linear / binned - a number within `[lo hi]` (binned with a `:bins` breaks vector: their ends; a partial domain - its given end only). Always truthy without an explicit domain (a data domain holds all data; identity scales have none), for `nil` (NA is handled separately) and for a malformed domain (rejected later by [[scale-spec]]).
 
   See also [[kept-value?]]."
   [k spec v]

@@ -72,7 +72,7 @@
                     :mapping {:x :x :y :y :color :g} :charts [(chart/polygon)]})]
       (is (= 1 (get-in s [:dropped :group])))
       (is (= ["a"] (get-in s [:extents :panel :color :values])) (pr-str (get-in s [:extents :panel :color])))))
-  (testing "1.1 ordinal colour per group; a linear colour from the group's first row"
+  (testing "1.1 ordinal colour per group; a linear colour from the group's first drawn vertex"
     (let [rows (fn [g c dx] (map #(assoc % :g g :c c :x (+ dx (double (:x %)))) triangle))
           data (concat (rows "a" 1 0) (rows "b" 5 2))
           s (stats {:data (concat (rows "a" 1 0) [{:x 0.5 :y 0.5 :g "a" :c 99}] (rows "b" 5 2))
@@ -80,7 +80,7 @@
           img (image {:data data :mapping {:x :x :y :y :color :g} :scales {:color {:range {"a" red "b" blue}}}
                       :charts [(chart/polygon)] :legend false}
                      {:width 300 :height 100})]
-      (is (= [1 5] (mapv :color-value (get-in s [:data :panel :polygons]))) "the first row's value, not the later 99")
+      (is (= [1 5] (mapv :color-value (get-in s [:data :panel :polygons]))) "the first drawn vertex's value, not the later 99")
       (is (seq (painted img red)))
       (is (seq (painted img blue)))
       (is (contains? (:na (stats {:data (concat (rows "a" nil 0) (rows "b" 5 2)) :mapping {:x :x :y :y :group :g :color :c}

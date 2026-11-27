@@ -25,21 +25,26 @@
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color` colors the line) and `:group`.
   A `:color` with a linear or binned scale doesn't group: it colors each line along its length - every segment in
   the color of the mean of its two end values (the theme NA color when one is NA), round caps, the dash running on
-  along the line; rows outside the color scale's explicit domain are dropped (counted), NA rows follow the plot's
-  `:groups {:na}`. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
+  along the line. A point whose color value the scale doesn't keep (invalid, outside its explicit domain under
+  `:out-of-domain` `nil` / `:drop`, NA with `:groups {:na false}`) breaks the line as an invalid y does (counted in
+  `:dropped :color`; `:gaps :bridge` bridges it); under `:as-na` / `:clamp` its segments take the NA / end color. With an `:interpolator` the sampled curve takes the color value interpolated linearly between
   its data points, in steps of a few pixels (`:curve` can't color along the length - `ex-info {:key :curve}`); a bridge takes the color of
   its two end values.
-  A mapped `:size` is the line width: per group - its first row's value through a linear size scale (doesn't group;
-  NA in the style `:line-width`, rows outside the size scale's explicit domain dropped), or the group's level of an
-  ordinal size scale; the legend shows lines of those widths.
+  A mapped `:size` is the line width. With a linear size scale (it doesn't group) each line takes the value of its first
+  drawn point - in drawing order, with a valid y and, coloured along its length, a kept color; NA takes the style
+  `:line-width`. A line whose value the scale doesn't keep (invalid, outside the explicit domain under `:out-of-domain`
+  `nil` / `:drop`, NA with `:groups {:na false}`) is left out, its points counted in `:dropped :size` (see
+  [[cljplot2.data.group/kept-marks]]). With an ordinal size scale a line takes its group's level. The legend shows
+  lines of those widths.
   `:stroke-alpha-factor` (a fraction) multiplies the stroke colour's opacity of unstacked lines (many overlapping lines; the
   legend key stays opaque).
   Arrows (see [[cljplot2.graphics.arrow]]): `:arrow {:end :start :size :shape}`, `:start-gap` / `:end-gap` (pixels) -
   at the ends of every run of a plain stroked line (no fill, fill gradient, colour along the length or stacking -
   `ex-info {:key :arrow}`; no bridges between the runs).
   `:trail true` (Vega-Lite trail): a linear `:size` sets the width at every point - a filled shape, the width linear
-  between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-shape]]); rows without a size value
-  dropped (counted); without a linear size the group's width (`:line-width` or an ordinal size level). Size scale and
+  between points, round ends and joins (see [[cljplot2.graphics.polyline/trail-shape]]); a point whose size the scale
+  doesn't keep - NA, invalid, outside its explicit domain under `:out-of-domain` `nil` / `:drop` - breaks the trail
+  (counted in `:dropped :size`); without a linear size the group's width (`:line-width` or an ordinal size level). Size scale and
   legend unchanged, one colour per group; polar trails follow the circle with the plot's `:arcs`, else chords. A trail can't take `:fill`,
   `:fill-gradient`, a stacked `:position`, `:arrow` / `:start-gap` / `:end-gap`, `:dash`, `:interpolator`, `:curve`,
   `:gaps :bridge` or a colour along its length - `ex-info {:key :trail}`.
@@ -171,7 +176,7 @@
              [:x {:description "The x of each point."} schema/accessor]
              [:y {:description "The y of each point."} schema/accessor]
              (schema/nilable :color {:description "Colours the line: per group (ordinal), or along the line (linear or binned)."} schema/accessor)
-             (schema/nilable :size {:description "Sets the line width: per group, or per point with `:trail`."} schema/accessor)
+             (schema/nilable :size {:description "Sets the line width: per group (a linear size takes the value of the line's first drawn point), or per point with `:trail`."} schema/accessor)
              (schema/nilable :dash {:description "Splits the rows into groups, each line with its own dash style."} schema/accessor)
              (schema/nilable :pattern {:description "Splits the rows into groups, each area with its own fill pattern."} schema/accessor)
              (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own line."} schema/accessor)]})
@@ -305,7 +310,7 @@
   - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales`, `:coord` (and the grouping keys of [[cljplot2.data.group/split]]).
 
-  Returns `{:data :extents :padding :padding-explicit :axis-titles :na :dropped}`: per panel `{:lines [{:x [..] :y [..] :aesthetics}] :style st}` - `y` `nil` where the line breaks; a line coloured along its length also has `:colors` (every point's colour value), a trail with a linear size `:sizes` (every point's size value), a line sized by a linear size `:size-value`; stacked positions - the lines of [[stacked-lines]]; `st` the resolved style. Padding 5% each side, stacked y `[0 0.05]` without negative values; `:axis-titles` - `Proportion` for `:normalize`.
+  Returns `{:data :extents :padding :padding-explicit :axis-titles :na :dropped}`: per panel `{:lines [{:x [..] :y [..] :aesthetics}] :style st}` - `y` `nil` where the line breaks (an invalid y, or a point whose colour or trail size isn't kept; such a line without a drawn point is left out); a line coloured along its length also has `:colors` (every point's colour value), a trail with a linear size `:sizes` (every point's size value), a line sized by a linear size `:size-value` (the value of its first drawn point in drawing order; lines whose value isn't kept left out); stacked positions - the lines of [[stacked-lines]]; `st` the resolved style. Padding 5% each side, stacked y `[0 0.05]` without negative values; `:axis-titles` - `Proportion` for `:normalize`.
 
   Throws `ex-info` for options the lines can't take with the plot or the data (see [[check-polar!]], [[check-trail!]], [[check-stacking!]]; `{:key :fill-gradient}` on a line coloured along its length), `{:key :mapping}` when `:x` or `:y` has no valid value in non-empty data, and the errors of [[stacked-lines]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
@@ -313,7 +318,8 @@
   (let [st (theme/resolved-style theme chart)
         position (data/option options :position :overlay)
         trail? (data/option options :trail false)
-        continuous (group/continuous-color groups mapping env)
+        ;; no row is dropped for a linear / binned colour or size: a point not kept breaks the line, a line's size judges the line
+        continuous (group/continuous-color groups mapping (assoc env :row-filter :none))
         gradient? (some? continuous)
         _ (check-trail! options gradient?)
         _ (check-stacking! position gradient?)
@@ -321,43 +327,64 @@
             (schema/fail! "A line colored along its length can't take :fill-gradient." {:key :fill-gradient :value (:fill-gradient options)}))
         color-of (:color-of continuous)
         [colored-groups colored-mapping] (if continuous [(:groups continuous) (:mapping continuous)] [groups mapping])
-        sized (group/continuous :size colored-groups colored-mapping (cond-> env trail? (assoc :na-level false)))
+        sized (group/continuous :size colored-groups colored-mapping (assoc env :row-filter :none))
         size-of (:value-of sized)
         sizes? (and trail? (some? sized))
-        {:keys [panels dropped]} (if sized
-                                   (group/split (:groups sized) (:mapping sized) env)
-                                   (group/split colored-groups colored-mapping env))
+        {split-panels :panels dropped :dropped} (if sized
+                                                  (group/split (:groups sized) (:mapping sized) env)
+                                                  (group/split colored-groups colored-mapping env))
         x-of (data/row-accessor :x (:x colored-mapping))
         y-of (data/row-accessor :y (:y colored-mapping))
         x-order? (= :x (data/option options :order :x))
-        rows (mapcat (fn [gs] (mapcat :rows gs)) (vals panels))
+        rows (mapcat (fn [gs] (mapcat :rows gs)) (vals split-panels))
         _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
+        na-level (:na-level env)
+        color-kept? (fn [c] (group/kept-value? :color na-level plot-scales c))
+        size-kept? (fn [s] (group/kept-value? :size false plot-scales s))
+        ;; each point judged once: [x y colour size drawn] in drawing order; drawn - a valid y whose colour (and trail
+        ;; size, NA never kept) the scale keeps; a valid y not drawn breaks the line
+        group-points (fn [g] (let [points (->> (:rows g)
+                                                (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r)) (when sized (size-of r))]))
+                                                (filter #(data/valid-value? (first %))))
+                                   ordered (if (and x-order? (data/sortable? (map first points))) (sort-by first points) points)]
+                               (mapv (fn [[_ y c s :as p]]
+                                       (conj p (and (data/valid-value? y) (or (not gradient?) (color-kept? c)) (or (not sizes?) (size-kept? s)))))
+                                     ordered)))
+        pointed-panels (update-vals split-panels (fn [gs] (mapv #(assoc % ::points (group-points %)) gs)))
+        valid-y? (fn [p] (data/valid-value? (second p)))
+        ;; a line sized by one value: judged by its first drawn point's size
+        size-value (fn [g] (some-> (first (filter peek (::points g))) (nth 3)))
+        [panels ^long size-dropped] (if (and sized (not sizes?))
+                                      (group/kept-marks :size env size-value #(count (filter valid-y? (::points %))) pointed-panels)
+                                      [pointed-panels 0])
+        ;; a line broken at every point draws nothing: left out (its points counted)
+        drawn-line? (fn [g] (or (not (or gradient? sizes?)) (some peek (::points g))))
+        broken (reduce m/long-add 0 (for [g (mapcat val panels) p (::points g) :when (and (valid-y? p) (not (peek p)))] 1))
         line-data (update-vals panels
                                (fn [gs]
-                                 {:lines (mapv (fn [g]
-                                                 (let [points (->> (:rows g)
-                                                                   (map (fn [r] [(x-of r) (y-of r) (when color-of (color-of r))
-                                                                                 (when sizes? (size-of r))]))
-                                                                   (filter #(data/valid-value? (first %))))
-                                                       ordered (if (and x-order? (data/sortable? (map first points))) (sort-by first points) points)]
-                                                   (cond-> {:x (mapv first ordered)
-                                                            :y (mapv #(let [v (second %)] (when (data/valid-value? v) v)) ordered)
-                                                            :aesthetics (:aesthetics g)}
-                                                     gradient? (assoc :colors (mapv #(nth % 2) ordered))
-                                                     sizes? (assoc :sizes (mapv #(nth % 3) ordered))
-                                                     (and sized (not sizes?)) (assoc :size-value (some-> (first (:rows g)) size-of)))))
+                                 {:lines (into [] (comp (filter drawn-line?)
+                                                        (map (fn [g] (let [pts (::points g)]
+                                                                       (cond-> {:x (mapv first pts)
+                                                                                :y (mapv #(when (peek %) (second %)) pts)
+                                                                                :aesthetics (:aesthetics g)}
+                                                                         gradient? (assoc :colors (mapv #(nth % 2) pts))
+                                                                         sizes? (assoc :sizes (mapv #(nth % 3) pts))
+                                                                         (and sized (not sizes?)) (assoc :size-value (size-value g)))))))
                                                gs)
                                   :style st}))
+        ;; the statistics read drawn points only
+        drawn-values (fn [^long i] (update-vals panels (fn [gs] (for [g gs :when (drawn-line? g) p (::points g) :when (peek p)] (nth p i)))))
         data (if (stacked-positions position)
                (update-vals line-data #(update % :lines stacked-lines position))
                line-data)
         negative? (some m/neg? (mapcat (fn [{:keys [lines]}] (mapcat :y0 lines)) (vals data)))
         stacked-from-zero? (and (#{:stack :normalize} position) (not negative?))
         color-stats (when gradient?
-                      (group/continuous-color-stats continuous (update-vals data #(mapcat :colors (:lines %))) plot-scales))
+                      (group/continuous-color-stats continuous (drawn-values 2) plot-scales))
         size-stats (when sized
-                     (group/continuous-stats :size sized (update-vals data #(mapcat (fn [line] (or (:sizes line) [(:size-value line)]))
-                                                                                     (:lines %)))
+                     (group/continuous-stats :size sized (if sizes?
+                                                           (drawn-values 3)
+                                                           (update-vals data #(map :size-value (:lines %))))
                                              plot-scales))]
     (into (data/padding-stats {:x data/axis-padding :y (if stacked-from-zero? [0.0 0.05] data/axis-padding)}
                               (when stacked-from-zero? {:y [0.0 nil]})
@@ -374,8 +401,8 @@
            :axis-titles (when (= :normalize position) {:y "Proportion"})
            :na (cond-> (group/na-dims panels) (:na color-stats) (conj :color) (:na size-stats) (conj :size))
            :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows))
-                      gradient? (assoc :color (:dropped color-stats))
-                      sized (assoc :size (:dropped size-stats)))})))
+                      gradient? (assoc :color broken)
+                      sized (assoc :size (if sizes? broken size-dropped)))})))
 
 (defn- group-style
   "Gives the style a line is drawn with.
@@ -387,7 +414,7 @@
   - `scales` (map): the finalized scales.
   - `theme` (map): the merged theme.
 
-  Returns `style` with the group's aesthetics applied (see [[cljplot2.data.group/style]]) and the width from an ordinal `:size` level or from `:size-value` under the linear size scale (NA - the style width); `nil` when a value is outside its scale's domain (not drawn)."
+  Returns `style` with the group's aesthetics applied (see [[cljplot2.data.group/style]]) and the width from an ordinal `:size` level or from `:size-value` under the linear size scale (NA - the style width); `nil` for a value the scale doesn't draw (outside its domain without `:as-na` / `:clamp`)."
   [style line scales theme]
   (when-let [aesthetic-st (group/style style (:aesthetics line) scales theme)]
     (let [st (cond-> aesthetic-st (:size aesthetic-st) (-> (assoc :line-width (:size aesthetic-st)) (dissoc :size)))]
@@ -407,7 +434,7 @@
   - `scale` (map or `nil`): the finalized colour scale; `nil` - every value NA.
   - `theme` (map): the merged theme - `[:palette :na]`.
 
-  Returns a vector of colours: a value's colour under the scale, the NA colour for `nil` (`nil` outside the domain)."
+  Returns a vector of colours: a value's colour under the scale, the NA colour for `nil` (`nil` for a value the scale doesn't draw - outside its domain without `:as-na` / `:clamp`)."
   [values scale theme]
   (let [na (get-in theme [:palette :na])
         color-of (if scale (aesthetic/attribute-fn :color scale na) (constantly na))]

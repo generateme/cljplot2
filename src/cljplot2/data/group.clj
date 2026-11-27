@@ -8,7 +8,7 @@
   Functions:
 
   - grouping: [[group-dims]], [[kept-value?]], [[ordered-keys]], [[panel-group-keys]], [[split]], [[row-count]], [[finite-values]]
-  - per-row aesthetics (linear or binned scales): [[continuous]], [[continuous-color]], [[continuous-stats]], [[continuous-color-stats]]
+  - per-row aesthetics (linear or binned scales): [[continuous]], [[continuous-color]], [[continuous-stats]], [[continuous-color-stats]]; marks of several rows judged by one value: [[kept-marks]]
   - aesthetics of split groups: [[aesthetic-extents]], [[na-dims]], [[style]]"
   (:require [fastmath.core :as m]
             [cljplot2.schema :as schema]
@@ -186,21 +186,28 @@
   - `k` (keyword): the aesthetic, e.g. `:color`, `:size`.
   - `groups` (map): `{panel rows}`.
   - `mapping` (map): the chart's merged mapping.
-  - `env` (map): `:plot-scales` - the plot's `:scales`; `:na-level` - are NA rows kept (default true); `:filter-domain` - are rows outside the scale's explicit domain (or with an invalid value) dropped (default true; `false` for a chart aggregating the values of several rows into one mark, which draws an aggregate outside the domain in the NA attribute).
+  - `env` (map): `:plot-scales` - the plot's `:scales`; `:na-level` - are NA rows kept (default true); `:row-filter` - which rows are dropped: `:kept` (default) - rows the scale doesn't keep (an invalid value, or one outside the explicit domain under `:out-of-domain` `nil` / `:drop`, see [[cljplot2.scale.aesthetic/kept-value?]]); `:valid` - rows with an invalid value only (a chart that aggregates several rows into one mark judges the aggregate, e.g. bar); under both, NA rows go by `:na-level`. `:none` - no rows, NA rows included; the caller judges marks by one value ([[kept-marks]]) or breaks lines at points, and applies `:na-level` itself.
 
-  Returns `{:groups :mapping :value-of :dropped}`: `groups` without the rows outside the scale's explicit domain (with `:filter-domain`; NA rows without `:na-level`), `mapping` without `k` (to split by the other dimensions), the row accessor of the value, the count of rows dropped. `nil` when `k` is unmapped or groups (an ordinal scale).
+  Returns `{:groups :mapping :value-of :dropped}`: `groups` without the dropped rows (NA rows also without `:na-level`, except under `:none`), `mapping` without `k` (to split by the other dimensions), the row accessor of the value, the count of rows dropped. `nil` when `k` is unmapped or groups (an ordinal scale).
 
-  Throws as [[cljplot2.scale.aesthetic/kept-value?]] (a value of the wrong type for the scale kind), also without `:filter-domain`.
+  Throws as [[cljplot2.scale.aesthetic/kept-value?]] (a value of the wrong type for the scale kind) under every `:row-filter`.
 
   See also [[continuous-stats]]."
-  [k groups mapping {:keys [plot-scales na-level filter-domain] :or {na-level true filter-domain true}}]
+  [k groups mapping {:keys [plot-scales na-level row-filter] :or {na-level true row-filter :kept}}]
   (when-let [acc (get mapping k)]
     (let [value-of (data/row-accessor k acc)
           spec (get plot-scales k {})
           present (keep value-of (mapcat val groups))]
       (when (#{:linear :binned} (aesthetic/inferred-kind k spec (aesthetic/continuous-values? k present)))
         (let [kept? (fn [row] (let [v (value-of row)]
-                                (if (nil? v) na-level (or (aesthetic/kept-value? k spec v) (not filter-domain)))))]
+                                (if (nil? v)
+                                  (or (= :none row-filter) na-level)
+                                  ;; kept-value? runs in every mode: it rejects a value of the wrong type
+                                  (let [kept (aesthetic/kept-value? k spec v)]
+                                    (case (or row-filter :kept)
+                                      :kept kept
+                                      :valid (or kept (data/valid-value? v))
+                                      :none true)))))]
           {:groups (update-vals groups #(filterv kept? %))
            :mapping (dissoc mapping k)
            :value-of value-of
@@ -217,6 +224,23 @@
   [groups mapping env]
   (when-let [c (continuous :color groups mapping env)]
     (assoc c :color-of (:value-of c))))
+
+(defn kept-marks
+  "Drops the marks whose one value of an aesthetic the plot's scale doesn't keep; a mark of several rows is judged by that value, never by its rows.
+
+  Parameters:
+
+  - `k` (keyword): the aesthetic.
+  - `env` (map): `:plot-scales` - the plot's `:scales`; `:na-level` - is a `nil` value (NA) kept (default true).
+  - `value-of` (function): mark -> its value (`nil` - NA).
+  - `counted-rows` (function): mark -> the number of rows counted when it's dropped (rows counted elsewhere left out).
+  - `panels` (map): `{panel [mark ...]}`.
+
+  Returns `[panels dropped]`: the panels without the marks not kept (see [[kept-value?]] - an invalid value, a value outside the explicit domain under `:out-of-domain` `nil` / `:drop`, NA without `:na-level`), and the sum of their counted rows. A kept value outside the domain is drawn by the scale's `:out-of-domain` (`:as-na` - NA, `:clamp` - the end's attribute)."
+  [k {:keys [plot-scales na-level] :or {na-level true}} value-of counted-rows panels]
+  (let [judged (update-vals panels #(group-by (fn [mark] (if (kept-value? k na-level plot-scales (value-of mark)) :kept :dropped)) %))]
+    [(update-vals judged #(get % :kept []))
+     (reduce m/long-add 0 (map (comp long counted-rows) (mapcat #(get (val %) :dropped) judged)))]))
 
 (defn continuous-stats
   "Gives the stats of a chart's per-row values of an aesthetic (see [[continuous]]).

@@ -56,9 +56,11 @@
         (is (= [6.0 6.0 6.0 1.0] (mapv :length (bars (assoc p :data with-na)))))
         (is (= 0 (get-in (stats (assoc p :data with-na)) [:dropped :color])))
         (is (= 1 (get-in (stats (assoc p :data with-na :groups {:na false})) [:dropped :color])))))
-    (testing "a bar whose colour values are all non-finite: no colour value (NA), no error"
-      (let [bs (bars (assoc p :data (conj colored {:l "s" :v 1.0 :c ##NaN})))]
-        (is (= [nil 1.0] ((juxt :color-value :length) (peek bs))))))
+    (testing "a bar whose colour values are all non-finite: not drawn, its rows counted (batch D: invalid isn't NA)"
+      (let [p-nan (assoc p :data (conj colored {:l "s" :v 1.0 :c ##NaN}))]
+        (is (= [6.0 6.0 6.0] (mapv :length (bars p-nan))))
+        (is (= 1 (get-in (stats p-nan) [:dropped :color])))
+        (is (not (contains? (:na (stats p-nan)) :color)) "NaN isn't NA")))
     (testing "zero rows, one row"
       (is (instance? BufferedImage (plot/render-image (assoc p :data [] :scales {:color {:domain [0 1]}}) size)))
       (is (= [[6.0 3.0]] (mapv (juxt :length :color-value) (bars (assoc p :data (take 3 colored) :scales {:color {:domain [5 9]}}))))))

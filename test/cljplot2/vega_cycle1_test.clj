@@ -299,10 +299,10 @@
   [{:x 0 :y 0 :s 1} {:x 1 :y 1 :s 5} {:x 2 :y 0 :s nil} {:x 3 :y 1 :s 9}])
 
 (deftest trail-chart-test
-  (testing "a trail renders; rows without a size are dropped and counted"
+  (testing "a trail renders; a row without a size breaks it there, counted (batch D)"
     (let [built (plot/build {:data trail-rows :mapping {:x :x :y :y :size :s} :charts [(chart/line {:trail true})]})]
       (is (= 1 (get-in built [:stats 0 :dropped :size])))
-      (is (= [1 5 9] (get-in built [:stats 0 :data :panel :lines 0 :sizes]))))
+      (is (= [0 1 nil 1] (get-in built [:stats 0 :data :panel :lines 0 :y]))))
     (is (some? (plot/render-image {:data trail-rows :mapping {:x :x :y :y :size :s} :charts [(chart/line {:trail true})]}
                                   {:width 200 :height 150}))))
   (testing "boundary: 1- and 2-point trails, size 0, no size mapping (constant :line-width)"

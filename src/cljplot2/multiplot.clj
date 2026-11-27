@@ -250,7 +250,7 @@
                                        [:chart pipeline/chart-schema]
                                        [:charts [:sequential pipeline/chart-schema]]]])
               (schema/nilable :scales {:description "The colour scale of every cell that colours, with one colour bar."}
-                              [:map {:closed true} (schema/optional :color {:description "The colour scale spec; its `:domain` wins over the matrix's computed one."
+                              [:map {:closed true} (schema/optional :color {:description "The colour scale spec; its `:domain` or a binned scale's `:bins` breaks vector wins over the matrix's computed domain."
                                                                             :cljplot2/default-doc "The computed range of the coloured statistic."
                                                                             :cljplot2/example {:range [:white :darkred]}
                                                                             :cljplot2/example-context {:upper '(chart/correlation {:glyph :shade})}}
@@ -308,7 +308,7 @@
     - `:lower` / `:upper` - charts below / above the diagonal: a chart, a vector of charts or `:none` (empty cells); `nil` or absent - the defaults `(chart/scatter)` and `(chart/correlation {:glyph :number})`;
     - `:diagonal` - charts of the diagonal cells - those whose row and column variable are the same (x - the variable, y their own magnitude scale with its axis hidden), default `(chart/density)`; `:names` - the variable's name in the middle of the cell (text role `:pairs-name`); `:none` - empty cells;
     - `:variable-names` - `{variable text}`, display names (default the variable's name);
-    - `:scales` - `{:color spec}`, the colour scale of every cell that colours (a mapped or computed colour), so the matrix has one colour bar; its `:domain` wins over a computed one;
+    - `:scales` - `{:color spec}`, the colour scale of every cell that colours (a mapped or computed colour), so the matrix has one colour bar; its `:domain` (or a `:bins` breaks vector) wins over a computed one;
     - `:legend-span` - the legend column's height: `:row` (default) beside the first row, one row high; `:matrix` beside the whole matrix (one cell spanning every row, arrange `:row-spans`), so a legend taller than a row fits - e.g. the keys of a matrix of many variables, whose rows are low; a colour bar stretches to the matrix height;
     - `:theme` - every cell's and the matrix's theme (cells have no plot margin and are `[:facet :gap]` apart, as facet panels; a `[:plot :margin]` / `[:multiplot :gap]` in `:theme` wins);
     - `:title` - a title above the matrix.
@@ -379,7 +379,9 @@
                                            row-maps {:rows y-variables :columns x-variables} pair-mapping)
         lower (get-in settings [:slots :lower])
         upper (get-in settings [:slots :upper])
-        color-scale (merge (when-let [d (:domain settings)] {:domain d}) (:color matrix-scales))
+        ;; a breaks vector sets the binned domain itself (its ends): the computed one would contradict it
+        color-scale (merge (when-let [d (and (not (vector? (get-in matrix-scales [:color :bins]))) (:domain settings))] {:domain d})
+                           (:color matrix-scales))
         colors? (fn [charts cell-mapping] (or (some? (:color cell-mapping))
                                               (some #(contains? (aesthetic/computed-aesthetics % cell-mapping) :color) charts)))
         diagonal (if (nil? diagonal-slot) [(chart/density)] diagonal-slot)

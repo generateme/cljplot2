@@ -564,7 +564,8 @@
 ;; ### Line coloured by its value
 
 ;; A linear `:color` colours the line along its length; binned, it shows ranges (see also the
-;; [Colours](use_cases.colors.html) chapter).
+;; [Colours](use_cases.colors.html) chapter). A point outside the bins would break the line, so `:out-of-domain
+;; :clamp` gives the coldest and hottest days the end colours.
 
 (nu/source-note {:source "R Graph Gallery - Line plot colour following y value"
                  :url "https://r-graph-gallery.com/200-change-color-in-lineplot-following-y-value.html"
@@ -575,7 +576,7 @@
   [{:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp} :scales {:color {:range :RColorBrewer/RdYlBu :reverse true :title "F"}}
     :charts [(chart/line {:line-width 2})] :labels {:title "linear" :x :none :y "mean temperature, F"}}
    {:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp}
-    :scales {:color {:range :RColorBrewer/RdYlBu :kind :binned :reverse true :bins [20 40 60 80] :title "F"}}
+    :scales {:color {:range :RColorBrewer/RdYlBu :kind :binned :reverse true :bins [20 40 60 80] :out-of-domain :clamp :title "F"}}
     :charts [(chart/line {:line-width 2})] :labels {:title "binned" :x :none :y "mean temperature, F"}}]
   {:columns 2})
  {:width 1000 :height 400})

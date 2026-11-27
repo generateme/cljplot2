@@ -443,7 +443,7 @@
   Returns `plot` with `:stats` (one computed map per chart, see [[cljplot2.chart]]; 3D frames titled by the plot's `:labels`, see [[with-frame-titles]]) and `:margin-stats`."
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [facet-dims (get-in split [:facets :dims])
-        env {:theme theme :na-level (get groups :na true) :plot-scales scales :flip (true? flip)
+        env {:theme theme :na-level (not (false? (:na groups))) :plot-scales scales :flip (true? flip)
              :hint (:hint options) :coord (:coord plot) :aspect aspect :panel-scale-groups (panel-scale-groups plot)
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
              :panel-size (delay (plot-grid/estimated-panel-size (update plot :labels with-axis-title-defaults

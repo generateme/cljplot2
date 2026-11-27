@@ -147,15 +147,16 @@
       (is (near (rgb (c2d/get-image canvas) 20 30) [255 255 255]) "a nil color skips the segment")
       (c2d/with-canvas [c canvas] (polyline/draw-segments! c [5 35] [10 10] [:red] {:line-width 0}))
       (is (near (rgb (c2d/get-image canvas) 20 10) [255 255 255]) "zero width draws nothing")))
-  (testing "2.4 an NA end gives the NA color; :groups {:na false} joins the neighbours"
+  (testing "2.4 an NA end gives the NA color; :groups {:na false} breaks the line there (batch D)"
     (let [data [{:x 0 :y 0 :t 0} {:x 5 :y 0 :t nil} {:x 10 :y 0 :t 10}]
           na (vec (take 3 (map long (c/to-color (get-in (build (line-plot data)) [:theme :palette :na])))))]
       (is (near (panel-pixel (line-plot data) 0.25 0.5) na))
       (let [b (build (assoc (line-plot data) :groups {:na false}))]
-        (is (= [0 10] (:colors (first (get-in b [:stats 0 :data facet/single-panel :lines]))))))))
-  (testing "2.4 out-of-domain rows dropped and counted"
+        (is (= [0 nil 0] (:y (first (get-in b [:stats 0 :data facet/single-panel :lines])))))
+        (is (= 1 (get-in b [:stats 0 :dropped :color]))))))
+  (testing "2.4 an out-of-domain point breaks the line, counted (batch D)"
     (let [b (build (line-plot [{:x 0 :y 0 :t 0} {:x 1 :y 1 :t 50} {:x 2 :y 0 :t 10}] {:color (assoc red-blue :domain [0 10])} {}))]
-      (is (= [0 10] (:colors (first (get-in b [:stats 0 :data facet/single-panel :lines])))))
+      (is (= [0 nil 0] (:y (first (get-in b [:stats 0 :data facet/single-panel :lines])))))
       (is (= 1 (get-in b [:stats 0 :dropped :color])))))
   (testing "2.4 a declared linear scale with only NA colors: every segment NA"
     (is (some? (plot/render-image (line-plot [{:x 0 :y 0 :t nil} {:x 1 :y 1 :t nil}] {:color {:kind :linear}} {}) size))))

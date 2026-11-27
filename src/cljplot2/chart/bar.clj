@@ -51,10 +51,13 @@
     `:x` value; every row for count stats): `:sum`, `:mean`, `:median` or a function of the values, default the bar's
     `:stat` when it is a value stat (so `{:x :count :color :count}` colours each bar by its length) and `:mean` for
     count stats (`:stat :count` coloured by the mean of another column; the count itself isn't a row value - map a
-    column holding it). One row gives its value (a date as well). Every row builds its bar, also with an explicit
-    colour `:domain` (rows are never dropped by the colour value): a bar without a colour value, or with one outside
-    the colour scale's domain (or bins), keeps its length and takes the theme's NA colour (`[:palette :na]`); only NA
-    rows are dropped, with `:groups {:na false}` (counted in `:dropped :color`). The value is kept on the bar as
+    column holding it). One row gives its value (a date as well). Rows with an invalid colour value (NaN or infinite) are
+    dropped and counted in `:dropped :color`, as NA rows are with `:groups {:na false}`; a bar left without rows isn't
+    drawn. The other rows build their bars, also with an explicit colour `:domain`, which judges a bar's colour value,
+    not its rows. A bar without a colour value (NA rows only) keeps its length and takes the theme's NA colour
+    (`[:palette :na]`); so does a bar whose value lies outside the colour scale's domain (or bins) under
+    `:out-of-domain` `nil` / `:as-na`. `:drop` drops such a bar, its rows counted (see
+    [[cljplot2.data.group/kept-marks]]); `:clamp` gives it the end colour. The value is kept on the bar as
     `:color-value` (as rect keeps its rects') and reaches a `:value-label` function as `:color-value` (`[:group :color]`
     holds categorical colours only). `:color-stat` with a categorical or unmapped `:color` throws `{:key :color-stat}`
   * `:color` (fill), `:stroke-color` (a color, `:none` or `:darker` - the darkened fill, default), `:stroke-width`,
@@ -282,7 +285,7 @@
   - `color-of` (function): row -> its colour value.
   - `rows` (sequence): the bar's rows.
 
-  Returns `nil` (NA) when no row has a colour value (or no number of its rows is finite); finite numbers through `color-stat` (so one row gives its value with the built-in stats); a single non-number (a date) as it is.
+  Returns `nil` (NA) when no row has a colour value (invalid rows are dropped before, see [[cljplot2.data.group/continuous]]); finite numbers through `color-stat` (so one row gives its value with the built-in stats); a single non-number (a date) as it is.
 
   Throws `ex-info {:key :color-stat}` when `color-stat` returns no finite number or several dates would be aggregated."
   [color-stat color-of rows]
@@ -308,24 +311,10 @@
   - `x-of` (function or `nil`): the value accessor - only rows with a finite value count; `nil` (count stats) - every row.
   - `items` (map): panel -> items with their `:rows`.
 
-  Returns `items`, each with `:color-value` its colour value (see [[color-value]]; as rect's per-mark colour value) - drawn through the colour scale; `nil`, or a value outside the scale's domain, in the NA colour."
+  Returns `items`, each with `:color-value` its colour value (see [[color-value]]; as rect's per-mark colour value) - drawn through the colour scale; `nil`, or a value outside the scale's domain under `:out-of-domain` `nil` / `:as-na`, in the NA colour (`:clamp` - the end colour)."
   [color-stat color-of x-of items]
   (let [counted (if x-of (fn [rows] (filter #(schema/finite? (x-of %)) rows)) identity)]
     (update-vals items (fn [its] (mapv #(assoc % :color-value (color-value color-stat color-of (counted (:rows %)))) its)))))
-
-(defn- kept-color-items
-  "Drops the bars whose colour value lies outside an explicit colour domain - `:out-of-domain :drop` (the bar's aggregated colour value counts, not its rows).
-
-  Parameters:
-
-  - `color-spec` (map): the plot's colour scale spec.
-  - `items` (map): panel -> items with their `:rows` and `:color-value` (see [[colored-items]]).
-
-  Returns `[items dropped]`: the items without such bars, and the count of the dropped bars' rows."
-  [color-spec items]
-  (let [outside? (fn [{:keys [color-value]}] (and (some? color-value) (not (aesthetic/kept-value? :color color-spec color-value))))]
-    [(update-vals items #(filterv (complement outside?) %))
-     (reduce (fn [^long acc item] (if (outside? item) (m/long-add acc (count (:rows item))) acc)) 0 (mapcat val items))]))
 
 (defn- side-ends
   "Gives the bar ends of the items of one side of one panel.
@@ -556,8 +545,8 @@
         position-option (get options :position)
         varwidth (:varwidth options)
         ;; a linear or binned colour doesn't group: each bar takes its own colour value
-        ;; every row builds its bar: the colour domain judges the bars' colour values, not the rows
-        continuous (group/continuous-color (:groups chart-split) mapping (assoc env :filter-domain false))
+        ;; every row with a valid colour builds its bar: the colour domain judges the bars' colour values, not the rows
+        continuous (group/continuous-color (:groups chart-split) mapping (assoc env :row-filter :valid))
         _ (when (and (some? (:color-stat options)) (not continuous))
             (schema/fail! "Bar :color-stat aggregates a linear or binned :color: map :color to numbers (categorical colours group the bars)."
                           {:key :color-stat :value (:color-stat options)}))
@@ -577,7 +566,7 @@
                                        grouped-items)
                         grouped-items)]
           (if (and continuous (= :drop (:out-of-domain color-spec)))
-            (kept-color-items color-spec colored)
+            (group/kept-marks :color env :color-value (comp count :rows) colored)
             [colored 0]))
         position (or position-option (:position split))
         placed-items (update-vals (item-lengths stat split-items) #(placed-bars position (select-keys options [:negative-order]) %))
@@ -713,7 +702,7 @@
   - `scales` (map): the finalized scales (strip frame).
   - `env` (map): the drawing environment (`:theme`).
 
-  Zero-length bars, bars under half a pixel and bars of groups outside an aesthetic domain are skipped, with their labels; a bar's `:color-value` is drawn through the colour scale, the NA colour when it is `nil` or outside the scale's domain; labels of larger bars win collisions."
+  Zero-length bars, bars under half a pixel and bars of groups outside an aesthetic domain are skipped, with their labels; a bar's `:color-value` is drawn through the colour scale, the NA colour when it is `nil` or outside the scale's domain (the end colour under `:clamp`); labels of larger bars win collisions."
   [_chart {:keys [bars style place options translucent zero-line]} canvas box scales env]
   (let [{:keys [range-point geometry] :as pl} (strip-chart/placement box scales options place)
         stroke-width (double (:stroke-width style))

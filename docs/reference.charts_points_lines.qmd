@@ -249,7 +249,7 @@ dataset's dates are text: the mapping parses them.)
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point.</li><li><code>:y</code> <span class="required">required</span> – The y of each point.</li><li><code>:color</code> – Colours the line: per group (ordinal), or along the line (linear or binned).</li><li><code>:size</code> – Sets the line width: per group, or per point with <code>:trail</code>.</li><li><code>:dash</code> – Splits the rows into groups, each line with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each area with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own line.</li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each point.</li><li><code>:y</code> <span class="required">required</span> – The y of each point.</li><li><code>:color</code> – Colours the line: per group (ordinal), or along the line (linear or binned).</li><li><code>:size</code> – Sets the line width: per group (a linear size takes the value of the line's first drawn point), or per point with <code>:trail</code>.</li><li><code>:dash</code> – Splits the rows into groups, each line with its own dash style.</li><li><code>:pattern</code> – Splits the rows into groups, each area with its own fill pattern.</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own line.</li></ul></div>
 ```
 
 
@@ -622,7 +622,7 @@ any custom shape.
 
 
 ```{=html}
-<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each vertex.</li><li><code>:y</code> <span class="required">required</span> – The y of each vertex.</li><li><code>:color</code> – Colours each polygon: one colour per group (ordinal), or by its first row's value (linear or binned).</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own polygon.</li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> <span class="required">required</span> – The x of each vertex.</li><li><code>:y</code> <span class="required">required</span> – The y of each vertex.</li><li><code>:color</code> – Colours each polygon: one colour per group (ordinal), or by the value of its first drawn vertex (linear or binned).</li><li><code>:group</code> – Splits the rows into groups that look the same, each its own polygon.</li></ul></div>
 ```
 
 

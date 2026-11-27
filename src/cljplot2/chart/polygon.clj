@@ -4,8 +4,10 @@
   Options (style defaults from theme `[:chart :polygon]`): `:color` (the fill), `:alpha` (its opacity, 0..1, default
   1), `:stroke-color` (the outline: default `:none`; `:color` - the group colour, opaque) with `:stroke-width`.
   Groups (see [[cljplot2.data.group]]) come from ordinal aesthetics (`:color`) and `:group`; a linear or binned
-  `:color` fills each polygon by the value of its group's first row (NA - the theme NA colour; rows outside the colour
-  scale's explicit domain dropped). A row with an invalid x or y is dropped (counted per key); a polygon with fewer
+  `:color` fills each polygon by the value of its first drawn vertex (the group's first row with a valid x and y; NA -
+  the theme NA colour): the polygon is judged by that value, never by its rows - an invalid value, or one outside the
+  colour scale's explicit domain under `:out-of-domain` `nil` / `:drop`, NA with `:groups {:na false}` - leaves the
+  polygon out (its vertices counted in `:dropped :color`); `:as-na` fills it NA, `:clamp` with the end colour. A row with an invalid x or y is dropped (counted per key); a polygon with fewer
   than 3 points is not drawn (counted in `:dropped {:group n}`, as violin and density count groups without a mark;
   its aesthetic values don't reach the legend). Cartesian plots only (the pipeline rejects the chart
   under `:coord :polar`).
@@ -51,7 +53,7 @@
    :mapping [:map
              [:x {:description "The x of each vertex."} schema/accessor]
              [:y {:description "The y of each vertex."} schema/accessor]
-             (schema/nilable :color {:description "Colours each polygon: one colour per group (ordinal), or by its first row's value (linear or binned)."}
+             (schema/nilable :color {:description "Colours each polygon: one colour per group (ordinal), or by the value of its first drawn vertex (linear or binned)."}
                              schema/accessor)
              (schema/nilable :group {:description "Splits the rows into groups that look the same, each its own polygon."} schema/accessor)]})
 
@@ -68,12 +70,13 @@
   - `split` (map): `:groups` - panel -> rows, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales` - the plot's `:scales` (and the grouping keys of [[cljplot2.data.group/split]]).
 
-  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:polygons [{:x [..] :y [..] :aesthetics}] :style st}` - the groups with at least 3 valid points, a polygon filled along a linear / binned `:color` also with `:color-value` (its first row's value, `nil` for NA), `st` the resolved style; `:dropped` - `:x`, `:y` (invalid values), `:group` (polygons under 3 points), `:color`.
+  Returns `{:data :extents :padding :padding-explicit :na :dropped}`: per panel `{:polygons [{:x [..] :y [..] :aesthetics}] :style st}` - the groups with at least 3 valid points, a polygon filled along a linear / binned `:color` also with `:color-value` (the value of its first drawn vertex - the first row with a valid x and y; `nil` for NA; see [[cljplot2.data.group/kept-marks]]), `st` the resolved style; `:dropped` - `:x`, `:y` (invalid values), `:group` (polygons under 3 points), `:color` (the vertices of polygons left out for their value).
 
   Throws `ex-info {:key :mapping}` when `:x` or `:y` has no valid value in non-empty data."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [st (theme/resolved-style theme chart)
-        continuous (group/continuous-color groups mapping env)
+        ;; a polygon is judged by its value, never by its rows: no row is dropped for its colour
+        continuous (group/continuous-color groups mapping (assoc env :row-filter :none))
         color-of (:color-of continuous)
         {split-panels :panels dropped :dropped} (if continuous
                                                   (group/split (:groups continuous) (:mapping continuous) env)
@@ -83,11 +86,16 @@
         valid? (fn [r] (and (data/valid-value? (x-of r)) (data/valid-value? (y-of r))))
         rows (mapcat (fn [gs] (mapcat :rows gs)) (vals split-panels))
         _ (data/check-mapped! rows [[:x x-of] [:y y-of]])
+        ;; the value of the first drawn vertex
+        color-value (fn [g] (some-> (first (filter valid? (:rows g))) color-of))
         polygon (fn [g] (let [rs (filterv valid? (:rows g))]
                           (cond-> {:x (mapv x-of rs) :y (mapv y-of rs) :aesthetics (:aesthetics g)}
-                            continuous (assoc :color-value (some-> (first (:rows g)) color-of)))))
+                            continuous (assoc :color-value (color-value g)))))
         drawn? (fn [g] (m/>= (count (filter valid? (:rows g))) min-points))
-        panels (update-vals split-panels #(filterv drawn? %))
+        drawn-panels (update-vals split-panels #(filterv drawn? %))
+        [panels ^long color-dropped] (if continuous
+                                       (group/kept-marks :color env color-value #(count (filter valid? (:rows %))) drawn-panels)
+                                       [drawn-panels 0])
         data (update-vals panels (fn [gs] {:polygons (mapv polygon gs) :style st}))
         color-stats (when continuous
                       (group/continuous-color-stats continuous (update-vals data #(map :color-value (:polygons %))) plot-scales))]
@@ -102,7 +110,7 @@
            :na (cond-> (group/na-dims panels) (:na color-stats) (conj :color))
            :dropped (cond-> (assoc dropped :x (data/invalid-count x-of rows) :y (data/invalid-count y-of rows)
                                    :group (count (remove drawn? (mapcat val split-panels))))
-                      continuous (assoc :color (:dropped color-stats)))})))
+                      continuous (assoc :color color-dropped))})))
 
 (defn- fill-color
   "Gives the fill of a polygon.
@@ -138,7 +146,7 @@
   - `scales` (map): the finalized scales - `:color`.
   - `theme` (map): the merged theme - `[:palette :na]`.
 
-  Returns `st` with `:color` the value's colour under the colour scale (the NA colour for `nil` or without a scale); `nil` for a value outside the scale's domain."
+  Returns `st` with `:color` the value's colour under the colour scale (the NA colour for `nil` or without a scale); `nil` for a value the scale doesn't draw (outside its domain without `:as-na` / `:clamp`)."
   [st value scales theme]
   (let [na (get-in theme [:palette :na])]
     (if (nil? value)
