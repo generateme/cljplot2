@@ -1324,7 +1324,9 @@
             :when (and (some #(= :none (:value %)) (:values row)) (some #(= ::schema/solid-color (:form %)) (:forms row)))
             :let [example (assoc-in (or (evaluated (describe/example-options rows row)) {}) (:path row) :none)]]
       (testing (str id " " (:path row))
-        (is (some? (plot/render-image ((get draws (:path row) draw) example) {:width 160 :height 120})))))))
+        ;; a 3D box needs room beside its frame (a smaller panel is a space error)
+        (is (some? (plot/render-image ((get draws (:path row) draw) example)
+                                      (if (#{:cloud :surface} id) {:width 300 :height 240} {:width 160 :height 120}))))))))
 
 (deftest extent-method-descriptions-test
   (testing "every extent method says what it gives (its card meaning)"

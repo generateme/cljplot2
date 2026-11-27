@@ -105,10 +105,10 @@
             :description "The plot title above the panels, in the text role `:title`." :default-doc "None." :example "Walks"}]
    [:x {:id :x-title :defaults {:role :axis-title :fit true} :column :panel :row :x-title
         :description "The x axis title, in the text role `:axis-title`; a title too long for its axis is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis; none for a function accessor, a polar plot or an axis not drawn. A 3D plot takes its first 3D chart's keyword accessor." :example "time"}]
+        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis, left out when space is short; none for a function, an undrawn axis or a polar plot. A 3D plot takes its first 3D chart's." :example "time"}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270 :fit true} :column :y-title :row :panel
         :description "The y axis title, in the text role `:axis-title` turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis; none for a function accessor, a polar plot or an axis not drawn. A 3D plot takes its first 3D chart's keyword accessor." :example "value"}]
+        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis, left out when space is short; none for a function, an undrawn axis or a polar plot. A 3D plot takes its first 3D chart's." :example "value"}]
    [:z {:defaults {:role :axis-title}
         :description "The z axis title of a 3D plot, drawn on its frame in the text role `:axis-title`."
         :default-doc "The first 3D chart's title: `Count` for a binned cloud, `Density` for a density surface, else the name of its keyword accessor." :example "height"}]

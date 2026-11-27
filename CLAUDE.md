@@ -143,7 +143,9 @@ phase 1; legends are derived from them and each chart draws its key glyph via `:
 option `:legend false` draws none, and a legend no chart draws a key into is dropped. A 2D axis title is the plot's
 `:labels` entry, else the first chart's suggestion (stats `:axis-titles`), else the name of the first keyword accessor
 a data chart maps to a drawn axis (`pipeline/axis-title-defaults`; none for a function accessor, annotation charts or
-polar plots). A legend's title is the plot's
+polar plots; dropped when the plot's fixed parts don't fit - first the one taking the short dimension (the horizontal
+axis's for height, the vertical axis's for width; `:flip` swaps them), then both - and the layout solved again,
+`pipeline/layout-stage`; each arranged cell decides alone, so a row of similar cells may mix titled and untitled ones). A legend's title is the plot's
 `:labels` entry of its aesthetic, else the scale's `:title`, else a computed aesthetic's title, else a single keyword
 accessor's name (`aesthetic/titled-spec`; `:none` - no title). Key glyphs raise a positive
 line width to the theme's `[:legend :min-key-line-width]` (`theme/key-style`). A scale's `:domain` may leave one end
@@ -184,6 +186,10 @@ hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
   legend cells (`plot-grid/legend-cell?`), measured at the height each cell gets (a wrapped legend widens it); a
   `:measured` row holds `:legend-only` plots at their natural height, scaled down together when they don't fit.
   Sub-plot errors name a legend cell `(legend)`.
+- Alignment rounds (`align/align-panels`) pad cells until the paddings stop changing; a padding can flip an end tick
+  label (an overhang at a pixel threshold), so when a round repeats an earlier round's paddings, or after
+  `max-alignment-rounds`, the round of least misalignment is kept (no round is rebuilt only to be dropped). Track
+  corrections and gap rounds that change nothing rebuild nothing.
 - `:equal-panels` rounds correct the tracks towards their mean panel (the total kept; rounds after the first by half
   the difference) and keep the round of the smallest panel spread; a round that doesn't fit ends them.
   Then gap rounds even the space between neighbouring panels (`align/gap-paddings` - each column / row boundary
@@ -496,7 +502,11 @@ the theme: banned names, and one type family per name across all owners). One na
 - 3D charts (`:coords #{:three-d}`) draw only with other 3D charts; several of them need explicit `:domain`s; their
   primitives are drawn far to near in one scene per panel. Their frame titles come from the plot's `:labels` `:x` /
   `:y` / `:z`, else the first chart's suggestion (`Count`, `Density`), else the mapped column's name (settled after
-  the stats, `pipeline/with-frame-titles`); a 3D plot draws no outer axis titles.
+  the stats, `pipeline/with-frame-titles`); a 3D plot draws no outer axis titles. Frame margins are per side and
+  azimuth independent (`content.space3d/frame-margins`): a title along its edge takes its height on the left, right
+  and bottom, a turned one only on the sides its axis can land on (x / y left, right, bottom; z left), its extent
+  across that edge; the top takes no title; a panel left without room for the box is a `Not enough space` error at
+  build, in the plot's pixels (`pipeline/check-three-d-space!`, `space3d/box-space-problem`).
 - Point functions (projections, placements) take and give `Vec2`.
 - Randomness: a chart's `:rng` option goes through `rng/for-build`, and random values are drawn in compute, so every
   render of one build draws the same image. Interpolators drawing random values while fitting (`:kriging`,

@@ -119,6 +119,19 @@
       (reduce-kv (fn [acc id extra] (if (contains? acc id) (update acc id #(merge-with m/long-add % extra)) acc))
                  aligned (or fixed {})))))
 
+(defn- misalignment
+  "Gives how far a round's cells are from aligned: the change of padding their insets still ask for, summed over cells and sides.
+
+  Parameters:
+
+  - `current` (sequence): the round's cells with their `:padding`.
+  - `wanted` (map): cell id -> `{side px}`, the padding the round's insets ask for (see [[paddings]]).
+
+  Returns the sum of the absolute differences in pixels; 0 for aligned cells."
+  ^long [current wanted]
+  (reduce m/long-add 0 (for [{:keys [id padding]} current side sides]
+                         (m/abs (m/long-sub (long (get-in wanted [id side])) (long (get padding side 0)))))))
+
 (defn align-panels
   "Gives the built sub-plots with their panels aligned in rows and columns.
 
@@ -128,20 +141,28 @@
   - `rebuild` (fn): `(fn [cell padding] built)` builds the cell's plot with `:alignment-padding padding` (pixels added to its margins per side).
   - `fixed` (map): cell id -> `{side px}` padding added to the cell's alignment (even gaps, see [[gap-paddings]]); `nil` - none.
 
-  Repeats until paddings stop changing, at most [[max-alignment-rounds]] times; cells without panels and iso cells take no part.
+  Repeats until paddings stop changing. A padding can change a panel's size and so its end tick labels (an overhang at a pixel threshold), so the rounds may alternate instead: when a round's paddings would repeat an earlier round's, or after [[max-alignment-rounds]] rounds, the round of the least [[misalignment]] is kept (the later of equal ones; the first, unpadded round is a candidate but never a repeat) - a round is rebuilt only when the rounds go on. Cells without panels and iso cells take no part.
 
   Returns `{id built}` for all `cells`."
   [cells rebuild fixed]
   (let [panelled (filter #(and (panel-insets (:built %)) (not= :iso (get-in % [:built :aspect]))) cells)]
     (loop [round 1
-           current (mapv #(assoc % :padding {}) panelled)]
+           current (mapv #(assoc % :padding {}) panelled)
+           earlier []]
       (let [wanted (paddings current fixed)
-            next-cells (mapv (fn [{:keys [id padding] :as cell}]
-                               (let [p (wanted id)]
-                                 (if (= p (merge (zipmap sides (repeat 0)) padding))
-                                   cell
-                                   (assoc cell :padding p :built (rebuild cell p)))))
-                             current)]
-        (if (or (= (map :padding current) (map :padding next-cells)) (m/>= round max-alignment-rounds))
-          (merge (into {} (map (juxt :id :built)) cells) (into {} (map (juxt :id :built)) next-cells))
-          (recur (m/long-inc round) next-cells))))))
+            judged (conj earlier [(misalignment current wanted) current])
+            ;; a cell whose padding already gives its insets keeps it (and its build)
+            next-padding (fn [{:keys [id padding]}] (let [p (wanted id)] (if (= p (merge (zipmap sides (repeat 0)) padding)) padding p)))
+            next-paddings (map next-padding current)
+            kept (cond
+                   (= (map :padding current) next-paddings) current
+                   (or (some #(= next-paddings (map :padding (second %))) judged) (m/>= round max-alignment-rounds))
+                   (let [least (long (reduce m/long-min (map first judged)))]
+                     (second (last (filter #(m/== least (long (first %))) judged)))))]
+        (if kept
+          (merge (into {} (map (juxt :id :built)) cells) (into {} (map (juxt :id :built)) kept))
+          ;; only a round that goes on is rebuilt
+          (recur (m/long-inc round)
+                 (mapv (fn [cell p] (if (identical? p (:padding cell)) cell (assoc cell :padding p :built (rebuild cell p))))
+                       current next-paddings)
+                 judged))))))

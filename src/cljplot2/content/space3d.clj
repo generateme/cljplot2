@@ -9,7 +9,7 @@
   * `{:kind :path :points [Vec2 ..] :closed b :color c :line-width w}` - a polyline
   * `{:kind :region :rings [[Vec2 ..] ..] :fill c}` - an even-odd filled region (holes open)
 
-  [[frame-margin]], [[frame-margins]] - the pixels the frame needs around the box. The frame is drawn in two parts around the data:
+  [[frame-margin]], [[frame-margins]] - the pixels the frame needs around the box ([[box-space-problem]] - a panel without room for it). The frame is drawn in two parts around the data:
   [[draw-frame-back!]] - grids on the floor and the back walls (theme `[:panel :grid :x]`, z lines `[:panel :grid :y]`)
   and the hidden box edges (dashed);
   [[draw-frame-front!]] - the visible box edges and, per axis, ticks, horizontal tick labels and a title along its
@@ -18,7 +18,7 @@
   every axis with `[:axis :x :tick-label]` merged over their role, see [[cljplot2.content.axis/tick-label]]).
 
   Functions: [[draw-primitives!]], [[draw-scene!]], [[draw-3d-chart]], [[scene-frame]], frame [[frame-margin]],
-  [[frame-margins]], [[draw-frame-back!]], [[draw-frame-front!]], axes [[axis-ticks]], [[edge-ticks]],
+  [[frame-margins]], [[box-space-problem]], [[draw-frame-back!]], [[draw-frame-front!]], axes [[axis-ticks]], [[edge-ticks]],
   [[edge-point]], [[edge-angle]], [[title-distance]]."
   (:require [clojure2d.core :as c2d]
             [cljplot2.content.axis :as axis-content]
@@ -230,8 +230,33 @@
                                                  space/axes)))]
       (m/+ (double tick-length) (m/* 2.0 (double label-gap)) widest title frame-padding))))
 
+(def ^:private title-sides
+  "The sides of the box a frame axis's title can land on (see [[cljplot2.data.space3d/axis-edges]]): x / y on edges low on screen or beside the box, z on the left."
+  {:x [:left :right :bottom] :y [:left :right :bottom] :z [:left]})
+
+(def ^:private side-directions
+  "The unit direction across the box edge on each side a title can take."
+  {:left (v/vec2 1.0 0.0) :right (v/vec2 1.0 0.0) :bottom (v/vec2 0.0 1.0)})
+
+(defn- side-title-room
+  "Gives the pixels a frame's axis titles take on one side of the box.
+
+  Parameters:
+
+  - `titles` (map): the frame's `:titles` (`{:x t ..}`, `nil` - none).
+  - `side` (keyword): `:left`, `:right` or `:bottom`.
+  - `env` (map): `:canvas`, `:theme`.
+
+  Returns the largest room of the titles: a title running along its edge takes its text height on every side asked for (left, right, bottom - whichever axis it titles); a title with its own `:rotation` only on the sides its axis can land on ([[title-sides]]), its turned box's extent across that side's edge."
+  ^double [titles side env]
+  (reduce m/max 0.0 (keep (fn [k] (when-some [t (get titles k)]
+                                    (cond
+                                      (nil? (:rotation (title-content t))) (title-thickness t nil env)
+                                      (some #{side} (title-sides k)) (title-thickness t (side-directions side) env))))
+                           space/axes)))
+
 (defn- frame-margins
-  "Gives the pixels to keep on each side of the box for the axes of a frame: [[frame-margin]] left, right and below; above only half the tallest tick label and a label gap (the z axis's top tick label - x / y ticks and the titles go on edges low on screen or beside the box, see [[cljplot2.data.space3d/axis-edges]]).
+  "Gives the pixels to keep on each side of the box for the axes of a frame: tick length, label gaps and the largest tick label ([[frame-margin]] without titles) left, right and below, each with the titles that can land there ([[side-title-room]]); above only half the tallest tick label and a label gap (the z axis's top tick label - x / y ticks and the titles go on edges low on screen or beside the box, see [[cljplot2.data.space3d/axis-edges]]).
 
   The same for every azimuth, so a turned box keeps its place (see [[cljplot2.data.space3d/projector]]).
 
@@ -242,13 +267,36 @@
   - `env` (map): `:canvas`, `:theme`.
 
   Returns `{:top :right :bottom :left}`; [[bare-frame-margin]] every side without axes."
-  [{:keys [axes] :as frame} [w h] env]
-  (let [full (frame-margin frame [w h] env)]
-    (if-not axes
-      {:top full :right full :bottom full :left full}
-      (let [label-gap (double (get-in env [:theme :axis :x :label-gap]))
-            tallest (.y (measure/max-size (tick-label-sizes frame [w h] env)))]
-        {:top (m/+ (m/* 0.5 tallest) label-gap frame-padding) :right full :bottom full :left full}))))
+  [{:keys [axes titles] :as frame} [w h] env]
+  (if-not axes
+    (zipmap [:top :right :bottom :left] (repeat bare-frame-margin))
+    (let [base (double (frame-margin (dissoc frame :titles) [w h] env))
+          label-gap (double (get-in env [:theme :axis :x :label-gap]))
+          tallest (.y (measure/max-size (tick-label-sizes frame [w h] env)))]
+      {:top (m/+ (m/* 0.5 tallest) label-gap frame-padding)
+       :right (m/+ base (side-title-room titles :right env))
+       :bottom (m/+ base (side-title-room titles :bottom env))
+       :left (m/+ base (side-title-room titles :left env))})))
+
+(declare scene-frame)
+
+(defn box-space-problem
+  "Gives the shortfall of a panel too small for its 3D box: the frame's margins (see [[frame-margins]]) leave no room for the box.
+
+  Parameters:
+
+  - `layers` (sequence): `[[chart computed] ..]` - the panel's 3D charts and computed data (see [[draw-scene!]]).
+  - `[w h]`: the panel size in pixels.
+  - `env` (map): `:canvas` (a measuring canvas), `:theme`.
+
+  Returns `nil` when the box has room; else `{:key :width | :height :required n :available m}` in panel pixels (longs) - the first direction without room, `n` the least panel size with room (the margins rounded down, plus one pixel)."
+  [layers [w h] env]
+  (let [{:keys [^double top ^double right ^double bottom ^double left]} (frame-margins (scene-frame (map second layers)) [w h] env)
+        need-w (m/+ left right)
+        need-h (m/+ top bottom)]
+    (cond
+      (m/<= (double w) need-w) {:key :width :required (m/long-inc (long (m/floor need-w))) :available (long w)}
+      (m/<= (double h) need-h) {:key :height :required (m/long-inc (long (m/floor need-h))) :available (long h)})))
 
 (def ^{:private true :const true :tag 'double} min-outward-length
   "Length below which the outward direction is undefined (the edge passes through the box centre)."
@@ -487,7 +535,7 @@
   - `scales` (map): the panel's scales.
   - `env` (map): the drawing environment.
 
-  Returns `nil`; nothing for a panel too small for the box."
+  Returns `nil`; nothing for a panel too small for the box (a build rejects such a plot, see [[box-space-problem]])."
   [canvas layers [w h] scales env]
   (let [canvas-env (assoc env :canvas canvas)
         frame (scene-frame (map second layers))

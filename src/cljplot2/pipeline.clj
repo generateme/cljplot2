@@ -10,7 +10,7 @@
   - `:scales` - `{:x spec :y spec}` position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]].
   - `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see [[cljplot2.data.facet]]: `:scales {:x r :y r}` - `:same` (default), `:free` (each panel's own data domain) or `:sliced` (each panel's own centre, the widest panel's span; numeric data) - panels sharing an axis share the scale (wrap: every panel has its own axis; grid: per column / row), see [[panel-scale-specs]]; `:strips false`; `:widths` / `:heights` - relative panel column / row sizes. Such plots finalize their position scales per panel (`:panel-scales`, see [[panel-scales]]); not with `:aspect :iso`, polar coordinates or explicit `:domain`s of free / sliced scales.
   - `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped.
-  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]: the plot title, the axis titles and the legend titles; `:none` hides a title, `nil` keeps the default. Charts may suggest axis titles (`:axis-titles` in their stats), and `:labels` win over them; without either, a drawn 2D axis takes the name of the first keyword accessor a data chart maps to it (see [[axis-title-defaults]]). A 3D plot draws its axis titles on its frame (see [[with-frame-titles]]). A legend title wins over the scale's `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]).
+  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]: the plot title, the axis titles and the legend titles; `:none` hides a title, `nil` keeps the default. Charts may suggest axis titles (`:axis-titles` in their stats), and `:labels` win over them; without either, a drawn 2D axis takes the name of the first keyword accessor a data chart maps to it (see [[axis-title-defaults]]), dropped when the plot's fixed parts don't fit (see [[layout-stage]]). A 3D plot draws its axis titles on its frame (see [[with-frame-titles]]). A legend title wins over the scale's `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]).
   - `:legend` - `false` hides all legends, see [[cljplot2.content.legend]].
   - `:legend-only` - `true`: the plot draws only its legends (from its charts and scales as usual; no panel, axes or axis titles; `:labels {:title t}` above them), e.g. a legend cell of an `:arrange` (see [[cljplot2.layout.plot-grid/legend-only-grid]]); not with `:custom-grid` / `:arrange`.
   - `:alternate-panel` - `true`: a single-panel plot draws theme `[:panel :alternate-fill]` over its panel fill - the shading of odd facet panels, for checkerboards of `:arrange` cells (e.g. [[cljplot2.multiplot/pairs]]); facet panels shade by position regardless.
@@ -51,6 +51,7 @@
             [cljplot2.chart.statistic-cell :as cell]
             [cljplot2.content.strip]
             [cljplot2.content.legend :as legend]
+            [cljplot2.content.space3d :as space3d]
             [cljplot2.content.subplot :as subplot]
             [cljplot2.content.invalid-band]))
 
@@ -408,7 +409,7 @@
   - `coord` (map or `nil`): the plot's `:coord`.
   - `scales` (map): position scale specs (the plot's `:scales` or its phase-1 specs); an axis not drawn (`:axis false` or `:grid`, see [[cljplot2.scale.position/axis-drawn?]]) gets no default.
 
-  Returns `{:x t :y t}`, each entry present when its axis is drawn and some data chart maps it by a keyword: the name of the first keyword accessor a data chart maps to it (a categorical marker unwrapped; a chart mapping it by a function passes to the next). Annotation charts (`:inherit-mapping :facets`) and charts whose mapping schema has no such key (e.g. parallel, whose axis shows its variables) never give one. `{}` on a polar or a 3D plot (3D frames title their axes, see [[with-frame-titles]]). Callers give the specs they have: the size estimate the plot's `:scales` (a chart's `:scale-defaults` hiding an axis isn't known yet - the estimate may count a title the grid leaves out), the grid the phase-1 specs. The defaults sit below every chart's suggestion: a later chart's suggestion wins over the first chart's name."
+  Returns `{:x t :y t}`, each entry present when its axis is drawn and some data chart maps it by a keyword: the name of the first keyword accessor a data chart maps to it (a categorical marker unwrapped; a chart mapping it by a function passes to the next). Annotation charts (`:inherit-mapping :facets`) and charts whose mapping schema has no such key (e.g. parallel, whose axis shows its variables) never give one. `{}` on a polar or a 3D plot (3D frames title their axes, see [[with-frame-titles]]). Callers give the specs they have: the size estimate the plot's `:scales` (a chart's `:scale-defaults` hiding an axis isn't known yet - the estimate may count a title the grid leaves out), the grid the phase-1 specs. The defaults sit below every chart's suggestion: a later chart's suggestion wins over the first chart's name. A plot too small for them lays out without them (see [[layout-stage]])."
   [charts mappings coord scales]
   (if (or (coord/polar? coord) (some three-d? charts))
     {}
@@ -973,7 +974,7 @@
 (defn- grid-stage
   "Pipeline stage `:grid`: the plot's layout grid.
 
-  The grid is the `:arrange` grid (see [[cljplot2.layout.plot-grid/arrange-grid]]), the legend-only grid, the `:custom-grid` (under a title row when `:labels` has `:title`), or one generated from the plot keys (see [[cljplot2.layout.plot-grid/plot-grid]]) with axis titles from `:labels`, else the charts' suggestions (see [[effective-labels]]), else the mapped keyword names (see [[axis-title-defaults]]); a polar plot generates no outer axes (its guides are drawn inside the panel).
+  The grid is the `:arrange` grid (see [[cljplot2.layout.plot-grid/arrange-grid]]), the legend-only grid, the `:custom-grid` (under a title row when `:labels` has `:title`), or one generated from the plot keys (see [[cljplot2.layout.plot-grid/plot-grid]]) with axis titles from `:labels`, else the charts' suggestions (see [[effective-labels]]), else the mapped keyword names (see [[axis-title-defaults]]; [[layout-stage]] makes the grid again without them when they don't fit); a polar plot generates no outer axes (its guides are drawn inside the panel).
 
   Parameters:
 
@@ -1311,21 +1312,100 @@
           (assoc plot :grid (:grid kept) :layout (:layout kept))
           (recur (m/inc round) (conj seen spacers') attempt kept))))))
 
+(defn- default-titled-axes
+  "Gives the axes of a generated grid titled by their mapped column's name (see [[axis-title-defaults]]): no chart suggests their title and the plot's `:labels` give no text for it (no entry, or a label map without `:text` restyling the name).
+
+  Parameters:
+
+  - `plot` (map): the plot map after the `:scale-specs` stage.
+
+  Returns a set of `:x` / `:y`; empty for an arrange, a custom grid, a legend-only or a 3D plot."
+  [{:keys [labels stats charts coord scale-specs] :as plot}]
+  (if (or (:arrange plot) (:custom-grid plot) (:legend-only plot) (some three-d? charts))
+    #{}
+    (let [suggested (effective-labels nil stats)
+          defaults (axis-title-defaults charts (map :mapping (get-in plot [:split :charts])) coord scale-specs)
+          no-text? (fn [k] (let [l (get labels k)] (or (nil? l) (and (label/label-options? l) (not (contains? l :text))))))]
+      (set (filter #(and (no-text? %) (nil? (get suggested %)) (some? (get defaults %))) [:x :y])))))
+
+(defn- with-solved-layout
+  "Gives the plot with its solved layout.
+
+  Parameters:
+
+  - `plot` (map): the plot map after the `:grid` stage.
+  - `canvas`: the scratch canvas measuring text.
+
+  Returns `plot` with `:layout` (see [[solve-layout]]); with `:aspect :iso` also the `:grid` with fixed spacer tracks (see [[iso-layout]])."
+  [plot canvas]
+  (if (= :iso (:aspect plot))
+    (iso-layout plot canvas)
+    (assoc plot :layout (solve-layout plot canvas))))
+
+(defn- check-three-d-space!
+  "Checks that every panel of a 3D plot has room for its box beside the frame's axes (see [[cljplot2.content.space3d/box-space-problem]]).
+
+  Parameters:
+
+  - `plot` (map): the plot map with `:grid` and `:layout`.
+  - `canvas`: the scratch canvas measuring text.
+
+  Returns `nil`. Throws a space error (see [[cljplot2.layout.grid/space-error?]]) for the first panel too small: `ex-info {:key :width | :height :axis :columns | :rows :required :available :cause :track-space}`, in pixels of the plot's size - `:required` the size giving that panel room for its box."
+  [{:keys [charts stats grid layout theme options] :as plot} canvas]
+  (when (some three-d? charts)
+    (doseq [{{:keys [w h]} :box content :content} (grid/content-items grid layout panel-content?)
+            :let [panel-key (get content :panel facet/single-panel)
+                  layers (for [[chart chart-stats] (map vector charts stats)
+                               :when (three-d? chart)
+                               computed [(get-in chart-stats [:data panel-key]) (get-in chart-stats [:data facet/all-panels])]
+                               :when (some? computed)]
+                           [chart computed])]
+            :when (seq layers)]
+      (when-let [{:keys [key ^long required ^long available]} (space3d/box-space-problem layers [w h] {:canvas canvas :theme theme})]
+        (let [size (long (get options key))
+              plot-required (m/long-add size (m/long-sub required available))]
+          (schema/fail! (str "Not enough space: the 3D frame (axes, tick labels, titles) needs " plot-required " px of " (name key)
+                             ", " size " px given.")
+                        {:key key :axis (if (= :width key) :columns :rows) :required plot-required :available size :cause :track-space}))))
+    nil))
+
 (defn- layout-stage
   "Pipeline stage `:layout`: the solved layout of the plot's grid.
+
+  When the plot's own tracks don't fit (a space error, not a sub-plot's), the column-name titles give way (see [[default-titled-axes]]): the grid is made again without the default title taking the short dimension (the title of the horizontal axis when the height is short, of the vertical one when the width is short - `:flip` swaps them), then without both, and the first layout that fits is kept; titles from `:labels` or a chart's suggestion are never dropped, and charts computed before the layout keep a size estimate counting the titles. A 3D plot's panels are checked for room for the box (see [[check-three-d-space!]]).
 
   Parameters:
 
   - `plot` (map): the plot map after the `:grid` stage.
 
-  Returns `plot` with `:layout` (see [[solve-layout]]); with `:aspect :iso` also the `:grid` with fixed spacer tracks (see [[iso-layout]]). Text is measured on a scratch canvas with the plot's rendering hint."
+  Returns `plot` with `:layout` (see [[with-solved-layout]]); with dropped titles also its `:grid` made without them (the plot's `:labels` as given). Text is measured on a scratch canvas with the plot's rendering hint.
+
+  Throws the first space error when no layout fits."
   [plot]
   (measure/call-with-scratch-canvas
    (get-in plot [:options :hint])
    (fn [canvas]
-     (if (= :iso (:aspect plot))
-       (iso-layout plot canvas)
-       (assoc plot :layout (solve-layout plot canvas))))))
+     (let [attempt (fn [p] (try (with-solved-layout p canvas)
+                                (catch clojure.lang.ExceptionInfo e
+                                  (let [data (ex-data e)]
+                                    (if (and (grid/space-error? data) (nil? (:subplot data))) e (throw e))))))
+           first-attempt (attempt plot)
+           result (if (instance? clojure.lang.ExceptionInfo first-attempt)
+                    (let [axes (default-titled-axes plot)
+                          horizontal (scale/horizontal-key (:flip plot))
+                          ;; the title taking the short dimension: the horizontal axis's takes height
+                          taking (if (= :height (:key (ex-data first-attempt))) horizontal (if (= :x horizontal) :y :x))
+                          ;; only drops that take the short dimension's title can help
+                          drops (if (contains? axes taking) (distinct [[taking] (sort axes)]) [])
+                          fitted (some (fn [dropped]
+                                         (let [r (attempt (grid-stage (update plot :labels merge (zipmap dropped (repeat :none)))))]
+                                           (when-not (instance? clojure.lang.ExceptionInfo r)
+                                             (if (contains? plot :labels) (assoc r :labels (:labels plot)) (dissoc r :labels)))))
+                                       drops)]
+                      (or fitted (throw first-attempt)))
+                    first-attempt)]
+       (check-three-d-space! result canvas)
+       result))))
 
 (defn- finalized-scales-stage
   "Pipeline stage `:finalized-scales`: scales finalized for the final layout.
@@ -1506,18 +1586,19 @@
   - `sizes` (map): track index -> the sizes of its panels.
   - `step` (double): the fraction of the difference applied - 1.0 the whole difference, 0.5 half of it.
 
-  Returns the tracks with each panel track grown or shrunk by `step` times the difference of its smallest panel to the target (rounded away from 0, so a difference of a pixel is always corrected) - the target the mean of the tracks' smallest panels, rounded, so the corrections sum to about 0 and the arrange keeps its size (other tracks kept); `nil` when the panels are already equal."
+  Returns the tracks with each panel track grown or shrunk by `step` times the difference of its smallest panel to the target (rounded away from 0, so a difference of a pixel is always corrected) - the target the mean of the tracks' smallest panels, rounded, so the corrections sum to about 0 and the arrange keeps its size (other tracks kept); `nil` when the panels are already equal or no track changes (a spread inside one track - no correction of tracks reaches it)."
   [tracks sizes ^double step]
   (let [panel-sizes (mapcat val sizes)]
     (when-not (apply m/== panel-sizes)
       (let [smallest (into {} (keep (fn [[t s]] (when (seq s) [t (v/mn s)]))) sizes)
-            target (m/round (m// (double (v/sum (vals smallest))) (double (count smallest))))]
-        (vec (map-indexed (fn [t [kind ^long px]]
-                            (if-let [panel (smallest t)]
-                              (let [difference (double (m/- target (long panel)))]
-                                [kind (m/+ px (long (m/* (m/sgn difference) (m/ceil (m/* step (m/abs difference))))))])
-                              [kind px]))
-                          tracks))))))
+            target (m/round (m// (double (v/sum (vals smallest))) (double (count smallest))))
+            corrected (vec (map-indexed (fn [t [kind ^long px]]
+                                          (if-let [panel (smallest t)]
+                                            (let [difference (double (m/- target (long panel)))]
+                                              [kind (m/+ px (long (m/* (m/sgn difference) (m/ceil (m/* step (m/abs difference))))))])
+                                            [kind px]))
+                                        tracks))]
+        (when-not (= corrected tracks) corrected)))))
 
 (defn- panel-spread
   "Gives how far the panels of an arrange are from one size.
@@ -1534,7 +1615,7 @@
 (defn- equalized-arrange
   "A built `:equal-panels` arrange with every panel the same size, or as near to it as the rounds get.
 
-  The fixed tracks of [[equal-panel-plot]] come from the first layout's insets (alignment padding included), which a rebuild at the new sizes may change; each round measures the panels (see [[arranged-panel-sizes]]) and corrects the tracks towards their mean panel (see [[corrected-tracks]]), at most [[max-equal-panel-rounds]] times. A cell's insets depend on its track (tick choice, and so the overhang of end tick labels, follows the panel size), so a whole correction may overshoot: the first round corrects the whole difference, later ones [[later-round-step]] of it, and the rounds may still oscillate instead of converging - the plot with the smallest spread of panel sizes (see [[panel-spread]]) is kept, the later one of equal spreads. A round whose tracks don't fit (a cell narrower than its axis - [[cljplot2.layout.grid/space-error?]]) ends the rounds.
+  The fixed tracks of [[equal-panel-plot]] come from the first layout's insets (alignment padding included), which a rebuild at the new sizes may change; each round measures the panels (see [[arranged-panel-sizes]]) and corrects the tracks towards their mean panel (see [[corrected-tracks]]), at most [[max-equal-panel-rounds]] times. A cell's insets depend on its track (tick choice, and so the overhang of end tick labels, follows the panel size), so a whole correction may overshoot: the first round corrects the whole difference, later ones [[later-round-step]] of it, and the rounds may still oscillate instead of converging - the plot with the smallest spread of panel sizes (see [[panel-spread]]) is kept, the later one of equal spreads. A round whose tracks don't fit (a cell narrower than its axis - [[cljplot2.layout.grid/space-error?]]) ends the rounds, as does a correction changing no track (a spread inside one track, see [[corrected-tracks]]).
 
   Parameters:
 
@@ -1602,7 +1683,7 @@
   plus [[gap-panel-tolerance]], and the one of the smallest unevenness - its panel spread plus its gap spread (the
   largest padding still needed, columns plus rows) - is kept, the earlier of equal ones; a matrix too tight to even
   its gaps without unbalancing its panels keeps them uneven. A rebuild whose tracks don't fit (a cell narrower than its axis -
-  [[cljplot2.layout.grid/space-error?]]) ends the rounds.
+  [[cljplot2.layout.grid/space-error?]]) ends the rounds, as does a round changing neither paddings nor tracks.
 
   Parameters:
 
@@ -1644,10 +1725,13 @@
                          (update-in [:arrange :widths] evened-tracks (insets-of :right))
                          (update-in [:arrange :heights] evened-tracks (insets-of :bottom))
                          (assoc-in [:arrange :gap-padding] gap-padding))
-                next-plot (try (rebuild plot)
-                               (catch clojure.lang.ExceptionInfo e
-                                 (if (grid/space-error? (ex-data e)) ::no-fit (throw e))))]
-            (if (= ::no-fit next-plot)
+                ;; nothing to change (a spread inside one track): no identical rebuild
+                next-plot (if (= (update (:arrange plot) :gap-padding not-empty) (update (:arrange current) :gap-padding not-empty))
+                            ::unchanged
+                            (try (rebuild plot)
+                                 (catch clojure.lang.ExceptionInfo e
+                                   (if (grid/space-error? (ex-data e)) ::no-fit (throw e)))))]
+            (if (#{::no-fit ::unchanged} next-plot)
               best
               (recur next-plot best best-score (m/long-inc round)))))))))
 
