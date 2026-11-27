@@ -169,7 +169,7 @@ given order, the right one life expectancy on a gradient:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:kind</code><span class="option-default">Default: <code>:linear</code> for numbers on <code>:color</code> or <code>:size</code>, dates on <code>:color</code> or a domain of two numbers; else <code>:ordinal</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:kind :binned}}}</code></div><div class="option-text">The scale kind: how the domain maps to attributes.<ul><li><code>:binned</code> – Numbers cut into classes, an attribute each (<code>:color</code>, <code>:size</code>).</li><li><code>:identity</code> – The data's values are the attributes.</li><li><code>:linear</code> – Numbers along a gradient (<code>:color</code>) or a size range (<code>:size</code>).</li><li><code>:ordinal</code> – Levels, one attribute each, in <code>:domain</code> order.</li></ul></div></dd></div><div class="option-card"><dt><code>:type</code><span class="option-default">Default: The data's kind.</span></dt><dd><div class="option-example"><code>{:scales {:color {:type :categorical}}}</code></div><div class="option-text">Declares how the scale reads numbers or dates, overriding the data's kind.<ul><li><code>:categorical</code> – As levels: an ordinal scale.</li><li><code>:numeric</code> – As numbers: a linear scale.</li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The data's levels, sorted, or <code>[min max]</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:domain [0 10]}}}</code></div><div class="option-text">The values the scale maps: the levels in order (ordinal), or <code>[lo hi]</code> (linear, binned; <code>nil</code> at an end takes the data's, e.g. <code>[0 nil]</code>).<ul><li><span>sequence of any values</span></li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:kind</code><span class="option-default">Default: <code>:linear</code> for numbers on <code>:color</code> or <code>:size</code>, dates on <code>:color</code> or a domain of two numbers; else <code>:ordinal</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:kind :binned}}}</code></div><div class="option-text">The scale kind: how the domain maps to attributes.<ul><li><code>:binned</code> – Numbers cut into classes, an attribute each (<code>:color</code>, <code>:size</code>).</li><li><code>:identity</code> – The data's values are the attributes.</li><li><code>:linear</code> – Numbers along a gradient (<code>:color</code>) or a size range (<code>:size</code>).</li><li><code>:ordinal</code> – Levels, one attribute each, in <code>:domain</code> order.</li></ul></div></dd></div><div class="option-card"><dt><code>:type</code><span class="option-default">Default: The data's kind.</span></dt><dd><div class="option-example"><code>{:scales {:color {:type :categorical}}}</code></div><div class="option-text">Declares how the scale reads numbers or dates, overriding the data's kind.<ul><li><code>:categorical</code> – As levels: an ordinal scale.</li><li><code>:numeric</code> – As numbers: a linear scale.</li></ul></div></dd></div><div class="option-card"><dt><code>:domain</code><span class="option-default">Default: The data's levels, sorted, or <code>[min max]</code>.</span></dt><dd><div class="option-example"><code>{:scales {:color {:domain [0 10]}}}</code></div><div class="option-text">The values the scale maps: the levels in order (ordinal), or <code>[lo hi]</code> (linear, binned; <code>nil</code> at an end takes the data's, e.g. <code>[0 nil]</code>).<ul><li><span>sequence of any values</span></li></ul></div></dd></div><div class="option-card"><dt><code>:out-of-domain</code><span class="option-default">Default: Most charts drop the value's row and count it; bar draws the bar in the NA colour; charts computing their colour (bin2d, field, contour, surface, statistic cells) skip the mark.</span></dt><dd><div class="option-example"><code>{:scales {:color {:domain [1 3], :out-of-domain :as-na}}}</code></div><div class="option-text">What a chart does with a value outside an explicit <code>:domain</code>.<ul><li><code>:drop</code> – Drops the value's row, counted in <code>:dropped</code>; a chart computing its colour skips the mark, a hierarchy coloured by name keeps the node in the NA colour.</li><li><code>:as-na</code> – Draws the value in the NA attribute (colour, shape, size, dash or pattern) and keeps its row; the legend adds an <code>outside</code> entry when such values exist.</li><li><code>:clamp</code> – Draws the value in the attribute of the nearer domain end and keeps its row; linear and binned scales only.</li></ul></div></dd></div></dl>
 ```
 
 
@@ -232,6 +232,37 @@ Its `:ticks` take dates, and `:formatter` gets ticks in the data's type (here `L
 
 ::: {.clay-image}
 ![](reference.aesthetics_legends_files/image2.png)
+:::
+
+
+
+### Values outside the domain
+
+An explicit `:domain` narrower than the data leaves values outside it, and `:out-of-domain` decides what happens
+to them. The plots below give the colour scale a domain of 60 to 75 years of life expectancy, on a gradient whose
+ends both show. The left plot drops the countries outside, so its y axis shrinks with them. The middle one draws
+them in the NA colour and adds an `outside` swatch under the colour bar. The right one draws them in the end
+colours and marks each end with a triangle. Without the option, scatter drops them too; bar draws them in the NA
+colour:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [option [:drop :as-na :clamp]]
+                                   {:data gapminder
+                                    :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
+                                    :charts [(chart/scatter)]
+                                    :scales {:x {:kind :log :formatter :power}
+                                             :color {:domain [60 75] :range :viridis/viridis :out-of-domain option}}
+                                    :labels {:title (str ":out-of-domain " option)}})
+                                 {:columns 3})
+                   {:width 1000 :height 350})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.aesthetics_legends_files/image3.png)
 :::
 
 
@@ -314,7 +345,7 @@ colour scale reads the colours from the data:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image3.png)
+![](reference.aesthetics_legends_files/image4.png)
 :::
 
 
@@ -361,7 +392,7 @@ The plot below samples the viridis gradients at 32 points and draws tiles withou
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image4.png)
+![](reference.aesthetics_legends_files/image5.png)
 :::
 
 
@@ -399,7 +430,7 @@ These options set how values spread over the attributes. The plots below centre 
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image5.png)
+![](reference.aesthetics_legends_files/image6.png)
 :::
 
 
@@ -423,7 +454,7 @@ transform (`:exp` the values 0.1 to 2, since the exponential of 20 dwarfs everyt
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image6.png)
+![](reference.aesthetics_legends_files/image7.png)
 :::
 
 
@@ -457,7 +488,7 @@ plots below bin life expectancy four ways:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image7.png)
+![](reference.aesthetics_legends_files/image8.png)
 :::
 
 
@@ -480,7 +511,7 @@ and the first stays visible with `:range [0 m]`:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image8.png)
+![](reference.aesthetics_legends_files/image9.png)
 :::
 
 
@@ -513,7 +544,7 @@ sets their sizes and box. The plot below renames the size legend and picks its e
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image9.png)
+![](reference.aesthetics_legends_files/image10.png)
 :::
 
 
@@ -533,7 +564,7 @@ A colour bar takes `:ticks` and `:formatter` too:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image10.png)
+![](reference.aesthetics_legends_files/image11.png)
 :::
 
 
@@ -561,7 +592,7 @@ Counted entries of whole-number data over a short range fall on fractions (left)
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image11.png)
+![](reference.aesthetics_legends_files/image12.png)
 :::
 
 
@@ -608,7 +639,7 @@ patterns and cells); an `:identity` scale reads the shapes from the data:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image12.png)
+![](reference.aesthetics_legends_files/image13.png)
 :::
 
 
@@ -627,7 +658,7 @@ The plot below takes a shape range of characters and shape maps:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image13.png)
+![](reference.aesthetics_legends_files/image14.png)
 :::
 
 
@@ -656,7 +687,7 @@ This option sets the sizes. The plot below grows population bubbles by area from
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image14.png)
+![](reference.aesthetics_legends_files/image15.png)
 :::
 
 
@@ -686,7 +717,7 @@ The left plot grows sizes by diameter, the right one by area; only the right one
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image15.png)
+![](reference.aesthetics_legends_files/image16.png)
 :::
 
 
@@ -738,7 +769,7 @@ The plot below draws every named style and two dash arrays (an `:identity` scale
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image16.png)
+![](reference.aesthetics_legends_files/image17.png)
 :::
 
 
@@ -757,7 +788,7 @@ The plot below takes a dash range by group:
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image17.png)
+![](reference.aesthetics_legends_files/image18.png)
 :::
 
 
@@ -806,7 +837,7 @@ The plot below fills bars with every named pattern and two pattern maps (white b
 
 
 ::: {.clay-image}
-![](reference.aesthetics_legends_files/image18.png)
+![](reference.aesthetics_legends_files/image19.png)
 :::
 
 

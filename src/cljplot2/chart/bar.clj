@@ -313,6 +313,20 @@
   (let [counted (if x-of (fn [rows] (filter #(schema/finite? (x-of %)) rows)) identity)]
     (update-vals items (fn [its] (mapv #(assoc % :color-value (color-value color-stat color-of (counted (:rows %)))) its)))))
 
+(defn- kept-color-items
+  "Drops the bars whose colour value lies outside an explicit colour domain - `:out-of-domain :drop` (the bar's aggregated colour value counts, not its rows).
+
+  Parameters:
+
+  - `color-spec` (map): the plot's colour scale spec.
+  - `items` (map): panel -> items with their `:rows` and `:color-value` (see [[colored-items]]).
+
+  Returns `[items dropped]`: the items without such bars, and the count of the dropped bars' rows."
+  [color-spec items]
+  (let [outside? (fn [{:keys [color-value]}] (and (some? color-value) (not (aesthetic/kept-value? :color color-spec color-value))))]
+    [(update-vals items #(filterv (complement outside?) %))
+     (reduce (fn [^long acc item] (if (outside? item) (m/long-add acc (count (:rows item))) acc)) 0 (mapcat val items))]))
+
 (defn- side-ends
   "Gives the bar ends of the items of one side of one panel.
 
@@ -555,11 +569,16 @@
         {:keys [place panels dropped shared-levels mirror] grouped-items :items :as split}
         (strip/split (cond-> chart-split continuous (assoc :groups (:groups continuous) :mapping (:mapping continuous)))
                      split-options :center env)
-        split-items (if continuous
-                      (colored-items (color-stat-fn options stat) (:color-of continuous)
-                                     (when-not (count-stats stat) (data/row-accessor :x (:x mapping)))
-                                     grouped-items)
-                      grouped-items)
+        color-spec (get-in env [:plot-scales :color] {})
+        [split-items ^long outside-dropped]
+        (let [colored (if continuous
+                        (colored-items (color-stat-fn options stat) (:color-of continuous)
+                                       (when-not (count-stats stat) (data/row-accessor :x (:x mapping)))
+                                       grouped-items)
+                        grouped-items)]
+          (if (and continuous (= :drop (:out-of-domain color-spec)))
+            (kept-color-items color-spec colored)
+            [colored 0]))
         position (or position-option (:position split))
         placed-items (update-vals (item-lengths stat split-items) #(placed-bars position (select-keys options [:negative-order]) %))
         factor (weight-factors varwidth (mapcat val placed-items))
@@ -579,11 +598,10 @@
         labels (keep :label (mapcat val items))
         {base-padding :padding request :request} (baseline position (mapcat (juxt :y0 :y1) all-bars))
         translucent? (and (= :overlay position) shared-levels)
-        color-spec (get-in env [:plot-scales :color] {})
         color-values (update-vals items #(map :color-value %))
         color-stats (when continuous
                       (group/continuous-color-stats continuous color-values (:plot-scales env)))
-        ;; NA colour also for a colour value outside the scale's explicit domain
+        ;; NA colour also for a colour value outside the scale's explicit domain (no :out-of-domain given)
         outside? (and continuous (some #(and (some? %) (not (aesthetic/kept-value? :color color-spec %)))
                                        (mapcat val color-values)))
         st (theme/resolved-style theme chart)]
@@ -603,7 +621,9 @@
      ;; outer labels replace the angle axis (it would sit under them)
      :scale-defaults (when (= :outer label-position) {(if (:flip env) :y :x) {:axis false}})
      :na (cond-> (group/na-dims panels) (or (:na color-stats) outside?) (conj :color))
-     :dropped (cond-> dropped continuous (assoc :color (:dropped color-stats)))
+     :dropped (cond-> dropped
+                continuous (assoc :color (cond-> (:dropped color-stats)
+                                           (m/pos? outside-dropped) (-> (or 0) long (m/long-add outside-dropped)))))
      :axis-titles (if-let [t (value-title stat position (:x mapping) all-bars)] {:x t} {})
      :tick-format (when mirror {:x :absolute})}))
 

@@ -55,9 +55,13 @@
 
   [[scale-spec]] gives plain data (with `:na-level` - the scale has an NA level); it is also the finalized scale: no
   pixel range, `nice` or padding. [[attribute-fn]] maps data values to style attributes: NA (`nil`) to the NA
-  attribute; values outside the domain (not a level, or outside `[lo hi]`) to `nil` - such points are skipped.
-  Charts drop values outside an explicit domain already at compute ([[in-domain?]]), counted in `:dropped`, so
-  extents only cover what is drawn.
+  attribute; a value outside the domain (not a level, or outside `[lo hi]`) by the scale's `:out-of-domain` -
+  `:as-na` to the NA attribute, `:clamp` (linear, binned) to the nearer end's, otherwise to `nil` (the mark is
+  skipped). At compute [[kept-value?]] decides whether a row stays: a value outside an explicit domain drops its row,
+  counted in `:dropped`, unless `:out-of-domain` is `:as-na` or `:clamp`, so extents cover only what is drawn;
+  [[scale-spec]] then reports in `:outside` which ends the kept data pass, for the legends. Without the option each
+  chart keeps its own behaviour: most drop the row, bar draws the NA colour, charts computing their colour skip the
+  mark uncounted.
 
   Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]] (named types [[palette]], [[size-range]]); values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
 
@@ -70,7 +74,8 @@
             [cljplot2.data.text :as text]
             [cljplot2.graphics.shape :as shape]
             [cljplot2.scale.position :as scale]
-            [cljplot2.schema :as schema]))
+            [cljplot2.schema :as schema])
+  (:import [fastmath.java Array]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -377,7 +382,7 @@
 
   - `k` (keyword): the dimension.
   - `kind` (keyword): the scale's resolved kind.
-  - `spec` (map): the scale spec - checked `:range` (a level map, a function or gradient name), `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:bins`, `:ticks`, `:integer-ticks` and an identity scale's `:domain` / `:range`.
+  - `spec` (map): the scale spec - checked `:range` (a level map, a function or gradient name), `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:bins`, `:ticks`, `:integer-ticks`, `:out-of-domain :clamp` and an identity scale's `:domain` / `:range`.
 
   Returns `[[key message] ...]`, in a fixed order; `[]` when the options hold."
   [k kind {:keys [spread midpoint area bins domain transform ticks] integer-ticks? :integer-ticks reversed? :reverse attribute-range :range :as spec}]
@@ -388,6 +393,8 @@
       (and (#{:linear :binned} kind) (ordinal-only k)) (conj [:kind (str (name k) " scale can't be " kind)])
       (and (= kind :identity) (some? domain)) (conj [:domain "an identity scale takes no :domain"])
       (and (= kind :identity) (contains? spec :range)) (conj [:range "an identity scale takes no :range"])
+      (and (= :clamp (:out-of-domain spec)) (#{:ordinal :identity} kind))
+      (conj [:out-of-domain ":out-of-domain :clamp needs a linear or binned scale (levels have no ends)"])
       (and level-map? (not= kind :ordinal) (not= kind :identity))
       (conj [:range "a level map :range needs an ordinal scale (declare numbers categorical: {:type :categorical})"])
       (and (or (fn? attribute-range) (gradient-name? attribute-range)) (= kind :ordinal) (not spread))
@@ -464,6 +471,13 @@
           (schema/nilable :domain {:cljplot2/section :levels :description "The values the scale maps: the levels in order (ordinal), or `[lo hi]` (linear, binned; `nil` at an end takes the data's, e.g. `[0 nil]`)."
                                    :cljplot2/default-doc "The data's levels, sorted, or `[min max]`." :cljplot2/example [0 10]}
                           [:sequential any?])
+          (schema/nilable :out-of-domain {:cljplot2/section :levels :description "What a chart does with a value outside an explicit `:domain`."
+                                           :cljplot2/default-doc "Most charts drop the value's row and count it; bar draws the bar in the NA colour; charts computing their colour (bin2d, field, contour, surface, statistic cells) skip the mark."
+                                           :cljplot2/example :as-na :cljplot2/example-context {:domain [1 3]}
+                                           :cljplot2/value-meanings {:drop "Drops the value's row, counted in `:dropped`; a chart computing its colour skips the mark, a hierarchy coloured by name keeps the node in the NA colour."
+                                                                     :as-na "Draws the value in the NA attribute (colour, shape, size, dash or pattern) and keeps its row; the legend adds an `outside` entry when such values exist."
+                                                                     :clamp "Draws the value in the attribute of the nearer domain end and keeps its row; linear and binned scales only."}}
+                           [:enum :drop :as-na :clamp])
           (schema/optional :range (merge {:cljplot2/section :range :cljplot2/default-doc "The theme's `:palette` entry of the dimension; `:gradient` for a linear or binned colour scale."} (range-props k))
                            (range-schema k))
           (schema/optional :spread {:cljplot2/section :range-mapping :description "Whether an ordinal colour scale spreads its levels over the whole `:range`, for a sequential range; with a categorical palette the levels get blends of its colours." :default false
@@ -509,7 +523,7 @@
                                    :cljplot2/value-meanings {true "Drawn." false "Hidden."}}
                           schema/bool)]
          [#(domain-problem k %) [:domain]]
-         (map #(option-rule k %) [:kind :domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
+         (map #(option-rule k %) [:kind :domain :out-of-domain :range :spread :midpoint :transform :reverse :area :bins :ticks :integer-ticks])))
 
 (defn- resolve-range
   "Gives the concrete range of an aesthetic from its validated range value.
@@ -709,6 +723,10 @@
                                  (assoc :sample (into [] (comp (filter schema/finite?) (map double)) vs)))
     :else (data/value-extent k vs)))
 
+(def ^:private drawn-outside
+  "The `:out-of-domain` values that draw a value outside the domain (keeping its row)."
+  #{:as-na :clamp})
+
 (defn kept-value?
   "Tests whether a non-`nil` data value of an aesthetic is drawn under the plot's scale.
 
@@ -718,7 +736,7 @@
   - `spec` (map): the plot's scale spec (may be `{}`).
   - `v`: the data value.
 
-  Returns, with an identity scale, true for a [[valid-attribute?]]; otherwise true for a valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]). `nil` gives false - callers decide about NA.
+  Returns, with an identity scale, true for a [[valid-attribute?]]; otherwise true for a valid value ([[cljplot2.data.rows/valid-value?]]) inside the explicit domain ([[in-domain?]]), or outside it when the spec's `:out-of-domain` is `:as-na` or `:clamp` (the value is drawn, see [[attribute-fn]]). `nil` gives false - callers decide about NA.
 
   Throws `ex-info {:key :mapping}` for an invalid value of an identity scale, and `ex-info {:key :kind}` for a non-number on a scale declared linear (dates allowed for `:color`) or binned - by its `:kind` or a two-number domain."
   [k spec v]
@@ -734,7 +752,7 @@
                    (schema/fail! (str "A " kind " aesthetic scale needs numeric data"
                                       (when (= :linear kind) " (or dates for :color)") ".")
                                  {:key :kind :in [:scales k :kind] :value v}))
-                 (in-domain? k spec v)))))
+                 (or (in-domain? k spec v) (contains? drawn-outside (:out-of-domain spec)))))))
 
 (defn- binned-breaks
   "Gives the breaks of a binned aesthetic scale.
@@ -837,6 +855,28 @@
       (fail! (str "should give finite values at the domain ends " lo " and " hi "."))
       :else transform)))
 
+(defn- outside-values
+  "Gives which values of an extent lie outside a scale's domain.
+
+  Parameters:
+
+  - `kind` (keyword): the scale kind.
+  - `domain`: the scale's domain - `[lo hi]` (numbers; a binned scale's breaks' ends) or the levels.
+  - `extent` (map or `nil`): the merged data extent - `:min` / `:max` (numbers or dates), `:values`.
+
+  Returns a set: `:below` / `:above` for an extent past the low / high end (linear, binned), `:levels` for an extent value that isn't a level (ordinal); empty for an identity scale or no extent."
+  [kind domain extent]
+  (case kind
+    (:linear :binned) (let [[^double lo ^double hi] domain
+                            low (some-> (:min extent) data/x-key double)
+                            high (some-> (:max extent) data/x-key double)]
+                        (cond-> #{}
+                          (and low (m/< ^double low lo)) (conj :below)
+                          (and high (m/> ^double high hi)) (conj :above)))
+    :ordinal (let [levels (set (map level-key domain))]
+               (if (some #(not (contains? levels (level-key %))) (:values extent)) #{:levels} #{}))
+    #{}))
+
 (defn scale-spec
   "Gives the scale of an aesthetic dimension - plain data, also the finalized scale (no pixel range, `nice` or padding).
 
@@ -848,7 +888,7 @@
   - `na-level`: some mapped value is NA (the scale gets an NA level).
   - `theme-palette` (map): the theme `:palette` (default ranges).
 
-  Returns `{:kind :domain :range :na-level}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the data's type, for the colour bar's labels) plus the spec's `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:integer-ticks`, `:title`, `:legend` when given; `nil` when there is neither an explicit domain nor data.
+  Returns `{:kind :domain :range :na-level}` (identity: no `:domain` / `:range`; binned: also `:breaks`, the domain being their ends; a linear scale over dates: the domain in epoch milliseconds and `:temporal-sample` - a date of the data's type, for the colour bar's labels) plus the spec's `:spread`, `:midpoint`, `:transform`, `:reverse`, `:area`, `:formatter`, `:ticks`, `:integer-ticks`, `:title`, `:legend`, `:out-of-domain` when given, and with `:out-of-domain` `:as-na` or `:clamp` `:outside` - which ends the extent passes (see [[outside-values]]), when any; `nil` when there is neither an explicit domain nor data.
 
   Throws `ex-info` keyed by the offending option for options the resolved kind doesn't allow ([[option-problems]]), `:ticks` of the wrong type, numeric-only options on dates, a level map `:range` missing a level, or a domain a `:transform` doesn't suit ([[transformable!]]).
 
@@ -899,7 +939,10 @@
           (some? (:ticks spec)) (assoc :ticks (:ticks spec))
           (:integer-ticks spec) (assoc :integer-ticks true)
           (contains? spec :title) (assoc :title (:title spec))
-          (contains? spec :legend) (assoc :legend (:legend spec)))))))
+          (contains? spec :legend) (assoc :legend (:legend spec))
+          (:out-of-domain spec) (assoc :out-of-domain (:out-of-domain spec))
+          (contains? drawn-outside (:out-of-domain spec))
+          (merge (when-let [outside (not-empty (outside-values kind domain extent))] {:outside outside})))))))
 
 (defn- size-fn
   "Gives the size mapping of a size range.
@@ -1036,40 +1079,53 @@
   - `spec` (map): the scale ([[scale-spec]]).
   - `na`: the NA attribute.
 
-  Returns a function of a data value giving its attribute (colour, shape, size, dash, pattern): `nil` (NA) gives `na`; a value outside the domain (not a level; not a number within `[lo hi]`; not in a bin) gives `nil` - callers skip it. Identity: the value itself (a size as a double; `nil` for an invalid value).
+  Returns a function of a data value giving its attribute (colour, shape, size, dash, pattern): `nil` (NA) gives `na`; a value outside the domain (not a level; not a number within `[lo hi]`; not in a bin) gives, by the scale's `:out-of-domain`: `:as-na` - `na`; `:clamp` - the attribute of the nearer end (linear: `lo` or `hi`; binned: the first or last bin); otherwise `nil` - callers skip it. A value that isn't a finite number (or, on a linear scale, a date) gives `nil` under every option. Identity: the value itself (a size as a double; `nil` for an invalid value).
 
   See also [[ordinal-attributes]], [[bin-attributes]]."
   [k spec na]
-  (case (:kind spec)
-    :ordinal (let [index (zipmap (map level-key (:domain spec)) (ordinal-attributes k spec))]
-               (fn [v] (if (nil? v) na (get index (level-key v)))))
-    :linear (let [[^double lo ^double hi] (:domain spec)
-                  attribute-range (:range spec)
-                  {:keys [forward]} (value-transform spec)
-                  mid (:midpoint spec)
-                  t-in (unit-fn (forward lo) (forward hi) (when (some? mid) (forward (double mid))))
-                  t-forward (fn ^double [^double v] (double (t-in (double (forward v)))))
-                  t-of (if (:reverse spec) (fn ^double [^double v] (m/- 1.0 (double (t-forward v)))) t-forward)
-                  f (if (= k :color)
-                      (let [g (gradient-of attribute-range)] (fn [^double t] (g t)))
-                      (size-fn attribute-range (:area spec)))]
-              (fn [v]
-                (if (nil? v)
-                  na
-                  (let [x (data/x-key v)]
-                    (when (and x (m/<= lo (double x) hi)) (f (t-of (double x))))))))
-    :binned (let [arr (double-array (:breaks spec))
-                  attributes (bin-attributes k spec)]
-              (fn [v]
-                (cond
-                  (nil? v) na
-                  (number? v) (let [i (levels/bin-index arr (double v))] (when-not (m/neg? i) (attributes i)))
-                  :else nil)))
-    :identity (fn [v]
-                (cond
-                  (nil? v) na
-                  (valid-attribute? k v) (if (= k :size) (double v) v)
-                  :else nil))))
+  (let [outside (:out-of-domain spec)
+        as-na? (= :as-na outside)
+        clamp? (= :clamp outside)
+        outside-attribute (fn [clamped] (cond as-na? na clamp? (clamped) :else nil))]
+    (case (:kind spec)
+      :ordinal (let [index (zipmap (map level-key (:domain spec)) (ordinal-attributes k spec))]
+                 (fn [v] (if (nil? v) na (or (get index (level-key v)) (when as-na? na)))))
+      :linear (let [[^double lo ^double hi] (:domain spec)
+                    attribute-range (:range spec)
+                    {:keys [forward]} (value-transform spec)
+                    mid (:midpoint spec)
+                    t-in (unit-fn (forward lo) (forward hi) (when (some? mid) (forward (double mid))))
+                    t-forward (fn ^double [^double v] (double (t-in (double (forward v)))))
+                    t-of (if (:reverse spec) (fn ^double [^double v] (m/- 1.0 (double (t-forward v)))) t-forward)
+                    f (if (= k :color)
+                        (let [g (gradient-of attribute-range)] (fn [^double t] (g t)))
+                        (size-fn attribute-range (:area spec)))]
+                (fn [v]
+                  (if (nil? v)
+                    na
+                    (when-let [value-key (data/x-key v)]
+                      (let [x (double value-key)]
+                        (cond
+                          (m/<= lo x hi) (f (t-of x))
+                          (m/valid-double? x) (outside-attribute #(f (t-of (m/constrain x lo hi))))
+                          :else nil))))))
+      :binned (let [arr (double-array (:breaks spec))
+                    attributes (bin-attributes k spec)
+                    low (Array/aget arr 0)]
+                (fn [v]
+                  (cond
+                    (nil? v) na
+                    (schema/finite? v) (let [x (double v)
+                                             i (levels/bin-index arr x)]
+                                         (if (m/neg? i)
+                                           (outside-attribute #(attributes (if (m/< x low) 0 (m/long-dec (count attributes)))))
+                                           (attributes i)))
+                    :else nil)))
+      :identity (fn [v]
+                  (cond
+                    (nil? v) na
+                    (valid-attribute? k v) (if (= k :size) (double v) v)
+                    :else nil)))))
 
 (defn palette-color-fn
   "Gives the colours of the theme palette as an ordinal scale gives them.
@@ -1157,6 +1213,10 @@
              :value (m/* 0.5 (m/+ a b))})
           (partition 2 1 breaks) (partition 2 1 labels))))
 
+(def outside-label
+  "The legend label of values outside a scale's domain drawn as NA (`:out-of-domain :as-na`)."
+  "outside")
+
 (defn legend-entries
   "Gives the legend entries of an aesthetic scale.
 
@@ -1165,7 +1225,7 @@
   - `k` (keyword): the dimension.
   - `spec` (map): the scale ([[scale-spec]]).
 
-  Returns `[{:label :value}]` (`:value nil` - the NA entry, last when the scale has `:na-level`): ordinal - one per level (`(str level)`, or through `:formatter` - a formula value kept, see [[cljplot2.data.text/label-text]]); linear size - ticks of the domain ([[linear-legend-ticks]]); binned size - one per bin ([[binned-legend-entries]]). `nil` when the scale has no legend: `:legend false`, an identity scale, or linear / binned colour (a colour bar instead)."
+  Returns `[{:label :value}]`: ordinal - one per level (`(str level)`, or through `:formatter` - a formula value kept, see [[cljplot2.data.text/label-text]]); linear size - ticks of the domain ([[linear-legend-ticks]]); binned size - one per bin ([[binned-legend-entries]]). Entries with `:value nil` draw the NA attribute and come last: [[outside-label]] for values outside the domain drawn as NA (`:out-of-domain :as-na` with `:outside` set), then `NA` when the scale has `:na-level`. `nil` when the scale has no legend: `:legend false`, an identity scale, or linear / binned colour (a colour bar instead)."
   [k spec]
   (when-not (or (false? (:legend spec)) (= :identity (:kind spec))
                 (and (= k :color) (#{:linear :binned} (:kind spec))))
@@ -1174,4 +1234,6 @@
                     :ordinal (mapv (fn [level] {:label (text/label-text (fmt level)) :value level}) (:domain spec))
                     :binned (binned-legend-entries spec)
                     (linear-legend-ticks spec))]
-      (cond-> entries (:na-level spec) (conj {:label "NA" :value nil})))))
+      (cond-> entries
+        (and (= :as-na (:out-of-domain spec)) (seq (:outside spec))) (conj {:label outside-label :value nil})
+        (:na-level spec) (conj {:label "NA" :value nil})))))

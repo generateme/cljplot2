@@ -281,8 +281,9 @@
           centre-y? (= :numeric (:kind (:y axes)))
           color-of (aesthetic/attribute-fn :color (:color scales) (get-in env [:theme :palette :na]))
           factor-of (if sized
-                      (let [size-of (aesthetic/attribute-fn :size (:size scales) nil)
-                            largest (largest-size (:size scales))]
+                      ;; a size drawn as NA (:out-of-domain :as-na) fills the cell; NA sizes are dropped at compute
+                      (let [largest (largest-size (:size scales))
+                            size-of (aesthetic/attribute-fn :size (:size scales) largest)]
                         (fn [cell] (some-> (size-of (nth cell 3)) (size-factor largest))))
                       (constantly 1.0))
           placed (keep (fn [[x y value :as cell]]

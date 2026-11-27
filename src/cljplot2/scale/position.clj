@@ -142,22 +142,47 @@
 
 (def ^:private wadogo-attributes
   "wadogo scale attributes passed through to the scale (see wadogo's kinds, `wadogo.scale/kind-info`):
-  `[key card-properties]` pairs, in card order; each entry takes `any?` (wadogo checks it) and wadogo's default."
-  [[:clamp {:description "Whether wadogo clamps values outside the domain to its ends." :cljplot2/example true
-             :cljplot2/example-context {:domain [2 5]}}]
-   [:unknown {:description "The position wadogo gives a value outside a bands domain." :cljplot2/no-example true}]
-   [:round {:description "Whether wadogo rounds mapped positions, and band starts and widths, to whole pixels." :cljplot2/example true}]
-   [:base {:description "The logarithm base of a `:log` scale; it changes the ticks and the nice domain." :cljplot2/example 2
-           :cljplot2/example-context {:kind :log}}]
-   [:exponent {:description "The exponent of a `:pow` scale." :cljplot2/example 2 :cljplot2/example-context {:kind :pow}}]
-   [:padding-in {:description "The space between bands, a fraction of the step." :cljplot2/example 0.5}]
-   [:padding-out {:description "The space before the first and after the last band, a fraction of the step." :cljplot2/example 1.0}]
+  `[key card-properties schema]` triples, in card order, each with wadogo's default as its default text."
+  [[:clamp {:description "Whether wadogo clamps a value outside the finalized domain - the panel's span after nice rounding and padding - to the nearer end."
+            :cljplot2/default-doc "`false`." :cljplot2/example true :cljplot2/example-context {:domain [2 5]}
+            :cljplot2/value-meanings {true "Values past an end sit at the panel's edge." false "Values past an end lie outside the panel, which clips them."}}
+    schema/bool]
+   [:unknown {:description "The pixel position, along the panel from its range start, wadogo gives a value outside a bands domain."
+              :cljplot2/default-doc "None: such values aren't drawn." :cljplot2/example 0
+              :cljplot2/example-context {:domain ["a" "b"]}}
+    schema/finite]
+   [:round {:description "Whether wadogo rounds mapped positions, and band starts and widths, to whole pixels."
+            :cljplot2/default-doc "`false`." :cljplot2/example true
+            :cljplot2/value-meanings {true "Whole pixels." false "Exact positions."}}
+    schema/bool]
+   [:base {:description "The logarithm base of a `:log` scale; it changes the ticks and the nice domain." :cljplot2/default-doc "`10`."
+           :cljplot2/example 2 :cljplot2/example-context {:kind :log}}
+    [:and schema/finite [:> 1]]]
+   [:exponent {:description "The exponent of a `:pow` scale; 0 is rejected (every value would map to one place)."
+               :cljplot2/default-doc "`0.5`, a square root." :cljplot2/example 2 :cljplot2/example-context {:kind :pow}}
+    [:and schema/finite [:not= 0]]]
+   [:padding-in {:description "The space between bands, a fraction of the step." :cljplot2/default-doc "`0`: bands touch." :cljplot2/example 0.5}
+    schema/fraction]
+   [:padding-out {:description "The space before the first and after the last band, a fraction of the step."
+                  :cljplot2/default-doc "`0`; ridgelines and tiles set their own room."
+                  :cljplot2/example 1.0}
+    schema/non-neg]
    [:align-outer {:description "How the outer band space is split: 0 puts it all after the last band, 1 all before the first."
-                  :cljplot2/example 0.0 :cljplot2/example-context {:padding-out 2.0}}]
-   [:align {:description "Where a point sits inside its band: 0 at the band's start, 1 at its end." :cljplot2/example 0.0}]
+                  :cljplot2/default-doc "`0.5`: evenly; ridgelines and tiles set their own." :cljplot2/example 0.0 :cljplot2/example-context {:padding-out 2.0}}
+    schema/fraction]
+   [:align {:description "Where a point sits inside its band: 0 at the band's start, 1 at its end." :cljplot2/default-doc "`0.5`: the band's middle."
+            :cljplot2/example 0.0
+            :cljplot2/value-meanings {:spread "Places spread over the bands: the first band's point at its start, the last band's at its end."}
+            :cljplot2/form-meanings {"fraction" "This place in every band." "sequence of fractions" "A place per band, in band order, cycled (at least one)."}}
+    [:or schema/fraction [:= :spread] [:sequential {:min 1} schema/fraction]]]
    [:interpolator-params {:description "Extra arguments an `:interpolated` scale's `:interpolator` takes after the points, e.g. its options map."
-                          :cljplot2/example [{:bandwidth 0.9}]
-                          :cljplot2/example-context {:kind :interpolated :domain [1 2 3 4 5 6 7 8 9 10] :interpolator :loess}}]])
+                          :cljplot2/default-doc "None." :cljplot2/example [{:bandwidth 0.9}]
+                          :cljplot2/example-context {:kind :interpolated :domain [1 2 3 4 5 6 7 8 9 10] :interpolator :loess}}
+    [:sequential any?]]])
+
+(def ^:private wadogo-keys
+  "The keys of [[wadogo-attributes]]; a `nil` one means wadogo's default (left out of the spec)."
+  (mapv first wadogo-attributes))
 
 (def ^:private ticks-params
   "Schema of `:ticks-params`: the fewest ticks and calendar ticks."
@@ -261,7 +286,7 @@
           (schema/optional :range (schema/forbidden "is set from the layout, it can't be given"))
           (schema/optional :padding (schema/forbidden "is internal; use :expand"))
           (schema/optional :tick-format (schema/forbidden "is internal (set by charts); use :formatter"))]
-         (map (fn [[k props]] (schema/optional k (assoc props :cljplot2/section :wadogo :cljplot2/default-doc "The wadogo scale's default.") any?)))
+         (map (fn [[k props s]] (schema/nilable k (assoc props :cljplot2/section :wadogo) s)))
          wadogo-attributes)
    [domain-problem [:domain]]
    [#(when-let [[^double lo ^double hi] (:axis-domain %)] (when (m/== lo hi) ":axis-domain should be two different numbers"))
@@ -421,15 +446,16 @@
   Parameters:
 
   - `k` (keyword): the scale key (`:x` / `:y`).
-  - `spec` (map): wadogo attributes plus `:nice` and the cljplot2 options, valid by [[scale-spec-schema]]; a `:domain` is required.
+  - `given-spec` (map): wadogo attributes plus `:nice` and the cljplot2 options, valid by [[scale-spec-schema]]; a `:domain` is required; a `nil` wadogo attribute means wadogo's default (it is left out).
 
-  Returns `spec` with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; `false` turns it off; `nil` - the default); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] (`:power-math` the [[power-math-label]]) of the scale's `:base` (default 10).
+  Returns the spec with `:kind` (inferred from the domain when missing, see [[domain-kind]]) and `:nice` (default `true`, `false` for `:interpolated`: extend continuous domains to nice values by at most 10% of the range; a number sets that limit, a fraction; `false` turns it off; `nil` - the default); `:datetime` gets `:ticks-method :pretty` unless given; a pattern string `:formatter` becomes a function, `:formatter :power` the [[power-label]] (`:power-math` the [[power-math-label]]) of the scale's `:base` (default 10).
 
   Throws `ex-info {:key :domain}` without a domain or for a domain not suiting the kind (e.g. `:log` with 0), `ex-info {:key :ticks}` for a tick list not matching the kind and domain, `{:key :ticks-params}` for too many calendar ticks, and `ex-info` keyed by the option for options the kind doesn't take ([[kind-option-problem]]).
 
   See also [[data-scale-spec]], [[finalize]]."
-  [k spec]
-  (let [{:keys [domain ticks]} spec
+  [k given-spec]
+  (let [spec (apply dissoc given-spec (filter #(and (contains? given-spec %) (nil? (get given-spec %))) wadogo-keys))
+        {:keys [domain ticks]} spec
         _ (when (nil? domain)
             (schema/fail! "Scale :domain is required when there is no data." {:key :domain :in [:scales k :domain]}))
         kind (or (:kind spec) (domain-kind domain))]

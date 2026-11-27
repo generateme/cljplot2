@@ -14,7 +14,8 @@ Design history, specs and the roadmap live in the user's Obsidian vault: `~/note
 Notebooks/` - a folder per section or gallery, the roadmap with section status and backlog in `00 Frame and
 Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference part of the book; `05 Code Review/` - code
 review rounds, their specs and implementation notes; `06 Reference Readability/` - option cards, concept headings
-and prose of the reference part). Read them when a decision's rationale is unclear.
+and prose of the reference part; `07 Domains Titles Surface Colour/` - out-of-domain values, titles of every mapped
+dimension, the surface's colour dimension). Read them when a decision's rationale is unclear.
 
 ## Commands
 
@@ -86,8 +87,9 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   `:scale` space; helpers `scale.position/stat-transform-for`, `data.rows/transformed-numbers` (`chart.common`
   holds only `stat-space-option`).
 - A per-mark continuous colour value lives in `:color-value` (bar, rect). Among strip charts only bar takes a numeric
-  `:color` (it never groups; `:color-stat` - how a bar's rows give it; an explicit colour domain filters no rows -
-  a bar whose value lies outside it is drawn in the NA colour); box / violin take a categorical one only. Strip end
+  `:color` (it never groups; `:color-stat` - how a bar's rows give it; by default an explicit colour domain filters
+  no rows - a bar whose value lies outside it is drawn in the NA colour; `:out-of-domain :drop` drops the bar, its
+  rows counted, `:clamp` gives it the end colour); box / violin take a categorical one only. Strip end
   labels go past the larger values (`scale.position/value-direction`, reversed axes too); an item's `:n-label-gap`
   keeps its n label past drawn marks (box outliers).
 - Label repel and paths: text `:overlapping-labels :repel` moves a label that overlaps one placed before it (row
@@ -138,7 +140,12 @@ option `:legend false` draws none, and a legend no chart draws a key into is dro
 line width to the theme's `[:legend :min-key-line-width]` (`theme/key-style`). A scale's `:domain` may leave one end
 `nil` (`[lo nil]`, `[nil hi]`): the data fill it, the fixed end keeps the charts' padding and nice rounding; `[nil
 nil]` is no domain; every reader goes through `data.rows` (`given-domain`, `full-domain`, `completed-domain`); a free
-or sliced facet scale takes no partial domain.
+or sliced facet scale takes no partial domain. A value outside an explicit aesthetic domain goes by the scale's
+`:out-of-domain` through two gates only - `aesthetic/kept-value?` at compute (is the row kept), `attribute-fn` at
+draw (its attribute) - and `aesthetic/scale-spec` sets `:outside` - which ends the kept data pass (`#{:below
+:above}`, ordinal `#{:levels}`), only under `:as-na` / `:clamp` - for the legends' markers; bar judges a bar's
+aggregated colour value, not its rows. Position scales take no `:out-of-domain`: they keep and clip, and wadogo's
+`:clamp` clamps to the finalized (nice, padded) domain.
 
 **Layout** is a track grid (`layout/grid`, `layout/plot-grid`) with a measure → solve → re-tick loop; a grid cell may
 hold a whole plot (`:arrange`, `plot/pairs`, `:margins`).
@@ -234,6 +241,13 @@ the theme: banned names, and one type family per name across all owners). One na
 - `:invalid` - what a chart does with rows whose mapped value is invalid: `:drop` (default, counted in `:dropped`)
   or `:show` (drawn in a band beside the axis, labelled `:invalid-label`). Invalid means nil, NaN, non-numeric or
   unplaceable on the scale; NA (`:na-panel`, `:na-level`, `[:palette :na]`) means nil only.
+- `:out-of-domain` - an aesthetic scale's treatment of a value outside its explicit `:domain` (neither NA nor
+  invalid): `:drop` (the row dropped, counted; a computed colour's mark skipped, uncounted; a hierarchy coloured by
+  name keeps the node in the NA colour), `:as-na` (drawn like NA - the NA attribute, row kept; the value itself
+  stays non-NA: `:na-level` and NA counts don't change), `:clamp` (the nearer end's attribute, row kept; linear and
+  binned scales); `nil` - each chart's own (most drop, bar draws NA, charts computing their colour skip the mark
+  uncounted). A value that isn't finite is never drawn by it. Legends mark kept values: colour bar end triangles
+  (`:clamp`), an `outside` swatch or entry (`:as-na`).
 - `:overlapping-labels` - `:keep` / `:drop` (scales, text); `:repel` only for the text chart (labels move to free
   places - tick labels never move); `:repel-distance` - pixels, the farthest a repelled label moves.
 - `:dollar-math` - a text role's, label's or text chart's switch of `$...$` formulas (default on; `false` keeps

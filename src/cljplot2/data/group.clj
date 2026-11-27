@@ -275,6 +275,24 @@
   [panels]
   (set (for [gs (vals panels) g gs [k v] (:aesthetics g) :when (nil? v)] k)))
 
+(defn- na-attribute
+  "Gives the attribute a group of an NA value draws with.
+
+  Parameters:
+
+  - `k` (keyword): the aesthetic dimension.
+  - `base` (map): the chart's style.
+  - `theme` (map): the plot's theme.
+
+  Returns: `:color` - the theme's `[:palette :na]`; `:shape` - the base `:shape`, else the palette's first shape; `:size` - the base `:size`, else its `:line-width` (line marks); `:dash` - the base `:dash`, else `:solid`; `:pattern` - the base `:pattern` (`nil` without one)."
+  [k base theme]
+  (case k
+    :color (get-in theme [:palette :na])
+    :shape (or (:shape base) (first (get-in theme [:palette :shape])))
+    :size (or (:size base) (:line-width base))
+    :dash (or (:dash base) :solid)
+    (get base k)))
+
 (defn style
   "Applies a group's aesthetics to a chart's style.
 
@@ -283,14 +301,13 @@
   - `base` (map): the chart's style.
   - `aesthetics` (map): the group's `{dim value}`; dimensions without a scale are ignored.
   - `scales` (map): finalized aesthetic scales.
-  - `theme` (map): the plot's theme - an NA `:color` is its `[:palette :na]`; an NA `:shape`, `:size`, `:dash` keeps the base value.
+  - `theme` (map): the plot's theme - read for the NA attributes ([[na-attribute]]).
 
-  Returns the style with each aesthetic's attribute, or `nil` when a value is outside its scale's domain (the group is skipped)."
+  Returns the style with each aesthetic's attribute (NA - an NA value, or one outside the domain drawn as NA, `:out-of-domain :as-na`), or `nil` when a value is outside its scale's domain otherwise (the group is skipped)."
   [base aesthetics scales theme]
   (reduce (fn [st [k v]]
             (if-let [scale (get scales k)]
-              (let [na (if (= k :color) (get-in theme [:palette :na]) (get base k))
-                    a ((aesthetic/attribute-fn k scale na) v)]
+              (let [a ((aesthetic/attribute-fn k scale (na-attribute k base theme)) v)]
                 (if (some? a) (assoc st k a) (reduced nil)))
               st))
           base aesthetics))

@@ -381,7 +381,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x3e26ab09 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
+#object[java.awt.Font 0xe3730b7 "java.awt.Font[family=DejaVu Sans Mono,name=DejaVu Sans Mono Bold,style=plain,size=14]"]
 
 ```
 :::
@@ -398,7 +398,7 @@ every platform; installed and logical families (`"Serif"`, `"SansSerif"` ...) wo
 
 ::: {.printedClojure}
 ```clojure
-#object[java.awt.Font 0x2f49e291 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
+#object[java.awt.Font 0x7f85c668 "java.awt.Font[family=Serif,name=Serif,style=italic,size=12]"]
 
 ```
 :::

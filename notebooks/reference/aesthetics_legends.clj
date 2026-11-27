@@ -88,6 +88,25 @@
                                      :formatter #(str "Q" (inc (quot (dec (.getMonthValue ^LocalDate %)) 3)) " " (.getYear ^LocalDate %))}}}
                    {:width 600 :height 320})
 
+;; ### Values outside the domain
+
+;; An explicit `:domain` narrower than the data leaves values outside it, and `:out-of-domain` decides what happens
+;; to them. The plots below give the colour scale a domain of 60 to 75 years of life expectancy, on a gradient whose
+;; ends both show. The left plot drops the countries outside, so its y axis shrinks with them. The middle one draws
+;; them in the NA colour and adds an `outside` swatch under the colour bar. The right one draws them in the end
+;; colours and marks each end with a triangle. Without the option, scatter drops them too; bar draws them in the NA
+;; colour:
+
+(plot/render-image (plot/arrange (for [option [:drop :as-na :clamp]]
+                                   {:data gapminder
+                                    :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
+                                    :charts [(chart/scatter)]
+                                    :scales {:x {:kind :log :formatter :power}
+                                             :color {:domain [60 75] :range :viridis/viridis :out-of-domain option}}
+                                    :labels {:title (str ":out-of-domain " option)}})
+                                 {:columns 3})
+                   {:width 1000 :height 350})
+
 ;; ## Colour range
 
 ;; This option sets the colours. clojure2d names 7339 palettes and 5009 gradients:

@@ -815,7 +815,6 @@
    [:group/text-style [:align]] "the text chart, the group's representative, takes no `:align`; label maps do (Labels and text)"
    [:schema/plot [:custom-grid]] "a whole hand-written layout; the Facets and arrange chapter draws one"
    [:schema/plot [:arrange]] "`plot/arrange` builds it from plots; the Facets and arrange chapter draws both"
-   [:schema/position-scale [:unknown]] "rows outside a bands domain draw no mark, so the position wadogo gives them shows nowhere"
    [:group/strip [:level-axis]] "it decides only where both axes or neither are categorical, which no drawable strip fixture has: values need a numeric axis"})
 
 (defn- group-owner

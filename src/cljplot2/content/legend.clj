@@ -485,18 +485,31 @@
      :w (m/+ (m/* 2.0 border) (m/max (.x title-size) entries-w))
      :h (m/+ (m/* 2.0 border) (.y title-size) entries-h)}))
 
+(defn- colorbar-markers
+  "Gives the markers a colour bar draws for values outside its scale's domain.
+
+  Parameters:
+
+  - `scale` (map): the colour scale spec - `:out-of-domain`, `:outside` (see [[cljplot2.scale.aesthetic/scale-spec]]).
+
+  Returns `{:top :bottom :swatch}`, each truthy or falsy: `:top` / `:bottom` - a triangle past the bar's high / low end, for values clamped there (`:out-of-domain :clamp` with values above / below the domain); `:swatch` - an NA swatch labelled [[cljplot2.scale.aesthetic/outside-label]] under the bar, for values drawn as NA (`:out-of-domain :as-na` with values outside)."
+  [{outside-option :out-of-domain outside :outside}]
+  (let [clamp? (= :clamp outside-option)]
+    {:top (and clamp? (contains? outside :above))
+     :bottom (and clamp? (contains? outside :below))
+     :swatch (and (= :as-na outside-option) (seq outside))}))
+
 (defn- colorbar-geometry
   "Gives the layout of a colour bar with a bar length, relative to its top-left corner.
 
   Parameters:
 
-  - `content` (map): the colour bar content - `:title`, `:labels`.
+  - `content` (map): the colour bar content - `:title`, `:labels`, `:scale` (its markers, see [[colorbar-markers]]).
   - `env` (map): `:theme`, `:canvas` (measuring).
   - `length` (double): the bar length in pixels.
 
-  Returns `{:w :h :border :title-h :bar-w :bar-len :labels :label-h}`: `:labels` - the tick labels' natural sizes
-  (a vector), `:label-h` - the room above and below the bar for the end labels, together."
-  [{:keys [title labels]} env ^double length]
+  Returns `{:w :h :border :title-h :bar-w :bar-len :labels :label-h :top-room :bottom-room :triangle-h :swatch}`: `:labels` - the tick labels' natural sizes (a vector), `:label-h` - the room above and below the bar for the end labels, together; `:top-room` / `:bottom-room` - the room above / below the bar (half the label room, or more for an end triangle `:triangle-h` high - an equilateral triangle on the bar's width); `:swatch` - the NA swatch's label size (a `Vec2`) or `nil`."
+  [{:keys [title labels scale]} env ^double length]
   (let [{:keys [^double gap key-size bar-width ^double bar-tick-length border-width border-color]} (get-in env [:theme :legend])
         bar-w (double (or bar-width key-size))
         border (if (theme/none? border-color) 0.0 (double (m/round (double border-width))))
@@ -504,10 +517,19 @@
         sizes (mapv #(measure/natural-size (entry-label %) env) labels)
         ^Vec2 largest (measure/max-size sizes)
         label-h (.y largest)
-        label-w (.x largest)]
+        label-w (.x largest)
+        {:keys [top bottom swatch]} (colorbar-markers scale)
+        triangle-h (m/* bar-w m/SQRT3_2)
+        half-label (m/* 0.5 label-h)
+        top-room (if top (m/max half-label triangle-h) half-label)
+        bottom-room (if bottom (m/max half-label triangle-h) half-label)
+        ^Vec2 swatch-size (when swatch (measure/natural-size (entry-label aesthetic/outside-label) env))
+        swatch-h (if swatch-size (m/+ gap (m/max (double key-size) (.y swatch-size))) 0.0)
+        swatch-w (if swatch-size (m/+ (double key-size) gap (.x swatch-size)) 0.0)]
     {:border border :title-h (.y title-size) :bar-w bar-w :bar-len length :labels sizes :label-h label-h
-     :w (m/+ (m/* 2.0 border) (m/max (.x title-size) (m/+ bar-w bar-tick-length gap label-w)))
-     :h (m/+ (m/* 2.0 border) (.y title-size) label-h length)}))
+     :top-room top-room :bottom-room bottom-room :triangle-h triangle-h :swatch swatch-size
+     :w (m/+ (m/* 2.0 border) (m/max (.x title-size) (m/+ bar-w bar-tick-length gap label-w) swatch-w))
+     :h (m/+ (m/* 2.0 border) (.y title-size) top-room bottom-room length swatch-h)}))
 
 (def ^{:private true :const true :tag 'double} min-bar-keys
   "Shortest stretched colour bar, in key sizes (theme `[:legend :key-size]`)."
@@ -776,7 +798,7 @@
       (fn [value] (if (m/== lo hi) 0.5 (m/norm (double (forward (double value))) lo hi))))))
 
 (defn- draw-colorbar!
-  "Draws a colour bar: its box, title, the bar, a mark per tick and the tick labels.
+  "Draws a colour bar: its box, title, the bar, a mark per tick, the tick labels and, for values outside the domain (see [[colorbar-markers]]), an end triangle in its end's colour (`:out-of-domain :clamp`) or an NA swatch labelled [[cljplot2.scale.aesthetic/outside-label]] (`:as-na`).
 
   Every label of an explicit `:ticks` vector is drawn, else from the lowest each label whose text block (padding
   excluded, as axes measure) doesn't overlap the last drawn one - labels stacked across their text, spaced by their
@@ -797,14 +819,16 @@
   (let [x (.x origin)
         y (.y origin)
         {:keys [^double gap ^double bar-tick-length ^double bar-tick-width]} (get-in env [:theme :legend])
-        {:keys [^double w ^double h ^double border ^double title-h ^double bar-w ^double bar-len ^double label-h]
+        {:keys [^double w ^double h ^double border ^double title-h ^double bar-w ^double bar-len
+                ^double top-room ^double bottom-room ^double triangle-h swatch]
          sizes :labels} geometry
+        {:keys [top bottom]} (colorbar-markers scale)
         color-of (aesthetic/attribute-fn :color scale (get-in env [:theme :palette :na]))
         [^double lo ^double hi] (:domain scale)
         value-at (bar-value-fn scale)
         position-of (bar-position-fn scale)
         x0 (m/+ x border)
-        bar-top (m/+ y border title-h (m/* 0.5 label-h))
+        bar-top (m/+ y border title-h top-room)
         bar-x (m/round x0)
         bar-w-px (m/round bar-w)
         bar-right (m/+ bar-x bar-w-px)
@@ -823,6 +847,29 @@
       (let [t (if (m/== lo hi) 0.5 (m/- 1.0 (m// (m/+ (double i) 0.5) (double len))))]
         (c2d/set-color c (color-of (value-at t)))
         (c2d/rect c bar-x (m/long-add (m/round bar-top) i) bar-w-px 1)))
+    ;; values clamped to an end: a triangle past it, in the end's colour
+    (let [bar-y0 (double (m/round bar-top))
+          bar-y1 (m/+ bar-y0 len)
+          middle (m/+ bar-x (m/* 0.5 bar-w-px))]
+      (when top
+        (c2d/set-color c (color-of (value-at 1.0)))
+        (c2d/triangle c bar-x bar-y0 bar-right bar-y0 middle (m/- bar-y0 triangle-h)))
+      (when bottom
+        (c2d/set-color c (color-of (value-at 0.0)))
+        (c2d/triangle c bar-x bar-y1 bar-right bar-y1 middle (m/+ bar-y1 triangle-h)))
+      ;; values drawn as NA: a swatch under the bar, labelled
+      (when swatch
+        (let [key-size (double (get-in env [:theme :legend :key-size]))
+              ^Vec2 swatch-label swatch
+              row-h (m/max key-size (.y swatch-label))
+              row-y (m/+ bar-y1 bottom-room gap)]
+          (c2d/set-color c (get-in env [:theme :palette :na]))
+          (c2d/rect c bar-x (m/+ row-y (m/* 0.5 (m/- row-h key-size))) key-size key-size)
+          (c2d/with-isolated-canvas [isolated c]
+            (draw/draw-content (assoc (entry-label aesthetic/outside-label) :color label-color) isolated
+                               {:x (m/+ bar-x key-size gap) :y (m/+ row-y (m/* 0.5 (m/- row-h (.y swatch-label))))
+                                :w (.x swatch-label) :h (.y swatch-label)}
+                               env)))))
     (c2d/set-stroke-custom c {:size bar-tick-width :cap :butt})
     (doseq [[i t text ^Vec2 size] (map vector (range) ticks labels sizes)
             :let [ty (draw/pixel-center (tick-y t))]]
