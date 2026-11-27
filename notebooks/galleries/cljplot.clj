@@ -336,7 +336,7 @@
 ;; ### A complex function
 
 ;; Domain colouring of $f(z) = \frac{z^3 - 1}{z^2 + i}$: the hue is the argument of $f(z)$, the brightness its
-;; magnitude wrapped into bands (`:log2` - where $|f| + 1$ doubles), every pixel computed (`:pixel-color`). The three
+;; magnitude wrapped into bands (`:log2+` - where $|f| + 1$ doubles), every pixel computed (`:pixel-color`). The three
 ;; zeros (the cube roots of 1) and the two poles (the square roots of $-i$) are the points every hue meets at.
 
 (nu/source-note {:source "cljplot - complex" :url examples-url})
@@ -344,7 +344,7 @@
 (plot/render-image
  {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/sub (cx/mult z (cx/mult z z)) cx/ONE)
                                                                              (cx/add (cx/mult z z) cx/I)))
-                                                         {:colorspace :HSI :gamma 1.0})
+                                                         {:colorspace :HSI :wrap :log2+ :gamma 1.0})
                          :domain {:x [-2 2] :y [-2 2]}})]
   :aspect :iso
   :labels {:title "$f(z) = \\frac{z^3 - 1}{z^2 + i}$" :x "$\\mathrm{Re}\\,z$" :y "$\\mathrm{Im}\\,z$"}}

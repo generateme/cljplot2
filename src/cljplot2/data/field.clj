@@ -477,21 +477,23 @@
 
 (def wrap-methods
   "Wraps of a magnitude into `[0 1]` for [[domain-color]]."
-  #{:log2 :log10 :sin :exp :sigmoid :frac})
+  #{:log2 :log10 :log2+ :log10+ :sin :exp :sigmoid :frac})
 
 (defn- wrap
   "Wraps a magnitude into `[0 1]` (old cljplot's complex plot).
 
   Parameters:
 
-  - `method` (keyword): one of [[wrap-methods]] - `:log2` and `:log10` - the fraction of log(v + 1) (bands where |f| + 1 doubles or grows tenfold), `:sin` - sin v scaled to `[0 1]`, `:exp` - 1 - e^-v, `:sigmoid`, `:frac` - the fraction of v.
+  - `method` (keyword): one of [[wrap-methods]] - `:log2` and `:log10` - the fractional part of |log v| (bands where v doubles or grows tenfold, the same for v and 1/v), `:log2+` and `:log10+` - the fractional part of log(v + 1) (bands where v + 1 doubles or grows tenfold), `:sin` - sin v scaled to `[0 1]`, `:exp` - 1 - e^-v, `:sigmoid`, `:frac` - the fractional part of v.
   - `v` (double): the magnitude, non-negative.
 
-  Returns the wrapped value as a double (`NaN` or infinite for a non-finite `v`)."
+  Returns the wrapped value as a double; `NaN` for a `NaN` `v`, for an infinite `v` under every method but `:exp` and `:sigmoid` (1 there), and for `v` 0 under `:log2` and `:log10`."
   ^double [method ^double v]
   (case method
-    :log2 (m/frac (m/log2 (m/inc v)))
-    :log10 (m/frac (m/log10 (m/inc v)))
+    :log2 (m/frac (m/log2 v))
+    :log10 (m/frac (m/log10 v))
+    :log2+ (m/frac (m/log2 (m/inc v)))
+    :log10+ (m/frac (m/log10 (m/inc v)))
     :sin (m/norm (m/sin v) -1.0 1.0 0.0 1.0)
     :exp (m/- 1.0 (m/exp (m/- v)))
     :sigmoid (m/sigmoid v)
@@ -511,7 +513,7 @@
   - `z` (`Vec2`): the complex number.
   - `gamma` (double): a positive exponent the wrapped magnitude is raised to; below 1 it raises the third channel, above 1 it lowers it, 1 keeps it.
 
-  Returns the colour: hue - arg z, the third channel - the wrapped |z| raised to `gamma`, the second - 3/4 to full along it; a non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
+  Returns the colour: hue - arg z, the third channel - the wrapped |z| raised to `gamma`, the second - 3/4 to full along it; a non-finite argument counts as 0, a non-finite wrapped magnitude (a pole, or a zero under `:log2` and `:log10`) as 1."
   [from-space method ^Vec2 z ^double gamma]
   (let [raw-angle (cx/arg z)
         angle (if (m/valid-double? raw-angle) raw-angle 0.0)
@@ -525,8 +527,10 @@
   [:map {:closed true}
    (schema/optional :wrap {:description "How the function wraps the magnitude of `f` into [0 1] for the brightness."
                            :default :log2
-                           :cljplot2/value-meanings {:log2 "The fractional part of `log2(v + 1)`: bands where the magnitude plus 1 doubles."
-                                                     :log10 "The fractional part of `log10(v + 1)`: bands where the magnitude plus 1 grows tenfold."
+                           :cljplot2/value-meanings {:log2 "The fractional part of `abs(log2 v)`: bands where the magnitude doubles, the same for `v` and `1/v`; a zero is drawn like a pole."
+                                                     :log10 "The fractional part of `abs(log10 v)`: bands where the magnitude grows tenfold, the same for `v` and `1/v`; a zero is drawn like a pole."
+                                                     :log2+ "The fractional part of `log2(v + 1)`: bands where the magnitude plus 1 doubles; zeros are dark."
+                                                     :log10+ "The fractional part of `log10(v + 1)`: bands where the magnitude plus 1 grows tenfold; zeros are dark."
                                                      :sin "`sin v` scaled to [0 1]."
                                                      :exp "`1 - e^-v`: dark at zeros, bright towards poles."
                                                      :sigmoid "The logistic function of `v`."
@@ -536,7 +540,7 @@
                             :default 0.2
                             :cljplot2/example 1.0}
                     schema/finite-pos)
-   (schema/optional :colorspace {:description "The hue-first colour space the function builds the colours in. With `:gamma 1`, `:HSB` matches old cljplot's default and `:HSI` its example."
+   (schema/optional :colorspace {:description "The hue-first colour space the function builds the colours in. With `:wrap :log2+` and `:gamma 1`, `:HSB` matches old cljplot's default and `:HSI` its example."
                                  :default :HSB
                                  :cljplot2/value-meanings {:HSI "Hue, saturation, intensity." :HSB "Hue, saturation, brightness."
                                                            :HSV "Hue, saturation, value." :HSL "Hue, saturation, lightness."
@@ -549,7 +553,7 @@
   Parameters:
 
   - `f` (function): a complex function `Vec2` -> `Vec2` of `fastmath.complex`, e.g. `cx/log`.
-  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:gamma` - a positive finite exponent the wrapped magnitude is raised to (default `0.2`; `1` keeps it); `:colorspace` - one of [[hue-colorspaces]] (default `:HSB`; with `:gamma 1`, `:HSB` gives old cljplot's default and `:HSI` its example).
+  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:gamma` - a positive finite exponent the wrapped magnitude is raised to (default `0.2`; `1` keeps it); `:colorspace` - one of [[hue-colorspaces]] (default `:HSB`; with `:wrap :log2+` and `:gamma 1`, `:HSB` gives old cljplot's default and `:HSI` its example).
 
   Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, the third channel (brightness, or blackness in `:HWB`) - its wrapped magnitude raised to `:gamma`. Zeros and poles get a colour.
 

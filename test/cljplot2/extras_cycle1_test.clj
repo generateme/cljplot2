@@ -389,18 +389,36 @@
 (deftest domain-color-test
   (let [hue (fn [col] (first (c/to-HSB* col)))
         dc (field/domain-color identity)]
-    (testing "4.2 arg 0 and arg pi - opposite hues (|z| 0.5: not on a band edge)"
-      (is (< (m/abs (- 127.5 (m/abs (- (double (hue (dc [0.5 0.0]))) (double (hue (dc [-0.5 0.0]))))))) 1.0)))
-    (testing "4.2 :log2 bands: the brightness wraps where |f| + 1 doubles (gamma 1 - the wrapped magnitude itself)"
-      (let [bright (fn [col] (nth (c/to-HSB* col) 2))
-            linear (field/domain-color identity {:gamma 1.0})]
-        (is (m/> (bright (linear [0.99 0.0])) 240.0) "just below |f| = 1")
-        (is (m/< (bright (linear [1.01 0.0])) 10.0) "just above")
-        (is (m/< (bright (linear [3.0 0.0])) 1.0) "|f| = 3: log2 4")
-        (testing "the default gamma 0.2 keeps the wrap (a smaller drop) and the black band end"
-          (is (m/> (bright (dc [0.99 0.0])) 240.0) "just below |f| = 1")
-          (is (m/< (bright (dc [1.01 0.0])) 130.0) "just above")
-          (is (m/< (bright (dc [3.0 0.0])) 1.0) "|f| = 3: 0 to any power is 0"))))
+    (testing "4.2 arg 0 and arg pi - opposite hues (|z| 0.7: not on a band edge)"
+      (is (< (m/abs (- 127.5 (m/abs (- (double (hue (dc [0.7 0.0]))) (double (hue (dc [-0.7 0.0]))))))) 1.0)))
+    (let [bright (fn [col] (nth (c/to-HSB* col) 2))]
+      (testing "4.2 :log2+ bands: the brightness wraps where |f| + 1 doubles (gamma 1 - the wrapped magnitude itself)"
+        (let [linear (field/domain-color identity {:wrap :log2+ :gamma 1.0})]
+          (is (m/> (bright (linear [0.99 0.0])) 240.0) "just below |f| = 1")
+          (is (m/< (bright (linear [1.01 0.0])) 10.0) "just above")
+          (is (m/< (bright (linear [3.0 0.0])) 1.0) "|f| = 3: log2 4")
+          (is (m/< (bright (linear [0.0 0.0])) 1.0) "a zero is dark")))
+      (testing ":log2 bands: the brightness wraps where |f| doubles, mirrored across |f| = 1 (gamma 1)"
+        (let [linear (field/domain-color identity {:gamma 1.0})]
+          (is (m/> (bright (linear [1.99 0.0])) 240.0) "just below |f| = 2")
+          (is (m/< (bright (linear [2.01 0.0])) 10.0) "just above")
+          (is (m/< (bright (linear [4.0 0.0])) 1.0) "|f| = 4: log2 4")
+          (is (m/< (bright (linear [1.0 0.0])) 1.0) "|f| = 1: log2 1")
+          (is (m/> (bright (linear [0.51 0.0])) 240.0) "just above |f| = 1/2: |log2| just below 1")
+          (is (m/< (bright (linear [0.49 0.0])) 10.0) "just below |f| = 1/2")
+          (is (m/> (bright (linear [0.0 0.0])) 254.0) "a zero (log 0) is drawn like a pole")))
+      (testing ":log10 bands where |f| grows tenfold, mirrored; :log10+ where |f| + 1 does (gamma 1)"
+        (let [l10 (field/domain-color identity {:wrap :log10 :gamma 1.0})
+              l10p (field/domain-color identity {:wrap :log10+ :gamma 1.0})]
+          (is (m/> (bright (l10 [9.9 0.0])) 240.0) "just below |f| = 10")
+          (is (m/< (bright (l10 [10.1 0.0])) 10.0) "just above")
+          (is (m/> (bright (l10 [0.101 0.0])) 240.0) "just above |f| = 1/10: |log10| just below 1")
+          (is (m/> (bright (l10 [0.0 0.0])) 254.0) "a zero is drawn like a pole")
+          (is (m/< (bright (l10p [9.0 0.0])) 1.0) "|f| + 1 = 10")))
+      (testing "the default (:log2, gamma 0.2) keeps the wrap (a smaller drop) and the black band end"
+        (is (m/> (bright (dc [1.99 0.0])) 240.0) "just below |f| = 2")
+        (is (m/< (bright (dc [2.01 0.0])) 130.0) "just above")
+        (is (m/< (bright (dc [4.0 0.0])) 1.0) "|f| = 4: 0 to any power is 0")))
     (testing "4.2 zeros and poles give a colour; unknown wrap throws"
       (is (some? (dc [0.0 0.0])))
       (is (some? ((field/domain-color cx/log) [0.0 0.0])))

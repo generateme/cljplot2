@@ -50,11 +50,19 @@
 
 (plot/render-image (plot/arrange [{:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z))))
                                                           :domain {:x [-6 6] :y [-6 6]}})]
-                                   :labels {:title "defaults (:log2, :gamma 0.2, :HSB)"}}
+                                   :labels {:title "default"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
                                                                                            {:wrap :log10})
                                                           :domain {:x [-6 6] :y [-6 6]}})]
                                    :labels {:title ":wrap :log10"}}
+                                  {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
+                                                                                           {:wrap :log2+})
+                                                          :domain {:x [-6 6] :y [-6 6]}})]
+                                   :labels {:title ":wrap :log2+"}}
+                                  {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
+                                                                                           {:wrap :log10+})
+                                                          :domain {:x [-6 6] :y [-6 6]}})]
+                                   :labels {:title ":wrap :log10+"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
                                                                                            {:wrap :exp})
                                                           :domain {:x [-6 6] :y [-6 6]}})]
@@ -71,8 +79,8 @@
                                                                                            {:wrap :sin})
                                                           :domain {:x [-6 6] :y [-6 6]}})]
                                    :labels {:title ":wrap :sin"}}]
-                                 {:columns 3})
-                   {:width 1000 :height 680})
+                                 {:columns 4})
+                   {:width 1000 :height 560})
 
 ;; The panels below draw z³ - 1 with `:gamma` 0.2 (the default), 1 and 3. Below 1 the bands brighten and above 1
 ;; they darken; at 1 the brightness is the wrapped magnitude:
@@ -96,7 +104,7 @@
                                                           :domain {:x [-2 2] :y [-2 2]}})]
                                    :labels {:title ":colorspace :HSB"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))
-                                                                                           {:colorspace :HSI :wrap :log2})
+                                                                                           {:colorspace :HSI})
                                                           :domain {:x [-2 2] :y [-2 2]}})]
                                    :labels {:title ":colorspace :HSI"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))
