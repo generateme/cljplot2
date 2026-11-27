@@ -192,8 +192,8 @@
       (is (= (get-in (cell 2 0) [:scales :y :domain]) (get-in (cell 2 1) [:scales :y :domain])))
       (is (= [true :grid] [(get-in (cell 2 1) [:scales :x :axis]) (get-in (cell 1 1) [:scales :x :axis])]))
       (is (= [true :grid] [(get-in (cell 1 0) [:scales :y :axis]) (get-in (cell 1 2) [:scales :y :axis])]))
-      (is (= {:x "b" :y nil} (:labels (cell 2 1))))
-      (is (= {:x nil :y "a"} (:labels (cell 0 0)))))
+      (is (= {:x "b" :y :none} (:labels (cell 2 1))))
+      (is (= {:x :none :y "a"} (:labels (cell 0 0)))))
     (testing "3.5 no grouping: no legend column")
     (is (= 3 (:columns arrange))))
   (testing "3.5 grouping: a legend-only column sized to the legend"

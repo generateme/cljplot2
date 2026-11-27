@@ -738,7 +738,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <section id="titles" class="level3" data-number="1.3.5">
 <h3 data-number="1.3.5" class="anchored" data-anchor-id="titles"><span class="header-section-number">1.3.5</span> Titles</h3>
 <p>This key holds the titles (<a href="reference.labels_text.html">Labels and text</a>):</p>
-<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis titles the charts suggest.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title and the axis titles (Labels and text).</div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis and legend titles that the charts, the scales and the mapped columns give.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title, the axis titles and the legend titles (Labels and text).</div></dd></div></dl>
 <p>The plot below names the plot and both axes:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> points</span>

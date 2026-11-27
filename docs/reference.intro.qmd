@@ -351,7 +351,7 @@ This key holds the titles ([Labels and text](reference.labels_text.html)):
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis titles the charts suggest.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title and the axis titles (Labels and text).</div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:labels</code><span class="option-default">Default: No title; the axis and legend titles that the charts, the scales and the mapped columns give.</span></dt><dd><div class="option-example"><code>{:labels {:title "Walks"}}</code></div><div class="option-text">The plot title, the axis titles and the legend titles (Labels and text).</div></dd></div></dl>
 ```
 
 

@@ -18,27 +18,27 @@
 (def by-species
   {:data iris :mapping {:color :species}
    :charts [(chart/parallel {:variables iris-variables})]
-   :labels {:title "Iris - parallel coordinates (:uniminmax)" :x nil}})
+   :labels {:title "Iris - parallel coordinates (:uniminmax)" :x :none}})
 
 (def highlight
   {:data iris :mapping {:color :species}
    :scales {:color {:range {"setosa" [180 180 180 90] "versicolor" [180 180 180 90] "virginica" [215 48 39 200]}}}
    :charts [(chart/parallel {:variables [["Sepal length" :sepal_length] ["Sepal width" :sepal_width]
                                          ["Petal length" :petal_length] ["Petal width" :petal_width]]})]
-   :labels {:title "Highlight virginica (level-map colours)" :x nil}})
+   :labels {:title "Highlight virginica (level-map colours)" :x :none}})
 
 (def scalings
   (plot/arrange (vec (for [scaling [:std :robust :uniminmax :globalminmax]]
                        {:data iris :mapping {:color :species}
                         :charts [(chart/parallel {:variables iris-variables :scaling scaling :line-width 0.5})]
                         :legend false
-                        :labels {:title (str ":scaling " scaling) :x nil}}))
+                        :labels {:title (str ":scaling " scaling) :x :none}}))
                 {:columns 2}))
 
 (def vertical
   {:data iris :mapping {:color :species} :flip true
    :charts [(chart/parallel {:variables iris-variables :dash :none})]
-   :labels {:title "Vertical layout (:flip)" :x nil}})
+   :labels {:title "Vertical layout (:flip)" :x :none}})
 
 (def car-variables [:mpg :hp :wt :qsec :drat :disp])
 
@@ -47,22 +47,22 @@
 (def radars
   (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar}
                   :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2})]
-                  :labels {:title "Radar - four cars, data ranges" :x nil}}
+                  :labels {:title "Radar - four cars, data ranges" :x :none}}
                  {:data cars :mapping {:color :name} :coord {:kind :polar}
                   :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2
                                             :limits {:mpg [10 35] :hp [50 350] :wt [1 6] :qsec [14 23]
                                                      :drat [2.5 5] :disp [50 500]}})]
-                  :labels {:title "Fixed :limits" :x nil}}]
+                  :labels {:title "Fixed :limits" :x :none}}]
                 {:columns 2}))
 
 (def radar-groups
   (plot/arrange [{:data mtcars :mapping {:color :cyl} :coord {:kind :polar}
                   :scales {:color {:type :categorical}}
                   :charts [(chart/parallel {:variables car-variables :scaling :std})]
-                  :labels {:title "All cars by cylinders (:std)" :x nil}}
+                  :labels {:title "All cars by cylinders (:std)" :x :none}}
                  {:data cars :mapping {:color :name} :coord {:kind :polar :arcs true}
                   :charts [(chart/parallel {:variables car-variables :fill :color :pattern :hatch :alpha 0.15})]
-                  :labels {:title ":arcs, hatched fills" :x nil}}]
+                  :labels {:title ":arcs, hatched fills" :x :none}}]
                 {:columns 2}))
 
 (def smooth
@@ -71,16 +71,16 @@
                                          [":smoothness 0.4" {:curve :smooth :smoothness 0.4}]]]
                        {:data (take-nth 3 iris) :mapping {:color :species} :legend false
                         :charts [(chart/parallel (merge {:variables iris-variables} opts))]
-                        :labels {:title title :x nil}}))
+                        :labels {:title title :x :none}}))
                 {:columns 3}))
 
 (def radar-variants
   (plot/arrange [{:data cars :mapping {:color :name} :coord {:kind :polar} :legend false
                   :charts [(chart/parallel {:variables car-variables :fill :color :curve :smooth :line-width 2})]
-                  :labels {:title "Smooth radar" :x nil}}
+                  :labels {:title "Smooth radar" :x :none}}
                  {:data cars :mapping {:color :name} :coord {:kind :polar :inner 0.3} :flip true :legend false
                   :charts [(chart/parallel {:variables [:mpg :hp :wt] :line-width 2})]
-                  :labels {:title "Variables as rings (:flip)" :x nil}}]
+                  :labels {:title "Variables as rings (:flip)" :x :none}}]
                 {:columns 2}))
 
 (def images

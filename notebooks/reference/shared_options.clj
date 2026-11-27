@@ -399,13 +399,15 @@
 
 ;; #### Axes
 
-;; These options draw the box, the ticks and the axis titles. The plot below drops the box and names the axes:
+;; These options switch the box, the ticks and the axis titles on or off; the plot's `:labels` give the titles' text.
+;; The plot below drops the box and names the axes:
 
 (nu/option-cards 'chart/surface (describe/fragment-rows :frame-3d) :axes)
 
 (plot/render-image {:data iris
                     :mapping {:x :sepal-length :y :sepal-width :z :petal-length}
-                    :charts [(chart/cloud {:box false :axis-titles {:x "sepal L" :y "sepal W" :z "petal L"}})]}
+                    :charts [(chart/cloud {:box false})]
+                    :labels {:x "sepal L" :y "sepal W" :z "petal L"}}
                    {:width 500 :height 400})
 
 ;; #### Domains

@@ -270,7 +270,7 @@
   :scales {:y {:domain [12.5 0.5] :nice false :ticks (vec (range 1 13))}
            :x {:domain [1948 1961] :nice false :ticks (vec (range 1949 1961))}
            :color {:domain ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"] :legend false}}
-  :labels {:title "Months ranked by air passengers, 1949-1960" :x nil :y "rank"}}
+  :labels {:title "Months ranked by air passengers, 1949-1960" :x :none :y "rank"}}
  {:width 900 :height 550})
 
 ;; ## Arc diagram
@@ -425,7 +425,7 @@
                        :coord coord
                        :scales {:x {:domain months}}
                        :legend false
-                       :labels {:title title :x nil :y nil}}))
+                       :labels {:title title :x :none :y :none}}))
                {:columns 3})
  {:width 1000 :height 400})
 
@@ -450,13 +450,13 @@
  (plot/arrange
   [{:data air-passengers :mapping {:x :month :y :passengers}
     :charts [(chart/scatter {:size 4})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
-    :labels {:title "points" :x nil :y nil}}
+    :labels {:title "points" :x :none :y :none}}
    {:data air-passengers :mapping {:x :month :y :passengers :group :year}
     :charts [(chart/line {:order :data :color [70 130 180 150]})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
-    :labels {:title "a line per year" :x nil :y nil}}
+    :labels {:title "a line per year" :x :none :y :none}}
    {:data air-passengers :mapping {:x :month :y :passengers}
     :charts [(chart/bar {:stat :sum})] :coord {:kind :polar :inner 0.2} :scales {:x {:domain months}}
-    :labels {:title "bars: monthly totals" :x nil :y nil}}]
+    :labels {:title "bars: monthly totals" :x :none :y :none}}]
   {:columns 3})
  {:width 1000 :height 400})
 
@@ -465,7 +465,7 @@
   :charts [(chart/line {:order :data})]
   :coord {:kind :polar :inner 0.2}
   :scales {:x {:domain months}}
-  :labels {:title "One circular plot per period" :x nil :y nil}}
+  :labels {:title "One circular plot per period" :x :none :y :none}}
  {:width 1000 :height 420})
 
 ;; ## Flow sunburst

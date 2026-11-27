@@ -231,11 +231,11 @@
 ;; lighter six read as lighter versions of the first.
 
 (plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
-                    :charts [(chart/bar)] :legend false :labels {:title "default palette" :x nil :y nil}}
+                    :charts [(chart/bar)] :legend false :labels {:title "default palette" :x :none :y :none}}
                    {:width 700 :height 200})
 
 (plot/render-image {:data palette-levels :mapping {:x :level :y :n :color :level}
-                    :charts [(chart/bar)] :legend false :labels {:title "the same, deuteranopia" :x nil :y nil}}
+                    :charts [(chart/bar)] :legend false :labels {:title "the same, deuteranopia" :x :none :y :none}}
                    {:width 700 :height 200 :cvd :deuteranopia})
 
 ;; ## Text

@@ -72,7 +72,7 @@
  {:data economics
   :mapping {:x :date :y :unemploy}
   :charts [(chart/line)]
-  :labels {:title "Unemployed persons in the US" :x nil :y "thousands"}}
+  :labels {:title "Unemployed persons in the US" :x :none :y "thousands"}}
  {:width 800 :height 400})
 
 ;; ### Line styling
@@ -92,10 +92,10 @@
    (plot/arrange
     [{:data recent :mapping {:x :date :y :psavert}
       :charts [(chart/line {:line-width 2 :color [215 48 39]}) (chart/scatter {:size 5 :color [215 48 39]})]
-      :labels {:title "width, colour, points" :x nil :y "savings rate, %"}}
+      :labels {:title "width, colour, points" :x :none :y "savings rate, %"}}
      {:data recent-long :mapping {:x :date :y :value01 :dash :variable}
       :charts [(chart/line {:line-width 1.5 :color :black})]
-      :labels {:title ":dash by variable" :x nil :y "rescaled"}}]
+      :labels {:title ":dash by variable" :x :none :y "rescaled"}}]
     {:columns 2})
    {:width 1000 :height 400}))
 
@@ -111,9 +111,9 @@
 (plot/render-image
  (plot/arrange
   [{:data economics :mapping {:x :date :y :pce} :charts [(chart/line)]
-    :labels {:title "linear" :x nil :y "consumption, billions USD"}}
+    :labels {:title "linear" :x :none :y "consumption, billions USD"}}
    {:data economics :mapping {:x :date :y :pce} :scales {:y {:kind :log}} :charts [(chart/line)]
-    :labels {:title ":log" :x nil :y "consumption, billions USD"}}]
+    :labels {:title ":log" :x :none :y "consumption, billions USD"}}]
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -129,7 +129,7 @@
  {:data economics-long
   :mapping {:x :date :y :value01 :color :variable}
   :charts [(chart/line)]
-  :labels {:title "Five economic series, rescaled" :x nil :y "value (0..1)"}}
+  :labels {:title "Five economic series, rescaled" :x :none :y "value (0..1)"}}
  {:width 900 :height 450})
 
 ;; ### Steps and interpolated lines
@@ -144,7 +144,7 @@
 (let [year (filter #(= 1955 (:year %)) air)
       panel (fn [title opts] {:data year :mapping {:x :date :y :passengers}
                               :charts [(chart/line opts) (chart/scatter {:size 5})]
-                              :labels {:title title :x nil :y "passengers, thousands"}})]
+                              :labels {:title title :x :none :y "passengers, thousands"}})]
   (plot/render-image
    (plot/arrange [(panel ":step-after" {:interpolator :step-after})
                   (panel ":monotone" {:interpolator :monotone})
@@ -162,7 +162,7 @@
 (let [years (filter #(<= 1958 (:year %)) air)
       panel (fn [title step] {:data years :mapping {:x :date :y :passengers}
                               :charts [(chart/line {:interpolator :cubic :sample-step step}) (chart/scatter {:size 4})]
-                              :labels {:title title :x nil :y "passengers, thousands"}})]
+                              :labels {:title title :x :none :y "passengers, thousands"}})]
   (plot/render-image
    (plot/arrange [(panel "every pixel (default)" 1) (panel "{:count 12} per run" {:count 12})] {:columns 2})
    {:width 1000 :height 380}))
@@ -178,7 +178,7 @@
                  (filter #(<= 1985 (.getYear ^LocalDate (:date %)) 1997) economics))
       panel (fn [title gaps] {:data gappy :mapping {:x :date :y :psavert}
                               :charts [(chart/line {:gaps gaps :line-width 1.5})]
-                              :labels {:title title :x nil :y "savings rate, %"}})]
+                              :labels {:title title :x :none :y "savings rate, %"}})]
   (plot/render-image
    (plot/arrange [(panel ":gaps :break" :break) (panel ":gaps :bridge" :bridge)] {:columns 2})
    {:width 1000 :height 380}))
@@ -198,10 +198,10 @@
  (plot/arrange
   [{:data economics :mapping {:x :date :y :uempmed}
     :scales {:x {:ticks-params {:unit :years :step 5} :formatter "yyyy"}}
-    :charts [(chart/line)] :labels {:title "every 5 years, \"yyyy\"" :x nil :y "weeks"}}
+    :charts [(chart/line)] :labels {:title "every 5 years, \"yyyy\"" :x :none :y "weeks"}}
    {:data (filter #(= 2008 (.getYear ^LocalDate (:date %))) economics) :mapping {:x :date :y :uempmed}
     :scales {:x {:ticks-params {:unit :months :step 2} :formatter "MMM"}}
-    :charts [(chart/line) (chart/scatter {:size 5})] :labels {:title "2008, every 2 months, \"MMM\"" :x nil :y "weeks"}}]
+    :charts [(chart/line) (chart/scatter {:size 5})] :labels {:title "2008, every 2 months, \"MMM\"" :x :none :y "weeks"}}]
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -218,7 +218,7 @@
   :mapping {:x :date :y :unemploy}
   :scales {:x {:domain [(LocalDate/of 2000 1 1) (LocalDate/of 2010 1 1)]} :y {:domain [4000 16000]}}
   :charts [(chart/line {:line-width 1.5})]
-  :labels {:title "Unemployment, 2000-2010" :x nil :y "thousands"}}
+  :labels {:title "Unemployment, 2000-2010" :x :none :y "thousands"}}
  {:width 800 :height 400})
 
 ;; ### Annotations
@@ -240,7 +240,7 @@
              (chart/rule {:x (d 2008 9) :dash :dashed :color [215 48 39]})
              (chart/text {:x (d 2008 9) :y 14500 :text "Lehman Brothers" :anchor [:right :middle] :offset [-5 0]
                           :color [215 48 39]})]
-    :labels {:title "Unemployment and US recessions (NBER)" :x nil :y "thousands"}}
+    :labels {:title "Unemployment and US recessions (NBER)" :x :none :y "thousands"}}
    {:width 900 :height 450}))
 
 ;; ### Time heatmap
@@ -258,7 +258,7 @@
   :mapping {:x :month :y #(str (:year %)) :color :passengers}
   :scales {:color {:range :viridis/viridis :title "passengers"}}
   :charts [(chart/tile {:stroke-color :white})]
-  :labels {:title "Airline passengers by month (thousands)" :x nil :y nil}}
+  :labels {:title "Airline passengers by month (thousands)" :x :none :y :none}}
  {:width 800 :height 500})
 
 ;; ## Smoothing and uncertainty
@@ -283,7 +283,7 @@
    (plot/arrange
     [{:data air :mapping {:x :date :y :passengers}
       :charts [(chart/scatter {:size 3}) (chart/smooth {:level [0.5 0.95]})]
-      :labels {:title "loess, 50% / 95%" :x nil :y "passengers"}}
+      :labels {:title "loess, 50% / 95%" :x :none :y "passengers"}}
      {:data chicks :mapping {:x :time :y :weight :color :diet}
       :charts [(chart/scatter {:size 3}) (chart/smooth {:method :lm})]
       :labels {:title "lm per diet" :x "days" :y "weight, g"}}
@@ -292,7 +292,7 @@
                               :method-params {:kernel (kernel/kernel :gaussian {:sigma (* 0.25 year-ms)})
                                               :noise 0.05 :normalize? true}})
                (chart/scatter {:size 4})]
-      :labels {:title "Gaussian process" :x nil :y "passengers"}}]
+      :labels {:title "Gaussian process" :x :none :y "passengers"}}]
     {:columns 3})
    {:width 1000 :height 380}))
 
@@ -310,7 +310,7 @@
   :scales {:x {:formatter "MMM"}}
   :charts [(chart/ribbon {:mapping {:ymin :min-temp :ymax :max-temp} :color [215 48 39]})
            (chart/line {:mapping {:y :mean-temp} :color [150 30 20]})]
-  :labels {:title "Lincoln, Nebraska, 2016: daily min-max and mean" :x nil :y "temperature, F"}}
+  :labels {:title "Lincoln, Nebraska, 2016: daily min-max and mean" :x :none :y "temperature, F"}}
  {:width 900 :height 420})
 
 ;; ## Many lines
@@ -370,7 +370,7 @@
     :charts [(chart/line {:line-width 1.5})
              (chart/text {:mapping {:x :date :y :value01 :label :variable :color :variable} :select :last})]
     :legend false
-    :labels {:title "Three economic series since 2005, labelled at the end" :x nil :y "value (0..1)"}}
+    :labels {:title "Three economic series since 2005, labelled at the end" :x :none :y "value (0..1)"}}
    {:width 900 :height 450}))
 
 ;; ### Bump chart
@@ -410,7 +410,7 @@
  {:data economics
   :mapping {:x :date :y :psavert}
   :charts [(chart/line {:fill :color :alpha 0.4 :line-width 1.5})]
-  :labels {:title "Personal savings rate" :x nil :y "%"}}
+  :labels {:title "Personal savings rate" :x :none :y "%"}}
  {:width 800 :height 400})
 
 ;; ### Gradient area
@@ -426,7 +426,7 @@
   :mapping {:x :date :y :psavert}
   :charts [(chart/line {:fill-gradient [[255 255 255 0] [33 102 172 200]] :fill-gradient-axis :y :line-width 1.5
                         :color [33 102 172]})]
-  :labels {:title "Savings rate, gradient along y" :x nil :y "%"}}
+  :labels {:title "Savings rate, gradient along y" :x :none :y "%"}}
  {:width 800 :height 400})
 
 (def diet-means
@@ -496,10 +496,10 @@
  (plot/arrange
   [{:data diet-means :mapping {:x :time :y :weight :color :diet}
     :charts [(chart/line {:position :silhouette :interpolator :monotone})]
-    :labels {:title ":silhouette" :x "days" :y nil}}
+    :labels {:title ":silhouette" :x "days" :y :none}}
    {:data diet-means :mapping {:x :time :y :weight :color :diet}
     :charts [(chart/line {:position :wiggle :interpolator :monotone})]
-    :labels {:title ":wiggle" :x "days" :y nil}}]
+    :labels {:title ":wiggle" :x "days" :y :none}}]
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -524,11 +524,11 @@
     :scales {:x {:order-by #(:mpg (first %))}}
     :flip true
     :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
-    :labels {:title "Fuel economy of 32 cars" :x nil :y "miles per gallon"}}
+    :labels {:title "Fuel economy of 32 cars" :x :none :y "miles per gallon"}}
    {:data (filter #(= 1959 (:year %)) air)
     :mapping {:x :date :y :passengers}
     :charts [(chart/segment {:yend 0 :color [150 150 150]}) (chart/scatter {:size 7 :color [33 102 172]})]
-    :labels {:title "Passengers in 1959" :x nil :y "thousands"}}]
+    :labels {:title "Passengers in 1959" :x :none :y "thousands"}}]
   {:columns 2})
  {:width 1000 :height 700})
 
@@ -555,9 +555,9 @@
 (plot/render-image
  (plot/arrange
   [{:data prices :mapping {:x :date :open :open :high :high :low :low :close :close}
-    :charts [(chart/candlestick)] :labels {:title "candlestick" :x nil :y "price"}}
+    :charts [(chart/candlestick)] :labels {:title "candlestick" :x :none :y "price"}}
    {:data prices :mapping {:x :date :open :open :high :high :low :low :close :close}
-    :charts [(chart/candlestick {:style :ohlc})] :labels {:title ":style :ohlc" :x nil :y "price"}}]
+    :charts [(chart/candlestick {:style :ohlc})] :labels {:title ":style :ohlc" :x :none :y "price"}}]
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -573,10 +573,10 @@
 (plot/render-image
  (plot/arrange
   [{:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp} :scales {:color {:range :RColorBrewer/RdYlBu :reverse true :title "F"}}
-    :charts [(chart/line {:line-width 2})] :labels {:title "linear" :x nil :y "mean temperature, F"}}
+    :charts [(chart/line {:line-width 2})] :labels {:title "linear" :x :none :y "mean temperature, F"}}
    {:data lincoln :mapping {:x :date :y :mean-temp :color :mean-temp}
     :scales {:color {:range :RColorBrewer/RdYlBu :kind :binned :reverse true :bins [20 40 60 80] :title "F"}}
-    :charts [(chart/line {:line-width 2})] :labels {:title "binned" :x nil :y "mean temperature, F"}}]
+    :charts [(chart/line {:line-width 2})] :labels {:title "binned" :x :none :y "mean temperature, F"}}]
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -619,7 +619,7 @@
  (plot/arrange
   [{:charts [(chart/function {:f (mapv (fn [k] [(str "sin " k "x") (fn [x] (m/sin (* k (double x))))]) (range 1 11))
                               :domain [0 m/PI] :mapping {:color :function}})]
-    :scales {:color {:title nil}}
+    :scales {:color {:title :none}}
     :labels {:title "ten [label f] pairs" :x "x" :y "y"}}
    {:charts [(chart/function {:f m/tan :domain [(- m/PI) m/PI] :y-limits [-5 5]})]
     :labels {:title "tan with :y-limits [-5 5]" :x "x" :y "y"}}]
@@ -638,7 +638,7 @@
          {:aspect :iso
           :charts [(chart/function {:parametric (fn [t] [(m/sin (* a (double t))) (m/sin (* b (double t)))])
                                     :t [0 m/TWO_PI] :sample-step {:count 1000}})]
-          :labels {:title (str "a = " a ", b = " b) :x nil :y nil}}))
+          :labels {:title (str "a = " a ", b = " b) :x :none :y :none}}))
   {:columns 4})
  {:width 1000 :height 300})
 
@@ -656,7 +656,7 @@
 
 (let [recent (filter #(.isAfter ^LocalDate (:date %) (LocalDate/of 2012 1 1)) economics)
       plot-of (fn [title y] {:data recent :mapping {:x :date :y :pop} :scales {:y y}
-                             :charts [(chart/line {:line-width 1.5})] :labels {:title title :x nil :y "population, thousands"}})]
+                             :charts [(chart/line {:line-width 1.5})] :labels {:title title :x :none :y "population, thousands"}})]
   (plot/render-image
    (plot/arrange [(plot/arrange [(plot-of "y from 0" {:domain [0 330000]}) (plot-of "y cut" {})] {:columns 2})
                   (plot/arrange [(plot-of "wide" {}) (plot-of "narrow" {})] {:columns 2 :widths [4 1]})]

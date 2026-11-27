@@ -1,7 +1,8 @@
 (ns cljplot2.chart.surface
   "Surface: a mesh of quads in a 3D box (see [[cljplot2.data.space3d]]; a chart laying out its own panel, as
   [[cljplot2.chart.cloud]], whose frame options it shares: `:view` (with `:distance` - perspective), `:aspect`,
-  `:box`, `:axes`, `:axis-titles`, `:domain`, `:reverse`).
+  `:box`, `:axes`, `:domain`, `:reverse`; axis titles from the plot's `:labels`, else the mapped column names (a
+  density surface's z reads `Density`)).
 
   Sources (one per chart):
 
@@ -459,7 +460,7 @@
                  (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
                  (:reverse options))
         frame (cond-> (space/frame-settings options mapping)
-                (and (= kind :density) (not (space/titles-given? options))) (assoc-in [:titles :z] "Density"))
+                (= kind :density) (assoc-in [:titles :z] "Density"))
         st (merge (theme/resolved-style theme chart)
                   (select-keys options [:color])
                   {:surface-style (data/option options :style :surface)

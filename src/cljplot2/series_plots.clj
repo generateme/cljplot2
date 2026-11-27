@@ -122,7 +122,7 @@
                        (chart/scatter {:theme-style :acf-point :color stem})
                        (chart/scatter {:theme-style :acf-point :data (filterv :significant rows) :color significant})]
               :scales (theme/deep-merge {} scales)
-              :labels {:title title :x "Lag" :y (when-not both? (kind-names (first kinds)))}}
+              :labels {:title title :x "Lag" :y (if both? :none (kind-names (first kinds)))}}
        ;; ACF and PACF differ in range (lag 0 is 1 in the ACF): each panel row its own y domain, unless the caller
        ;; fixes one (a partial domain fixes one end; `[nil nil]` is none)
        (and both? (nil? (rows/given-domain (get-in scales [:y :domain])))) (assoc :facets {:scales {:y :free}})
@@ -220,6 +220,6 @@
                                           ;; panels in the series' first-appearance order (facets would sort them)
                                           series (assoc :facet {:domain (vec (distinct (keep :series band-rows)))}))
                                         scales)
-              :labels {:title title :x (name x) :y nil}}
+              :labels {:title title :x (name x) :y :none}}
        series (assoc :facets {:columns 1})
        user-theme (assoc :theme user-theme)))))

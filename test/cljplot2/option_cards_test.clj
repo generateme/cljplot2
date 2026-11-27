@@ -1021,7 +1021,14 @@
    :facet-scale {:path [:scales :facet] :plot (with-walk-mapping {:facet :w})}
    :margins {:path [:margins] :plot walks}
    :margin-spec {:path [:margins :right] :plot walks :schema [:or [:map {:closed true}] pipeline/margin-spec-schema]}
-   :labels {:path [:labels] :plot walks}
+   :labels {:path [:labels] :plot walks
+            ;; :z titles a 3D frame, the aesthetics their legends: each acts on a plot drawing it
+            :per-option {[:z] (assoc walks :mapping {:x :t :y :v :z :t} :charts [(chart/cloud)])
+                         [:color] (with-walk-mapping {:color :w})
+                         [:shape] (assoc (with-walk-mapping {:shape :w}) :charts [(chart/scatter)])
+                         [:size] (assoc (with-walk-mapping {:size :t}) :charts [(chart/scatter)])
+                         [:dash] (with-walk-mapping {:dash :w})
+                         [:pattern] (assoc walks :mapping {:x (comp str :t) :y :v :pattern :w} :charts [(chart/bar)])}}
    :label {:path [:labels :title] :plot walks :rows (section-rows :label)}
    :render-options {:path [:options] :plot walks :size {}
                     :rows (fn [rows] (filterv #(not= :build (:section %)) rows))

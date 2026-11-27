@@ -136,7 +136,7 @@
              (chart/function {:f truth :color [215 48 39] :line-width 1.5})
              (chart/line {:mapping {:y :mu} :color :black :line-width 2})
              (chart/scatter {:data (map (fn [x y] {:x x :y y}) xs ys) :mapping {:y :y} :size 9 :color :black})]
-    :labels {:title "Gaussian process: mean, 50 % and 95 % bands, the true $f(x) = 10 + \\sin(-0.7x)$ (red)" :y nil}}
+    :labels {:title "Gaussian process: mean, 50 % and 95 % bands, the true $f(x) = 10 + \\sin(-0.7x)$ (red)" :y :none}}
    {:width 800 :height 500}))
 
 ;; A posterior sample through three points, with its 95 % band (the posterior standard deviation).
@@ -209,7 +209,7 @@
                               (chart/scatter {:data (map (fn [[x] y] {:x x :y y}) xs ys) :mapping {:y :y} :size 8
                                               :color [0 140 140]})]
                      :scales {:y {:domain [-1.0 2.5]}}
-                     :labels {:title (str "step " i ", " (count xs) " evaluations") :y nil}}))]
+                     :labels {:title (str "step " i ", " (count xs) " evaluations") :y :none}}))]
   (plot/render-image
    (plot/arrange (mapv step-plot [2 6 10]) {:columns 1 :title "$f(x) = e^{-(x-2)^2} + e^{-0.1(x-6)^2} + \\frac{1}{1+x^2}$"})
    {:width 800 :height 750}))
@@ -235,7 +235,7 @@
                         (chart/scatter {:data evaluated :mapping {:x :x :y :y} :size 7 :color :black})
                         (chart/scatter {:data [{:x (first x) :y (second x)}] :mapping {:x :x :y :y} :size 14
                                         :shape \x :color [215 48 39]})]
-               :scales {:color {:title nil}}
+               :scales {:color {:title :none}}
                :aspect :iso
                :labels {:title title}})]
   (plot/render-image
@@ -261,7 +261,7 @@
 (plot/render-image
  {:data (map-indexed (fn [t y] {:t t :y y}) ma2) :mapping {:x :t :y :y}
   :charts [(chart/line)]
-  :labels {:title "MA(2): $y_t = e_t - 0.8e_{t-1} + 0.9e_{t-2}$" :x "$t$" :y nil}}
+  :labels {:title "MA(2): $y_t = e_t - 0.8e_{t-1} + 0.9e_{t-2}$" :x "$t$" :y :none}}
  {:width 800 :height 280})
 
 ;; ### Lag plot
@@ -543,7 +543,7 @@
                                              (cond (< u 0.5) (r/grandom g)
                                                    (< u 0.65) (r/grandom g -10 2)
                                                    :else (r/grandom g 10 2)))})))
-      strip (fn [charts] {:data rows :mapping {:x :v} :charts charts :scales {:x {:domain [-20 20]}} :labels {:x nil :y nil}})]
+      strip (fn [charts] {:data rows :mapping {:x :v} :charts charts :scales {:x {:domain [-20 20]}} :labels {:x :none :y :none}})]
   (plot/render-image
    (plot/arrange [(strip [(chart/stripplot {:size 6 :color [215 48 39 30] :rng (r/rng :mersenne 18)})])
                   (strip [(chart/rug)])
@@ -635,7 +635,7 @@
   :charts [(chart/tile)]
   :scales {:facet {:domain (mapv name kernels)}}
   :aspect :iso
-  :labels {:title "Covariance matrices" :x nil :y nil}}
+  :labels {:title "Covariance matrices" :x :none :y :none}}
  {:width 900 :height 650})
 
 ;; ### Lollipops
@@ -661,7 +661,7 @@
                    :charts [(chart/segment {:yend 0 :color [0 114 178 160]}) (chart/scatter {:size 3})
                             (chart/density {:data (map (fn [v] {:x v}) sample) :mapping {:y nil} :bandwidth 0.04
                                             :fill [215 48 39 80] :color [215 48 39 160]})]
-                   :labels {:title "histogram lollipops and a density" :x nil :y "density"}}]
+                   :labels {:title "histogram lollipops and a density" :x :none :y "density"}}]
                  {:columns 2})
    {:width 1000 :height 420}))
 
@@ -696,7 +696,7 @@
                      :legend false}
              :size {:range [0.5 10] :area true :legend false}}
     :margins {:top {:charts margin-density :size 22} :right {:charts margin-density :size 22}}
-    :labels {:x "cljplot2 - functional plotting library" :y nil}}
+    :labels {:x "cljplot2 - functional plotting library" :y :none}}
    {:width 600 :height 300}))
 
 ;; ## Basic charts
@@ -724,7 +724,7 @@
                  :url (mapv showcase-url ["bar.jpg" "box.jpg" "density-line.jpg" "min-max-mean.jpg" "rug.jpg"
                                           "strip.jpg" "strip-distorted.jpg"])})
 
-(let [strip (fn [title data charts] {:data data :mapping {:x :v} :charts charts :labels {:title title :x nil :y nil}})
+(let [strip (fn [title data charts] {:data data :mapping {:x :v} :charts charts :labels {:title title :x :none :y :none}})
       halves [{:v -20.0} {:v 10.0}]]
   (plot/render-image
    (plot/arrange [(strip "interval" halves [(chart/extent {:method :min-max :center :none :line-width 22})])
@@ -749,12 +749,12 @@
       two (vec (concat (map #(assoc % :sample "a") skewed)
                        (repeatedly 2000 (fn [] {:v (+ 1.5 (m/exp (r/grandom g 1.1 0.35))) :sample "b"}))))]
   (plot/render-image
-   (plot/arrange [{:data skewed :mapping {:x :v} :charts [(chart/density {:fill :color})] :labels {:title "density" :x nil}}
-                  {:data skewed :mapping {:x :v} :charts [(chart/violin {:inner :box})] :labels {:title "violin" :x nil :y nil}}
+   (plot/arrange [{:data skewed :mapping {:x :v} :charts [(chart/density {:fill :color})] :labels {:title "density" :x :none}}
+                  {:data skewed :mapping {:x :v} :charts [(chart/violin {:inner :box})] :labels {:title "violin" :x :none :y :none}}
                   {:data two :mapping {:x :v :color :sample} :charts [(chart/histogram {:position :mirror :bins 60})]
-                   :labels {:title "mirrored histogram" :x nil}}
+                   :labels {:title "mirrored histogram" :x :none}}
                   {:data skewed :mapping {:x :v} :charts [(chart/histogram {:bins 60 :y :percent})]
-                   :labels {:title "histogram, percent" :x nil}}]
+                   :labels {:title "histogram, percent" :x :none}}]
                  {:columns 2})
    {:width 1000 :height 600}))
 
@@ -771,7 +771,7 @@
   :margins {:top {:charts (chart/stripplot {:data skewed :mapping {:x :v} :size 5 :color [0 114 178 60]
                                             :rng (r/rng :mersenne 26)})
                   :size 30}}
-  :labels {:title "Lollipop histogram" :x nil :y "count"}}
+  :labels {:title "Lollipop histogram" :x :none :y "count"}}
  {:width 900 :height 550})
 
 ;; ### Bars
@@ -785,7 +785,7 @@
          {:c "c" :g "1" :v 33} {:c "c" :g "2" :v 22} {:c "d" :g "1" :v 11} {:c "d" :g "2" :v 22}]
   :mapping {:x :v :y :c :color :g}
   :charts [(chart/bar {:position :dodge})]
-  :labels {:title "Dodged bars" :x nil :y nil}}
+  :labels {:title "Dodged bars" :x :none :y :none}}
  {:width 800 :height 550})
 
 ;; ### Connected scatter
@@ -863,7 +863,7 @@
                   (repeatedly 1000 (fn [] {:c "b" :v (r/grandom g 2.0 1.2)})))
     :mapping {:x :c :y :v}
     :charts [(chart/rug {:color [0 114 178 60]})]
-    :labels {:title "A rug per category" :x nil :y nil}}
+    :labels {:title "A rug per category" :x :none :y :none}}
    {:width 450 :height 450}))
 
 ;; ### Scatter with histograms

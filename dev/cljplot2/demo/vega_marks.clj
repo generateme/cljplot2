@@ -64,7 +64,7 @@
   {:data isotype-rows :mapping {:x :i :y :row :shape :item :color :item}
    :charts [(chart/scatter {:size 22 :stroke-width 0})]
    :scales {:shape {:range (mapv shapes ["drops" "houses" "trees"])} :x {:axis false}}
-   :labels {:title title :x nil :y nil}})
+   :labels {:title title :x :none :y :none}})
 
 (def isotype-icons
   "Vega-Lite \"Isotype Dot Plot\" with this demo's path icons (left) and emoji (right)."
@@ -120,7 +120,7 @@
      :charts [(chart/line {:trail true :order :data})]
      :scales {:size {:range [1 10] :ticks [1931 1932] :title "year"}}
      :facets {:columns 3}
-     :labels {:title "Comet chart: barley yield 1931 to 1932" :x "yield" :y nil}}))
+     :labels {:title "Comet chart: barley yield 1931 to 1932" :x "yield" :y :none}}))
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/vega-marks/` by [[cljplot2.demo/render!]]."

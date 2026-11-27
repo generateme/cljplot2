@@ -223,7 +223,7 @@
                                                     :overlapping-labels :drop})))
               :aspect :iso
               :scales (theme/deep-merge {:x x-axis :y y-axis} scales)
-              :labels {:title title :x nil :y nil}}
+              :labels {:title title :x :none :y :none}}
        user-theme (assoc :theme user-theme)))))
 
 ;; trees
@@ -396,7 +396,7 @@
                                                         (not heights?) (assoc :axis false))})
                                           k (assoc :color {:legend false}))
                                         scales)
-              :labels {:title title :x nil :y (when (and heights? (not circular)) "height")}}
+              :labels {:title title :x :none :y (if (and heights? (not circular)) "height" :none)}}
        circular (assoc :aspect :iso)
        (and horizontal (not circular)) (assoc :flip true)
        (and labels? (not circular) (not horizontal)) (assoc-in [:theme :axis :x :label-rotation] -90)
@@ -495,7 +495,7 @@
                        scales)
               :theme {:panel {:grid {:x :none :y :none}}}
               :legend false
-              :labels {:title title :x nil :y nil}}
+              :labels {:title title :x :none :y :none}}
        circular (assoc :aspect :iso)
        user-theme (update :theme #(theme/deep-merge % user-theme))))))
 
@@ -673,7 +673,7 @@
             {:strip (-> base
                         (assoc-in [:scales level-dim] {:domain order :axis false})
                         (assoc-in [:scales band-dim] {:axis false})
-                        (assoc :legend false :labels {level-dim nil band-dim {:text title :role :tick-label :rotation (if (= side :row) 270 0)}})
+                        (assoc :legend false :labels {level-dim :none band-dim {:text title :role :tick-label :rotation (if (= side :row) 270 0)}})
                         ;; no plot margin, also under a user margin: the strip is as thick as its cell
                         (update :theme theme/deep-merge {:plot {:margin 0}}))
              :legend (assoc base :legend-only true)}))
@@ -725,7 +725,7 @@
                                              :charts [(chart/tile)]}
                                             extra)
                                user-theme (update :theme theme/deep-merge user-theme)))
-        heatmap (tile-plot {:legend false :theme {:axis {:x {:label-rotation -90}}} :labels {:x nil :y nil}})
+        heatmap (tile-plot {:legend false :theme {:axis {:x {:label-rotation -90}}} :labels {:x :none :y :none}})
         legend (tile-plot {:legend-only true})
         tree-plot (fn [t flip?]
                     (let [{:keys [paths]} (tree/layout t {})
@@ -734,10 +734,10 @@
                       (cond-> {:charts [(branch-chart paths false nil)]
                                :scales {:x {:domain [-0.5 (m/- n 0.5)] :nice false :expand [0.0 0.0] :axis false}
                                         :y (assoc (height-axis top) :axis false)}
-                               :legend false :labels {:x nil :y nil}}
+                               :legend false :labels {:x :none :y :none}}
                         flip? (assoc :flip true)
                         user-theme (assoc :theme user-theme))))
-        blank {:charts [] :scales {:x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}} :labels {:x nil :y nil}}
+        blank {:charts [] :scales {:x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}} :labels {:x :none :y :none}}
         empty-legend {:legend-only true}
         annotated (fn [side option level-of order]
                     (annotation-plots rows (get options option) side {:level-of (data/row-accessor side level-of) :order order
@@ -860,8 +860,8 @@
                                (chart/scatter {:theme-style :bundle-leaf :data leaves :mapping (cond-> {:x :x :y :y} by-group? (assoc :color ::group))})]
                         labels? (into (radial-labels nodes user-theme)))
               :aspect :iso
-              :scales (theme/deep-merge (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title nil})) scales)
-              :labels {:title title :x nil :y nil}}
+              :scales (theme/deep-merge (cond-> {:x circle-axis :y circle-axis} by-group? (assoc :color {:title :none})) scales)
+              :labels {:title title :x :none :y :none}}
        user-theme (update :theme #(theme/deep-merge % user-theme))))))
 
 ;; ordered layouts
@@ -914,7 +914,7 @@
               :aspect :iso
               ;; colours in ring order, the same for sectors and ribbons
               :scales (theme/deep-merge {:x circle-axis :y circle-axis :color {:domain (mapv :id groups) :legend false}} scales)
-              :labels {:title title :x nil :y nil}}
+              :labels {:title title :x :none :y :none}}
        user-theme (assoc :theme user-theme)))))
 
 (def ^:private arc-width-range
@@ -1009,7 +1009,7 @@
                                                      :expand [0.0 0.0] :axis false}}
                                                 scales)
                         (:size edge-mapping) (update :size #(merge arc-width-range %)))
-              :labels {:title title :x nil :y nil}}
+              :labels {:title title :x :none :y :none}}
        labels? (assoc-in [:theme :axis :x :label-rotation] 90)
        user-theme (update :theme #(theme/deep-merge % user-theme))))))
 
@@ -1152,7 +1152,7 @@
                                          :color {:domain (vec (distinct (map color-of nodes)))
                                                  :legend (some? (:color mapping))}}
                                         scales)
-              :labels {:title title :x nil :y nil}}
+              :labels {:title title :x :none :y :none}}
        user-theme (assoc :theme user-theme)))))
 
 (def ^:private alluvial-example-keys
@@ -1223,7 +1223,7 @@
                                         :y unit-axis
                                         :color {:title (label/name-text (or strand-color (first variables)))}}
                                        scales)
-             :labels {:title title :x nil :y nil}}
+             :labels {:title title :x :none :y :none}}
       user-theme (assoc :theme user-theme))))
 
 ;; sequences
@@ -1274,6 +1274,6 @@
               :charts [(chart/partition {:theme-style :sequences-cell :color-by :name :order :value
                                          :group-labels labels? :leaf-labels labels?})]
               :coord {:kind :polar :inner inner}
-              :scales (theme/deep-merge {:color {:title nil}} scales)
+              :scales (theme/deep-merge {:color {:title :none}} scales)
               :labels {:title title}}
        user-theme (assoc :theme user-theme)))))

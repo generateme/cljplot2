@@ -19,9 +19,9 @@
   "Fig 6.1: earthquake locations and depths (depth growing downward), a panel per magnitude interval."
   {:data (shingle/shingle quakes :mag {:n 4 :overlap 0.1 :as :magnitude :label "Magnitude"})
    :mapping {:x :long :y :lat :z :depth :facet :magnitude}
-   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 105 :elevation 20} :size 3
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-   :facets {:columns 2}})
+   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 105 :elevation 20} :size 3})]
+   :facets {:columns 2}
+   :labels {:x "Longitude" :y "Latitude" :z "Depth"}})
 
 (defn- view-panel
   "The quakes cloud seen from `azimuth` / `elevation` (perspective `distance`, default 0 - none), axes labelled so the
@@ -33,8 +33,8 @@
     :mapping {:x :long :y :lat :z :depth}
     :charts [(chart/cloud {:domain {:z [690 40]} :view (cond-> {:azimuth azimuth :elevation elevation}
                                                           (pos? (double distance)) (assoc :distance distance))
-                           :size 2 :aspect [1 1.3 0.8] :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-    :labels {:title (str "azimuth " azimuth ", elevation " elevation)}}))
+                           :size 2 :aspect [1 1.3 0.8]})]
+    :labels {:x "Longitude" :y "Latitude" :z "Depth" :title (str "azimuth " azimuth ", elevation " elevation)}}))
 
 (def fig-6-3
   "Fig 6.3: one cloud turned about its vertical axis - four azimuths 40 degrees apart at one elevation (one box size,
@@ -47,17 +47,16 @@
   {:data (filterv #(>= (double (:mag %)) 5.5) quakes)
    :mapping {:x :long :y :lat :z :stations :color :mag}
    :scales {:color {:range [[120 170 220] [10 40 110]]}}
-   :charts [(chart/cloud {:type :spikes :line-width 2 :domain {:z [0 140]} :view {:azimuth 30 :elevation 25}
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Stations"}})]})
+   :charts [(chart/cloud {:type :spikes :line-width 2 :domain {:z [0 140]} :view {:azimuth 30 :elevation 25}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Stations"}})
 
 (def groups
   "Groups in 3D: quakes colored by magnitude band (a legend) and sized by the number of stations reporting them."
   {:data (mapv #(assoc % :band (cond (< (double (:mag %)) 4.5) "< 4.5" (< (double (:mag %)) 5.0) "4.5 - 5" :else ">= 5")) quakes)
    :mapping {:x :long :y :lat :z :depth :color :band :size :stations}
    :scales {:color {:domain ["< 4.5" "4.5 - 5" ">= 5"]} :size {:range [1 8]}}
-   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 30 :elevation 25}
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-   :labels {:title "Magnitude band (color) and stations (size)"}})
+   :charts [(chart/cloud {:domain {:z [690 40]} :view {:azimuth 30 :elevation 25}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Depth" :title "Magnitude band (color) and stations (size)"}})
 
 (def ^:private chem97 (data/chem97-rows))
 
@@ -77,9 +76,9 @@
   {:data chem97-table
    :mapping {:x (levels/categorical :score) :y :gcd :z :count :facet :gender}
    :charts [(chart/cloud {:type :bars :base 0 :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
-                          :view {:azimuth 220 :elevation 42} :aspect [1 1.5 0.8]
-                          :axis-titles {:x "A-level score" :y "GCSE score decile" :z "Count"}})]
-   :facets {:columns 2}})
+                          :view {:azimuth 220 :elevation 42} :aspect [1 1.5 0.8]})]
+   :facets {:columns 2}
+   :labels {:x "A-level score" :y "GCSE score decile" :z "Count"}})
 
 (def projections
   "The quakes cloud with its side projections: density bands on the floor, density lines on the longitude-depth
@@ -87,26 +86,24 @@
   {:data quakes
    :mapping {:x :long :y :lat :z :depth}
    :charts [(chart/cloud {:domain {:z [690 40]} :size 2 :view {:azimuth 40 :elevation 25}
-                          :projections {:xy :density :xz :contour :yz :points}
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-   :labels {:title "Side projections"}})
+                          :projections {:xy :density :xz :contour :yz :points}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Depth" :title "Side projections"}})
 
 (def projections-only
   "Side projections without the cloud (`:type :none`): the quakes' density bands on all three walls."
   {:data quakes
    :mapping {:x :long :y :lat :z :depth}
    :charts [(chart/cloud {:type :none :domain {:z [690 40]} :view {:azimuth 40 :elevation 25}
-                          :projections {:xy :density :xz :density :yz :density}
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})]
-   :labels {:title "Projections only"}})
+                          :projections {:xy :density :xz :density :yz :density}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Depth" :title "Projections only"}})
 
 (def histogram-2d
   "A 2D histogram: quakes counted on a 12 x 12 longitude-latitude grid, the counts as 3D bars."
   {:data quakes
    :mapping {:x :long :y :lat}
    :charts [(chart/cloud {:bins [12 12] :type :bars :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
-                          :view {:azimuth 35 :elevation 35} :axis-titles {:x "Longitude" :y "Latitude" :z "Count"}})]
-   :labels {:title "Quakes per cell"}})
+                          :view {:azimuth 35 :elevation 35}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Count" :title "Quakes per cell"}})
 
 (def ^:private models
   "Synthetic model surfaces over [-2 2]^2 (Fig 6.8 shows four fitted models of one response)."
@@ -156,9 +153,9 @@
   "The 2D kernel density of the quakes' locations as a surface."
   {:data quakes
    :mapping {:x :long :y :lat}
-   :charts [(chart/surface {:density true :n 40 :view {:azimuth 30 :elevation 35}
-                            :axis-titles {:x "Longitude" :y "Latitude" :z "Density"}})]
-   :scales {:color {:range [[250 250 220] [240 140 40] [120 20 20]]}}})
+   :charts [(chart/surface {:density true :n 40 :view {:azimuth 30 :elevation 35}})]
+   :scales {:color {:range [[250 250 220] [240 140 40] [120 20 20]]}}
+   :labels {:x "Longitude" :y "Latitude" :z "Density"}})
 
 (def ^:private slab
   "Least-squares plane of quake depth on longitude and latitude."
@@ -172,10 +169,9 @@
      :mapping {:x :long :y :lat :z :depth}
      ;; the first 3D chart's frame (view, titles) is the box's
      :charts [(chart/surface {:f #(slab %) :domain domain :n 12 :color [200 200 200 160] :shade false
-                              :style :both :stroke-color [120 120 120] :view {:azimuth 50 :elevation 15}
-                              :axis-titles {:x "Longitude" :y "Latitude" :z "Depth"}})
+                              :style :both :stroke-color [120 120 120] :view {:azimuth 50 :elevation 15}})
               (chart/cloud {:domain domain :size 2 :color [180 40 40 200]})]
-     :labels {:title "Quakes and their least-squares plane"}}))
+     :labels {:x "Longitude" :y "Latitude" :z "Depth" :title "Quakes and their least-squares plane"}}))
 
 (def perspective-views
   "Fig 6.3 in perspective (lattice's distance 0.2): one box size and place at every azimuth, near corners larger."
@@ -186,9 +182,8 @@
   {:data quakes
    :mapping {:x :long :y :lat}
    :charts [(chart/cloud {:bins [12 12] :type :bars :color [150 190 230] :stroke-color [60 60 60] :stroke-width 1
-                          :view {:azimuth 35 :elevation 35 :distance 0.2}
-                          :axis-titles {:x "Longitude" :y "Latitude" :z "Count"}})]
-   :labels {:title "Quakes per cell, perspective"}})
+                          :view {:azimuth 35 :elevation 35 :distance 0.2}})]
+   :labels {:x "Longitude" :y "Latitude" :z "Count" :title "Quakes per cell, perspective"}})
 
 (def perspective-wireframe
   "Fig 6.11c / 13.7 in perspective: the shaded volcano-like wireframe seen from distance 0.2."

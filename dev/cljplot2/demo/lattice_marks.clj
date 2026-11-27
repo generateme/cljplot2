@@ -38,7 +38,7 @@
    :mapping {:x :gender :y :transformed :facet :score}
    :charts [(chart/box {:variant :tufte :outliers false})]
    :facets {:columns 6}
-   :labels {:x nil :y "Transformed GCSE score"}})
+   :labels {:x :none :y "Transformed GCSE score"}})
 
 (def ^:private iris
   (mapv #(-> % (update :sepal-length parse-double) (update :sepal-width parse-double) (update :petal-length parse-double))

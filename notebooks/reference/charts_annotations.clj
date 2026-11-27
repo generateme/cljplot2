@@ -284,7 +284,7 @@
                                          :mapping {:x :lon :y :lat}
                                          :charts [(chart/scatter) text-chart]
                                          :scales {:x {:domain [0 24]}}
-                                         :labels {:title title :x nil :y nil}})
+                                         :labels {:title title :x :none :y :none}})
                                       [[":overlapping-labels :keep"
                                         (chart/text {:mapping {:x :lon :y :lat :label :city} :anchor [:left :middle] :offset [4 0]
                                                      :overlapping-labels :keep})]

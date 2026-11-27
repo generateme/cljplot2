@@ -72,7 +72,7 @@
  {:data (rseq top-20)
   :mapping {:x :value :y :country}
   :charts [(chart/bar)]
-  :labels {:title "Weapon exports, top 20 countries" :x "exports" :y nil}}
+  :labels {:title "Weapon exports, top 20 countries" :x "exports" :y :none}}
  {:width 800 :height 500})
 
 ;; ### Colour, outline and width
@@ -94,7 +94,7 @@
           :mapping {:x :country :y :value}
           :theme {:axis {:x {:label-rotation -90}}}
           :charts [(chart/bar opts)]
-          :labels {:title title :x nil :y nil}}))
+          :labels {:title title :x :none :y :none}}))
   {:columns 3})
  {:width 1000 :height 400})
 
@@ -112,10 +112,10 @@
   [{:data top-10 :mapping {:x :country :y :value}
     :theme {:axis {:x {:label-rotation -45}}}
     :charts [(chart/bar)]
-    :labels {:title "{:x :country :y :value}" :x nil :y "exports"}}
+    :labels {:title "{:x :country :y :value}" :x :none :y "exports"}}
    {:data (rseq top-10) :mapping {:x :value :y :country}
     :charts [(chart/bar)]
-    :labels {:title "{:x :value :y :country}" :x "exports" :y nil}}]
+    :labels {:title "{:x :value :y :country}" :x "exports" :y :none}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -133,11 +133,11 @@
   [{:data (sort-by :country top-20) :mapping {:x :value :y :country}
     :scales {:y {:reverse true}}
     :charts [(chart/bar)]
-    :labels {:title "Alphabetical (data order, :reverse)" :x "exports" :y nil}}
+    :labels {:title "Alphabetical (data order, :reverse)" :x "exports" :y :none}}
    {:data top-20 :mapping {:x :value :y :country}
     :scales {:y {:order-by level-value}}
     :charts [(chart/bar)]
-    :labels {:title "By value (:order-by)" :x "exports" :y nil}}]
+    :labels {:title "By value (:order-by)" :x "exports" :y :none}}]
   {:columns 2})
  {:width 1000 :height 500})
 
@@ -172,7 +172,7 @@
          {:data iris :mapping {:x :species :y k}
           :charts [(chart/bar {:stat :mean :color [120 160 200]})
                    (chart/extent {:method :stddev :center :none :color [40 40 40] :line-width 1.5})]
-          :labels {:title (str "Mean " (name k) " ± sd") :x nil :y "cm"}}))
+          :labels {:title (str "Mean " (name k) " ± sd") :x :none :y "cm"}}))
   {:columns 2})
  {:width 900 :height 400})
 
@@ -192,11 +192,11 @@
     :mapping {:x :clarity :pattern :cut}
     :scales {:x {:domain clarities} :pattern {:domain ["Fair" "Good" "Ideal"]}}
     :charts [(chart/bar {:stat :count :color :white :stroke-color :black :pattern-color :black})]
-    :labels {:title "Diamonds per clarity, :pattern by cut" :x nil :y "count"}}
+    :labels {:title "Diamonds per clarity, :pattern by cut" :x :none :y "count"}}
    {:data top-10 :mapping {:x :country :y :value}
     :theme {:axis {:x {:label-rotation -90}}}
     :charts [(chart/bar {:color :white :stroke-color :black :pattern :hatch :pattern-color :black})]
-    :labels {:title "A literal :pattern :hatch" :x nil :y "exports"}}]
+    :labels {:title "A literal :pattern :hatch" :x :none :y "exports"}}]
   {:columns 2 :widths [3 2]})
  {:width 1000 :height 450})
 
@@ -213,10 +213,10 @@
   [{:data top-10 :mapping {:x :country :y :value}
     :theme {:axis {:x {:label-rotation -45}}}
     :charts [(chart/bar {:value-label true})]
-    :labels {:title "Vertical" :x nil :y "exports"}}
+    :labels {:title "Vertical" :x :none :y "exports"}}
    {:data (rseq top-10) :mapping {:x :value :y :country}
     :charts [(chart/bar {:value-label true})]
-    :labels {:title "Horizontal" :x "exports" :y nil}}]
+    :labels {:title "Horizontal" :x "exports" :y :none}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -284,7 +284,7 @@
                    :range {"for, sure" [8 69 148] "for, leaning" [107 174 214]
                            "against, sure" [165 15 21] "against, leaning" [251 106 74]}}}
   :charts [(chart/bar {:mirror :group :position :stack})]
-  :labels {:title "For (up) and against (down), sure and leaning" :x nil :y "people"}}
+  :labels {:title "For (up) and against (down), sure and leaning" :x :none :y "people"}}
  {:width 900 :height 450})
 
 ;; ### Economist-style labelled bars
@@ -310,7 +310,7 @@
     :charts [(chart/bar {:color [0 104 139] :stroke-color :none :width 0.7})
              (text (filterv fits? rows) (constantly 0) [:left :middle] :white)
              (text (filterv (complement fits?) rows) :value [:left :middle] [0 104 139])]
-    :labels {:title {:text "Weapon exports\nTop 10 countries, value of exports" :align [:left :middle]} :x nil :y nil}}
+    :labels {:title {:text "Weapon exports\nTop 10 countries, value of exports" :align [:left :middle]} :x :none :y :none}}
    {:width 800 :height 450}))
 
 ;; ## Lollipop and dot plots
@@ -334,14 +334,14 @@
   (plot/render-image
    (plot/arrange
     [(assoc base :charts [(chart/segment {:xend 0}) (chart/scatter)]
-            :labels {:title "Basic" :x "exports" :y nil})
+            :labels {:title "Basic" :x "exports" :y :none})
      (assoc base :charts [(chart/segment {:xend 0 :color [150 150 150] :line-width 2})
                           (chart/scatter {:size 9 :color [215 48 39] :shape \s})]
-            :labels {:title "Styled stems and markers" :x "exports" :y nil})
+            :labels {:title "Styled stems and markers" :x "exports" :y :none})
      (assoc base :charts [(chart/rule {:x mean :dash :dashed})
                           (chart/segment {:xend mean :color [150 150 150]})
                           (chart/scatter {:size 7 :color [33 102 172]})]
-            :labels {:title "Baseline at the mean" :x "exports" :y nil})]
+            :labels {:title "Baseline at the mean" :x "exports" :y :none})]
     {:columns 3})
    {:width 1000 :height 500}))
 
@@ -368,11 +368,11 @@
    (plot/arrange
     [{:data scores :scales by-season-2
       :charts [(dots :season-2 [33 102 172])]
-      :labels {:title "Cleveland dot plot: season 2" :x "score" :y nil}}
+      :labels {:title "Cleveland dot plot: season 2" :x "score" :y :none}}
      {:data scores :scales by-season-2
       :charts [(chart/segment {:mapping {:x :season-1 :xend :season-2 :y :team} :color [170 170 170] :line-width 2})
                (dots :season-1 [150 150 150]) (dots :season-2 [33 102 172])]
-      :labels {:title "Dumbbell: season 1 (grey) to season 2 (blue)" :x "score" :y nil}}]
+      :labels {:title "Dumbbell: season 1 (grey) to season 2 (blue)" :x "score" :y :none}}]
     {:columns 2})
    {:width 1000 :height 450}))
 
@@ -394,11 +394,11 @@
    (plot/arrange
     [(assoc base :mapping {:x :value :y :country :color :side}
             :charts [(chart/segment {:xend mean}) (chart/scatter {:size 7})]
-            :labels {:title "Above / below the mean" :x "exports" :y nil})
+            :labels {:title "Above / below the mean" :x "exports" :y :none})
      (assoc base :mapping {:x :value :y :country :color :highlight}
             :scales (assoc (:scales base) :color {:range {"Germany (FRG)" [215 48 39] "others" [190 190 190]}})
             :charts [(chart/segment {:xend 0}) (chart/scatter {:size 7})]
-            :labels {:title "One country highlighted" :x "exports" :y nil})]
+            :labels {:title "One country highlighted" :x "exports" :y :none})]
     {:columns 2})
    {:width 1000 :height 500}))
 
@@ -423,7 +423,7 @@
     :mapping {:x :sales :y :product :color :shop}
     :scales {:y {:domain order}}
     :charts [(chart/segment {:xend 0}) (chart/scatter {:size 7})]
-    :labels {:title "Sales of six products per shop" :x "sales" :y nil}}
+    :labels {:title "Sales of six products per shop" :x "sales" :y :none}}
    {:width 800 :height 700}))
 
 ;; ## Circular barplot
@@ -459,12 +459,12 @@
       :scales {:x {:order-by level-value :axis false} :y {:axis false :domain [0 26000]}}
       :charts [(chart/bar {:color [33 102 172] :stroke-color :none})
                (chart/text {:mapping {:x :country :y :value :label :country} :rotation :radial :size 8})]
-      :labels {:title "Ordered, radial labels" :x nil :y nil}}
+      :labels {:title "Ordered, radial labels" :x :none :y :none}}
      {:data shop-groups :mapping {:x :item :y :value :color :group}
       :coord {:kind :polar :inner 0.2}
       :scales {:x {:domain levels :formatter (fn [v] (if (= \_ (first (str v))) "" (str v)))}}
       :charts [(chart/bar)]
-      :labels {:title "Gaps between groups" :x nil :y nil}}]
+      :labels {:title "Gaps between groups" :x :none :y :none}}]
     {:columns 2})
    {:width 1000 :height 500}))
 
@@ -489,7 +489,7 @@
          {:data parts :mapping {:x :item :y :value :color :part}
           :coord {:kind :polar :inner 0.15}
           :charts [(chart/bar {:position p})]
-          :labels {:title (str ":position " p) :x nil :y nil}}))
+          :labels {:title (str ":position " p) :x :none :y :none}}))
   {:columns 2})
  {:width 1000 :height 500})
 
@@ -507,7 +507,7 @@
   :coord {:kind :polar :start -9}
   :scales {:x {:order-by level-value :descending true} :y {:kind :log}}
   :charts [(chart/segment {:yend 50 :color [150 150 150]}) (chart/scatter {:size 8 :color [215 48 39]})]
-  :labels {:title "Weapon exports, top 20" :x nil :y nil}}
+  :labels {:title "Weapon exports, top 20" :x :none :y :none}}
  {:width 600 :height 600})
 
 ;; ## Parallel coordinates
@@ -531,14 +531,14 @@
  (plot/arrange
   [{:data iris :mapping {:color :species}
     :charts [(chart/parallel {:variables iris-variables})]
-    :labels {:title "By species" :x nil}}
+    :labels {:title "By species" :x :none}}
    {:data iris :mapping {:color :species}
     :scales {:color {:range {"setosa" [190 190 190 120] "versicolor" [190 190 190 120] "virginica" [215 48 39 220]}}}
     :charts [(chart/parallel {:variables iris-variables})]
-    :labels {:title "Virginica highlighted" :x nil}}
+    :labels {:title "Virginica highlighted" :x :none}}
    {:data iris :mapping {:color :species} :flip true
     :charts [(chart/parallel {:variables iris-variables})]
-    :labels {:title "Vertical (:flip true)" :x nil}}]
+    :labels {:title "Vertical (:flip true)" :x :none}}]
   {:columns 2})
  {:width 1000 :height 800})
 
@@ -556,7 +556,7 @@
   (vec (for [[title opts] [["Straight" {}] [":curve :smooth" {:curve :smooth}]]]
          {:data (take-nth 3 iris) :mapping {:color :species} :legend false
           :charts [(chart/parallel (merge {:variables iris-variables} opts))]
-          :labels {:title title :x nil}}))
+          :labels {:title title :x :none}}))
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -574,7 +574,7 @@
   (vec (for [scaling [:std :robust :uniminmax :globalminmax]]
          {:data iris :mapping {:color :species} :legend false
           :charts [(chart/parallel {:variables iris-variables :scaling scaling :line-width 0.5})]
-          :labels {:title (str ":scaling " scaling) :x nil}}))
+          :labels {:title (str ":scaling " scaling) :x :none}}))
   {:columns 2})
  {:width 1000 :height 700})
 
@@ -592,7 +592,7 @@
                           ["Sepal width beside the petals" [:sepal-width :petal-length :sepal-length :petal-width]]]]
          {:data iris :mapping {:color :species} :legend false
           :charts [(chart/parallel {:variables vs})]
-          :labels {:title title :x nil}}))
+          :labels {:title title :x :none}}))
   {:columns 2})
  {:width 1000 :height 400})
 
@@ -625,14 +625,14 @@
   [(plot/arrange
     [{:data four-cars :mapping {:color :model} :coord {:kind :polar} :legend false
       :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2})]
-      :labels {:title "Four cars, their own ranges" :x nil}}
+      :labels {:title "Four cars, their own ranges" :x :none}}
      {:data four-cars :mapping {:color :model} :coord {:kind :polar}
       :charts [(chart/parallel {:variables car-variables :fill :color :line-width 2 :limits car-limits})]
-      :labels {:title "Ranges of all 32 cars (:limits)" :x nil}}]
+      :labels {:title "Ranges of all 32 cars (:limits)" :x :none}}]
     {:columns 2 :widths [2 3]})
    {:data (map #(assoc % :cylinders (str (long (:cyl %)))) mtcars) :mapping {:color :cylinders} :coord {:kind :polar}
     :charts [(chart/parallel {:variables car-variables :scaling :std})]
-    :labels {:title "All cars by cylinders (:std)" :x nil}}]
+    :labels {:title "All cars by cylinders (:std)" :x :none}}]
   {:columns 1 :heights [1 1]})
  {:width 1000 :height 800})
 
@@ -650,7 +650,7 @@
   :coord {:kind :polar :inner 0.25} :flip true
   :scales {:color {:range {"setosa" [27 158 119 110] "versicolor" [217 95 2 110] "virginica" [117 112 179 110]}}}
   :charts [(chart/parallel {:variables iris-variables :line-width 0.8})]
-  :labels {:title "150 iris flowers across four rings" :x nil}}
+  :labels {:title "150 iris flowers across four rings" :x :none}}
  {:width 750 :height 700})
 
 ;; ## Bump
@@ -677,7 +677,7 @@
           :scales {:x {:kind :log} :y y-scale}
           :theme {:axis {:y {:label-gap 1}}}
           :charts [(chart/segment {:xend 1 :color [150 150 150]}) (chart/scatter {:size 5 :color [33 102 172]})]
-          :labels {:title title :x "exports (log scale)" :y nil}}))
+          :labels {:title title :x "exports (log scale)" :y :none}}))
   {:columns 2})
  {:width 1000 :height 800})
 
@@ -693,7 +693,7 @@
 (plot/render-image
  (plot/arrange
   [{:data diamonds :mapping {:x :cut} :scales {:x {:domain cuts}}
-    :charts [(chart/bar {:stat :count})] :labels {:title "Barplot: diamonds per cut" :x nil :y "count"}}
+    :charts [(chart/bar {:stat :count})] :labels {:title "Barplot: diamonds per cut" :x :none :y "count"}}
    {:data diamonds :mapping {:x :price}
     :charts [(chart/histogram)] :labels {:title "Histogram: diamond prices" :x "price, USD"}}]
   {:columns 2})
@@ -712,7 +712,7 @@
   (vec (for [vs [car-variables [:mpg :wt :hp :drat :qsec :disp]]]
          {:data (filter #(= "Mazda RX4" (:model %)) mtcars) :coord {:kind :polar}
           :charts [(chart/parallel {:variables vs :fill :color :line-width 2 :limits car-limits})]
-          :labels {:title (str "Mazda RX4: " (str/join " " (map name vs))) :x nil}}))
+          :labels {:title (str "Mazda RX4: " (str/join " " (map name vs))) :x :none}}))
   {:columns 2})
  {:width 1000 :height 500})
 
@@ -729,9 +729,9 @@
  (plot/arrange
   [{:data top-10 :mapping {:x :country :y :value} :scales {:x {:order-by level-value}}
     :coord {:kind :polar :inner 0.2}
-    :charts [(chart/bar)] :labels {:title "Circular" :x nil :y nil}}
+    :charts [(chart/bar)] :labels {:title "Circular" :x :none :y :none}}
    {:data top-10 :mapping {:x :country :y :value} :scales {:x {:order-by level-value}}
     :theme {:axis {:x {:label-rotation -45}}}
-    :charts [(chart/bar)] :labels {:title "Straight" :x nil :y "exports"}}]
+    :charts [(chart/bar)] :labels {:title "Straight" :x :none :y "exports"}}]
   {:columns 2})
  {:width 1000 :height 500})

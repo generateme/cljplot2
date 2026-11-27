@@ -4,8 +4,10 @@
   [[legends]]: one legend per aesthetic dimension with entries (ordinal scales, linear size) and a color bar for a
   linear or binned `:color` scale (`:legend false` on the plot or the scale hides them; identity scales have none). Dimensions mapped by every chart with the same
   accessor (equal keyword or the same function) and with equal entry labels merge into one legend whose entries
-  combine their attributes. Title: the scale's `:title` when given (`nil` - none), else the accessor's name when it
-  is a keyword.
+  combine their attributes. Title: the scale spec's settled `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]: the
+  plot's `:labels` entry, else the scale's `:title`, else a computed title; `nil` - none; in a merged legend the first
+  member's title, none only when all hide theirs), else the accessor's name when it is a keyword. A label map title
+  draws in its own role and style.
 
   Content `{:kind :legend :title t :entries [{:label l :attributes {dim attribute}}] :charts [{:chart i :dims [dim]}]}`:
   title (`:legend-title` role), then one row per entry - a key box, gap, label (`:legend-label` role). A key box is
@@ -36,6 +38,7 @@
             [fastmath.vector :as v]
             [wadogo.scale :as s]
             [cljplot2.content.axis :as axis]
+            [cljplot2.content.label :as label]
             [cljplot2.data.levels :as levels]
             [cljplot2.data.rows :as data]
             [cljplot2.data.text :as text]
@@ -87,10 +90,10 @@
 
   - `members` (sequence): the merged candidates, `:spec` and `:accessors` read.
 
-  Returns the first member scale's `:title` when one is given (a given `nil` - no title); else the name of the first member's single keyword accessor; `nil` otherwise."
+  Returns the first title among the members' settled `:title`s (see [[cljplot2.scale.aesthetic/titled-spec]]); `nil` - no title - when every member with a settled title hides it; without settled titles the name of the first member's single keyword accessor; `nil` otherwise."
   [members]
-  (if-let [titled (first (filter #(contains? (:spec %) :title) members))]
-    (get-in titled [:spec :title])
+  (if-let [titled (seq (filter #(contains? (:spec %) :title) members))]
+    (some #(get-in % [:spec :title]) titled)
     (let [accessors (:accessors (first members))
           first-accessor (first accessors)]
       (when (and (m/one? (count accessors)) (keyword? first-accessor)) (name first-accessor)))))
@@ -300,17 +303,17 @@
   Used for estimating the panel size (see [[cljplot2.layout.plot-grid/estimated-panel-size]]): one per aesthetic
   mapped by a chart or computed by one (see [[cljplot2.scale.aesthetic/computed-aesthetics]]) - a color bar with a
   stand-in tick label for a linear or binned color (a computed one too), else a legend of the distinct mapped values
-  (at most [[provisional-values]]); titles as [[legends]] gives them (the scale's `:title`, the computed title, an
-  accessor keyword's name).
+  (at most [[provisional-values]]); titles as [[legends]] gives them (see [[cljplot2.scale.aesthetic/titled-spec]],
+  else an accessor keyword's name).
 
   Parameters:
 
-  - `plot` (map): `:charts`, `:scales`, `:legend`.
+  - `plot` (map): `:charts`, `:scales`, `:labels`, `:legend`.
   - `chart-inputs` (sequence): `[{:mapping :groups}]` of the split stage, in chart order.
 
   Returns a vector of contents; none for an identity scale, a scale with `:legend false`, or plot `:legend false`;
   nor a legend no chart would draw a key into (see [[legends]])."
-  [{:keys [charts scales legend]} chart-inputs]
+  [{:keys [charts scales labels legend]} chart-inputs]
   (if (false? legend)
     []
     (let [pairs (mapv vector charts chart-inputs)
@@ -332,7 +335,7 @@
                        continuous? (or (some? computed) (aesthetic/continuous-values? k values))
                        kind (when (or computed (seq mapped)) (aesthetic/inferred-kind k own-spec continuous?))
                        suggested (when computed (aesthetic/computed-scale-attributes (get computed k)))
-                       spec (merge suggested own-spec)
+                       spec (aesthetic/titled-spec (get labels k) own-spec suggested)
                        legend-title (cond
                                       (contains? spec :title) (:title spec)
                                       (and (m/one? (count accessors)) (keyword? (first accessors))) (name (first accessors)))]
@@ -347,10 +350,14 @@
 
 ;; content
 
+(def ^:private title-schema
+  "Schema of a legend's or colour bar's title: a text or a map of [[cljplot2.content.label/label-options]]."
+  [:multi {:dispatch label/label-options?} [true label/label-options] [false text/label-text-schema]])
+
 (def ^:private legend-schema
   "Schema of `{:kind :legend}` content: `:title`, `:entries` `[{:label :attributes}]`, `:charts` `[{:chart index :dims [dim]}]`."
   [:map
-   (schema/nilable :title text/label-text-schema)
+   (schema/nilable :title title-schema)
    [:entries [:vector [:map [:label text/label-text-schema] [:attributes :map]]]]
    [:charts [:vector [:map [:chart nat-int?] [:dims vector?]]]]])
 
@@ -358,7 +365,7 @@
   "Schema of `{:kind :colorbar}` content: `:title`, a linear or binned `:scale`, `:ticks` and one label per tick in `:labels`."
   (schema/with-rules
    [:map
-    (schema/nilable :title text/label-text-schema)
+    (schema/nilable :title title-schema)
     [:scale [:map [:kind [:enum :linear :binned]]]]
     [:ticks vector?]
     [:labels vector?]]
@@ -379,11 +386,13 @@
 
   Parameters:
 
-  - `text`: the title text.
+  - `title`: the title - a text, or a map of [[cljplot2.content.label/label-options]] (its role, style and text).
 
-  Returns `{:kind :label :role :legend-title :text text}`."
-  [text]
-  {:kind :label :role :legend-title :text text})
+  Returns `{:kind :label :role :legend-title :text title}` for a text; for a label map, the map merged over `{:role :legend-title}` with `:kind :label`."
+  [title]
+  (if (label/label-options? title)
+    (assoc (merge {:role :legend-title} title) :kind :label)
+    {:kind :label :role :legend-title :text title}))
 
 (defn- entry-label
   "Gives the label content of a legend entry label or a colour bar tick label.

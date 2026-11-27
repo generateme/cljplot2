@@ -79,7 +79,7 @@
 (plot/render-image (plot/arrange [{:data (sets/upset-rows members {:set :set :item :item} ["tea" "coffee" "juice"])
                                    :mapping {:x :combination :y :size}
                                    :charts [(chart/bar {:value-label true})]
-                                   :labels {:x nil :y "items"}}
+                                   :labels {:x :none :y "items"}}
                                   {:data (sets/membership-rows members {:set :set :item :item} ["tea" "coffee" "juice"])
                                    :mapping {:x :combination :y :set}
                                    :charts [(chart/scatter {:size 12 :color [210 210 210]})
@@ -87,7 +87,7 @@
                                                                                                          ["tea" "coffee" "juice"]))
                                                             :size 12 :color :black})]
                                    :scales {:y {:reverse true}}
-                                   :labels {:x nil :y nil}}]
+                                   :labels {:x :none :y :none}}]
                                  {:columns 1 :heights [2 1]})
                    {:width 900 :height 450})
 
@@ -175,7 +175,7 @@
                                    :scales {:color {:kind :ordinal :domain (series/horizon-bands 2)
                                                     :range [[158 202 225] [8 69 148] [252 174 145] [165 15 21]]}}
                                    :facets {:columns 1}
-                                   :labels {:title "2 bands" :y nil}
+                                   :labels {:title "2 bands" :y :none}
                                    :legend false}
                                   {:data (:rows (series/horizon-rows temperatures {:x :day :y :anomaly :series :city :bands 3
                                                                                    :band-height 1.0 :interpolator :monotone
@@ -186,7 +186,7 @@
                                                     :range [[198 219 239] [107 174 214] [8 81 156]
                                                             [252 187 161] [251 106 74] [165 15 21]]}}
                                    :facets {:columns 1}
-                                   :labels {:title "3 bands of height 1, :monotone" :y nil}}]
+                                   :labels {:title "3 bands of height 1, :monotone" :y :none}}]
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 360})
 

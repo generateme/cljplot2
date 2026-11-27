@@ -186,8 +186,8 @@
                                    {:data ramp
                                     :mapping {:x :i :y :row :color (if (= :exp transform) :tenth :i)}
                                     :charts [(chart/tile)]
-                                    :scales (cond-> {:color {:title nil}} transform (assoc-in [:color :transform] transform))
-                                    :labels {:title title :y nil}})
+                                    :scales (cond-> {:color {:title :none}} transform (assoc-in [:color :transform] transform))
+                                    :labels {:title title :y :none}})
                                  {:columns 3})
                    {:width 900 :height 330})
 
@@ -204,7 +204,7 @@
                                     :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
                                     :charts [(chart/scatter)]
                                     :scales {:x {:kind :log :formatter :power}
-                                             :color {:kind :binned :bins bins :range :viridis/viridis :title nil}}
+                                             :color {:kind :binned :bins bins :range :viridis/viridis :title :none}}
                                     :labels {:title title}})
                                  {:columns 2})
                    {:width 900 :height 600})
@@ -225,7 +225,8 @@
 
 ;; These options set the scale's legend. Aesthetics mapped to the same column with equal levels share one legend; the
 ;; plot's `:legend false` hides all of them. Legends sit right of the panels; the [theme](reference.theme.html#legend)
-;; sets their sizes and box. The plot below renames the size legend and picks its entries:
+;; sets their sizes and box. A plot's `:labels` entry of the aesthetic wins over the scale's `:title`; `:none` in
+;; either hides the title. The plot below renames the size legend and picks its entries:
 
 (nu/option-cards [:scales :color] (describe/options (aesthetic/scale-spec-schema :color)) :legend)
 
@@ -317,7 +318,7 @@
                                     :mapping {:x :i :y :row :size :i}
                                     :charts [(chart/scatter)]
                                     :scales {:size {:range [2 26] :area area :legend false}}
-                                    :labels {:title (str ":area " area) :y nil}})
+                                    :labels {:title (str ":area " area) :y :none}})
                                  {:columns 2})
                    {:width 900 :height 200})
 

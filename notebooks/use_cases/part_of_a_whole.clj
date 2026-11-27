@@ -45,7 +45,7 @@
   "A pie of the regions' populations: stacked bars (`:stat :sum` over the countries of a region) in polar coordinates,
   one bar filling the circle."
   {:data world :mapping {:x :population :color :region} :coord {:kind :polar}
-   :labels {:x nil :y nil}})
+   :labels {:x :none :y :none}})
 
 ;; ## Grouped and stacked bars
 
@@ -82,14 +82,14 @@
                                         ["percent (:normalize)" :normalize true]]]
           {:data species-conditions :mapping {:x :specie :y :value :color :condition} :legend legend?
            :charts [(chart/bar {:position position})]
-           :labels {:title title :x nil :y nil}})
+           :labels {:title title :x :none :y :none}})
         [{:data species-conditions :mapping {:x :condition :y :value :facet :specie}
           :theme {:axis {:x {:label-rotation -90}}}
           :charts [(chart/bar)]
-          :labels {:title "small multiples" :x nil :y nil}}
+          :labels {:title "small multiples" :x :none :y :none}}
          {:data signed-conditions :mapping {:x :specie :y :value :color :condition}
           :charts [(chart/bar {:position :stack})]
-          :labels {:title "negative values" :x nil :y nil}}]))
+          :labels {:title "negative values" :x :none :y :none}}]))
   {:columns 3})
  {:width 1000 :height 650})
 
@@ -126,7 +126,7 @@
                            "Agree" [103 169 207] "Strongly agree" [33 102 172]}}
           :x {:formatter #(str (long (m/abs (double %))))}}
   :charts [(chart/bar {:position :stack :negative-order :reverse})]
-  :labels {:title "Five questions, five answers" :x "answers" :y nil}}
+  :labels {:title "Five questions, five answers" :x "answers" :y :none}}
  {:width 800 :height 380})
 
 ;; ## Treemap
@@ -186,7 +186,7 @@
                 :coord {:kind :polar :inner inner}
                 :scales {:x {:axis false}}
                 :charts [(chart/bar {:position :stack :width 1.0 :value-label percent-label})]
-                :labels {:title (str ":inner " inner) :x nil :y nil})))
+                :labels {:title (str ":inner " inner) :x :none :y :none})))
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -203,7 +203,7 @@
         :coord {:kind :polar :inner 0.5 :span 180 :start -90}
         :legend false
         :charts [(chart/bar {:position :stack :width 1.0 :value-label share-label :label-position :outer})]
-        :labels {:title "World population by region" :x nil :y nil})
+        :labels {:title "World population by region" :x :none :y :none})
  {:width 800 :height 420})
 
 ;; ## Pie
@@ -222,13 +222,13 @@
 (plot/render-image
  (plot/arrange
   [(assoc pie-base :legend false :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
-          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default (axis in billions)" :x nil :y nil})
+          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title "default (axis in billions)" :x :none :y :none})
    (assoc pie-base :theme {:palette {:color :MetBrewer/Archambault}} :legend false
           :scales {:x {:formatter #(format "%.0fB" (/ (double %) 1e9))}}
-          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title ":MetBrewer/Archambault" :x nil :y nil})
+          :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title ":MetBrewer/Archambault" :x :none :y :none})
    (assoc pie-base :scales {:x {:axis false}} :legend false
           :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :white :stroke-width 1})]
-          :labels {:title "clean" :x nil :y nil})]
+          :labels {:title "clean" :x :none :y :none})]
   {:columns 3})
  {:width 1000 :height 380})
 
@@ -245,11 +245,11 @@
  (plot/arrange
   [(assoc pie-base :scales {:x {:axis false}}
           :charts [(chart/bar {:position :stack :width 1.0 :value-label percent-label})]
-          :labels {:title "inside" :x nil :y nil})
+          :labels {:title "inside" :x :none :y :none})
    (assoc pie-base :legend false
           :charts [(chart/bar {:position :stack :width 1.0 :value-label share-label :label-position :outer
                                :label-leader true})]
-          :labels {:title "outside, with leaders" :x nil :y nil})]
+          :labels {:title "outside, with leaders" :x :none :y :none})]
   {:columns 2})
  {:width 1000 :height 480})
 
@@ -401,12 +401,12 @@
        dots (sets/membership-rows words m)]
    (plot/arrange [{:data (sets/upset-rows words m) :mapping {:x :combination :y :size}
                    :scales {:x {:axis false}}
-                   :charts [(chart/bar {:value-label true})] :labels {:title "Words shared by the artists" :x nil :y "words"}}
+                   :charts [(chart/bar {:value-label true})] :labels {:title "Words shared by the artists" :x :none :y "words"}}
                   {:data dots :mapping {:x :combination :y :set}
                    :theme {:axis {:x {:label-rotation -45}}}
                    :charts [(chart/scatter {:size 12 :color [210 210 210]})
                             (chart/scatter {:data (filter :member dots) :size 12 :color :black})]
-                   :labels {:x nil :y nil}}]
+                   :labels {:x :none :y :none}}]
                  {:columns 1 :heights [3 2]}))
  {:width 900 :height 650})
 
@@ -432,10 +432,10 @@
   (vec (concat
         (for [[title values] caveat-data]
           {:data (caveat-rows values) :mapping {:x :value :color :part} :coord {:kind :polar} :scales {:x {:axis false}}
-           :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title title :x nil :y nil}})
+           :legend false :charts [(chart/bar {:position :stack :width 1.0})] :labels {:title title :x :none :y :none}})
         (for [[title values] caveat-data]
           {:data (caveat-rows values) :mapping {:x :part :y :value :color :part} :legend false
-           :charts [(chart/bar)] :labels {:title title :x nil :y nil}})))
+           :charts [(chart/bar)] :labels {:title title :x :none :y :none}})))
   {:columns 3})
  {:width 1000 :height 650})
 

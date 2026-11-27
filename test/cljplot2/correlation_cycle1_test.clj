@@ -368,7 +368,8 @@
       (is (= "Count" (title p)))
       (is (= "Percent of Total" (title (assoc p :charts [(chart/bin2d {:measure :percent})]))))
       (is (= "n" (title (assoc p :scales {:color {:title "n"}}))))
-      (is (nil? (title (assoc p :scales {:color {:title nil}})))))))
+      (is (nil? (title (assoc p :scales {:color {:title :none}}))))
+      (is (= "Count" (title (assoc p :scales {:color {:title nil}}))) "nil - the computed title"))))
 
 (deftest bin2d-theme-test
   (testing "4.5 theme [:chart :bin2d] validated; default hexagons"

@@ -28,11 +28,11 @@
 (def upset
   (let [dots (sets/membership-rows members mapping)]
     (plot/arrange [{:data (sets/upset-rows members mapping) :mapping {:x :combination :y :size}
-                    :charts [(chart/bar {:value-label true})] :labels {:title "UpSet recipe" :x nil :y "Items"}}
+                    :charts [(chart/bar {:value-label true})] :labels {:title "UpSet recipe" :x :none :y "Items"}}
                    {:data dots :mapping {:x :combination :y :set}
                     :charts [(chart/scatter {:size 12 :color [210 210 210]})
                              (chart/scatter {:data (filter :member dots) :size 12 :color :black})]
-                    :labels {:x nil :y nil}}]
+                    :labels {:x :none :y :none}}]
                   {:columns 1})))
 
 (def images

@@ -244,9 +244,8 @@
       (is (= (first (first lines)) (nth (first lines) 2)) "vertical"))))
 
 (deftest review2-fixes-test
-  (testing "V1 a title's distance from its edge: past ticks and labels, plus half its text height - not its length"
-    (is (= 27.0 (space-draw/title-distance 6 2 10 (v/vec2 300 14))) "6 + 2 gaps of 2 + 10 + 14 / 2")
-    (is (= (space-draw/title-distance 6 2 10 (v/vec2 30 14)) (space-draw/title-distance 6 2 10 (v/vec2 300 14)))))
+  (testing "V1 a title's distance from its edge: past ticks and labels, plus half its thickness across the edge"
+    (is (= 27.0 (space-draw/title-distance 6 2 10 14)) "6 + 2 gaps of 2 + 10 + 14 / 2"))
   (testing "V2 a short front bar is drawn over a tall bar behind it"
     (let [rows [{:x 0 :y 0 :z 1 :c "front"} {:x 0 :y 1 :z 10 :c "back"}]
           b (built {:data rows :mapping {:x :x :y :y :z :z :color :c} :charts [(chart/cloud {:type :bars :base 0 :view {:azimuth 0 :elevation 20}})]

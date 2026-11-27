@@ -261,7 +261,8 @@
     [(chart/ecdf)] nil "Empirical CDF"
     [(chart/density) (chart/histogram)] nil "Density"
     [(chart/histogram)] {:y "Share"} "Share"
-    [(chart/histogram)] {:y nil} nil
+    [(chart/histogram)] {:y nil} "Percent of Total"
+    [(chart/histogram)] {:y :none} nil
     [(chart/histogram)] {:title "T"} "Percent of Total")
   (is (nil? (y-title (build {:data rows :mapping {:x :v :y :v} :charts [(chart/line)]})))))
 

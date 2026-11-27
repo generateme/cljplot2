@@ -66,7 +66,7 @@
    :scales {:color {:range (mapv #(c/set-alpha (c/color %) 110) gradient) :legend false}
             :size {:range [0.5 10] :area true :legend false}}
    :margins {:top {:charts margin-density :size 22} :right {:charts margin-density :size 22}}
-   :labels {:x "cljplot2 - functional plotting library" :y nil}})
+   :labels {:x "cljplot2 - functional plotting library" :y :none}})
 
 (def example
   "The README's example plot (keep the two in sync): sin and cos as lines with points, coloured by series."

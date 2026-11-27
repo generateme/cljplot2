@@ -410,7 +410,7 @@
                                    ;; the diagonal draws in its own magnitude scale, its axis and grid show the row variable
                                    :y (cond diag? {:axis (axis left?) :axis-domain (domains vy)}
                                             :else {:domain (domains vy) :nice false :expand [0.0 0.0] :axis (axis left?)})}
-                          :labels {:x (when bottom? (name-of vx)) :y (when left? (name-of vy))}
+                          :labels {:x (if bottom? (or (name-of vx) :none) :none) :y (if left? (or (name-of vy) :none) :none)}
                           :legend false}
                    (m/odd? (m/+ i j)) (assoc :alternate-panel true)
                    ;; names or an empty diagonal: no data on y - a fixed unit domain

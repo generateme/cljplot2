@@ -42,7 +42,7 @@
    :charts [(chart/polygon {:alpha 0.8 :stroke-color :black})]
    :aspect :iso
    :scales {:color {:title "points" :range :viridis/viridis}}
-   :labels {:title "Polygons from rows (coloured by their first row)" :x nil :y nil}})
+   :labels {:title "Polygons from rows (coloured by their first row)" :x :none :y :none}})
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/flows/` by [[cljplot2.demo/render!]]."

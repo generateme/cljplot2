@@ -58,7 +58,7 @@
  {:data iris
   :mapping {:x :sepal-length :y :species}
   :charts [(chart/violin)]
-  :labels {:title "Sepal length by species" :x "sepal length [cm]" :y nil}}
+  :labels {:title "Sepal length by species" :x "sepal length [cm]" :y :none}}
  {:width 800 :height 450})
 
 ;; ### Ordered violins
@@ -76,7 +76,7 @@
   :mapping {:x :sepal-width :y :species}
   :scales {:y {:domain (levels/order-levels iris :species :sepal-width stats/median)}}
   :charts [(chart/violin {:inner :quartiles})]
-  :labels {:title "Sepal width, species by median (largest on top)" :x "sepal width [cm]" :y nil}}
+  :labels {:title "Sepal width, species by median (largest on top)" :x "sepal width [cm]" :y :none}}
  {:width 800 :height 450})
 
 ;; ### Horizontal and vertical
@@ -91,7 +91,7 @@
 (let [p {:data iris
          :mapping {:x :sepal-width :y :species}
          :charts [(chart/violin)]
-         :labels {:x "sepal width [cm]" :y nil}}]
+         :labels {:x "sepal width [cm]" :y :none}}]
   (plot/render-image
    (plot/arrange [(assoc-in p [:labels :title] "horizontal (default)")
                   (-> p (assoc :flip true) (assoc-in [:labels :title] ":flip true"))]
@@ -112,7 +112,7 @@
   :mapping {:x :yield :y :site}
   :charts [(chart/violin {:inner :none :color [200 200 220]})
            (chart/box {:width 0.12 :outliers false :n-label true})]
-  :labels {:title "Barley yield by site" :x "yield [bushels/acre]" :y nil}}
+  :labels {:title "Barley yield by site" :x "yield [bushels/acre]" :y :none}}
  {:width 800 :height 500})
 
 ;; ### Grouped violins
@@ -128,11 +128,11 @@
 (let [p {:data barley
          :mapping {:x :yield :y :site :color :year}
          :scales {:color {:type :categorical}}
-         :labels {:x "yield [bushels/acre]" :y nil}}]
+         :labels {:x "yield [bushels/acre]" :y :none}}]
   (plot/render-image
-   (plot/arrange [(assoc p :charts [(chart/violin {:inner :none})] :labels {:title "dodged" :x "yield" :y nil})
+   (plot/arrange [(assoc p :charts [(chart/violin {:inner :none})] :labels {:title "dodged" :x "yield" :y :none})
                   (assoc p :charts [(chart/violin {:position :mirror :inner :quartiles})]
-                         :labels {:title "split (:position :mirror)" :x "yield" :y nil})]
+                         :labels {:title "split (:position :mirror)" :x "yield" :y :none})]
                  {:columns 2})
    {:width 1000 :height 550}))
 
@@ -487,11 +487,11 @@
  (plot/arrange [{:data barley :mapping {:x :yield :y :variety}
                  :scales {:y {:order-by #(stats/median (map :yield %))}}
                  :charts [(chart/box)]
-                 :labels {:title "by median (largest on top)" :x "yield" :y nil}}
+                 :labels {:title "by median (largest on top)" :x "yield" :y :none}}
                 {:data barley :mapping {:x :yield :y :variety}
                  :scales {:y {:order-by #(stats/mean (map :yield %)) :descending true}}
                  :charts [(chart/box)]
-                 :labels {:title "by mean, :descending (largest at the bottom)" :x "yield" :y nil}}]
+                 :labels {:title "by mean, :descending (largest at the bottom)" :x "yield" :y :none}}]
                {:columns 2})
  {:width 1000 :height 500})
 
@@ -524,7 +524,7 @@
   :mapping {:x :yield :y :site :color :year}
   :scales {:color {:type :categorical}}
   :charts [(chart/box)]
-  :labels {:title "Barley yield by site and year" :x "yield [bushels/acre]" :y nil}}
+  :labels {:title "Barley yield by site and year" :x "yield [bushels/acre]" :y :none}}
  {:width 800 :height 500})
 
 ;; ### Faceted boxplot
@@ -538,7 +538,7 @@
   :mapping {:x :yield :y :year :facet :site}
   :scales {:y {:type :categorical}}
   :charts [(chart/box)]
-  :labels {:title "Yield by year, one panel per site" :x "yield" :y nil}}
+  :labels {:title "Yield by year, one panel per site" :x "yield" :y :none}}
  {:width 900 :height 500})
 
 ;; ### Variable width
@@ -601,7 +601,7 @@
   :mapping {:x :yield :y :variety :color :year}
   :scales {:color {:type :categorical}}
   :charts [(chart/box {:n-label true :n-format "%d obs"})]
-  :labels {:title "Yield by variety and year" :x "yield" :y nil}}
+  :labels {:title "Yield by variety and year" :x "yield" :y :none}}
  {:width 900 :height 650})
 
 ;; ### Horizontal and vertical
@@ -634,7 +634,7 @@
                                    [":bootstrap-percentile" {:method :bootstrap-percentile :rng (r/rng :mersenne 1)}]]]
                  {:data barley :mapping {:x :yield :y :site}
                   :charts [(chart/extent opts)]
-                  :labels {:title title :x "yield" :y nil}})
+                  :labels {:title title :x "yield" :y :none}})
                {:columns 3})
  {:width 1000 :height 400})
 
@@ -657,7 +657,7 @@
   :mapping {:x :mean-temp :y :month}
   :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5})]
-  :labels {:title "Mean temperature in Lincoln, 2016" :x "mean temperature [F]" :y nil}}
+  :labels {:title "Mean temperature in Lincoln, 2016" :x "mean temperature [F]" :y :none}}
  {:width 800 :height 650})
 
 ;; ### Ridge shapes
@@ -672,10 +672,10 @@
          :mapping {:x :price :y :cut}
          :scales {:y {:domain ["Fair" "Good" "Very Good" "Premium" "Ideal"]}}}]
   (plot/render-image
-   (plot/arrange [(assoc p :charts [(chart/histogram {:bins 40})] :labels {:title "histogram ridges" :x "price" :y nil})
+   (plot/arrange [(assoc p :charts [(chart/histogram {:bins 40})] :labels {:title "histogram ridges" :x "price" :y :none})
                   (assoc p :data (take-nth 25 diamonds)
                          :charts [(chart/density {:overlap 0.7}) (chart/stripplot {:rng (r/rng :mersenne 4) :size 3 :jitter 0.2})]
-                         :labels {:title "density ridges with points (4% sample)" :x "price" :y nil})]
+                         :labels {:title "density ridges with points (4% sample)" :x "price" :y :none})]
                  {:columns 2})
    {:width 1000 :height 550}))
 
@@ -692,7 +692,7 @@
   :mapping {:x :max-temp :y :month}
   :scales {:y {:domain months :reverse true}}
   :charts [(chart/density {:overlap 1.5 :fill-gradient :mpl/plasma})]
-  :labels {:title "Daily maximum temperature" :x "max temperature [F]" :y nil}}
+  :labels {:title "Daily maximum temperature" :x "max temperature [F]" :y :none}}
  {:width 800 :height 650})
 
 ;; ### Double ridgeline
@@ -724,17 +724,17 @@
 (plot/render-image
  (plot/arrange [{:data iris :mapping {:x :sepal-length :y :species}
                  :charts [(chart/beeswarm {:size 6})]
-                 :labels {:title "basic" :x "sepal length" :y nil}}
+                 :labels {:title "basic" :x "sepal length" :y :none}}
                 {:data iris :mapping {:x :sepal-length :y :species} :flip true
                  :charts [(chart/beeswarm {:size 6})]
-                 :labels {:title "vertical (:flip)" :x "sepal length" :y nil}}
+                 :labels {:title "vertical (:flip)" :x "sepal length" :y :none}}
                 {:data mtcars :mapping {:x :mpg :y :cyl} :scales {:y {:type :categorical}}
                  :charts [(chart/beeswarm {:size 12 :shape \A :color [215 48 39 200]})]
                  :labels {:title "dot style (:shape, :size)" :x "mpg" :y "cylinders"}}
                 {:data iris :mapping {:x :petal-length :y :species :color :species}
                  :charts [(chart/box {:outliers false :color [235 235 240] :width 0.6 :mapping {:color nil}})
                           (chart/beeswarm {:size 5})]
-                 :labels {:title "coloured, over boxes" :x "petal length" :y nil}}]
+                 :labels {:title "coloured, over boxes" :x "petal length" :y :none}}]
                {:columns 2})
  {:width 1000 :height 700})
 
@@ -753,7 +753,7 @@
   :mapping {:x :yield :y :variety :color :year}
   :scales {:color {:type :categorical}}
   :charts [(chart/stripplot {:rng (r/rng :mersenne 1) :size 8 :jitter 0.1})]
-  :labels {:title "Barley yield by variety, dodged by year" :x "yield" :y nil}}
+  :labels {:title "Barley yield by variety, dodged by year" :x "yield" :y :none}}
  {:width 800 :height 550})
 
 ;; ### Rug

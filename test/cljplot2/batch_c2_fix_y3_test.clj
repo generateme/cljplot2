@@ -145,7 +145,7 @@
 ;; error messages name a legend cell as a legend, not by its mapping
 
 (deftest legend-cell-message-test
-  (let [p (plot/arrange [(assoc (legend-plot 3) :labels {:title nil}) panel-plot] {:columns 2 :widths [:measured 1]})
+  (let [p (plot/arrange [(assoc (legend-plot 3) :labels {:title :none}) panel-plot] {:columns 2 :widths [:measured 1]})
         msg (message #(plot/render-image p {:width 400 :height 25}))]
     (is (some? msg))
     (is (str/includes? msg "(legend)"))

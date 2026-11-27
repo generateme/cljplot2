@@ -272,7 +272,8 @@
   (are [scales title] (= title (:title (first (legends (build (plot-of {:color :g} {:scales scales}))))))
     {} "g"
     {:color {:title "Group"}} "Group"
-    {:color {:title nil}} nil)
+    {:color {:title nil}} "g"
+    {:color {:title :none}} nil)
   (is (nil? (:title (first (legends (build (plot-of {:color #(:g %)})))))))
   (is (= ["<a>" "<b>" "<c>"] (mapv :label (:entries (first (legends (build (plot-of {:color :g} {:scales {:color {:formatter #(str "<" % ">")}}})))))))))
 
@@ -335,9 +336,9 @@
                   (let [built (build (plot-of mapping extra))]
                     (measured (first (legends built)) (:theme built))))
         label-w (fn [built text] (.x (measured {:kind :label :role :legend-label :text text} (:theme built))))
-        built (build (plot-of {:color :g} {:scales {:color {:title nil :formatter #(str % "-long-label")}}}))
+        built (build (plot-of {:color :g} {:scales {:color {:title :none :formatter #(str % "-long-label")}}}))
         {:keys [gap key-size]} (get-in built [:theme :legend])]
-    (is (>= (.x ^fastmath.vector.Vec2 (size-of {:color :g} {:scales {:color {:title nil :formatter #(str % "-long-label")}}}))
+    (is (>= (.x ^fastmath.vector.Vec2 (size-of {:color :g} {:scales {:color {:title :none :formatter #(str % "-long-label")}}}))
             (+ (double key-size) (double gap) (label-w built "a-long-label"))))
     (let [h (fn [n] (.y ^fastmath.vector.Vec2 (size-of {:color :g} {:scales {:color {:kind :ordinal :domain (vec (range n))}}
                                                                     :data (map #(assoc %1 :g %2) rows (cycle (range n)))})))]

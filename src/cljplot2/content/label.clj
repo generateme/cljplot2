@@ -67,10 +67,10 @@
                                :cljplot2/default-doc "None: an empty label." :cljplot2/example "Walks"}
                         any?)
        (schema/optional :role {:cljplot2/section :label :description "The theme text role whose style the label takes: `:title`, `:axis-title` ... or a role of your theme."
-                               :cljplot2/default-doc "`:title` for the plot title, `:axis-title` for axis titles; a custom grid's label has none and must give it." :cljplot2/example :tick-label
+                               :cljplot2/default-doc "`:title` for the plot title, `:axis-title` for axis titles, `:legend-title` for legend titles; a custom grid's label has none and must give it." :cljplot2/example :tick-label
                                :cljplot2/example-context {:text "Walks"}}
                         keyword?)
-       (schema/optional :rotation {:cljplot2/section :label :description "The label's clockwise turn in degrees." :cljplot2/default-doc "`0`; `270` for the y axis title." :cljplot2/example 90
+       (schema/optional :rotation {:cljplot2/section :label :description "The label's clockwise turn in degrees." :cljplot2/default-doc "`0`; `270` for the y axis title; along its edge for a 3D frame's axis title." :cljplot2/example 90
                                    :cljplot2/example-context {:text "Walks"}
                                    :cljplot2/value-meanings {0 "Horizontal." 90 "Turned clockwise, reading top to bottom." 270 "Turned counter-clockwise, reading bottom to top."}}
                         [:enum 0 90 270])]

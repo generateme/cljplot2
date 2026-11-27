@@ -411,7 +411,7 @@
              (chart/text {:data (map (fn [g] {:genre g :x 0.1}) (distinct (map :major-genre rated)))
                           :mapping {:x :x :y :genre :label :genre} :anchor [:left :middle]})]
     :scales {:x {:domain [0 10]} :y {:axis false :domain (vec (sort (distinct (map :major-genre rated)))) :reverse true}}
-    :labels {:x "Mean IMDB Ratings" :y nil}}
+    :labels {:x "Mean IMDB Ratings" :y :none}}
    {:width 500 :height 400}))
 
 ;; ### Bar Chart showing Initials of Month Names
@@ -493,7 +493,7 @@
            (chart/text {:data (map (fn [o] {:origin o :x 0}) (distinct (map :origin cars)))
                         :mapping {:x :x :y :origin :label :origin} :anchor [:left :bottom] :offset [2 12]})]
   :scales {:y {:axis false :domain ["Europe" "Japan" "USA"] :reverse true}}
-  :labels {:x "Number of Cars" :y nil}}
+  :labels {:x "Number of Cars" :y :none}}
  {:width 500 :height 250})
 
 ;; ### Heat Lane Chart
@@ -509,7 +509,7 @@
    {:data (map (fn [{:keys [lo n]}] {:x0 (+ lo 1) :x1 (+ lo 19) :y0 (- (/ n 2.0)) :y1 (/ n 2.0) :count n}) bins)
     :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1 :color :count} :corner-radius 3})]
     :scales {:x {:domain [0 240]} :y {:axis false} :color {:range [[222 238 238] [44 120 150]] :title "count"}}
-    :labels {:title "Heat Lane of Horsepower" :x "Horsepower" :y nil}}
+    :labels {:title "Heat Lane of Horsepower" :x "Horsepower" :y :none}}
    {:width 700 :height 250}))
 
 ;; ## Histograms, Density Plots, and Dot Plots
@@ -573,7 +573,7 @@
     :mapping {:x :fps :y :residency}
     :charts [(chart/bar {:width 1.0 :stroke-color :white})]
     :scales {:x {:domain (mapv fps starts)} :y {:domain [0 100] :formatter #(str (m/round (double %)) "%")}}
-    :labels {:title "Distribution of Frame Render Time (fps)" :x nil :y nil}}
+    :labels {:title "Distribution of Frame Render Time (fps)" :x :none :y :none}}
    {:width 600 :height 300}))
 
 ;; ### Relative Frequency Histogram
@@ -726,7 +726,7 @@
            :color {:domain ["cattle" "pigs" "sheep"] :range [[118 43 131] [192 144 87] [91 160 87]]}
            :x {:axis false} :y {:domain ["cattle" "pigs" "sheep"] :reverse true}}
   :facets {:columns 1}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 700 :height 400})
 
 ;; ### Isotype Dot Plot with Emoji
@@ -742,7 +742,7 @@
                    :range [{:text "\uD83D\uDC04"} {:text "\uD83D\uDC16"} {:text "\uD83D\uDC11"}]}
            :x {:axis false} :y {:domain ["cattle" "pigs" "sheep"] :reverse true}}
   :facets {:columns 1}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 700 :height 400})
 
 ;; ### Relative Bar Chart (Calculate Percentage of Total)
@@ -892,7 +892,7 @@
   :mapping {:x :year :y :entity :size :deaths :color :entity}
   :charts [(chart/scatter {:stroke-color :black :stroke-width 1})]
   :scales {:size {:range [0 40] :area true :title "Annual Global Deaths"} :color {:legend false} :y {:reverse true}}
-  :labels {:x "Year" :y nil}}
+  :labels {:x "Year" :y :none}}
  {:width 900 :height 500})
 
 ;; ### Scatter Plot with Text Marks
@@ -951,7 +951,7 @@
     :charts [(chart/scatter {:size 10 :color [76 120 168]})]
     :scales {:x {:domain [0 10] :ticks [0 5 10] :formatter #(get {0 "Poor" 5 "Neutral" 10 "Great"} (m/round (double %)))}
              :y {:domain (vec (sort-by means (keys means))) :reverse true}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 500 :height 350}))
 
 ;; ### Dot Plot with Jittering
@@ -1173,7 +1173,7 @@
              :color {:domain ["decrease" "increase"] :range [[202 0 32] [5 113 176]] :title "Yield Delta"}
              :y {:domain (vec (sort (distinct (map :variety barley)))) :reverse true}}
     :facets {:columns 6}
-    :labels {:title "Barley Yield comparison between 1932 and 1931" :x nil :y "Variety"}}
+    :labels {:title "Barley Yield comparison between 1932 and 1931" :x :none :y "Variety"}}
    {:width 1000 :height 450}))
 
 ;; ### Line Chart with Markers and Invalid Values
@@ -1250,7 +1250,7 @@
           {:x x :key k :value (f x)})
   :mapping {:x :x :y :value :color :key}
   :charts [(chart/line)]
-  :scales {:color {:title nil}}
+  :scales {:color {:title :none}}
   :labels {:x "x" :y "value"}}
  {:width 600 :height 300})
 
@@ -1376,7 +1376,7 @@
  {:data unemployment :mapping {:x :date :y :count :color :series}
   :charts [(chart/line {:fill :color :position :normalize :line-width 0})]
   :scales {:color industry-colors :y {:axis false}}
-  :labels {:x "date (year-month)" :y nil}}
+  :labels {:x "date (year-month)" :y :none}}
  {:width 800 :height 400})
 
 ;; ### Streamgraph
@@ -1389,7 +1389,7 @@
  {:data unemployment :mapping {:x :date :y :count :color :series}
   :charts [(chart/line {:fill :color :position :silhouette :line-width 0})]
   :scales {:color industry-colors :y {:axis false}}
-  :labels {:x "date (year-month)" :y nil}}
+  :labels {:x "date (year-month)" :y :none}}
  {:width 800 :height 400})
 
 ;; ### Horizon Graph
@@ -1437,7 +1437,7 @@
           {:day (str day) :month month :temp (reduce max (map :temp-max rows))})
   :mapping {:x :day :y :month :color :temp}
   :charts [(chart/tile)]
-  :scales {:x {:domain (mapv str (range 1 32))} :y {:domain month-names :reverse true} :color {:title nil}}
+  :scales {:x {:domain (mapv str (range 1 32))} :y {:domain month-names :reverse true} :color {:title :none}}
   :labels {:title "Daily Max Temperatures (C) in Seattle, WA" :x "Day" :y "Month"}}
  {:width 900 :height 380})
 
@@ -1453,7 +1453,7 @@
   :scales {:y {:domain (mapv str (concat (range 6 24) (range 6))) :reverse true}
            :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}
            :color {:title "Temperature (°C)"}}
-  :labels {:title "Seattle Annual Temperatures" :x nil :y "Hour"}}
+  :labels {:title "Seattle Annual Temperatures" :x :none :y "Hour"}}
  {:width 900 :height 400})
 
 ;; ### Table Bubble Plot (Github Punch Card)
@@ -1507,7 +1507,7 @@
           {:symbol symbol :x0 date :x1 (.plusMonths date 1) :price price})
   :charts [(chart/rect {:mapping {:x0 :x0 :x1 :x1 :y0 :symbol :y1 :symbol :color :price}})]
   :scales {:y {:domain ["AAPL" "AMZN" "IBM" "MSFT"] :reverse true} :color {:title "Price"}}
-  :labels {:x "Time" :y nil}}
+  :labels {:x "Time" :y :none}}
  {:width 800 :height 250})
 
 ;; ### Mosaic Chart with Labels
@@ -1567,7 +1567,7 @@
   :coord {:kind :polar}
   :charts [(chart/bar {:position :stack :width 1.0})]
   :scales {:x {:axis false}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 400 :height 350})
 
 ;; ### Pie Chart with percentage_tooltip
@@ -1582,7 +1582,7 @@
   :charts [(chart/bar {:position :normalize :width 1.0 :value-label #(format "%.1f%%" (* 100.0 (double (:share %))))
                        :label-position :center})]
   :scales {:x {:axis false}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 400 :height 350})
 
 ;; ### Donut Chart
@@ -1596,7 +1596,7 @@
   :coord {:kind :polar :inner 0.5}
   :charts [(chart/bar {:position :stack :width 1.0})]
   :scales {:x {:axis false}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 400 :height 350})
 
 ;; ### Pie Chart with Labels
@@ -1612,7 +1612,7 @@
   :legend false
   :charts [(chart/bar {:position :stack :width 1.0 :value-label #(get-in % [:group :color]) :label-position :outer})]
   :scales {:x {:axis false}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 400 :height 350})
 
 ;; ### Radial Plot
@@ -1635,7 +1635,7 @@
     :scales {:x {:axis false :domain [0 (last ends)] :nice false} :y {:axis false :domain [0 8]}
              :color {:domain (map :label rows)}}
     :theme {:panel {:grid {:x :none :y :none}}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 450 :height 450}))
 
 ;; ### Pyramid Pie Chart
@@ -1653,9 +1653,9 @@
   :charts [(chart/bar {:position :stack :width 1.0 :stroke-color :none})]
   :scales {:x {:axis false}
            :color {:domain ["Shady side of a pyramid" "Sunny side of a pyramid" "Sky"]
-                   :range [[103 64 40] [222 172 88] [65 109 157]] :title nil}}
+                   :range [[103 64 40] [222 172 88] [65 109 157]] :title :none}}
   :theme {:panel {:grid {:x :none :y :none}}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 550 :height 350})
 
 ;; ## Advanced Calculations
@@ -1797,7 +1797,7 @@
     :charts [(chart/bar)]
     :scales {:y {:domain (vec (map first (sort-by (comp - second) ranked))) :reverse true}
              :x {:formatter #(str (m/round (/ (double %) 1.0e6)) "M")}}
-    :labels {:title "Top Directors by Average Worldwide Gross" :x nil :y nil}}
+    :labels {:title "Top Directors by Average Worldwide Gross" :x :none :y :none}}
    {:width 600 :height 350}))
 
 ;; ### Using the lookup transform to combine data
@@ -1833,7 +1833,7 @@
   :charts [(chart/parallel {:variables [["Beak Length (mm)" :beak-length-mm] ["Beak Depth (mm)" :beak-depth-mm]
                                         ["Flipper Length (mm)" :flipper-length-mm] ["Body Mass (g)" :body-mass-g]]
                             :alpha 0.3})]
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 700 :height 400})
 
 (nu/source-note {:dataset :cars})
@@ -1845,7 +1845,7 @@
                                         ["Acceleration" :acceleration] ["Miles_per_Gallon" :miles-per-gallon]
                                         ["Year" :year]]
                             :color [70 130 180] :alpha 0.3})]
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 900 :height 400})
 
 ;; ### Bar Chart Showing Argmax Value
@@ -2126,7 +2126,7 @@
   :charts [(chart/box {:stat :identity})]
   :scales {:y {:domain ["Adelie" "Chinstrap" "Gentoo"] :reverse true}}
   :legend false
-  :labels {:title "Body Mass of Penguin Species (g)" :x nil :y nil}}
+  :labels {:title "Body Mass of Penguin Species (g)" :x :none :y :none}}
  {:width 500 :height 250})
 
 ;; ## Labeling & Annotation
@@ -2150,7 +2150,7 @@
              (chart/text {:mapping {:x (constantly -1.2) :y :name :label :name} :font "Noto Emoji" :size 16})]
     :scales {:y {:domain (mapv :name fruit) :reverse true :axis false} :x {:domain [-2.4 22]}
              :color {:range [[222 238 238] [44 120 150]] :title "Number of fruit"}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 500 :height 350}))
 
 ;; ### Bar Chart Highlighting Values beyond a Threshold
@@ -2254,7 +2254,7 @@
              (chart/text {:data likert :mapping {:x (constantly 5.6) :y :question :label :hi :size nil} :anchor [:left :middle]})]
     :scales {:y {:domain questions :reverse true} :x {:domain [-1.2 7.2] :ticks [1 2 3 4 5] :nice false}
              :size {:range [3 16] :area true :title "Number of Ratings"}}
-    :labels {:title "Questionnaire Ratings" :x nil :y nil}}
+    :labels {:title "Questionnaire Ratings" :x :none :y :none}}
    {:width 800 :height 350}))
 
 ;; ### Comparative Likert Scale Ratings
@@ -2275,7 +2275,7 @@
                (chart/scatter {:mapping {:x :mean :color :measure} :size 10 :stroke-color :black})]
       :scales {:x {:domain [-3 3]} :y {:domain ["PoleStar vs Voyager" "PoleStar vs Voyager 2"] :reverse true}
                :color {:domain ["Focused Question Answering" "Open Exploration"] :range [:black :white] :legend false}}
-      :labels {:title "Mean of Subject Ratings (95% CIs)" :x nil :y nil}}
+      :labels {:title "Mean of Subject Ratings (95% CIs)" :x :none :y :none}}
      {:data [{:from -0.25 :to -2.9 :y 0} {:from 0.25 :to 2.9 :y 0}]
       :mapping {:x :from :y :y :xend :to :yend :y}
       :charts [(chart/segment {:color :black :arrow {:end true :size 6}})
@@ -2283,7 +2283,7 @@
                (chart/text {:x 0.25 :y 0 :text "Voyager / Voyager 2\nMore Valuable" :anchor [:left :bottom] :offset [0 4]})]
       :scales {:x {:domain [-3 3] :axis false} :y {:axis false}}
       :theme {:panel {:grid {:x :none :y :none}}}
-      :labels {:x nil :y nil}}]
+      :labels {:x :none :y :none}}]
     {:columns 1 :heights [3 1.4]})
    {:width 600 :height 320}))
 
@@ -2346,7 +2346,7 @@
   :scales {:x {:nice false} :facet {:domain (mapv :title bullets)}}
   :facets {:columns 1 :scales {:x :free}}
   :theme {:panel {:grid {:x :none :y :none}}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 600 :height 450})
 
 ;; ### Weekly Weather Plot
@@ -2376,7 +2376,7 @@
              (chart/text {:data (series "record") :mapping {:x :id :y (constantly 70) :label :day} :anchor [:center :bottom]})]
     :scales {:y {:domain [10 72]} :x {:axis false}}
     :theme {:panel {:grid {:x :none}}}
-    :labels {:title "Weekly Weather - Observations and Predictions" :x nil :y "Temperature (F)"}}
+    :labels {:title "Weekly Weather - Observations and Predictions" :x :none :y "Temperature (F)"}}
    {:width 600 :height 400}))
 
 ;; ### Wheat and Wages Example
@@ -2413,7 +2413,7 @@
              (names false 97 :bottom 2) (names true 93 :top -2)]
     :scales {:color {:domain ["crown" "commonwealth"] :range [:black :white] :legend false}
              :x {:formatter #(str (m/round (double %)))} :y {:domain [0 100]}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 900 :height 450}))
 
 ;; ## Faceting (Trellis Plot / Small Multiples)
@@ -2552,7 +2552,7 @@
              :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
     :facets {:strips false}
     :theme {:panel {:grid {:x :none :y :none}} :facet {:gap 1}}
-    :labels {:title "Seattle Temperature Normals" :x "Month" :y nil}}
+    :labels {:title "Seattle Temperature Normals" :x "Month" :y :none}}
    {:width 800 :height 800}))
 
 ;; ### Faceted Density Plot
@@ -2585,7 +2585,7 @@
   :charts [(chart/bar)]
   :scales {:y {:axis false :reverse true} :x {:formatter #(str (m/round (* 100.0 (double %))) "%")}
            :color {:title "settings"}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 700 :height 400})
 
 ;; ## Repeat & Concatenation
@@ -2690,7 +2690,7 @@
                :scales {:y {:domain (mapv first values) :reverse true} :x {:axis false}
                         :color {:kind :binned :bins color-bins :range gradient :title title}
                         :size {:domain (mapv str (range (inc (count breaks)))) :range [4 16] :legend false}}
-               :labels {:x nil :y nil}})
+               :labels {:x :none :y :none}})
       quartiles (stats/quantiles (map second values) [0.25 0.5 0.75])]
   (plot/render-image
    (plot/arrange
@@ -2736,7 +2736,7 @@
               :scales {:y {:type :categorical :domain ages :reverse true :axis false}
                        :x {:formatter millions :reverse reverse?} :color gender-colors}
               :legend false
-              :labels {:title gender :x "population" :y nil}})]
+              :labels {:title gender :x "population" :y :none}})]
   (plot/render-image
    (plot/arrange
     [(half "Female" true)
@@ -2744,7 +2744,7 @@
       :charts [(chart/text {:mapping {:x :x :y :age :label :age}})]
       :scales {:y {:type :categorical :domain ages :reverse true :axis false} :x {:axis false}}
       :theme {:panel {:grid {:x :none :y :none}}}
-      :labels {:title " " :x " " :y nil}}
+      :labels {:title " " :x " " :y :none}}
      (half "Male" false)]
     {:columns 3 :widths [5 1 5]})
    {:width 900 :height 450}))
@@ -2766,7 +2766,7 @@
    {:data unemployment :mapping {:x :date :y :count :color :series}
     :charts [(chart/line {:fill :color :position :silhouette :line-width 0 :alpha 1.0})]
     :scales {:color {:domain industries :range (vec colors) :title "series"} :y {:axis false}}
-    :labels {:x "date (year-month)" :y nil}}
+    :labels {:x "date (year-month)" :y :none}}
    {:width 800 :height 400}))
 
 ;; ## Bar Charts (Vega)
@@ -2805,7 +2805,7 @@
 (plot/render-image
  {:data (nu/dataset :jobs) :mapping {:x :year :y :perc :color :sex :group :job}
   :charts [(chart/line {:fill :color :position :stack :alpha 0.6 :color :white :line-width 0.2})]
-  :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title nil}
+  :scales {:color {:domain ["men" "women"] :range [[51 51 255] [255 51 51]] :title :none}
            :x {:domain [1850 2000] :expand [0 0] :nice false :formatter #(str (m/round (double %)))}
            :y {:domain [0 1] :expand [0 0] :formatter #(str (m/round (* 100.0 (double %))) "%")}}
   :labels {:x "year" :y "share of the labour force"}}
@@ -2828,7 +2828,7 @@
   :charts [(chart/parallel {:variables [:key-0 :key-1 :key-2 :key-3 :key-4 :key-5 :key-6] :scaling :globalminmax
                             :fill :color :alpha 0.5 :axes false})]
   :scales {:color {:range (plot/palette :category10)}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 500 :height 450})
 
 ;; ## Distributions (Vega)
@@ -2864,7 +2864,7 @@
             :scales {:y {:reverse true} :x {:domain [2000 6500]}}
             :legend false
             :labels {:title (str (if trimmed? "trimmed" "2000 - 6500 g") ", bandwidth " (if (keyword? bandwidth) "auto" bandwidth))
-                     :x "Body Mass (g)" :y nil}}))
+                     :x "Body Mass (g)" :y :none}}))
     {:columns 3})
    {:width 1000 :height 550}))
 
@@ -2894,7 +2894,7 @@
  {:data normal-2d :mapping {:x :u}
   :charts [(chart/dotplot {:method :histogram :binwidth 0.075 :origin -1 :at :value :width 1.0})]
   :scales {:x {:domain [-1 1]}}
-  :labels {:x "u" :y nil}}
+  :labels {:x "u" :y :none}}
  {:width 900 :height 600})
 
 ;; ### Quantile dot plot
@@ -2914,7 +2914,7 @@
              (chart/dotplot {:method :histogram :binwidth 1.25 :origin 0 :color [70 130 180] :width 1.0})]
     :scales {:x {:domain [0 30]}}
     :labels {:title (format "Arrival within %.0f minutes: %.1f%%" select (* 100.0 (r/cdf arrival select)))
-             :x "Minutes until the bus arrives" :y nil}}
+             :x "Minutes until the bus arrives" :y :none}}
    {:width 600 :height 250}))
 
 ;; ### Time units
@@ -2944,7 +2944,7 @@
             :scales {:facet {:domain (mapv first units)} :x {:formatter #(str/replace (str %) #"^\d+ " "")}}
             :facets {:columns 4 :scales {:x :free} :widths [3 31 7 24]}
             :theme {:axis {:x {:label-rotation -90}} :text {:tick-label {:size 8}}}
-            :labels {:title title :x nil :y nil}}))
+            :labels {:title title :x :none :y :none}}))
     {:columns 1})
    {:width 1000 :height 600}))
 
@@ -2964,7 +2964,7 @@
   :charts [(chart/contour {:filled true :levels (vec (range 90 200 10))})]
   :scales {:y {:reverse true :axis false} :x {:axis false} :color {:range :viridis/viridis :title "height (m)"}}
   :aspect :iso
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 960 :height 620})
 
 ;; ## Tree Diagrams (Vega)
@@ -3104,7 +3104,7 @@
              :color {:domain (conj (vec (sort-by parse-long (distinct (map :group miserables-nodes)))) "across")
                      :range (conj (vec (take 11 (cycle (plot/palette :category10)))) [190 190 190]) :legend false}}
     :theme {:text {:tick-label {:size 7}} :axis {:x {:label-rotation -90}}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 1000 :height 800}))
 
 ;; ### Arc diagram
@@ -3149,7 +3149,7 @@
  {:data (map #(assoc % :g (parse-long (:group %))) miserables-nodes) :mapping {:x :g :color :group}
   :charts [(chart/beeswarm {:size 12 :position :overlay :pack :around})]
   :scales {:x {:ticks (vec (range 11))} :color {:legend false}}
-  :labels {:x "group" :y nil}}
+  :labels {:x "group" :y :none}}
  {:width 800 :height 350})
 
 ;; ### Calendar view
@@ -3188,7 +3188,7 @@
             :color {:range [[197 27 125] [247 247 247] [77 146 33]] :midpoint 0 :domain [-0.06 0.06]
                     :formatter #(format "%.0f%%" (* 100.0 (double %))) :title "change"}}
    :theme {:facet {:gap 8} :text {:tick-label {:size 8}}}
-   :labels {:x nil :y nil}})
+   :labels {:x :none :y :none}})
 
 (plot/render-image (assoc calendar :data (filter #(<= 2000 (long (:year %)) 2006) sp500-days)) {:width 1000 :height 800})
 
@@ -3228,7 +3228,7 @@
              (chart/line {:data (filter #(= (:forecast-year %) (dec (long (:budget-year %)))) budgets) :mapping {:group nil}
                           :color :black :line-width 3})]
     :scales {:x {:formatter #(str (m/round (double %)))}}
-    :labels {:x nil :y "Surplus / deficit (% of GDP)"}}
+    :labels {:x :none :y "Surplus / deficit (% of GDP)"}}
    {:width 800 :height 400}))
 
 ;; ### Annual temperature
@@ -3256,7 +3256,7 @@
                  :formatter (let [label (into {} (map (fn [h] [(+ 0.5 (double (row-of h))) (format "%02d:00" h)]) hours))]
                               #(label (double %) ""))}
              :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM" Locale/ENGLISH) ^TemporalAccessor %)}}
-    :labels {:title "Seattle Annual Temperatures" :x nil :y nil}}
+    :labels {:title "Seattle Annual Temperatures" :x :none :y :none}}
    {:width 800 :height 650}))
 
 ;; ### Flight passengers
@@ -3275,7 +3275,7 @@
            (chart/scatter {:color [70 130 180] :size 8})]
   :scales {:y {:formatter #(format "%+.0f%%" (* 100.0 (double %)))}
            :x {:formatter #(.format (DateTimeFormatter/ofPattern "MMM yyyy" Locale/ENGLISH) ^TemporalAccessor %)}}
-  :labels {:title "Passenger Traffic at Seattle-Tacoma International Airport, One Year to the Next" :x nil
+  :labels {:title "Passenger Traffic at Seattle-Tacoma International Airport, One Year to the Next" :x :none
            :y "change from the prior year"}}
  {:width 800 :height 350})
 
@@ -3306,7 +3306,7 @@
              (chart/rect {:mapping {:x0 :enter :x1 :leave :y0 :label :y1 :label} :fill [238 68 68] :width 0.25})
              (chart/text {:mapping {:x :born :y :label :label :label} :anchor [:left :bottom] :offset [0 6] :size 10})]
     :scales {:y {:domain (into [" "] names) :reverse true :axis false}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 800 :height 380}))
 
 ;; ### U district cuisine
@@ -3337,7 +3337,7 @@
                           :offset [0 -2] :size 9 :background [236 236 243 200]})
              (chart/density {:bandwidth 0.0005 :fill :color :alpha 0.8 :overlap 2.3})]
     :scales {:y {:domain names :reverse true} :color {:domain names :range (mapv c/to-color colors) :legend false}}
-    :labels {:x "latitude" :y nil}}
+    :labels {:x "latitude" :y :none}}
    {:width 800 :height 800}))
 
 ;; ### Warming stripes
@@ -3357,7 +3357,7 @@
                                                      "#2171B5" "#08519C" "#08306B"]))
                    :title "°C"}
            :x {:formatter #(str (m/round (double %)))}}
-  :labels {:title "Global temperature change (1880 onward)" :x nil :y nil}}
+  :labels {:title "Global temperature change (1880 onward)" :x :none :y :none}}
  {:width 900 :height 300})
 
 ;; ## Not reproduced

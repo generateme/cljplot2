@@ -66,7 +66,7 @@
              :outliers :outliers}
    :charts [(chart/box {:stat :identity})]
    :scales {:color {:legend false}}
-   :labels {:title "Body mass of penguin species (g)" :x nil :y nil}})
+   :labels {:title "Body mass of penguin species (g)" :x :none :y :none}})
 
 (def ^:private horizon-table
   "The `table` values of the Vega \"Horizon Graph\" example."

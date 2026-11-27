@@ -96,7 +96,7 @@
    :scales {:y {:domain (mapv :country ordered)}}
    :theme {:panel {:grid {:y :none}}}
    :charts [(chart/bar {:color [0 104 139] :stroke-color :none :width 0.6 :value-label true})]
-   :labels {:title "Labelled horizontal bars (Economist style)" :x "sales, $m" :y nil}})
+   :labels {:title "Labelled horizontal bars (Economist style)" :x "sales, $m" :y :none}})
 
 (def images
   "Images of this demo: `[file-name plot options]`, saved to `results/bar/` by [[cljplot2.demo/render!]]."

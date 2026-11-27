@@ -1,7 +1,8 @@
 ;; # Labels and text
 
-;; A plot has a title and two axis titles (`:labels`), each a string or a label map with its own text style. Text
-;; drawn by charts (the `text` chart, value labels, strip and legend texts) takes its style from a theme text role.
+;; A plot has a title, axis titles and legend titles (`:labels`), each a string or a label map with its own text
+;; style. Text drawn by charts (the `text` chart, value labels, strip and legend texts) takes its style from a theme
+;; text role.
 
 (ns reference.labels-text
   (:require [fastmath.core :as m]
@@ -46,7 +47,8 @@
 
 ;; ## Plot labels
 
-;; These keys of the plot's `:labels` map hold the plot title and the axis titles. The plot below names all three:
+;; These keys of the plot's `:labels` map hold the plot title, the axis titles and the legend titles. A 3D plot draws
+;; `:x`, `:y` and `:z` on its frame. The plot below names the title and both axes:
 
 (nu/option-cards [:labels] (describe/options plot-grid/labels-schema))
 
@@ -54,6 +56,16 @@
                     :mapping {:x :sepal-length :y :sepal-width :color :species}
                     :charts [(chart/scatter)]
                     :labels {:title "Iris sepals" :x "sepal length [cm]" :y "sepal width [cm]"}}
+                   {:width 600 :height 350})
+
+;; The plot below titles the colour legend over its scale's `:title` and gives the size legend a label map with its
+;; own role:
+
+(plot/render-image {:data iris
+                    :mapping {:x :sepal-length :y :sepal-width :color :species :size :petal-width}
+                    :charts [(chart/scatter)]
+                    :scales {:color {:title "ignored"}}
+                    :labels {:color "Species" :size {:text "petal width [cm]" :role :axis-title}}}
                    {:width 600 :height 350})
 
 ;; ## Label maps

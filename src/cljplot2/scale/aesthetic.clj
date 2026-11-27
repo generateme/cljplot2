@@ -48,7 +48,8 @@
   * `:integer-ticks true` - linear `:size` / `:color`: counted ticks only at whole numbers (see [[integer-ticks]]),
     e.g. for counts or degrees; an explicit `:ticks` vector and a `:midpoint` tick are drawn as given; a log colour
     bar keeps only its whole powers of ten (one tick on a domain like [0.01 1])
-  * `:formatter` - legend labels (function); `:title` - legend title (`nil` - no title); `:legend` - `false` hides it
+  * `:formatter` - legend labels (function); `:title` - legend title (`:none` - no title; a plot `:labels` entry wins,
+    see [[titled-spec]]); `:legend` - `false` hides it
   * dates - `:color` mapped to `java.time` values gets a `:linear` scale over time, as numbers do (domain in epoch
     milliseconds, see [[cljplot2.data.rows/x-key]]; an explicit `:domain` of two dates; color bar ticks are dates);
     `:midpoint`, `:transform`, `:integer-ticks` and `:binned` need numbers
@@ -63,7 +64,7 @@
   chart keeps its own behaviour: most drop the row, bar draws the NA colour, charts computing their colour skip the
   mark uncounted.
 
-  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]]; schemas [[scale-spec-schema]], [[palette-schema]] (named types [[palette]], [[size-range]]); values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
+  Functions: dimensions [[dims]], [[mapped-dims]], [[computed-aesthetics]], [[computed-scale-attributes]], [[titled-spec]]; schemas [[scale-spec-schema]], [[palette-schema]] (named types [[palette]], [[size-range]]); values [[continuous-value?]], [[continuous-values?]], [[valid-attribute?]], [[valid-value?]], [[identity-scale?]], [[in-domain?]], [[kept-value?]], [[value-extent]]; scales [[inferred-kind]], [[scale-spec]], [[value-transform]]; attributes [[attribute-fn]], [[bin-attributes]], [[palette-color-fn]]; legends [[legend-entries]], [[explicit-ticks]], [[integer-ticks]].
 
   Also: [[dim?]], [[level-key]], [[kinds]], [[transform-names]]."
   (:require [clojure2d.color :as c]
@@ -129,6 +130,25 @@
   Returns `{:title v}` for a title; for a map its `:title`, `:legend` and `:range` (e.g. a diverging palette)."
   [v]
   (if (map? v) (select-keys v [:title :legend :range]) {:title v}))
+
+(defn titled-spec
+  "Gives an aesthetic's scale spec with its legend title settled.
+
+  The title is the first given of: the plot's `:labels` entry of the aesthetic, the scale's own `:title`, the title a chart computing the aesthetic suggests (see [[computed-scale-attributes]]); `nil` passes to the next, `:none` means no title.
+
+  Parameters:
+
+  - `label`: the plot's `:labels` entry (a text, a label map, `:none` or `nil`).
+  - `own` (map): the plot's scale spec of the aesthetic (may be `{}`).
+  - `suggested` (map or `nil`): the computed aesthetic's suggested attributes.
+
+  Returns `suggested` merged under `own`, with `:title` the settled title - `nil` for no title - or no `:title` when none is given (legends then take a single keyword accessor's name)."
+  [label own suggested]
+  (let [given (cond (some? label) [label]
+                    (some? (:title own)) [(:title own)]
+                    (contains? suggested :title) [(:title suggested)])]
+    (cond-> (dissoc (merge suggested own) :title)
+      given (assoc :title (let [[t] given] (when-not (= :none t) t))))))
 
 (defn computed-aesthetics
   "Gives the aesthetics a chart computes itself.
@@ -515,10 +535,11 @@
           (schema/optional :integer-ticks {:cljplot2/section :legend :description "Whether counted legend entries or colour bar ticks of a linear size or colour scale fall only on whole numbers; an explicit `:ticks` vector or a `:midpoint` tick is drawn as given." :default false
                                            :cljplot2/value-meanings {true "Whole numbers only." false "Any counted values."}}
                            schema/bool)
-          (schema/nilable :title {:cljplot2/section :legend :description "The legend title; `nil` draws none." :cljplot2/default-doc "The name of a keyword accessor; none for a function."
+          (schema/nilable :title {:cljplot2/section :legend :description "The legend title; a plot `:labels` entry of the aesthetic wins over it." :cljplot2/default-doc "The title a chart computing the aesthetic gives, else the name of a keyword accessor; none for a function."
                                   :cljplot2/example "level"
+                                  :cljplot2/value-meanings {:none "No title."}
                                   :cljplot2/form-meanings {:string "This text." :fn "A `plot/math` or `plot/runs` value: text with formulas."}}
-                          text/label-text-schema)
+                          (schema/keyword-or :none text/label-text-schema))
           (schema/nilable :legend {:cljplot2/section :legend :description "Whether the scale draws its legend." :default true
                                    :cljplot2/value-meanings {true "Drawn." false "Hidden."}}
                           schema/bool)]

@@ -39,7 +39,7 @@
                        :label "t(3)" :mapping {:color :label}})
             (chart/qq {:x-distribution [:normal] :y-distribution [:t {:degrees-of-freedom 30}] :n 60
                        :label "t(30)" :mapping {:color :label} :line false})]
-   :scales {:color {:title nil}}
+   :scales {:color {:title :none}}
    :labels {:title "Q-Q of t distributions against the normal"}})
 
 (def ^:private t-sample

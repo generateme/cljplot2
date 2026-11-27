@@ -24,8 +24,8 @@
     default `[1 1 1]`); `:distance` > 0 - perspective as lattice's `distance` (0.2 there; the eye `L/δ` from the box
     centre, `L` the box's longest side; an eye within the sphere around the box - a schema error, any `:distance`
     below 2/√3 is fine; see [[cljplot2.data.space3d]])
-  * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles), `:axis-titles
-    {:x t :y t :z t}` (default, also for `nil`: the mapped column names; `:none` - no titles)
+  * `:box` (default true - the box: hidden edges dashed and a floor grid behind the data, visible edges over it), `:axes` (default true - ticks, labels and titles);
+    axis titles - the plot's `:labels` `:x` / `:y` / `:z`, else the mapped column names (a binned z reads `Count`)
   * `:reverse #{:x :y :z}` - axes running the other way (their final domains, data or explicit, reversed - see
     [[cljplot2.data.space3d/reverse-domains]]); reversing one axis mirrors the scene (turning the `:view` doesn't)
   * `:domain {:x [lo hi] :y .. :z ..}` - explicit data domains (each optional); otherwise the data's over all panels
@@ -360,7 +360,7 @@
                   :z (or (:z explicit) (space/data-domain (cond-> z-values (and (seq z-values) (#{:spikes :bars} mark-type)) (conj base)) 0.0))}
                  (:reverse options))
         frame (cond-> (space/frame-settings options mapping)
-                (and bins (not (space/titles-given? options))) (assoc-in [:titles :z] "Count")
+                bins (assoc-in [:titles :z] "Count")
                 (seq levels) (assoc :levels levels))
         layers (when-let [projections (not-empty (:projections options))]
                  (projection-layers projections points domains

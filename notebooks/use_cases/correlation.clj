@@ -88,7 +88,7 @@
     :labels {:title "default" :x "living area, sq ft" :y "price, USD"}}
    {:data houses :mapping {:x :living-area :y :price}
     :charts [(chart/scatter {:shape \A :size 6 :color [70 130 180 90] :stroke-color [20 60 100] :stroke-width 0.5})]
-    :labels {:title "translucent triangles with outlines" :x "living area, sq ft" :y nil}}]
+    :labels {:title "translucent triangles with outlines" :x "living area, sq ft" :y :none}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -255,7 +255,7 @@
     :labels {:title "one fit: y falls with x"}}
    {:data simpson :mapping {:x :x :y :y :color :group}
     :charts [(chart/scatter {:size 5}) (chart/smooth {:method :lm})]
-    :labels {:title "a fit per group: y grows with x" :y nil}}]
+    :labels {:title "a fit per group: y grows with x" :y :none}}]
   {:columns 2})
  {:width 1000 :height 430})
 
@@ -282,7 +282,7 @@
                  :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
                  :theme {:axis {:x {:label-rotation 90}}}
                  :charts [(chart/tile {:cell cell})]
-                 :labels {:title title :x nil :y nil}})]
+                 :labels {:title title :x :none :y :none}})]
   (plot/render-image
    (plot/arrange [(heatmap :square "square cells" false) (heatmap :pointy-hex "pointy-hex cells" true)]
                  {:columns 1})
@@ -299,15 +299,15 @@
                  :dataset :countries})
 
 (let [rows (z-scores (take 25 europe))
-      base {:data rows :theme {:axis {:x {:label-rotation 90}}} :labels {:x nil :y nil}}]
+      base {:data rows :theme {:axis {:x {:label-rotation 90}}} :labels {:x :none :y :none}}]
   (plot/render-image
    (plot/arrange
     [(merge base {:mapping {:x :country :y :indicator :color :value} :charts [(chart/tile)]
                   :scales {:color {:range :viridis :title "value"}}
-                  :labels {:title "raw values (viridis)" :x nil :y nil}})
+                  :labels {:title "raw values (viridis)" :x :none :y :none}})
      (merge base {:mapping {:x :country :y :indicator :color :z} :charts [(chart/tile)]
                   :scales {:color {:range :RColorBrewer/RdBu :midpoint 0 :reverse true :title "z-score"}}
-                  :labels {:title "standardized per indicator (RdBu)" :x nil :y nil}})]
+                  :labels {:title "standardized per indicator (RdBu)" :x :none :y :none}})]
     {:columns 2})
    {:width 1000 :height 520}))
 
@@ -350,7 +350,7 @@
   :mapping {:x (comp name :x) :y (comp name :y) :color :value}
   :scales {:y {:reverse true} :color {:range :RColorBrewer/RdBu :domain [-1 1] :title "r"}}
   :charts [(chart/tile {:stroke-color :white :value-label true})]
-  :labels {:title "mtcars: correlation of every pair" :x nil :y nil}}
+  :labels {:title "mtcars: correlation of every pair" :x :none :y :none}}
  {:width 700 :height 600})
 
 ;; ### Calendar heatmap
@@ -375,7 +375,7 @@
              :color {:range :RColorBrewer/RdYlGn :midpoint 0 :domain [-0.1 0.1] :title "daily change"
                      :formatter #(format "%+.0f%%" (* 100.0 (double %)))}}
     :charts [(chart/tile {:stroke-color :white})]
-    :labels {:title "Bitcoin: daily price change, 2013-2018" :x "ISO week" :y nil}}
+    :labels {:title "Bitcoin: daily price change, 2013-2018" :x "ISO week" :y :none}}
    {:width 1000 :height 800}))
 
 ;; ### Row and column order
@@ -396,7 +396,7 @@
                            order-by (assoc :x {:order-by order-by}))
                  :theme {:axis {:x {:label-rotation 90}}}
                  :charts [(chart/tile)]
-                 :labels {:title title :x nil :y nil}})]
+                 :labels {:title title :x :none :y :none}})]
   (plot/render-image
    (plot/arrange [(heatmap nil "data order" false) (heatmap life-expectancy "by life expectancy (:order-by)" true)] {:columns 1})
    {:width 1000 :height 800}))
@@ -424,7 +424,7 @@
     :labels {:title "measured lattice"}}
    {:data lattice :mapping {:x :x :y :y :value :z}
     :charts [(chart/field {:interpolation :bicubic}) (chart/contour {:interpolation :bicubic :color [0 0 0 120]})]
-    :labels {:title "bicubic field and contours" :y nil}}]
+    :labels {:title "bicubic field and contours" :y :none}}]
   {:columns 2})
  {:width 1000 :height 430})
 
@@ -532,7 +532,7 @@
   [{:data faithful :mapping {:x :eruptions :y :waiting} :charts [(chart/bin2d {:cell :square :bins 20})]
     :legend false :labels {:title "2D histogram" :x "eruption, min" :y "waiting, min"}}
    {:data faithful :mapping {:x :eruptions :y :waiting} :charts [(chart/bin2d {:bins 20})]
-    :labels {:title "hexbin" :x "eruption, min" :y nil}}]
+    :labels {:title "hexbin" :x "eruption, min" :y :none}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -552,7 +552,7 @@
     :labels {:title "density raster and contour lines" :x "eruption, min" :y "waiting, min"}}
    {:data faithful :mapping {:x :eruptions :y :waiting}
     :charts [(chart/contour {:filled true :levels 8})]
-    :labels {:title "filled contour bands" :x "eruption, min" :y nil}}]
+    :labels {:title "filled contour bands" :x "eruption, min" :y :none}}]
   {:columns 2})
  {:width 1000 :height 450})
 
@@ -626,14 +626,14 @@
   (plot/render-image
    (plot/arrange
     [(merge base {:charts [(chart/scatter)] :labels {:title "all points" :x "carat" :y "price, USD"}})
-     (merge base {:charts [(chart/scatter {:size 1})] :labels {:title "small points" :x "carat" :y nil}})
-     (merge base {:charts [(chart/scatter {:size 3 :color [30 60 120 12]})] :labels {:title "transparency" :x "carat" :y nil}})
+     (merge base {:charts [(chart/scatter {:size 1})] :labels {:title "small points" :x "carat" :y :none}})
+     (merge base {:charts [(chart/scatter {:size 3 :color [30 60 120 12]})] :labels {:title "transparency" :x "carat" :y :none}})
      (merge base {:data sample :charts [(chart/scatter {:size 3 :color [30 60 120 120]})]
                   :labels {:title "4 % sample" :x "carat" :y "price, USD"}})
-     (merge base {:charts [(chart/bin2d {:bins 30})] :legend false :labels {:title "hexbin" :x "carat" :y nil}})
+     (merge base {:charts [(chart/bin2d {:bins 30})] :legend false :labels {:title "hexbin" :x "carat" :y :none}})
      (merge base {:charts [(chart/scatter {:size 2 :color [30 60 120 20]})]
                   :margins {:top (chart/density {:fill [30 60 120 100]}) :right (chart/density {:fill [30 60 120 100]})}
-                  :labels {:title "marginal densities" :x "carat" :y nil}})]
+                  :labels {:title "marginal densities" :x "carat" :y :none}})]
     {:columns 3})
    {:width 1000 :height 700}))
 

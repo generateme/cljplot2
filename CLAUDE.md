@@ -136,7 +136,9 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 **Scales** are two-phase: phase 1 specs from merged extents + user `:scales`; phase 2 (after layout measurement)
 finalized, panel-local position scales. Aesthetic scales (`:color :shape :size :dash :pattern`) are final at
 phase 1; legends are derived from them and each chart draws its key glyph via `:legend`; a chart with the common
-option `:legend false` draws none, and a legend no chart draws a key into is dropped. Key glyphs raise a positive
+option `:legend false` draws none, and a legend no chart draws a key into is dropped. A legend's title is the plot's
+`:labels` entry of its aesthetic, else the scale's `:title`, else a computed aesthetic's title, else a single keyword
+accessor's name (`aesthetic/titled-spec`; `:none` - no title). Key glyphs raise a positive
 line width to the theme's `[:legend :min-key-line-width]` (`theme/key-style`). A scale's `:domain` may leave one end
 `nil` (`[lo nil]`, `[nil hi]`): the data fill it, the fixed end keeps the charts' padding and nice rounding; `[nil
 nil]` is no domain; every reader goes through `data.rows` (`given-domain`, `full-domain`, `completed-domain`); a free
@@ -255,7 +257,7 @@ the theme: banned names, and one type family per name across all owners). One na
 - `:as` - the output key of a data function; booleans never end in `?` (also data fields a function returns and keys of internal data -
   `:closed`, `:leaf`, `:flip`; only local names and predicate functions end in `?`); one flag one key; label toggles are named
   after what they label (`:labels`, `:group-labels`, `:n-label`, `:value-label`).
-- `:none` always means draw nothing (also an empty `pairs` slot); automatic black-or-white contrast is `:contrast`;
+- `:none` always means draw nothing (also an empty `pairs` slot, and no title in `:labels` or a scale's `:title`); automatic black-or-white contrast is `:contrast`;
   `nil` means the default. The one exception: `sequence-levels :end nil` - no end marker.
 
 **Contracts**:
@@ -480,7 +482,9 @@ the theme: banned names, and one type family per name across all owners). One na
   wins); `:flip` and polar coords are drawing concerns only - charts compute in their own `:x` / `:y` frame.
 - Polar shapes that follow the circle are built in range space and turned into pixels by `cljplot2.scale.coord`.
 - 3D charts (`:coords #{:three-d}`) draw only with other 3D charts; several of them need explicit `:domain`s; their
-  primitives are drawn far to near in one scene per panel.
+  primitives are drawn far to near in one scene per panel. Their frame titles come from the plot's `:labels` `:x` /
+  `:y` / `:z`, else the first chart's suggestion (`Count`, `Density`), else the mapped column's name (settled after
+  the stats, `pipeline/with-frame-titles`); a 3D plot draws no outer axis titles.
 - Point functions (projections, placements) take and give `Vec2`.
 - Randomness: a chart's `:rng` option goes through `rng/for-build`, and random values are drawn in compute, so every
   render of one build draws the same image. Interpolators drawing random values while fitting (`:kriging`,

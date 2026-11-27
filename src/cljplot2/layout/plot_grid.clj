@@ -42,8 +42,9 @@
   its cells get (a legend taller than its cell wraps into further columns); a `:measured` row holds `:legend-only`
   plots only, as tall as their legends (scaled down in proportion when the measured rows don't fit).
 
-  Plot `:labels` - `{:title t :x t :y t}`, `t` a text (a string, a formula or runs value, see [[cljplot2.data.text]]) or a map of label options (`:text`, style overrides,
-  `:align`, `:rotation`) merged into the label content; a missing or `nil` label adds no item.
+  Plot `:labels` - `{:title t :x t :y t :z t :color t ..}` (keys [[label-keys]]); only `:title`, `:x` and `:y` add grid
+  items: `:z` titles a 3D frame's z axis, the aesthetic keys the legends. `t` is a text (a string, a formula or runs value, see [[cljplot2.data.text]]) or a map of label options (`:text`, style overrides,
+  `:align`, `:rotation`) merged into the label content; a missing, `nil` or `:none` label adds no item.
   `:title` uses the `:title` text role, `:x` and `:y` the `:axis-title` role; `:y` is rotated 270 by default.
   The label `:kind` can't be overridden. An axis title longer than its panels (the width under them, the height
   beside them - one title spanning all facet panels) is fitted to them: wrapped at word boundaries (each line into at
@@ -66,7 +67,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall.
 
-  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]; plot label content [[label-contents]]."
+  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]; plot labels [[label-keys]], [[shown-label]], [[label-contents]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
@@ -83,25 +84,64 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(defn- legend-label
+  "Gives the plot label entry of an aesthetic's legend title.
+
+  Parameters:
+
+  - `k` (keyword): the aesthetic.
+  - `example`: the card example.
+
+  Returns `[k entry]` - content defaults (role `:legend-title`), no grid item, card texts."
+  [k example]
+  [k {:defaults {:role :legend-title}
+      :description (str "The title of the `" k "` legend, in the text role `:legend-title`; it wins over the scale's `:title`.")
+      :default-doc (str "The `" k "` scale's `:title`, else the title of a chart that computes `" k "`, else the name of a keyword accessor; none for a function.")
+      :example example}])
+
 (def ^:private plot-labels
-  "Plot label key -> grid item id, content defaults, placement, and its card texts (description, default text, example), in item order."
+  "Plot label key -> content defaults, its card texts (description, default text, example) and, for a label with a grid item (`:title`, `:x`, `:y`), the item id and placement, in item order. `:z` titles a 3D frame, the aesthetic keys the legends."
   [[:title {:id :title :defaults {:role :title} :column {:from :y-title :to :x-overhang} :row :title
             :description "The plot title above the panels, in the text role `:title`." :default-doc "None." :example "Walks"}]
    [:x {:id :x-title :defaults {:role :axis-title :fit true} :column :panel :row :x-title
-        :description "The x axis title, in the text role `:axis-title`; a title too long for its axis is wrapped, shrunk, then cut."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none." :example "time"}]
+        :description "The x axis title, in the text role `:axis-title`; a title too long for its axis is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
+        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none; on a 3D plot the name of the first 3D chart's keyword accessor." :example "time"}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270 :fit true} :column :y-title :row :panel
-        :description "The y axis title, in the text role `:axis-title` turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none." :example "value"}]])
+        :description "The y axis title, in the text role `:axis-title` turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
+        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none; on a 3D plot the name of the first 3D chart's keyword accessor." :example "value"}]
+   [:z {:defaults {:role :axis-title}
+        :description "The z axis title of a 3D plot, drawn on its frame in the text role `:axis-title`."
+        :default-doc "The first 3D chart's title: `Count` for a binned cloud, `Density` for a density surface, else the name of its keyword accessor." :example "height"}]
+   (legend-label :color "species")
+   (legend-label :shape "kind")
+   (legend-label :size "weight")
+   (legend-label :dash "series")
+   (legend-label :pattern "group")])
+
+(def label-keys
+  "The keys of plot `:labels`, in item order: `:title`, `:x`, `:y`, `:z` and the aesthetics `:color`, `:shape`, `:size`, `:dash`, `:pattern`."
+  (mapv first plot-labels))
+
+(defn shown-label
+  "Gives a plot label, or `nil` when it hides its title.
+
+  Parameters:
+
+  - `label`: a `:labels` value.
+
+  Returns `label`; `nil` for `:none` or `nil`."
+  [label]
+  (when-not (= :none label) label))
 
 (def labels-schema
-  "Plot `:labels`: `{:title :x :y}`, each a text or a map of [[cljplot2.content.label/label-options]]; `nil` - no label."
+  "Plot `:labels`: `{:title :x :y :z :color :shape :size :dash :pattern}`, each a text or a map of [[cljplot2.content.label/label-options]]; `:none` - no title, `nil` - the default."
   (into [:map {:closed true}]
         (map (fn [[k {:keys [description default-doc example]}]]
                (schema/nilable k {:description description :cljplot2/default-doc default-doc :cljplot2/example example
+                                  :cljplot2/value-meanings {:none "No title, not even one a chart or a scale gives."}
                                   :cljplot2/form-meanings {"label map" "The text with its role, rotation and text style keys (Label maps)."
                                                            "any value" "A text: any value as `str`, or a `plot/math` or `plot/runs` value."}}
-                               [:multi {:dispatch label/label-options?} [true label/label-options] [false any?]])))
+                               (schema/keyword-or :none [:multi {:dispatch label/label-options?} [true label/label-options] [false any?]]))))
         plot-labels))
 
 (defn label-contents
@@ -109,13 +149,13 @@
 
   Parameters:
 
-  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` label has no content.
+  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` or `:none` label has no content.
 
-  Returns a sequence of `[k content]` in the order title, x, y: content kind `:label` with the label key's role and
+  Returns a sequence of `[k content]` in the order of [[label-keys]]: content kind `:label` with the label key's role and
   defaults under the label's own map (a text alone becomes its `:text`)."
   [labels]
   (keep (fn [[k {:keys [defaults]}]]
-          (when-some [label (get labels k)]
+          (when-some [label (shown-label (get labels k))]
             [k (assoc (merge defaults (if (label/label-options? label) label {:text label})) :kind :label)]))
         plot-labels))
 
@@ -124,14 +164,14 @@
 
   Parameters:
 
-  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` label adds no item.
+  - `labels` (map): the plot's `:labels` (see the namespace doc); a `nil` or `:none` label adds no item.
   - `spans` (map): label key -> `{:column :row}` overriding the single-panel placement.
 
-  Returns a sequence of items `{:id :column :row :content}`, content kind `:label`."
+  Returns a sequence of items `{:id :column :row :content}`, content kind `:label` (`:z` and the aesthetics' titles have no item)."
   [labels spans]
   (let [contents (into {} (label-contents labels))]
     (keep (fn [[k {:keys [id column row]}]]
-            (when-some [content (contents k)]
+            (when-some [content (when id (contents k))]
               {:id id :column (get-in spans [k :column] column) :row (get-in spans [k :row] row) :content content}))
           plot-labels)))
 
@@ -653,7 +693,7 @@
    (fn [canvas]
      (let [env {:canvas canvas :theme theme}
            natural (fn [content] (measure/natural-size content env))
-           text-size (fn [role l] (when (some? l)
+           text-size (fn [role l] (when (some? (shown-label l))
                                     (natural (merge {:kind :label :role role} (if (label/label-options? l) (dissoc l :rotation) {:text l})))))
            {:keys [x y title]} (side-labels labels flip)
            margin (double (get-in theme [:plot :margin]))
@@ -972,7 +1012,7 @@
 
   Returns `custom-grid` itself without a title; else a grid of rows `:margin-top` (the theme margin), `:title` (measured) and `:body` (flexible, holding `custom-grid` nested)."
   [custom-grid labels theme]
-  (if (nil? (:title labels))
+  (if (nil? (shown-label (:title labels)))
     custom-grid
     {:columns [{:id :body :size [:flexible]}]
      :rows [{:id :margin-top :size [:fixed (get-in theme [:plot :margin])]} {:id :title :size [:measured]}

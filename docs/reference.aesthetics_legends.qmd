@@ -445,8 +445,8 @@ transform (`:exp` the values 0.1 to 2, since the exponential of 20 dwarfs everyt
                                    {:data ramp
                                     :mapping {:x :i :y :row :color (if (= :exp transform) :tenth :i)}
                                     :charts [(chart/tile)]
-                                    :scales (cond-> {:color {:title nil}} transform (assoc-in [:color :transform] transform))
-                                    :labels {:title title :y nil}})
+                                    :scales (cond-> {:color {:title :none}} transform (assoc-in [:color :transform] transform))
+                                    :labels {:title title :y :none}})
                                  {:columns 3})
                    {:width 900 :height 330})
 ```
@@ -479,7 +479,7 @@ plots below bin life expectancy four ways:
                                     :mapping {:x :gdp-per-cap :y :life-exp :color :life-exp}
                                     :charts [(chart/scatter)]
                                     :scales {:x {:kind :log :formatter :power}
-                                             :color {:kind :binned :bins bins :range :viridis/viridis :title nil}}
+                                             :color {:kind :binned :bins bins :range :viridis/viridis :title :none}}
                                     :labels {:title title}})
                                  {:columns 2})
                    {:width 900 :height 600})
@@ -520,11 +520,12 @@ and the first stays visible with `:range [0 m]`:
 
 These options set the scale's legend. Aesthetics mapped to the same column with equal levels share one legend; the
 plot's `:legend false` hides all of them. Legends sit right of the panels; the [theme](reference.theme.html#legend)
-sets their sizes and box. The plot below renames the size legend and picks its entries:
+sets their sizes and box. A plot's `:labels` entry of the aesthetic wins over the scale's `:title`; `:none` in
+either hides the title. The plot below renames the size legend and picks its entries:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:formatter</code><span class="option-default">Default: The levels or values as text.</span></dt><dd><div class="option-example"><code>{:scales {:color {:formatter (fn [v] (str v "!"))}}}</code></div><div class="option-text">A function of the level or value that returns its legend label.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks</code><span class="option-default">Default: About five: the theme's <code>[:legend :bar-ticks]</code> for a colour bar, five for a size legend.</span></dt><dd><div class="option-example"><code>{:scales {:color {:ticks 2}}}</code></div><div class="option-text">The legend entries or colour bar ticks of a linear size or colour scale.<ul><li><span>sequence of (finite number or date or time)</span> – These values (dates for a colour scale over dates).</li><li><a href="reference.types.html#positive-integer">positive integer</a> – About this many.</li></ul></div></dd></div><div class="option-card"><dt><code>:integer-ticks</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:integer-ticks true}}}</code></div><div class="option-text">Whether counted legend entries or colour bar ticks of a linear size or colour scale fall only on whole numbers; an explicit <code>:ticks</code> vector or a <code>:midpoint</code> tick is drawn as given.<ul><li><code>false</code> – Any counted values.</li><li><code>true</code> – Whole numbers only.</li></ul></div></dd></div><div class="option-card"><dt><code>:title</code><span class="option-default">Default: The name of a keyword accessor; none for a function.</span></dt><dd><div class="option-example"><code>{:scales {:color {:title "level"}}}</code></div><div class="option-text">The legend title; <code>nil</code> draws none.<ul><li><span>string</span> – This text.</li><li><span>formula value</span> – A <code>plot/math</code> or <code>plot/runs</code> value: text with formulas.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:legend false}}}</code></div><div class="option-text">Whether the scale draws its legend.<ul><li><code>true</code> – Drawn.</li><li><code>false</code> – Hidden.</li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:formatter</code><span class="option-default">Default: The levels or values as text.</span></dt><dd><div class="option-example"><code>{:scales {:color {:formatter (fn [v] (str v "!"))}}}</code></div><div class="option-text">A function of the level or value that returns its legend label.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:ticks</code><span class="option-default">Default: About five: the theme's <code>[:legend :bar-ticks]</code> for a colour bar, five for a size legend.</span></dt><dd><div class="option-example"><code>{:scales {:color {:ticks 2}}}</code></div><div class="option-text">The legend entries or colour bar ticks of a linear size or colour scale.<ul><li><span>sequence of (finite number or date or time)</span> – These values (dates for a colour scale over dates).</li><li><a href="reference.types.html#positive-integer">positive integer</a> – About this many.</li></ul></div></dd></div><div class="option-card"><dt><code>:integer-ticks</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:integer-ticks true}}}</code></div><div class="option-text">Whether counted legend entries or colour bar ticks of a linear size or colour scale fall only on whole numbers; an explicit <code>:ticks</code> vector or a <code>:midpoint</code> tick is drawn as given.<ul><li><code>false</code> – Any counted values.</li><li><code>true</code> – Whole numbers only.</li></ul></div></dd></div><div class="option-card"><dt><code>:title</code><span class="option-default">Default: The title a chart computing the aesthetic gives, else the name of a keyword accessor; none for a function.</span></dt><dd><div class="option-example"><code>{:scales {:color {:title "level"}}}</code></div><div class="option-text">The legend title; a plot <code>:labels</code> entry of the aesthetic wins over it.<ul><li><code>:none</code> – No title.</li><li><span>string</span> – This text.</li><li><span>formula value</span> – A <code>plot/math</code> or <code>plot/runs</code> value: text with formulas.</li></ul></div></dd></div><div class="option-card"><dt><code>:legend</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>{:scales {:color {:legend false}}}</code></div><div class="option-text">Whether the scale draws its legend.<ul><li><code>true</code> – Drawn.</li><li><code>false</code> – Hidden.</li></ul></div></dd></div></dl>
 ```
 
 
@@ -709,7 +710,7 @@ The left plot grows sizes by diameter, the right one by area; only the right one
                                     :mapping {:x :i :y :row :size :i}
                                     :charts [(chart/scatter)]
                                     :scales {:size {:range [2 26] :area area :legend false}}
-                                    :labels {:title (str ":area " area) :y nil}})
+                                    :labels {:title (str ":area " area) :y :none}})
                                  {:columns 2})
                    {:width 900 :height 200})
 ```

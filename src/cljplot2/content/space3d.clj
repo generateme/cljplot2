@@ -169,6 +169,48 @@
   "Pixels added to a frame margin past its labels and title."
   2.0)
 
+(defn- title-content
+  "Gives the label content of a frame's axis title, unturned.
+
+  Parameters:
+
+  - `title`: the title - a text, or a map of [[cljplot2.content.label/label-options]] (its role, style, text and `:rotation`).
+
+  Returns `{:kind :label :role :axis-title :text title}` for a text; for a label map, the map merged over `{:role :axis-title}` with `:kind :label`."
+  [title]
+  (if (label/label-options? title)
+    (assoc (merge {:role :axis-title} title) :kind :label)
+    {:kind :label :role :axis-title :text title}))
+
+(defn- extent-along
+  "Gives half the length of a box along a unit direction.
+
+  Parameters:
+
+  - `size` (`Vec2`): the box size.
+  - `o` (`Vec2`): the unit direction.
+
+  Returns the half length in pixels."
+  ^double [^Vec2 size ^Vec2 o]
+  (m/* 0.5 (m/+ (m/* (m/abs (.x o)) (.x size)) (m/* (m/abs (.y o)) (.y size)))))
+
+(defn- title-thickness
+  "Gives the pixels a frame's axis title takes across its edge.
+
+  Parameters:
+
+  - `title`: the title - a text or a label map (see [[title-content]]).
+  - `o` (`Vec2` or `nil`): the unit direction away from the edge; `nil` - any edge.
+  - `env` (map): `:canvas`, `:theme`.
+
+  Returns the unturned text height for a title running along its edge; for a label map with its own `:rotation`, the turned box's extent along `o` (both sides), or its longer side without `o`."
+  ^double [title o env]
+  (let [content (title-content title)]
+    (if (some? (:rotation content))
+      (let [^Vec2 turned (measure/natural-size content env)]
+        (if o (m/* 2.0 (extent-along turned o)) (m/max (.x turned) (.y turned))))
+      (.y ^Vec2 (measure/natural-size content env)))))
+
 (defn frame-margin
   "Gives the pixels to keep around the box for the axes of a frame: tick length, label gaps, the largest tick label (see [[tick-label-sizes]]) and a title line.
 
@@ -184,8 +226,7 @@
     bare-frame-margin
     (let [{:keys [tick-length label-gap]} (get-in env [:theme :axis :x])
           widest (double (reduce m/max 0.0 (map (fn [^Vec2 s] (m/max (.x s) (.y s))) (tick-label-sizes frame [w h] env))))
-          title (double (reduce m/max 0.0 (keep (fn [k] (when-some [t (get titles k)]
-                                                           (.y (measure/label-size :axis-title t env))))
+          title (double (reduce m/max 0.0 (keep (fn [k] (when-some [t (get titles k)] (title-thickness t nil env)))
                                                  space/axes)))]
       (m/+ (double tick-length) (m/* 2.0 (double label-gap)) widest title frame-padding))))
 
@@ -229,18 +270,6 @@
         o (v/sub d (v/mult a (v/dot d a)))]
     (if (m/> (v/mag o) min-outward-length) (v/normalize o) (v/vec2 0.0 1.0))))
 
-(defn- extent-along
-  "Gives half the length of a box along a unit direction.
-
-  Parameters:
-
-  - `size` (`Vec2`): the box size.
-  - `o` (`Vec2`): the unit direction.
-
-  Returns the half length in pixels."
-  ^double [^Vec2 size ^Vec2 o]
-  (m/* 0.5 (m/+ (m/* (m/abs (.x o)) (.x size)) (m/* (m/abs (.y o)) (.y size)))))
-
 (defn edge-angle
   "Gives the clockwise rotation of text running along a pixel direction (y down): readable left to right, a vertical edge bottom to top.
 
@@ -255,18 +284,18 @@
     (if (m/== deg 90.0) 270.0 (if (m/neg? deg) (m/+ deg 360.0) deg))))
 
 (defn title-distance
-  "Gives the pixels from an axis edge to the centre of its title: past the ticks, the tick labels with a gap on each side, and half the title's thickness - its unrotated text height, as the title runs along the edge whatever its length.
+  "Gives the pixels from an axis edge to the centre of its title: past the ticks, the tick labels with a gap on each side, and half the title's thickness across the edge.
 
   Parameters:
 
   - `tick-length` (number): the tick length.
   - `gap` (number): the label gap.
   - `widest` (number): the tick labels' largest extent away from the edge.
-  - `size` (`Vec2`): the title's natural size.
+  - `thickness` (number): the title's extent across the edge - its text height for a title along the edge, whatever its length.
 
   Returns the distance in pixels."
-  ^double [tick-length gap widest ^Vec2 size]
-  (m/+ (double tick-length) (m/* 2.0 (double gap)) (double widest) (m/* 0.5 (.y size))))
+  ^double [tick-length gap widest thickness]
+  (m/+ (double tick-length) (m/* 2.0 (double gap)) (double widest) (m/* 0.5 (double thickness))))
 
 (defn- label-box
   "Gives the pixel box of a label centred at a point.
@@ -337,10 +366,10 @@
             (swap! labelled conj box)
             (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
-      ;; the title runs along its edge, turned to read left to right (or bottom to top)
-      (let [content {:kind :label :role :axis-title :text title :rotation (edge-angle along)}
+      ;; the title runs along its edge, turned to read left to right (or bottom to top), unless its label map turns it
+      (let [content (update (title-content title) :rotation #(if (some? %) % (edge-angle along)))
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
-                           (v/mult o (title-distance tick-length label-gap @widest (measure/label-size :axis-title title env))))]
+                           (v/mult o (title-distance tick-length label-gap @widest (title-thickness title o env))))]
         (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))
     @labelled))
 
@@ -438,13 +467,12 @@
 
   - `computeds` (sequence of maps): the computed data of each 3D chart, in chart order - `:frame`, `:domains`, `:frame-overrides`.
 
-  Returns the first's `:frame` with its `:domains` (several 3D charts share their explicit domains), the later charts' `:frame-overrides` (their explicitly set frame options, see [[cljplot2.data.space3d/frame-overrides]]) merged over it in order - `:view` and `:titles` key by key, `:titles nil` clearing them."
+  Returns the first's `:frame` with its `:domains` (several 3D charts share their explicit domains) and `:titles` (settled by the plot's `:labels`, see [[cljplot2.pipeline]]), the later charts' `:frame-overrides` (their explicitly set frame options, see [[cljplot2.data.space3d/frame-overrides]]) merged over it in order - `:view` key by key."
   [computeds]
   (let [{:keys [frame domains]} (first computeds)]
     (reduce (fn [f {o :frame-overrides}]
               (cond-> (merge f (dissoc o :view :titles))
-                (:view o) (update :view merge (:view o))
-                (contains? o :titles) (assoc :titles (when-let [t (:titles o)] (merge (:titles f) t)))))
+                (:view o) (update :view merge (:view o))))
             (assoc frame :domains domains)
             (rest computeds))))
 

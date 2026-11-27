@@ -10,7 +10,7 @@
   - `:scales` - `{:x spec :y spec}` position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]].
   - `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see [[cljplot2.data.facet]]: `:scales {:x r :y r}` - `:same` (default), `:free` (each panel's own data domain) or `:sliced` (each panel's own centre, the widest panel's span; numeric data) - panels sharing an axis share the scale (wrap: every panel has its own axis; grid: per column / row), see [[panel-scale-specs]]; `:strips false`; `:widths` / `:heights` - relative panel column / row sizes. Such plots finalize their position scales per panel (`:panel-scales`, see [[panel-scales]]); not with `:aspect :iso`, polar coordinates or explicit `:domain`s of free / sliced scales.
   - `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped.
-  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]; charts may suggest axis titles (`:axis-titles` in their stats), `:labels` win.
+  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]: the plot title, the axis titles and the legend titles; `:none` hides a title, `nil` keeps the default. Charts may suggest axis titles (`:axis-titles` in their stats), and `:labels` win over them. A 3D plot draws its axis titles on its frame (see [[with-frame-titles]]). A legend title wins over the scale's `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]).
   - `:legend` - `false` hides all legends, see [[cljplot2.content.legend]].
   - `:legend-only` - `true`: the plot draws only its legends (from its charts and scales as usual; no panel, axes or axis titles; `:labels {:title t}` above them), e.g. a legend cell of an `:arrange` (see [[cljplot2.layout.plot-grid/legend-only-grid]]); not with `:custom-grid` / `:arrange`.
   - `:alternate-panel` - `true`: a single-panel plot draws theme `[:panel :alternate-fill]` over its panel fill - the shading of odd facet panels, for checkerboards of `:arrange` cells (e.g. [[cljplot2.multiplot/pairs]]); facet panels shade by position regardless.
@@ -354,6 +354,49 @@
                         :panel-scales (when main-panel-scales
                                         (update-vals main-panel-scales #(side-scales (get % shared-key))))}])))))
 
+(defn- three-d?
+  "Tests whether a chart is a 3D chart (`:three-d` among its `:coords`).
+
+  Parameters:
+
+  - `c` (map): a chart value.
+
+  Returns `true` for a 3D chart, else `false`."
+  [c]
+  (contains? (get c :coords) :three-d))
+
+(defn- settled-frame-titles
+  "Gives a 3D frame's titles with the plot's labels over the chart's own.
+
+  Parameters:
+
+  - `titles` (map or `nil`): the chart's frame titles - its suggestions (`Count`, `Density`) or mapped column names.
+  - `labels` (map or `nil`): the plot's `:labels`; `:x`, `:y`, `:z` read.
+
+  Returns `titles` with each axis's label instead of its title: `nil` keeps the title, `:none` removes it."
+  [titles labels]
+  (reduce (fn [acc k] (let [l (get labels k)]
+                        (cond (nil? l) acc
+                              (= :none l) (dissoc acc k)
+                              :else (assoc acc k l))))
+          (or titles {}) [:x :y :z]))
+
+(defn- with-frame-titles
+  "Settles the frame titles of every 3D chart's computed panels by the plot's `:labels`.
+
+  Parameters:
+
+  - `plot` (map): the plot with `:charts`, `:stats` and `:labels`.
+
+  Returns `plot` with each 3D chart's panel `[:frame :titles]` settled (see [[settled-frame-titles]]); other charts unchanged."
+  [{:keys [charts labels] :as plot}]
+  (let [given (when (map? labels) labels)]
+    (update plot :stats (fn [stats] (mapv (fn [chart st]
+                                            (if (three-d? chart)
+                                              (update st :data update-vals (fn [computed] (update-in computed [:frame :titles] settled-frame-titles given)))
+                                              st))
+                                          charts stats)))))
+
 (defn- stats-stage
   "Pipeline stage `:stats`: every chart's computed data.
 
@@ -363,7 +406,7 @@
 
   - `plot` (map): the plot map after the `:split` stage.
 
-  Returns `plot` with `:stats` (one computed map per chart, see [[cljplot2.chart]]) and `:margin-stats`."
+  Returns `plot` with `:stats` (one computed map per chart, see [[cljplot2.chart]]; 3D frames titled by the plot's `:labels`, see [[with-frame-titles]]) and `:margin-stats`."
   [{:keys [charts split theme groups scales flip facets options aspect] :as plot}]
   (let [facet-dims (get-in split [:facets :dims])
         env {:theme theme :na-level (get groups :na true) :plot-scales scales :flip (true? flip)
@@ -373,9 +416,10 @@
                                                                 (plot-margins plot) (plot-grid/panel-layout (:facets split) facets)
                                                                 (and (seq facet-dims) (facet/strips? facets))
                                                                 (not= [:facet] facet-dims)))}]
-    (assoc plot
-           :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
-           :margin-stats (margin-stats plot env))))
+    (with-frame-titles
+      (assoc plot
+             :stats (mapv (fn [chart chart-split] ((:compute chart) chart chart-split env)) charts (:charts split))
+             :margin-stats (margin-stats plot env)))))
 
 (defn- aesthetic-extents
   "Extents of the aesthetics over every chart and panel.
@@ -666,19 +710,19 @@
 (defn- scale-specs-stage
   "Pipeline stage `:scale-specs`: phase-1 specs of the position and aesthetic scales.
 
-  Specs are made for every dimension with a plot `:scales` entry or a data extent; aesthetic specs are final (no layout dependence). Position specs take the charts' suggestions (see [[position-spec]]) and level order (see [[ordered-position-spec]]); a computed aesthetic's suggested `:title`, `:legend` and `:range` (see [[cljplot2.scale.aesthetic/computed-aesthetics]], the first chart's) are the aesthetic scale's unless the plot's spec sets them. Each margin gets the spec of its magnitude scale from its charts' stats.
+  Specs are made for every dimension with a plot `:scales` entry or a data extent; aesthetic specs are final (no layout dependence). Position specs take the charts' suggestions (see [[position-spec]]) and level order (see [[ordered-position-spec]]); a computed aesthetic's suggested `:title`, `:legend` and `:range` (see [[cljplot2.scale.aesthetic/computed-aesthetics]], the first chart's) are the aesthetic scale's unless the plot's spec sets them; the plot's `:labels` entry of an aesthetic is its title (see [[cljplot2.scale.aesthetic/titled-spec]]). Each margin gets the spec of its magnitude scale from its charts' stats.
 
   Parameters:
 
   - `plot` (map): the plot map after the `:extents` stage.
 
   Returns `plot` with `:scale-specs {dim spec}` and the margins' `:spec` in `:margin-stats`. See [[cljplot2.scale.position/finalize]], [[cljplot2.scale.aesthetic/scale-spec]]."
-  [{:keys [scales extents theme stats] :as plot}]
+  [{:keys [scales extents theme stats labels] :as plot}]
   (let [ks (distinct (concat (filter #(or (position-scales %) (aesthetic/dim? %)) (keys scales)) (keys extents)))
         suggested (reduce (fn [acc computed] (merge (update-vals computed aesthetic/computed-scale-attributes) acc)) {}
                           (map aesthetic/computed-aesthetics (:charts plot) (map :mapping (get-in plot [:split :charts]))))
-        ;; the plot's own spec wins attribute by attribute
-        aesthetic-spec (fn [k] (merge (get suggested k) (get scales k {})))]
+        ;; the plot's own spec wins attribute by attribute; the title is settled with the plot's :labels
+        aesthetic-spec (fn [k] (aesthetic/titled-spec (get labels k) (get scales k {}) (get suggested k)))]
     (assoc plot
            ;; a margin's magnitude scale: built as a position spec from the margin charts' stats
            :margin-stats (update-vals (:margin-stats plot)
@@ -712,7 +756,7 @@
 
   Parameters:
 
-  - `labels` (map or `nil`): the plot `:labels`; an entry - also `nil` - wins over a suggestion.
+  - `labels` (map or `nil`): the plot `:labels`; an entry other than `nil` wins over a suggestion (`:none` - no title).
   - `stats` (sequence of maps): computed chart data; `:axis-titles {:x t :y t}` per chart, the first suggestion per axis wins.
 
   Returns the merged labels map (`nil` without labels and suggestions); `labels` that aren't a map are passed through (rejected by validation)."
@@ -720,7 +764,7 @@
   (let [suggested (reduce (fn [acc titles] (merge (select-keys titles [:x :y]) acc)) {} (keep :axis-titles stats))]
     (cond
       (nil? labels) (not-empty suggested)
-      (map? labels) (merge suggested labels)
+      (map? labels) (merge suggested (into {} (remove (comp nil? val)) labels))
       :else labels)))
 
 (declare build)
@@ -911,7 +955,9 @@
                       (:legend-only plot) (plot-grid/legend-only-grid (legend/legends plot) labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
-                      :else (plot-grid/plot-grid (cond-> (assoc plot :labels (effective-labels labels stats))
+                      :else (plot-grid/plot-grid (cond-> (assoc plot :labels (cond-> (effective-labels labels stats)
+                                                                         ;; a 3D plot's x / y titles are its frame's (see with-frame-titles)
+                                                                         (some three-d? (:charts plot)) (dissoc :x :y)))
                                                    ;; polar guides are drawn inside the panel: no outer axes
                                                    (coord/polar? (:coord plot))
                                                    (update :scale-specs (fn [specs] (reduce (fn [acc k] (if (contains? acc k) (assoc-in acc [k :axis] false) acc))
@@ -1750,8 +1796,8 @@
                            :cljplot2/default-doc "Cartesian." :cljplot2/example {:kind :polar}
                            :cljplot2/form-meanings {:map "Cartesian `{:kind :cartesian}`, or a polar coord whose keys the cards below list."}}
                    coord/coord-schema)
-   (schema/nilable :labels {:cljplot2/section :titles :description "The plot title and the axis titles (Labels and text)."
-                            :cljplot2/default-doc "No title; the axis titles the charts suggest." :cljplot2/example {:title "Walks"}}
+   (schema/nilable :labels {:cljplot2/section :titles :description "The plot title, the axis titles and the legend titles (Labels and text)."
+                            :cljplot2/default-doc "No title; the axis and legend titles that the charts, the scales and the mapped columns give." :cljplot2/example {:title "Walks"}}
                    plot-grid/labels-schema)
    (schema/nilable :custom-grid {:cljplot2/section :layout :description "A hand-written layout grid instead of the generated one; only `:labels {:title t}` may stand beside it."
                                  :cljplot2/default-doc "None: the generated grid." :cljplot2/no-example true
@@ -1842,17 +1888,6 @@
                                 [:x :y]))]
       (when problem [(error [:facets] facets problem)]))))
 
-(defn- three-d?
-  "Tests whether a chart is a 3D chart (`:three-d` among its `:coords`).
-
-  Parameters:
-
-  - `c` (map): a chart value.
-
-  Returns `true` for a 3D chart, else `false`."
-  [c]
-  (contains? (get c :coords) :three-d))
-
 (defn- three-d-contract-errors
   "Errors of 3D charts without a `:primitives` function.
 
@@ -1929,7 +1964,7 @@
 (defn- rule-errors
   "Errors of the rules across plot keys, for a plot whose keys are valid.
 
-  The rules: charts' facet mappings and one facet mapping for all; a computed aesthetic mapped by no other chart; aesthetic and facet scales need a mapping of their key; `:custom-grid` / `:arrange` / `:legend-only` combinations (with labels, `:aspect :iso`, `:flip`, polar coordinates or margins); polar coordinates only with charts supporting them; panel-local facet scales (see [[facet-scale-errors]]); 3D plots (see [[three-d-errors]], [[three-d-contract-errors]]); invalid-value bands only in generated grids' panels (see [[invalid-band-errors]]); margins only on generated grids and a margin axis only with a histogram or density chart.
+  The rules: charts' facet mappings and one facet mapping for all; a computed aesthetic mapped by no other chart; aesthetic and facet scales need a mapping of their key; a `:labels` legend title needs a chart mapping or computing its aesthetic, `:labels :z` a 3D chart (`:none` hides nothing and passes); `:custom-grid` / `:arrange` / `:legend-only` combinations (with labels, `:aspect :iso`, `:flip`, polar coordinates or margins); polar coordinates only with charts supporting them; panel-local facet scales (see [[facet-scale-errors]]); 3D plots (see [[three-d-errors]], [[three-d-contract-errors]]); invalid-value bands only in generated grids' panels (see [[invalid-band-errors]]); margins only on generated grids and a margin axis only with a histogram or density chart.
 
   Parameters:
 
@@ -1939,6 +1974,12 @@
   [{:keys [scales labels custom-grid arrange aspect flip charts] :as plot}]
   (let [mappings (merged-mappings plot)
         dim-sets (distinct (remove empty? (map facet/facet-dims mappings)))
+        margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
+                          (for [[_ {margin-charts :charts}] (plot-margins plot) c margin-charts] (get-in c [:options :mapping])))
+        ;; an aesthetic some chart maps (main or margin) or computes
+        drawn-aesthetic? (fn [k] (or (some #(some? (get % k)) (concat mappings margin-mappings))
+                                     (some (fn [[chart m]] (contains? (aesthetic/computed-aesthetics chart m) k))
+                                           (map vector charts mappings))))
         error (fn [in value message] {:in in :value value :message message})]
     (concat
      (keep-indexed (fn [i m] (when-let [problem (facet/mapping-problem m)]
@@ -1952,13 +1993,9 @@
            :when (and (m/not== i j) (some? (get m k)))]
        (error [:charts i :options :mapping k] (get m k)
               (str "chart " j " computes " k " itself; another chart can't map it (set it to nil in this chart's :mapping)")))
-     (let [margin-mappings (when (empty? (schema/errors margins-schema (:margins plot) [:margins]))
-                             (for [[_ {margin-charts :charts}] (plot-margins plot) c margin-charts] (get-in c [:options :mapping])))]
-       (for [k (keys scales)
-             :when (and (aesthetic/dim? k) (not-any? #(some? (get % k)) (concat mappings margin-mappings))
-                        (not-any? (fn [[chart m]] (contains? (aesthetic/computed-aesthetics chart m) k))
-                                  (map vector charts mappings)))]
-         (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key")))
+     (for [k (keys scales)
+           :when (and (aesthetic/dim? k) (not (drawn-aesthetic? k)))]
+       (error [:scales k] (get scales k) "aesthetic scale needs a chart mapping its key"))
      (for [k (keys scales)
            :when (and (facet/facet-keys k) (not (some #{k} (first dim-sets))))]
        (error [:scales k] (get scales k) "facet scale needs a facet mapping of its key"))
@@ -1986,6 +2023,13 @@
      (when (or custom-grid arrange)
        (for [k (keys labels) :when (not= k :title)]
          (error [:labels k] (get labels k) "only :title is allowed with :custom-grid or :arrange")))
+     (when-not (or custom-grid arrange (not (map? labels)))
+       (concat
+        (when (and (some? (plot-grid/shown-label (:z labels))) (not-any? three-d? charts))
+          [(error [:labels :z] (:z labels) ":z titles a 3D frame; the plot has no 3D chart")])
+        (for [k aesthetic/dims
+              :when (and (some? (plot-grid/shown-label (get labels k))) (not (drawn-aesthetic? k)))]
+          (error [:labels k] (get labels k) "a legend title needs a chart mapping or computing its aesthetic"))))
      (when (seq (:margins plot))
        (concat
         (when (or custom-grid arrange)

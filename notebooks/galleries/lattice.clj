@@ -220,7 +220,7 @@
                   :charts [(chart/line) (chart/scatter {:size 3})]
                   :scales {:y {:domain [50 180]}}
                   :facets {:columns 3}
-                  :labels {:title (str "Block " block) :x nil :y nil}})
+                  :labels {:title (str "Block " block) :x :none :y :none}})
                {:columns 2})
  {:width 1000 :height 700})
 
@@ -240,7 +240,7 @@
   :charts [(chart/scatter)]
   :facets {:columns 1 :order :bottom-up}
   :theme {:text {:tick-label {:size 8}}}
-  :labels {:x "yield" :y nil}}
+  :labels {:x "yield" :y :none}}
  {:width 600 :height 800})
 
 ;; ### Fig 2.7 Groups within panels
@@ -271,7 +271,7 @@
   :charts [(chart/bar {:position :stack})]
   :facets {:columns 4}
   :theme {:panel {:grid {:x :none :y :none}}}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 900 :height 350})
 
 ;; ### Fig 2.9 Free scales
@@ -287,7 +287,7 @@
   :charts [(chart/bar {:position :stack})]
   :facets {:columns 4 :scales {:x :free}}
   :theme {:panel {:grid {:x :none :y :none}}}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 900 :height 350})
 
 ;; ### Fig 2.10 Vertical grid lines
@@ -301,7 +301,7 @@
   :charts [(chart/bar {:position :stack})]
   :facets {:columns 4 :scales {:x :free}}
   :theme {:panel {:grid {:y :none}}}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 900 :height 350})
 
 ;; ### Fig 2.11 Bars without borders
@@ -315,7 +315,7 @@
   :charts [(chart/bar {:position :stack :stroke-color :none})]
   :facets {:columns 4 :scales {:x :free}}
   :theme {:panel {:grid {:x :none :y :none}}}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 900 :height 350})
 
 ;; ## Chapter 3 - Visualizing Univariate Distributions
@@ -500,7 +500,7 @@
   :scales {:x {:domain ["M" "F"]}}
   :charts [(chart/box {:varwidth true})]
   :facets {:columns 6}
-  :labels {:x nil :y "Transformed GCSE score"}}
+  :labels {:x :none :y "Transformed GCSE score"}}
  {:width 900 :height 400})
 
 ;; ### Fig 3.13 Box plots of many values
@@ -581,7 +581,7 @@
      :scales {:x {:domain sites} :color {:type :categorical}}
      :charts [(chart/stripplot {:rng (r/rng :mersenne 317)})
               (chart/line {:data medians :mapping {:y :median}})]
-     :labels {:x nil :y "√|Residual Barley Yield|"}}))
+     :labels {:x :none :y "√|Residual Barley Yield|"}}))
 
 (plot/render-image barley-residual-plot {:width 800 :height 450})
 
@@ -598,7 +598,7 @@
   :mapping {:x :rate :y :age :facet :group}
   :charts [(chart/scatter)]
   :facets {:columns 2}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 700 :height 450})
 
 ;; ### Fig 4.2 Stems from zero
@@ -610,7 +610,7 @@
   :mapping {:x :rate :y :age :facet :group}
   :charts [(chart/segment {:xend 0}) (chart/scatter)]
   :facets {:columns 1}
-  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y nil}}
+  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y :none}}
  {:width 450 :height 750})
 
 ;; ### Fig 4.3 Groups joined
@@ -623,7 +623,7 @@
  {:data (sort-by :age va-deaths)
   :mapping {:x :rate :y :age :color :group}
   :charts [(chart/line {:order :data}) (chart/scatter)]
-  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y nil}}
+  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y :none}}
  {:width 700 :height 450})
 
 ;; ### Fig 4.4 Bar charts
@@ -635,7 +635,7 @@
   :mapping {:x :rate :y :age :facet :group}
   :charts [(chart/bar)]
   :facets {:columns 1}
-  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y nil}}
+  :labels {:title "Death Rates in Virginia - 1940" :x "Rate (per 1000)" :y :none}}
  {:width 450 :height 750})
 
 ;; ### Fig 4.5 Proportions as stacked bars
@@ -650,7 +650,7 @@
   :mapping {:x :count :y :field :color :reason}
   :scales {:color {:domain (nu/levels :postdoc :reason)}}
   :charts [(chart/bar {:position :normalize})]
-  :labels {:x "Proportion" :y nil}}
+  :labels {:x "Proportion" :y :none}}
  {:width 900 :height 450})
 
 ;; ### Fig 4.6 Proportions as dot plots
@@ -669,7 +669,7 @@
   :mapping {:x :proportion :y :field :facet :reason}
   :charts [(chart/scatter)]
   :facets {:columns 3}
-  :labels {:x "Proportion" :y nil}}
+  :labels {:x "Proportion" :y :none}}
  {:width 1000 :height 550})
 
 ;; ### Fig 4.7 Ordered panels and levels
@@ -686,7 +686,7 @@
            :y {:order-by #(stats/mean (map :proportion %))}}
   :charts [(chart/scatter)]
   :facets {:columns 1 :order :bottom-up :scales {:y :free}}
-  :labels {:x "Proportion" :y nil}}
+  :labels {:x "Proportion" :y :none}}
  {:width 600 :height 800})
 
 ;; ### Fig 4.8 Frequencies as spikes
@@ -853,7 +853,7 @@
              ["smooth" xy [(chart/smooth {:band :none})]]]
       panel (fn [[title data charts]]
               {:data data :mapping {:x :x :y :y} :charts charts
-               :labels {:title (str "\"" title "\"") :x nil :y nil}})
+               :labels {:title (str "\"" title "\"") :x :none :y :none}})
       swapped (mapv (fn [{:keys [x y]}] {:x y :y x}) xy)]
   (plot/render-image
    (plot/arrange (concat (map panel types)
@@ -978,7 +978,7 @@
                  :scales months
                  :charts [(chart/line {:color :black})]
                  :facets {:columns 3}
-                 :labels {:x nil :y "Temperature (Fahrenheit)"}}
+                 :labels {:x :none :y "Temperature (Fahrenheit)"}}
                 {:data seatac
                  :mapping {:x :day :y :precip :facet :month}
                  :scales months
@@ -1056,7 +1056,7 @@
   :charts [(chart/parallel {:variables [:mpg :disp :hp :drat :wt :qsec]})]
   :facets {:columns 3}
   :flip true
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 900 :height 500})
 
 ;; ### Fig 5.19 Many translucent lines
@@ -1070,7 +1070,7 @@
           (update-vals (select-keys row [:fl1-h :ssc-h :fl2-h :fsc-h :fl3-h]) m/asinh))
   :charts [(chart/parallel {:variables [:fl1-h :ssc-h :fl2-h :fsc-h :fl3-h] :color [140 40 40 3]})]
   :flip true
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 700 :height 600})
 
 ;; ## Chapter 6 - Trivariate Displays
@@ -1090,9 +1090,9 @@
 (plot/render-image
  {:data quakes-magnitude-4
   :mapping {:x :lat :y :long :z :depth :facet :magnitude}
-  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -105 :elevation 20 :distance 0.2} :size 3
-                         :axis-titles {:x "Latitude" :y "Longitude" :z "Depth"}})]
-  :facets {:columns 2}}
+  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -105 :elevation 20 :distance 0.2} :size 3})]
+  :facets {:columns 2}
+  :labels {:x "Latitude" :y "Longitude" :z "Depth"}}
  {:width 800 :height 700})
 
 ;; ### Fig 6.2 Another view
@@ -1102,9 +1102,9 @@
 (plot/render-image
  {:data quakes-magnitude-4
   :mapping {:x :lat :y :long :z :depth :facet :magnitude}
-  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -80 :elevation 20 :distance 0.2} :size 3
-                         :axis-titles {:x "Latitude" :y "Longitude" :z "Depth (km)"}})]
-  :facets {:columns 2}}
+  :charts [(chart/cloud {:domain {:z [680 40]} :view {:azimuth -80 :elevation 20 :distance 0.2} :size 3})]
+  :facets {:columns 2}
+  :labels {:x "Latitude" :y "Longitude" :z "Depth (km)"}}
  {:width 800 :height 700})
 
 ;; ### Fig 6.3 Turning the cloud
@@ -1140,8 +1140,8 @@
  {:data state-density
   :mapping {:x :long :y :lat :z :density}
   :charts [(chart/cloud {:type :spikes :line-width 2 :view {:azimuth -40 :elevation 30 :distance 0.2}
-                         :domain {:z [0 (reduce max (map :density state-density))]}
-                         :axis-titles {:x "long" :y "lat" :z "density"}})]}
+                         :domain {:z [0 (reduce max (map :density state-density))]}})]
+  :labels {:x "long" :y "lat" :z "density"}}
  {:width 600 :height 500})
 
 ;; Not reproduced: Fig 6.5 (the spikes over a map of the states - no maps in cljplot2).
@@ -1262,8 +1262,8 @@
                 {:data volcano
                  :mapping {:x :row :y :column :z :height}
                  :charts [(chart/surface {:style :wireframe :view {:azimuth -40 :elevation 30 :distance 0.2}
-                                          :color :black :stroke-width 0.3 :aspect [1 0.7 0.5]
-                                          :axis-titles {:x "row" :y "column" :z "volcano"}})]}]
+                                          :color :black :stroke-width 0.3 :aspect [1 0.7 0.5]})]
+                 :labels {:x "row" :y "column" :z "volcano"}}]
                {:columns 1 :heights [1 1 1.6]})
  {:width 600 :height 800})
 
@@ -1294,7 +1294,7 @@
   :scales {:color {:domain [-1 1] :range :spectral-11}}
   :charts [(chart/tile)]
   :theme {:axis {:x {:label-rotation -90}}}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 900 :height 800})
 
 ;; ### Fig 6.13 Ordered by clustering
@@ -1345,8 +1345,9 @@
   :mapping {:x (levels/categorical :score) :y :gcd :z :count :facet :gender}
   :scales {:facet {:domain ["M" "F"]}}
   :charts [(chart/cloud {:type :bars :base 0 :color [180 180 180] :stroke-color [60 60 60] :stroke-width 1
-                         :view {:azimuth 40 :elevation 65 :distance 0.2} :aspect [1 1.5 0.75] :axis-titles {:x "score" :y "gcd" :z "Freq"}})]
-  :facets {:columns 2}}
+                         :view {:azimuth 40 :elevation 65 :distance 0.2} :aspect [1 1.5 0.75]})]
+  :facets {:columns 2}
+  :labels {:x "score" :y "gcd" :z "Freq"}}
  {:width 1000 :height 550})
 
 ;; Not reproduced: Figs 6.16 and 6.17 (copula densities - not in fastmath).
@@ -1365,9 +1366,9 @@
                                    [(* (m/cos u) band) (* (m/sin u) band)
                                     (+ (* (m/sin (/ u 2.0)) (m/sin v)) (* (m/cos (/ u 2.0)) (m/sin v)))]))
                            :u [(* 0.3 m/TWO_PI) (* 1.25 m/TWO_PI)] :v [0.0 m/TWO_PI] :n 50
-                           :aspect [1 1 0.4] :view {:azimuth 10 :elevation 30 :distance 0.2}
-                           :axis-titles {:x "kx(um, vm)" :y "ky(um, vm)" :z "kz(um, vm)"}})]
-  :scales {:color {:range [[60 80 200 190] [80 200 200 190] [240 230 120 190] [220 80 160 190]]}}}
+                           :aspect [1 1 0.4] :view {:azimuth 10 :elevation 30 :distance 0.2}})]
+  :scales {:color {:range [[60 80 200 190] [80 200 200 190] [240 230 120 190] [220 80 160 190]]}}
+  :labels {:x "kx(um, vm)" :y "ky(um, vm)" :z "kz(um, vm)"}}
  {:width 800 :height 600})
 
 ;; ### Fig 6.19 A level plot of population
@@ -1399,7 +1400,7 @@
    :mapping {:x :rate :y :group :facet :age}
    :scales {:y {:order-by #(stats/mean (map :rate %))}}
    :facets {:columns 5}
-   :labels {:title "Death Rates in Virginia - 1940" :x "Number of deaths per 100" :y nil}})
+   :labels {:title "Death Rates in Virginia - 1940" :x "Number of deaths per 100" :y :none}})
 
 (plot/render-image
  (assoc va-plot :charts [(chart/segment {:xend 0}) (chart/scatter)])
@@ -1475,7 +1476,7 @@
   :scales {:x {:nice false :formatter "MMM dd"}}
   :charts [(chart/line {:line-width 0.6 :padding {:x [0 0] :y [0.05 0.05]}})]
   :facets {:columns 1 :strips false :scales {:x :free}}
-  :labels {:x nil :y "Number of accesses (thousands)"}}
+  :labels {:x :none :y "Number of accesses (thousands)"}}
  {:width 900 :height 800})
 
 ;; ### Fig 8.3 Logarithmic axes, banked
@@ -1533,7 +1534,7 @@
 (let [nhtemp (map #(assoc % :celsius (/ (* 5.0 (- (:value %) 32.0)) 9.0)) (nu/dataset :nhtemp))]
   (plot/render-image
    (plot/arrange [{:data nhtemp :mapping {:x :time :y :value} :charts [(chart/line) (chart/scatter)]
-                   :labels {:x nil :y "Fahrenheit"}}
+                   :labels {:x :none :y "Fahrenheit"}}
                   {:data nhtemp :mapping {:x :time :y :celsius} :charts [(chart/line) (chart/scatter)]
                    :labels {:x "Year" :y "Celsius"}}]
                  {:columns 1 :title "Yearly temperature in New Haven, CT"})
@@ -1611,7 +1612,7 @@
   :scales {:y {:domain (nu/levels :titanic :class)} :facet {:domain (nu/levels :titanic :sex)}}
   :charts [(chart/bar {:position :stack})]
   :facets {:columns 2}
-  :labels {:x "Freq" :y nil}}
+  :labels {:x "Freq" :y :none}}
  {:width 800 :height 350})
 
 ;; ### Fig 10.2 Two columns stacked
@@ -1631,7 +1632,7 @@
              :color {:domain ["dead" "alive"]}}
     :charts [(chart/bar {:position :stack})]
     :facets {:columns 2}
-    :labels {:x "Dead + Alive" :y nil}}
+    :labels {:x "Dead + Alive" :y :none}}
    {:width 800 :height 350}))
 
 ;; ### Fig 10.3 Missing values on the margins
@@ -1848,7 +1849,7 @@
   :scales by-density
   :charts [(chart/scatter)]
   :theme {:text {:tick-label {:size 8}}}
-  :labels {:x "Population Density (thousands per square mile)" :y nil}}
+  :labels {:x "Population Density (thousands per square mile)" :y :none}}
  {:width 600 :height 800})
 
 ;; ### Fig 10.16 Two ranges, two widths
@@ -1865,7 +1866,7 @@
   :charts [(chart/scatter)]
   :facets {:columns 2 :strips false :scales {:x :free} :widths [2 1]}
   :theme {:text {:tick-label {:size 8}}}
-  :labels {:x "Population Density (thousands per square mile)" :y nil}}
+  :labels {:x "Population Density (thousands per square mile)" :y :none}}
  {:width 700 :height 800})
 
 ;; ### Fig 10.17 Cut and stacked
@@ -1906,7 +1907,7 @@
                :charts [(chart/scatter {:size 5})]
                :facets {:columns 1 :order facet-order}
                :theme {:text {:tick-label {:size 7}}}
-               :labels {:x "yield" :y nil}})]
+               :labels {:x "yield" :y :none}})]
   (plot/render-image
    (plot/arrange [(panel (vec (sort (nu/levels :barley :variety))) (vec (sort (nu/levels :barley :site))) :top-down)
                   (panel (nu/levels :barley :variety) (nu/levels :barley :site) :bottom-up)]
@@ -1927,7 +1928,7 @@
   :scales (assoc by-density :x {:kind :log})
   :charts [(chart/scatter)]
   :theme {:text {:tick-label {:size 8}}}
-  :labels {:x "Density (per square mile)" :y nil}}
+  :labels {:x "Density (per square mile)" :y :none}}
  {:width 600 :height 800})
 
 ;; ### Fig 10.20 A panel per region
@@ -1943,7 +1944,7 @@
    :charts [(chart/scatter)]
    :facets {:columns 1 :order :bottom-up :scales {:y :free}}
    :theme {:text {:tick-label {:size 8}}}
-   :labels {:x "Density (per square mile)" :y nil}})
+   :labels {:x "Density (per square mile)" :y :none}})
 
 (plot/render-image density-by-region {:width 600 :height 800})
 
@@ -2031,7 +2032,7 @@
                    :mapping {:x :expenditure :y :year :facet :category}
                    :scales {:facet {:order-by #(stats/median (map :expenditure %))}}
                    :facets {:columns 1 :order :bottom-up}
-                   :labels {:x "Expenditure (billion dollars)" :y nil}}]
+                   :labels {:x "Expenditure (billion dollars)" :y :none}}]
   (plot/render-image
    (plot/arrange [(assoc expenditure :charts [(chart/segment {:xend 0}) (chart/scatter)])
                   (-> expenditure
@@ -2054,7 +2055,7 @@
    :charts [(chart/scatter)]
    :facets {:columns 1 :order :bottom-up :scales {:y :free}}
    :theme {:text {:tick-label {:size 8}}}
-   :labels {:x "Frost" :y nil}})
+   :labels {:x "Frost" :y :none}})
 
 (let [counts (frequencies (map :region states))
       order (sort-by (fn [r] (- (stats/mean (map :frost (filter #(= r (:region %)) states))))) (keys counts))]
@@ -2156,7 +2157,7 @@
     :charts [(chart/line {:order :data :line-width 0.8})]
     :facets {:columns 4 :order :bottom-up}
     :aspect :iso
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 650 :height 800}))
 
 ;; ### Fig 13.2 Random hypotrochoids
@@ -2177,7 +2178,7 @@
                              :charts [(chart/line {:order :data :line-width 0.5})]
                              :theme {:panel {:grid {:x :none :y :none}}}
                              :aspect :iso
-                             :labels {:x nil :y nil}}))))
+                             :labels {:x :none :y :none}}))))
     {:columns 6})
    {:width 800 :height 800}))
 
@@ -2208,7 +2209,7 @@
   :mapping {:x :gender :y :gcsescore-trans :facet :score}
   :charts [(chart/box {:variant :tufte :outliers false})]
   :facets {:columns 6}
-  :labels {:x nil :y "Transformed GCSE score"}}
+  :labels {:x :none :y "Transformed GCSE score"}}
  {:width 900 :height 400})
 
 (def cars93-cluster-order
@@ -2250,7 +2251,7 @@
              :x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}}
     :charts [(chart/correlation {:glyph :ellipse})]
     :theme {:text {:strip {:size 7}}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 1000 :height 800}))
 
 ;; ### Fig 13.6 Correlation pies
@@ -2268,7 +2269,7 @@
              :x {:domain [0 1] :axis false} :y {:domain [0 1] :axis false}}
     :charts [(chart/correlation {:glyph :pie})]
     :theme {:text {:strip {:size 7}}}
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 1000 :height 800}))
 
 ;; ### Fig 13.7 Contours on a wireframe
@@ -2301,7 +2302,7 @@
     :charts [(chart/surface {:domain domain :view view :aspect [1 (/ 61.0 87.0) 0.3] :axes false})
              (chart/cloud {:data (volcano-contour-rows (second (:z domain))) :mapping {:group :line} :type :lines
                            :domain domain :color [40 40 40] :line-width 1.0})]
-    :labels {:x nil :y nil}}
+    :labels {:x :none :y :none}}
    {:width 800 :height 550}))
 
 ;; Not reproduced: Figs 13.8 - 13.10 (maps).
@@ -2352,7 +2353,7 @@
     :scales {:facet {:domain ["data" "seasonal" "trend" "remainder"]}}
     :charts [(chart/line {:line-width 0.6})]
     :facets {:columns 1 :scales {:y :free}}
-    :labels {:x "Time (Days)" :y nil}}
+    :labels {:x "Time (Days)" :y :none}}
    {:width 1000 :height 700}))
 
 ;; ### Fig 14.3 Densities by visit
@@ -2404,5 +2405,5 @@
   :scales {:x {:axis false} :facet {:domain ["Urban Male" "Urban Female" "Rural Male" "Rural Female"]}}
   :charts [(chart/bar {:position :normalize :width 1.0})]
   :facets {:columns 2}
-  :labels {:x nil :y nil}}
+  :labels {:x :none :y :none}}
  {:width 800 :height 800})

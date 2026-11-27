@@ -46,7 +46,7 @@
    :charts [(chart/scatter)]
    :scales {:facet {:order-by #(stats/median (map :yield %))}}
    :facets {:columns 3}
-   :labels {:x "Yield" :y nil}})
+   :labels {:x "Yield" :y :none}})
 
 (def fig-4-7
   "Fig 4.7 (barley 1932 instead of postdoc reasons): varieties ordered within each site panel by yield."
@@ -55,7 +55,7 @@
    :charts [(chart/scatter)]
    :scales {:y {:order-by #(stats/mean (map :yield %))}}
    :facets {:columns 1 :scales {:y :free}}
-   :labels {:x "Yield (1932)" :y nil}})
+   :labels {:x "Yield (1932)" :y :none}})
 
 (def ^:private walk
   "Seeded random walk of 600 steps (a stand-in for daily access counts)."
@@ -68,7 +68,7 @@
    :mapping {:x :t :y :v :facet :slice}
    :charts [(chart/line)]
    :facets {:columns 1 :strips false :scales {:x :sliced :y :free}}
-   :labels {:x nil :y "Value"}})
+   :labels {:x :none :y "Value"}})
 
 (def ^:private attenuation
   "Seeded synthetic attenuation: acceleration falling with distance (log-log linear), as the Earthquake data."

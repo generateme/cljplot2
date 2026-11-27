@@ -37,7 +37,7 @@
     (testing "only :title can be combined with a custom grid"
       (is (= #{[:labels :x] [:labels :y]} (error-ins #(plot/build {:custom-grid custom :labels all-labels}))))
       (is (= {:key :x :in [:labels :x] :value "x"} (error #(plot/build {:custom-grid custom :labels {:x "x"}}))))
-      (is (= custom (:grid (plot/build {:custom-grid custom :labels {:title nil}}))) "nil title: grid unchanged"))))
+      (is (= custom (:grid (plot/build {:custom-grid custom :labels {:title :none}}))) "nil title: grid unchanged"))))
 
 (deftest reserved-axis-tracks-test
   (let [l (layout {:labels all-labels})]
@@ -49,7 +49,7 @@
     (is (= {:x 10 :y 10 :w 580 :h 380} (grid/item-box (layout {}) :panel))))
   (testing "nil labels add no items"
     (is (= (grid/item-box (layout {}) :panel)
-           (grid/item-box (layout {:labels {:title nil :x nil :y nil}}) :panel)))))
+           (grid/item-box (layout {:labels {:title :none :x :none :y :none}}) :panel)))))
 
 ;; 2.x labels
 

@@ -23,7 +23,7 @@
   {:data visits :mapping {:x :hours :y :day :color :visits}
    :scales {:y {:domain (vec (reverse weekdays))}}
    :charts [(chart/tile {:cell cell :stroke-color :white})]
-   :labels {:title title :x "hours" :y nil}})
+   :labels {:title title :x "hours" :y :none}})
 
 (def categorical
   (plot/arrange [(heatmap :square "square cells") (heatmap :pointy-hex "pointy-hex cells (honeycomb)")] {:columns 2}))
@@ -44,7 +44,7 @@
      :mapping {:x :a :y :b :color :r}
      :scales {:y {:domain (vec (reverse vs))} :color {:range :RColorBrewer/RdBu :domain [-1 1] :title "r"}}
      :charts [(chart/tile {:stroke-color :white :value-label (fn [{:keys [value]}] (format "%.2f" (double value)))})]
-     :labels {:title "mtcars correlation matrix" :x nil :y nil}}))
+     :labels {:title "mtcars correlation matrix" :x :none :y :none}}))
 
 (def faithful-bins
   (plot/arrange [{:data faithful :mapping {:x :eruptions :y :waiting} :charts [(chart/bin2d {:bins 20})]
@@ -87,12 +87,12 @@
   (plot/arrange [{:data cars :mapping {:x :car :y (constantly "cyl") :color #(str (long (:cyl %)))}
                   :scales {:x {:domain car-order :axis false} :color {:title "cyl"}}
                   :charts [(chart/tile)]
-                  :labels {:title "Column colour bar recipe: cylinders above the heatmap" :x nil :y nil}}
+                  :labels {:title "Column colour bar recipe: cylinders above the heatmap" :x :none :y :none}}
                  {:data standardized :mapping {:x :car :y :variable :color :z}
                   :scales {:x {:domain car-order} :color {:range :RColorBrewer/RdBu :midpoint 0 :title "z-score"}}
                   :theme {:axis {:x {:label-rotation 90}}}
                   :charts [(chart/tile)]
-                  :labels {:x nil :y nil}}]
+                  :labels {:x :none :y :none}}]
                 {:columns 1 :heights [1 6]}))
 
 (def images

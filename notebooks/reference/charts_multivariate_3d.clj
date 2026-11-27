@@ -46,7 +46,7 @@
 (plot/render-image {:data iris
                     :mapping {:color :species}
                     :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]})]
-                    :labels {:x nil :y nil}}
+                    :labels {:x :none :y :none}}
                    {:width 700 :height 400})
 
 ;; ### Axes
@@ -62,13 +62,13 @@
                                    :charts [(chart/parallel {:variables [["petal L" :petal-length] ["petal W" :petal-width]
                                                                          ["sepal L" :sepal-length]]
                                                              :scaling :std})]
-                                   :labels {:title ":scaling :std, labelled variables" :x nil :y nil}
+                                   :labels {:title ":scaling :std, labelled variables" :x :none :y :none}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
                                    :charts [(chart/parallel {:variables [:petal-length :petal-width :sepal-length]
                                                              :scaling :globalminmax :limits {:petal-width [0 8]}})]
-                                   :labels {:title ":globalminmax, :limits {:petal-width [0 8]}" :x nil :y nil}}]
+                                   :labels {:title ":globalminmax, :limits {:petal-width [0 8]}" :x :none :y :none}}]
                                  {:columns 2 :widths [1 1.25]})
                    {:width 1000 :height 380})
 
@@ -81,21 +81,21 @@
                                    :mapping {:color :species}
                                    :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :center})]
-                                   :labels {:title ":scaling :center" :x nil :y nil}
+                                   :labels {:title ":scaling :center" :x :none :y :none}
                                    :theme {:axis {:x {:label-rotation -30}}}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
                                    :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :robust :robust-center :median :robust-spread :mad})]
-                                   :labels {:title ":robust, :median / :mad" :x nil :y nil}
+                                   :labels {:title ":robust, :median / :mad" :x :none :y :none}
                                    :theme {:axis {:x {:label-rotation -30}}}
                                    :legend false}
                                   {:data iris
                                    :mapping {:color :species}
                                    :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :scaling :robust :robust-center :mean :robust-spread 0.25})]
-                                   :labels {:title ":robust, :mean / 0.25" :x nil :y nil}
+                                   :labels {:title ":robust, :mean / 0.25" :x :none :y :none}
                                    :theme {:axis {:x {:label-rotation -30}}}}]
                                  {:columns 3 :widths [1 1 1.3]})
                    {:width 1000 :height 360})
@@ -111,18 +111,18 @@
 (plot/render-image (plot/arrange [{:data readings
                                    :mapping {:color :id}
                                    :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :break :line-width 2})]
-                                   :labels {:title ":missing :break" :x nil :y nil}
+                                   :labels {:title ":missing :break" :x :none :y :none}
                                    :legend false}
                                   {:data readings
                                    :mapping {:color :id}
                                    :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :missing :drop :line-width 2})]
-                                   :labels {:title ":missing :drop" :x nil :y nil}
+                                   :labels {:title ":missing :drop" :x :none :y :none}
                                    :legend false}
                                   {:data readings
                                    :mapping {:color :id}
                                    :charts [(chart/parallel {:variables [:t1 :t2 :t3 :t4] :axes false :padding {:y [0 0]}
                                                              :line-width 2})]
-                                   :labels {:title ":axes false, :padding {:y [0 0]}" :x nil :y nil}}]
+                                   :labels {:title ":axes false, :padding {:y [0 0]}" :x :none :y :none}}]
                                  {:columns 3 :widths [1 1 1.2]})
                    {:width 1000 :height 320})
 
@@ -144,7 +144,7 @@
                                    :mapping {:color :species}
                                    :charts [(chart/parallel {:variables [:sepal-length :sepal-width :petal-length :petal-width]
                                                              :curve :smooth :smoothness 0.6})]
-                                   :labels {:title ":curve :smooth" :x nil :y nil}
+                                   :labels {:title ":curve :smooth" :x :none :y :none}
                                    :legend false}
                                   {:data athletes
                                    :mapping {:color :name}
@@ -154,7 +154,7 @@
                                                                                              :reach [0 10]}
                                                              :fill :color :alpha 0.2})]
                                    :coord {:kind :polar}
-                                   :labels {:title "polar, :fill :color" :x nil :y nil}}]
+                                   :labels {:title "polar, :fill :color" :x :none :y :none}}]
                                  {:columns 2 :widths [1.2 1]})
                    {:width 1000 :height 420})
 
@@ -172,7 +172,7 @@
                     :mapping {:color :model}
                     :charts [(chart/parallel {:variables [:mpg :hp :wt :qsec :drat :disp] :fill :color})]
                     :coord {:kind :polar}
-                    :labels {:x nil :y nil}}
+                    :labels {:x :none :y :none}}
                    {:width 640 :height 420})
 
 ;; ## 3D clouds
@@ -199,8 +199,8 @@
 (plot/render-image {:data quakes
                     :mapping {:x :long :y :lat :z :depth}
                     :charts [(chart/cloud {:size 5 :shape \S :color [200 80 40] :alpha 0.85 :stroke-color :black
-                                           :stroke-width 0.3 :domain {:z [690 40]}
-                                           :axis-titles {:x "longitude" :y "latitude" :z "depth"}})]}
+                                           :stroke-width 0.3 :domain {:z [690 40]}})]
+                    :labels {:x "longitude" :y "latitude" :z "depth"}}
                    {:width 600 :height 480})
 
 ;; ### Marks
@@ -360,8 +360,8 @@
                                    :legend false}
                                   {:data lattice
                                    :mapping {:x :x :y :y :z :z}
-                                   :charts [(chart/surface {:reverse #{:y} :axis-titles {:x "x" :y "y (reversed)" :z "height"}})]
-                                   :labels {:title ":reverse #{:y}"}
+                                   :charts [(chart/surface {:reverse #{:y}})]
+                                   :labels {:x "x" :y "y (reversed)" :z "height" :title ":reverse #{:y}"}
                                    :legend false}]
                                  {:columns 2})
                    {:width 900 :height 380})

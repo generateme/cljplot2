@@ -22,7 +22,7 @@
   defaults applied) and [[frame-overrides]] (the frame options a chart sets explicitly) - live here too, as do the
   shading options [[shading-options]] of the shaded charts.
 
-  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[titles-given?]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]]."
+  Functions: frame - [[frame-options]], [[frame-settings]], [[frame-overrides]], [[box-aspect]], [[axis-index]]; domains - [[data-domain]], [[nice-domain]], [[reverse-domains]], [[in-domain?]]; projection - [[normalizer]], [[view-matrix]], [[rotation]], [[perspective]], [[box-distance]], [[distance-problem]], [[check-distance!]], [[turning-extent]], [[turning-fit]], [[projector]]; box geometry - [[corners]], [[corner-point]], [[faces]], [[edges]], [[face-orientation]], [[far-side]], [[visible-edges]], [[hidden-edges]], [[axis-edges]]; shading - [[shading-options]], [[shader]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.matrix :as mat]
@@ -77,14 +77,6 @@
     (schema/nilable :axes {:cljplot2/section :axes :description "Whether the chart draws the ticks, tick labels and axis titles." :default true
                            :cljplot2/value-meanings {true "Ticks, labels and titles." false "None of them."}}
                     schema/bool)
-    (schema/nilable :axis-titles {:cljplot2/section :axes :description "The axis titles; `:none` draws none." :cljplot2/default-doc "The mapped column names; a binned cloud's z reads `Count`, a density surface's `Density`."
-                                  :cljplot2/value-meanings {:none "No axis titles."}
-                                  :cljplot2/form-meanings {:map "A title per axis; an axis the map leaves out has none. A later 3D chart's map changes only the axes it names."}}
-                    [:or [:= :none]
-                     [:map {:closed true :cljplot2/type-name "axis title map"}
-                     (schema/optional :x {:description "The x axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "east"} any?)
-                     (schema/optional :y {:description "The y axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "north"} any?)
-                     (schema/optional :z {:description "The z axis title." :cljplot2/default-doc "None when the map leaves it out; without `:axis-titles`, the mapped column's name." :cljplot2/example "height"} any?)]])
     (schema/optional :domain {:cljplot2/section :domain :description "Explicit data domains, needed by each of several 3D charts in one plot and by a surface of `:f` (`:x` and `:y`)."
                               :cljplot2/default-doc "The data's ranges, rounded to nice values."}
                      domains-schema)
@@ -107,40 +99,15 @@
   [aspect]
   (vec (or aspect [1.0 1.0 1.0])))
 
-(defn titles-given?
-  "Tests whether a 3D chart's options set its axis titles: a non-`nil` `:axis-titles` (a map, or `:none`); without it the charts title the axes themselves.
-
-  Parameters:
-
-  - `options` (map): the chart's options.
-
-  Returns true for a map or `:none`, false for `nil` or no `:axis-titles`.
-
-  See also [[frame-settings]]."
-  [options]
-  (some? (:axis-titles options)))
-
-(defn- frame-titles
-  "Gives the frame titles of a given `:axis-titles`.
-
-  Parameters:
-
-  - `options` (map): the chart's options, `:axis-titles` set (see [[titles-given?]]).
-
-  Returns the titles map, `nil` for `:none` (no titles)."
-  [options]
-  (let [titles (:axis-titles options)]
-    (when-not (= :none titles) titles)))
-
 (defn frame-settings
   "Gives the frame of a 3D chart, the frame options' defaults applied.
 
   Parameters:
 
-  - `options` (map): the chart's options - `:view`, `:aspect`, `:box`, `:axes`, `:axis-titles` (see [[frame-options]]).
+  - `options` (map): the chart's options - `:view`, `:aspect`, `:box`, `:axes` (see [[frame-options]]).
   - `mapping` (map): the merged mapping, `:x` `:y` `:z` read for default titles.
 
-  Returns `{:view :aspect :box :axes :titles}`: `:view` merged over [[default-view]], `:aspect` of [[box-aspect]], `:box` and `:axes` true unless false, `:titles` - the `:axis-titles` map, `nil` for `:axis-titles :none` (no titles), else (`nil` or no `:axis-titles`) the names of keyword accessors.
+  Returns `{:view :aspect :box :axes :titles}`: `:view` merged over [[default-view]], `:aspect` of [[box-aspect]], `:box` and `:axes` true unless false, `:titles` - the names of keyword accessors (the chart's suggestions; the plot's `:labels` settle them, see [[cljplot2.pipeline]]).
 
   See also [[frame-overrides]]."
   [options mapping]
@@ -148,9 +115,7 @@
    :aspect (box-aspect (:aspect options))
    :box (not (false? (:box options)))
    :axes (not (false? (:axes options)))
-   :titles (if (titles-given? options)
-             (frame-titles options)
-             (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes))})
+   :titles (into {} (keep (fn [k] (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) [k (name a)])))) axes)})
 
 (defn frame-overrides
   "Gives the frame settings a 3D chart sets explicitly.
@@ -161,14 +126,13 @@
 
   - `options` (map): the chart's options.
 
-  Returns a map with the keys of [[frame-settings]] the options set: `:view` as given, `:aspect`, `:box`, `:axes`, `:titles` from a non-`nil` `:axis-titles` (`nil` for `:none` - clearing the titles)."
+  Returns a map with the keys of [[frame-settings]] the options set: `:view` as given, `:aspect`, `:box`, `:axes`; never `:titles` (the plot's `:labels` set them, see [[cljplot2.pipeline]])."
   [options]
   (cond-> {}
     (:view options) (assoc :view (:view options))
     (:aspect options) (assoc :aspect (:aspect options))
     (some? (:box options)) (assoc :box (:box options))
-    (some? (:axes options)) (assoc :axes (:axes options))
-    (titles-given? options) (assoc :titles (frame-titles options))))
+    (some? (:axes options)) (assoc :axes (:axes options))))
 
 (defn axis-index
   "Gives the position of an axis in a point or a corner.

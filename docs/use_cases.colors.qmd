@@ -181,7 +181,7 @@ Source: R Graph Gallery - Dealing with color in base R; colour names ([1](https:
    {:scales {:x {:axis false} :y {:axis false}}
     :charts [(chart/rect {:x xs :y [0 1] :fill colors})
              (chart/text {:x (mapv #(+ % 0.45) (range (count colors))) :y -0.15 :text labels :size 11})]
-    :labels {:title "Names, hex strings, RGB and RGBA vectors" :x nil :y nil}}
+    :labels {:title "Names, hex strings, RGB and RGBA vectors" :x :none :y :none}}
    {:width 900 :height 300}))
 ```
 :::
@@ -315,7 +315,7 @@ Source: [R Graph Gallery - Color palette finder](https://r-graph-gallery.com/col
    {:scales {:color {:kind :identity} :x {:domain [-3.6 9] :axis false} :y {:axis false}}
     :charts [(chart/rect {:data rows :mapping {:x0 :x0 :x1 :x1 :y0 :y0 :y1 :y1 :color :c}})
              (chart/text {:data names :mapping {:x :x :y :y :label :label} :anchor [:right :middle] :size 11})]
-    :labels {:title "Seven palettes and gradients, nine colours each" :x nil :y nil}}
+    :labels {:title "Seven palettes and gradients, nine colours each" :x :none :y :none}}
    {:width 900 :height 500}))
 ```
 :::
@@ -399,7 +399,7 @@ Source: [R Graph Gallery - RColorBrewer palettes](https://r-graph-gallery.com/38
     {:data barley :mapping {:x :yield :y :variety :color :site}
      :scales {:color {:range :blues-9 :spread spread}}
      :charts [(chart/scatter {:size 8})]
-     :labels {:title (if spread ":spread true" "first colours (default)") :x "yield" :y nil}})
+     :labels {:title (if spread ":spread true" "first colours (default)") :x "yield" :y :none}})
   {:columns 2})
  {:width 1000 :height 450})
 ```

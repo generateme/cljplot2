@@ -26,10 +26,10 @@
 (deftest bundle-scales-test
   (testing "R1 :scales merged key by key over the builder's"
     (let [p (plot/bundle [{:from 3 :to 4}] small-tree {:scales {:color {:legend false}}})]
-      (is (= {:title nil :legend false} (get-in p [:scales :color])))
+      (is (= {:title :none :legend false} (get-in p [:scales :color])))
       (is (= [-1.05 1.05] (get-in p [:scales :x :domain])) "the circle axis kept")))
   (testing "R1 without :scales - the builder's"
-    (is (= {:title nil} (get-in (plot/bundle [{:from 3 :to 4}] small-tree {}) [:scales :color])))))
+    (is (= {:title :none} (get-in (plot/bundle [{:from 3 :to 4}] small-tree {}) [:scales :color])))))
 
 (deftest reserve-room-test
   (let [rows [{:x 0 :y 0 :t "a long label"} {:x 1 :y 1 :t "b"}]
