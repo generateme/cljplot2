@@ -502,7 +502,9 @@ the theme: banned names, and one type family per name across all owners). One na
 - 3D charts (`:coords #{:three-d}`) draw only with other 3D charts; several of them need explicit `:domain`s; their
   primitives are drawn far to near in one scene per panel. Their frame titles come from the plot's `:labels` `:x` /
   `:y` / `:z`, else the first chart's suggestion (`Count`, `Density`), else the mapped column's name (settled after
-  the stats, `pipeline/with-frame-titles`); a 3D plot draws no outer axis titles. Frame margins are per side and
+  the stats, `pipeline/with-frame-titles`); a 3D plot draws no outer axis titles. A frame title runs along its edge and
+  reads left to right; on a steep edge (over 45 degrees from horizontal, as perspective may lean any edge) it reads bottom
+  to top, unless the title's label map gives a `:rotation` (`content.space3d/edge-angle`). Frame margins are per side and
   azimuth independent (`content.space3d/frame-margins`): a title along its edge takes its height on the left, right
   and bottom, a turned one only on the sides its axis can land on (x / y left, right, bottom; z left), its extent
   across that edge; the top takes no title; a panel left without room for the box is a `Not enough space` error at

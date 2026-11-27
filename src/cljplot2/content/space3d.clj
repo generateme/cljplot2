@@ -319,17 +319,26 @@
     (if (m/> (v/mag o) min-outward-length) (v/normalize o) (v/vec2 0.0 1.0))))
 
 (defn edge-angle
-  "Gives the clockwise rotation of text running along a pixel direction (y down): readable left to right, a vertical edge bottom to top.
+  "Gives the clockwise rotation of text running along a pixel direction (y down).
+
+  Text on a shallow direction (at most 45 degrees from horizontal) reads left to right. Text on a steep one reads bottom to top, as a vertical axis's title does, also where a perspective view leans an edge off the vertical.
 
   Parameters:
 
-  - `along` (`Vec2`): the direction.
+  - `along` (`Vec2`): the direction, either way along the line.
 
-  Returns degrees in `[0 90)` or `(270 360)`, -90 drawn as 270."
+  Returns degrees: in `[0 45]` or `[315 360)` for a shallow direction, in `(225 315)` for a steep one. A zero `along` returns 0."
   ^double [^Vec2 along]
-  (let [raw (m/degrees (m/atan2 (.y along) (.x along)))
-        deg (double (cond (m/> raw 90.0) (m/- raw 180.0) (m/<= raw -90.0) (m/+ raw 180.0) :else raw))]
-    (if (m/== deg 90.0) 270.0 (if (m/neg? deg) (m/+ deg 360.0) deg))))
+  (let [x (.x along)
+        y (.y along)
+        raw (m/degrees (m/atan2 y x))
+        deg (double (if (m/> (m/abs y) (m/abs x))
+                      ;; steep: the baseline points up the screen
+                      (if (m/pos? raw) (m/+ raw 180.0) (m/+ raw 360.0))
+                      (cond (m/> raw 90.0) (m/- raw 180.0) (m/<= raw -90.0) (m/+ raw 180.0) :else raw)))
+        turned (if (m/neg? deg) (m/+ deg 360.0) deg)]
+    ;; a tiny negative angle plus 360 rounds to 360
+    (if (m/< turned 360.0) turned 0.0)))
 
 (defn title-distance
   "Gives the pixels from an axis edge to the centre of its title: past the ticks, the tick labels with a gap on each side, and half the title's thickness across the edge.
@@ -414,7 +423,7 @@
             (swap! labelled conj box)
             (label/draw-at! canvas content [:center :middle] (.x c) (.y c) env)))))
     (when (some? title)
-      ;; the title runs along its edge, turned to read left to right (or bottom to top), unless its label map turns it
+      ;; the title runs along its edge and reads left to right (bottom to top on a steep edge), unless its label map turns it
       (let [content (update (title-content title) :rotation #(if (some? %) % (edge-angle along)))
             ^Vec2 c (v/add (v/mult (v/add a b) 0.5)
                            (v/mult o (title-distance tick-length label-gap @widest (title-thickness title o env))))]
