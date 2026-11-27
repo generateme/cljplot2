@@ -81,10 +81,10 @@
 
   - `tex` (string): the formula in LaTeX math mode.
 
-  Returns the error message, or `nil` when the formula typesets (see [[typeset]])."
+  Returns the reason as one message (e.g. `Invalid LaTeX formula: ...`, without the `Invalid input:` prefix of the thrown error), or `nil` when the formula typesets (see [[typeset]])."
   [tex]
   (try (typeset tex 10.0 false) nil
-       (catch clojure.lang.ExceptionInfo e (ex-message e))))
+       (catch clojure.lang.ExceptionInfo e (or (:message (first (:errors (ex-data e)))) (ex-message e)))))
 
 (defn draw-typeset!
   "Draws a typeset formula with its baseline start at a point, in a colour.

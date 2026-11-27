@@ -441,7 +441,7 @@
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:na-level` (default true - a `nil` colour value is NA, else its node is left out), `:plot-scales`.
 
-  Returns `{:data {panel computed} :extents :dropped}` (with a mapped `:color` also `:na`); per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour), the kept nodes' colour values (a mapped `:color`, see [[cljplot2.scale.aesthetic/value-extent]]); `:na` - `#{:color}` when a kept node's colour value is `nil`; `:dropped` - gridded or density rows without a finite x / y, `:color` - nodes whose colour value the scale doesn't keep (a mapped `:color`, see [[cljplot2.data.group/kept-value?]]), `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
+  Returns `{:data {panel computed} :extents :dropped}` (with a mapped `:color` also `:na`); per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour), the kept nodes' colour values (a mapped `:color`, see [[cljplot2.scale.aesthetic/value-extent]]); `:na` - `#{:color}` when a kept node's colour value is `nil`; `:dropped` - gridded or density rows without a finite x, y or (gridded) `:z`, each counted once (see [[cljplot2.data.field/non-finite-counts]]), `:color` - nodes whose colour value the scale doesn't keep (a mapped `:color`, see [[cljplot2.data.group/kept-value?]]), `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
 
   Throws `ex-info {:key :mapping}` for a missing position or an unusable `:color` ([[check-mapping!]]), a position without a finite value or a mapped `:color` without a valid value in non-empty rows, `{:key :domain}` for a function without a domain."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales] :or {na-level true}}]
@@ -479,7 +479,7 @@
                                                   {:color {:kind :numeric :min (v/mn ts) :max (v/mx ts)}}
                                                   {})))))
              :dropped (cond-> (if (#{:gridded :density} kind)
-                                (assoc (field/dropped-positions :gridded mapping groups) :field (field/panels-without-field groups (set (keys meshes))))
+                                (assoc (field/non-finite-counts (position-keys kind) mapping groups) :field (field/panels-without-field groups (set (keys meshes))))
                                 {})
                         colored? (assoc :color (reduce m/long-add 0 (map :dropped (vals color-kept)))))}
       colored? (assoc :na (if (some #(some nil? (present-colors %)) (vals meshes)) #{:color} #{})))))

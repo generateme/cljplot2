@@ -13,11 +13,14 @@
             [fastmath.ml.clustering :as cl]
             [fastmath.vector :as v]
             [cljplot2.chart :as chart]
+            [cljplot2.content.axis :as axis]
             [cljplot2.content.label :as label]
             [cljplot2.data.graph :as graph]
             [cljplot2.data.hierarchy :as hierarchy]
+            [cljplot2.data.text :as text]
             [cljplot2.data.tree :as tree]
             [cljplot2.multiplot :as plot]
+            [cljplot2.pipeline :as pipeline]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.schema :as schema]
@@ -1192,7 +1195,7 @@
 
   Returns a plot map.
 
-  Throws `ex-info {:key k}` for an invalid option.
+  Throws `ex-info {:key k}` for an invalid option; `{:key :variable-names :in [:variable-names i]}` for a variable name whose formula doesn't typeset (see [[cljplot2.pipeline/formula-problems]]).
 
   Equivalents: ggalluvial `geom_alluvium` + `geom_stratum`, d3 parallel sets.
 
@@ -1201,6 +1204,9 @@
   [rows {:keys [variables strand-color alpha ^double node-width gap variable-names scales title] user-theme :theme
          :or {alpha 0.6 node-width 0.12 gap 0.03} :as options}]
   (schema/check-options! alluvial-options options)
+  (let [merged-theme (theme/plot-theme user-theme)]
+    (schema/throw-errors! (mapcat (fn [i v] (pipeline/formula-problems merged-theme (axis/tick-label merged-theme :x (text/label-text v)) [:variable-names i]))
+                                  (range) variable-names)))
   (let [g (graph/alluvial-graph rows (select-keys options (keys-of graph/alluvial-graph-entries)))
         {:keys [nodes rects bands]} (graph/sankey-layout g {:layer :layer :order :input :iterations 0
                                                             :node-width node-width :gap gap})

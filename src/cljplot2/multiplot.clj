@@ -336,7 +336,7 @@
   `(chart/scatter)`), a cell of one variable (wherever it is) `:diagonal`; it takes no `:upper` (an error keyed
   `:upper`).
 
-  Returns a plot map. Throws `ex-info {:key k}` for a wrong variable count, a missing or non-numeric variable (`k` - `:variables`, `:row-variables` or `:column-variables`, the option naming it); options are validated first ([[pairs-options]], `ex-info {:key k}`, `k` the option; no variables - `:variables`).
+  Returns a plot map. Validates the options first ([[pairs-options]]: `ex-info {:key k}`, `k` the option; no variables - `:variables`), then the formulas of every `:variable-names` entry, its variable drawn or not, in the builder's theme (`ex-info {:key :variable-names :in [:variable-names variable]}`, see [[cljplot2.pipeline/formula-problems]]). Throws `ex-info {:key k}` for a wrong variable count, a missing or non-numeric variable (`k` - `:variables`, `:row-variables` or `:column-variables`, the option naming it).
 
   Equivalents: GGally `ggpairs` - the defaults (scatter below, correlation text above - per group when grouped -,
   density on the diagonal); R `corrgram` / `pairs` panel functions - `chart/correlation` glyphs in `:lower` / `:upper`
@@ -352,6 +352,13 @@
   [rows {:keys [mapping variable-names theme title row-variables column-variables legend-span] matrix-scales :scales variable-keys :variables
          lower-slot :lower upper-slot :upper diagonal-slot :diagonal :as options}]
   (let [_ (schema/check-options! pairs-options options)
+        ;; names are axis titles, and the diagonal's texts under :names
+        name-roles (cond-> [:axis-title] (= :names diagonal-slot) (conj :pairs-name))
+        merged-theme (theme/plot-theme theme)
+        _ (schema/throw-errors! (for [[k t] variable-names
+                                      err (some #(seq (pipeline/formula-problems merged-theme {:kind :label :role % :text t} [:variable-names k])) name-roles)]
+                                  err)
+                                :variable-names)
         square (square? options)
         y-variables (vec (or row-variables variable-keys))
         x-variables (vec (or column-variables variable-keys))

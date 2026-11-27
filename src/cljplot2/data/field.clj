@@ -25,7 +25,7 @@
   / `:fu`, vector fields) receives one argument, a `fastmath.vector.Vec2` - sequential and indexed, so destructuring it as `[x y]`, `nth`, `seq` and fastmath vector functions all work; point-valued results may be any sequential value or array
   (see [[cljplot2.data.rows/as-coordinates]]).
 
-  Functions: options - [[source-options]], [[n-schema]], [[grid-size]]; titles - [[value-title]]; sources - [[source-kind]], [[source-field]], [[density]], [[lattice]], [[lattice-values]], [[function-domain]]; grids - [[sample]], [[union-domain]], [[to-data]], [[value-range]], [[grid-value]], [[axis-transforms]], [[check-mapped!]], [[dropped-positions]], [[panels-without-field]]; complex domain colouring - [[domain-color]]."
+  Functions: options - [[source-options]], [[n-schema]], [[grid-size]]; titles - [[value-title]]; sources - [[source-kind]], [[source-field]], [[density]], [[lattice]], [[lattice-values]], [[function-domain]], [[source-dims]]; grids - [[sample]], [[union-domain]], [[to-data]], [[value-range]], [[grid-value]], [[axis-transforms]], [[check-mapped!]], [[non-finite-counts]], [[panels-without-field]]; complex domain colouring - [[domain-color]]."
   (:require [clojure2d.color :as c]
             [fastmath.complex :as cx]
             [fastmath.core :as m]
@@ -381,22 +381,33 @@
              (m/* (m/- 1.0 fx) fy (Array/aget values (m/long-add i row1))) (m/* fx fy (Array/aget values (m/long-add (m/long-inc i) row1)))))
       ##NaN)))
 
-(defn dropped-positions
-  "Counts of the rows a field chart drops for a non-finite position.
+(defn source-dims
+  "Gives the mapped dimensions a field source reads from its rows.
 
   Parameters:
 
   - `kind` (keyword): the source kind (see [[source-kind]]).
-  - `mapping` (map): the merged mapping, `:x` and `:y` read.
+
+  Returns `[:x :y]` for `:points`, `[:x :y :value]` for `:gridded`, `[]` for `:function` (it reads no rows)."
+  [kind]
+  (case kind :points [:x :y] :gridded [:x :y :value] []))
+
+(defn non-finite-counts
+  "Counts the rows a field, contour or surface drops for a mapped value that isn't a finite number.
+
+  Parameters:
+
+  - `dims` (sequence): the mapped dimensions read, in order (see [[source-dims]]).
+  - `mapping` (map): the merged mapping.
   - `groups` (map): the split rows, panel -> rows.
 
-  Returns `{:x n :y n}` - the rows without a finite x and y; zeros for a function source, which reads no rows."
-  [kind mapping groups]
-  (if (= kind :function)
-    {:x 0 :y 0}
-    (let [rows (mapcat val groups)
-          bad (fn [k] (let [acc (data/row-accessor k (mapping k))] (count (remove (comp schema/finite? acc) rows))))]
-      {:x (bad :x) :y (bad :y)})))
+  Returns `{dim n}` with a key per dimension of `dims`: each row counted once, under the first dimension of `dims` without a finite value (`nil`, `NaN`, infinite and non-numeric alike); `{}` for no dimensions."
+  [dims mapping groups]
+  (let [accessors (mapv (fn [k] [k (data/row-accessor k (mapping k))]) dims)
+        first-bad (fn [row] (some (fn [[k value-of]] (when-not (schema/finite? (value-of row)) k)) accessors))]
+    (reduce (fn [counts row] (if-let [k (first-bad row)] (update counts k m/long-inc) counts))
+            (zipmap dims (repeat 0))
+            (mapcat val groups))))
 
 (defn check-mapped!
   "Checks that a field chart's rows have a finite value of every mapped dimension it reads.
@@ -409,10 +420,9 @@
 
   Returns `nil`; a function source reads no rows and passes, as do empty rows. Throws `ex-info {:key :mapping :in [:mapping dimension] :rows n}` for the first dimension without a finite value (see [[cljplot2.data.rows/check-mapped!]])."
   [kind mapping groups]
-  (when-not (= kind :function)
-    (data/check-mapped! (mapcat val groups)
-                        (map (fn [k] [k (data/row-accessor k (mapping k))]) (cond-> [:x :y] (= kind :gridded) (conj :value)))
-                        (fn [_ v] (schema/finite? v)))))
+  (data/check-mapped! (mapcat val groups)
+                      (map (fn [k] [k (data/row-accessor k (mapping k))]) (source-dims kind))
+                      (fn [_ v] (schema/finite? v))))
 
 (defn panels-without-field
   "Counts the panels with rows that got no field (e.g. one point under a bandwidth selector, see [[density]]).

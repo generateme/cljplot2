@@ -154,7 +154,7 @@
   - `split` (map): `:groups` (`{panel rows}`), `:mapping` (merged).
   - `env` (map): `:theme`, `:plot-scales` and grouping settings.
 
-  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed} ..]} ..] :style st :filled b :by-level b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without finite x / y; `:field` - panels, or groups when grouped, with rows but no field).
+  Returns per panel `{:contours [{:level l :color-value v :aesthetics a :lines [{:points :closed} ..]} ..] :style st :filled b :by-level b :labels l}` (filled: `:rings [[..] ..]` instead of `:lines`); extents x / y - the sampled domain, color - the value range with the levels (by level: the lowest line or band isn't the gradient's end), or the groups' values; no padding, `:na`, `:dropped` (rows without a finite x, y or (gridded) `:value`, each counted once - see [[cljplot2.data.field/non-finite-counts]]; `:field` - panels, or groups when grouped, with rows but no field).
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x`, `:y` (or gridded `:value`), see [[cljplot2.data.field/check-mapped!]].
 
@@ -206,7 +206,7 @@
                     (keys panels))
      :padding data/zero-padding
      :na (if (some (fn [[_ a]] (some nil? (vals a))) fields) (set (for [[_ a] fields [k v] a :when (nil? v)] k)) #{})
-     :dropped (assoc (field/dropped-positions (field/source-kind options mapping) mapping groups)
+     :dropped (assoc (field/non-finite-counts (field/source-dims (field/source-kind options mapping)) mapping groups)
                      :field (count (remove #(some? (nth % 2)) items)))}))
 
 (defn- level-style

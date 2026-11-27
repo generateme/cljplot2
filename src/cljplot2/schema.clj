@@ -650,12 +650,13 @@
                 (str "unknown key, should be spelled " (pr-str suggestion))
                 (or (me/error-message error) "is invalid"))}))
 
-(def ^{:arglists '([errors])} throw-errors!
+(def ^{:arglists '([errors] [errors k])} throw-errors!
   "Throws one `ex-info` listing errors, shaped as in the namespace doc.
 
   Parameters:
 
   - `errors` (sequence): `{:in :value :message}` entries.
+  - `k` (keyword, optional): the error `:key`, else the last keyword of the first entry's path.
 
   Returns `nil` for no errors. See [[cljplot2.error/throw-errors!]]."
   error/throw-errors!)

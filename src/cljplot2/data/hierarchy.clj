@@ -140,7 +140,7 @@
 
   Returns `{:trees {panel root} :top-count n :extents {panel {:color e}} :na #{..} :dropped {:value n :color n}}` - panels without kept rows left out; top-level children carry `:top-index` (first-appearance order over all panels, so default colours agree across panels, `:top-count` of them); `:na` - `#{:color}` when a leaf has a `nil` colour; `:dropped` - rows without a valid value, and (with a mapped colour) rows whose colour isn't kept.
 
-  Throws `ex-info {:key :mapping}` when rows exist but none has a finite mapped `:value`.
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite mapped `:value`, or none a valid mapped `:color` (see [[cljplot2.scale.aesthetic/valid-value?]]).
 
   See also [[root]], [[fill-fn]]."
   [groups mapping {:keys [na-level plot-scales] :or {na-level true}}]
@@ -156,7 +156,8 @@
                                     (aesthetic/kept-value? :color color-spec cv)))))
         kept? #(and (value-ok? %) (color-ok? %))
         all-rows (mapcat val groups)
-        _ (when (some? (:value mapping)) (data/check-mapped! all-rows [[:value value-of]] (fn [_ v] (schema/finite? v))))
+        _ (data/check-mapped! all-rows (cond-> [] (some? (:value mapping)) (conj [:value value-of]) color-of (conj [:color color-of]))
+                              (fn [k v] (if (= :value k) (schema/finite? v) (aesthetic/valid-value? :color color-spec v))))
         trees (into {} (keep (fn [[panel rows]]
                                (when-let [kept (seq (filter kept? rows))]
                                  [panel (root (map (fn [r] {:path (path-of accessors r) :value (double (value-of r))

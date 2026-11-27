@@ -160,7 +160,9 @@
   - `split` (map): `:groups` - `{panel rows}`, `:mapping` - the merged mapping.
   - `env` (map): `:theme`, `:plot-scales` and the rest of the compute environment.
 
-  Returns `{:data {panel {:cells [..] :top-count n :style st :colored b :named b}} :extents :padding :na :dropped :scale-defaults}`: cells - see [[cells]]; `:named` - `:color-by :name`; extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's, at least 1) and the aesthetic extents (the node names' with `:color-by :name`); no padding; `:scale-defaults` hiding both axes; `:dropped {:value n :color n}`."
+  Returns `{:data {panel {:cells [..] :top-count n :style st :colored b :named b}} :extents :padding :na :dropped :scale-defaults}`: cells - see [[cells]]; `:named` - `:color-by :name`; extents `:x` `[0 1]`, `:y` `[0 levels]` (the deepest panel's, at least 1) and the aesthetic extents (the node names' with `:color-by :name`); no padding; `:scale-defaults` hiding both axes; `:dropped {:value n :color n}`.
+
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:value` or, with a mapped `:color`, none a valid colour value (see [[cljplot2.data.hierarchy/panel-trees]])."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme plot-scales] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)
         named? (= :name (:color-by options))

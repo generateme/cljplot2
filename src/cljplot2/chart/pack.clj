@@ -93,6 +93,8 @@
 
   Returns `{:data {panel {:tree root :top-count n :style st :options o :colored b}} :extents :na :dropped}`: `root` - see [[cljplot2.data.hierarchy]]; `o` - the options of `defaults` with their defaults; aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:value` or, with a mapped `:color`, none a valid colour value (see [[cljplot2.data.hierarchy/panel-trees]]).
+
   See also [[draw]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)

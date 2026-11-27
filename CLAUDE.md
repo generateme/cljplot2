@@ -15,7 +15,8 @@ Notebooks/` - a folder per section or gallery, the roadmap with section status a
 Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference part of the book; `05 Code Review/` - code
 review rounds, their specs and implementation notes; `06 Reference Readability/` - option cards, concept headings
 and prose of the reference part; `07 Domains Titles Surface Colour/` - out-of-domain values, titles of every mapped
-dimension, the surface's colour dimension). Read them when a decision's rationale is unclear.
+dimension, the surface's colour dimension; `08 Recorded Bugs and Text Shapes/` - robustness, domains of multi-row
+marks, text shapes, layout fixes). Read them when a decision's rationale is unclear.
 
 ## Commands
 
@@ -125,9 +126,11 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   typesets with JLaTeXMath (cached by source, size and weight - bold roles typeset bold; Cyrillic rejected; any
   failure `{:key :text}`; a cached box is drawn under a lock), `content.label` measures and draws lines of runs (one
   metrics shape; baseline at the largest ascent; text without formulas byte-identical). Fitting wraps at spaces and
-  cuts in plain pieces only (formulas are whole words); a rebuilt text carries `:dollar-math false`. Formulas of plot
-  `:labels` and literal text-chart `:text` are checked at build (`pipeline/formula-errors`, by path); along a path
-  they are an error (build or compute). Code passing a text on keeps formula and runs values with
+  cuts in plain pieces only (formulas are whole words); a rebuilt text carries `:dollar-math false`. Formulas of literal
+  texts are checked at build by path - plot `:labels`, aesthetic scale `:title`s, text-chart `:text`, pairwise
+  `:label`, histogram `:invalid-label` (`pipeline/formula-errors`, drawn or not) and the `pairs` / `alluvial`
+  `:variable-names` (`pipeline/formula-problems`, at the builder's option path); texts made from data are checked when drawn (`{:key :text}`, no path); along a path formulas are an
+  error (build or compute). Code passing a text on keeps formula and runs values with
   `text/label-text`, never `str`; text schemas use `text/label-text-schema`; a label value is an options map only by
   `label/label-options?`. Log ticks: scale `:formatter :power-math` (`e^{k}` for base e).
 - Text drawn over a fill takes its colour from its text role through `draw/text-color` (role `:color` `:contrast` -
@@ -240,7 +243,7 @@ the theme: banned names, and one type family per name across all owners). One na
 - `:value-format`, `:n-format` - a chart's format string (checked at build: `schema/number-format`,
   `schema/count-format`) or function of the value; scales take `:formatter`.
 - `:inner-radius` - a radius fraction (chord, sequences; violin `:inner` names its inner marks); `:variables` - the
-  accessors of wide rows' variables (parallel, alluvial, pairs), their display names `:variable-names`; `:columns` -
+  accessors of wide rows' variables (parallel, alluvial, pairs), their display names `:variable-names` (alluvial, pairs); `:columns` -
   a count of grid columns (arrange, facets, waffle); `:axes` - a 3D or parallel flag; `:cell-shape` - a waffle cell's
   shape (`:shape` is a point shape); `:length-scale` - the arrows' length factor (`:scale` is violin's width mode).
 - `:invalid` - what a chart does with rows whose mapped value is invalid: `:drop` (default, counted in `:dropped`)
@@ -265,7 +268,8 @@ the theme: banned names, and one type family per name across all owners). One na
 
 **Contracts**:
 - `:dropped` (chart compute): one key per mapped dimension, each row counted once, plus only `:group`, `:field`,
-  `:duplicate`, `:value`, `:set`, `:variables` (the `cljplot2.chart` ns doc); rows a chart draws in an invalid-value
+  `:duplicate`, `:value`, `:set`, `:variables` (the `cljplot2.chart` ns doc; a chart mapping `:value` - field, contour,
+  the hierarchies, waffle - counts rows without a valid one under `:value`, as for any mapped dimension); rows a chart draws in an invalid-value
   band (`:invalid :show`) are not dropped; data functions outside charts report a plain count.
 - Checks: option shapes and conflicts between options are schemas - closed maps, `schema/with-rules` for relations
   between keys - so `build` reports them before any stage runs; compute checks only what depends on the data, the

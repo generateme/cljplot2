@@ -29,8 +29,7 @@
   a legend that doesn't fit below the previous one starts a new stack column to the right. [[legend-boxes]] gives
   where each legend is drawn.
 
-  Functions: [[legends]], [[legend-charts]], [[provisional-legends]], [[legend-boxes]]; schemas,
- ; methods of [[cljplot2.graphics.measure/validate-content]],
+  Functions: [[legends]], [[legend-charts]], [[provisional-legends]], [[legend-boxes]], [[title-label]] (a legend title's label content); methods of [[cljplot2.graphics.measure/validate-content]],
   [[cljplot2.graphics.measure/natural-size]] and [[cljplot2.graphics.draw/draw-content]] for `:legend`, `:colorbar`
   and `:legends`."
   (:require [clojure2d.core :as c2d]
@@ -381,7 +380,7 @@
 (defmethod measure/validate-content :colorbar [content] (schema/explain! [[colorbar-schema content [:content]]]))
 (defmethod measure/validate-content :legends [content] (schema/explain! [[legends-schema content [:content]]]))
 
-(defn- title-label
+(defn title-label
   "Gives the label content of a legend title.
 
   Parameters:

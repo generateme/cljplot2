@@ -295,7 +295,7 @@
 
   Returns `{:data {panel computed} :extents :na :dropped}`; per panel `{:points {:x [..] :y [..] :z [..] aesthetic [..] :group [..]} :domains {:x :y :z} :frame f :frame-overrides o :style st :type t :base b :half [hx hy] :shading sh}` - `f` see [[cljplot2.data.space3d/frame-settings]], `st` the resolved style ([[cljplot2.theme/resolved-style]]), `hx` / `hy` half a bar in data units, `sh` the chart's `:ambient` / `:light`; `:group` - the rows' `:group` values with `:type :lines` and a mapped `:group` (`nil` a value too); with `:bins` the points are the non-empty cells ([[bin-counts]]), with `:projections` also `:projections` ([[projection-layers]]). Extents are the aesthetics' only (the chart lays out its own panel); `:dropped` - per dimension the rows with a non-finite or out-of-domain coordinate, or an aesthetic value off its scale.
 
-  Throws `ex-info {:key :mapping}`, `{:key :bins}` or `{:key :domain}` for a mapping its options can't draw (see [[check-mapping!]], [[axis-levels]]); `{:key :mapping}` when rows exist but a position has no valid value (see [[cljplot2.data.rows/check-mapped!]])."
+  Throws `ex-info {:key :mapping}`, `{:key :bins}` or `{:key :domain}` for a mapping its options can't draw (see [[check-mapping!]], [[axis-levels]]); `{:key :mapping}` when rows exist but a position or a mapped aesthetic has no valid value (see [[cljplot2.data.rows/check-mapped!]], [[cljplot2.scale.aesthetic/valid-value?]])."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales] :or {na-level true}}]
   (let [st (theme/resolved-style theme chart)
         explicit (:domain options)
@@ -308,7 +308,8 @@
         ;; the line of each row, read after the dimensions (no drop: every value - nil too - is a line)
         group-of (when (and (= mark-type :lines) (some? (:group mapping))) (data/row-accessor :group (:group mapping)))
         accessors (cond-> (mapv #(data/row-accessor % (mapping %)) dims) group-of (conj group-of))
-        _ (data/check-mapped! (mapcat val groups) (map vector positions accessors))
+        _ (data/check-mapped! (mapcat val groups) (map vector dims accessors)
+                              (fn [k v] (aesthetic/valid-value? k (get plot-scales k) v)))
         raw-values (update-vals groups (fn [rows] (mapv (fn [row] (mapv #(% row) accessors)) rows)))
         levels (into {} (keep (fn [[i k]] (when (#{:x :y} k)
                                             (some->> (axis-levels k (mapping k) (mapcat #(map (fn [vs] (vs i)) %) (vals raw-values)))

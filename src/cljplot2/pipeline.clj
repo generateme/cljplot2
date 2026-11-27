@@ -1,7 +1,7 @@
 (ns cljplot2.pipeline
   "Plot pipeline: a plot map passes through fixed stages, each a pure function adding one key.
 
-  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales` -> `:subplots` ([[stage-order]]). [[build]] validates the plot, its merged theme and options first (see [[cljplot2.schema]]), then runs the stages; [[finalize-scales]] and [[panel-scales]] give the finalized scales of a layout, [[plot-margins]] the normalized margins; [[plot-schema]], [[options-schema]], [[scales-schema]], [[margins-schema]] and [[chart-schema]] are the schemas `build` checks; [[default-options]] are the render option defaults.
+  Stages, in order: `:split` -> `:stats` -> `:extents` -> `:scale-specs` -> `:grid` -> `:layout` -> `:finalized-scales` -> `:subplots` ([[stage-order]]). [[build]] validates the plot, its merged theme and options first (see [[cljplot2.schema]]), then runs the stages; [[formula-problems]] gives the formula errors of one literal text (builders check their options with it); [[finalize-scales]] and [[panel-scales]] give the finalized scales of a layout, [[plot-margins]] the normalized margins; [[plot-schema]], [[options-schema]], [[scales-schema]], [[margins-schema]] and [[chart-schema]] are the schemas `build` checks; [[default-options]] are the render option defaults.
 
   Plot keys (schema: [[plot-schema]]):
 
@@ -48,6 +48,7 @@
             [cljplot2.graphics.latex :as latex]
             [cljplot2.content.panel]
             [cljplot2.content.axis :as axis]
+            [cljplot2.chart.statistic-cell :as cell]
             [cljplot2.content.strip]
             [cljplot2.content.legend :as legend]
             [cljplot2.content.subplot :as subplot]
@@ -2230,17 +2231,18 @@
             :when chart-options-schema]
         [chart-options-schema (:options c) [:margins side :charts i :options]])))))
 
-(defn- text-formula-errors
-  "Errors of the formulas of one text that can't be typeset.
+(defn formula-problems
+  "Gives an error for each formula of one literal text that doesn't typeset.
+
+  Builders check the texts of their options with it before they build their plot, so a bad formula is reported at the builder's option path, not at a path inside the generated plot.
 
   Parameters:
 
-  - `theme` (map): the merged theme.
-  - `content` (map): label content - `:text`, `:role`, optional `:dollar-math`.
-  - `in` (vector): the text's path in the plot.
+  - `theme` (map): the merged theme (see [[cljplot2.theme/plot-theme]]).
+  - `content` (map): the text's label content - `:role`, `:text` (a string, a `plot/math` or a `plot/runs` value) and any inline text style keys (e.g. a tick label's, see [[cljplot2.content.axis/tick-label]]); the role with those keys over it decides through `:dollar-math` whether `$...$` holds formulas.
+  - `in` (vector): the text's path, e.g. `[:variable-names :a]`.
 
-  Returns a sequence of errors `{:in :value :message}` - the formula's source as the value; none for an unknown role
-  (reported by the layout)."
+  Returns a sequence of errors `{:in :value :message}` - the formula's source as the value; empty when every formula typesets or the theme has no such role (the layout reports it). Throw them with [[cljplot2.schema/throw-errors!]]; the plot's own literal texts are checked by [[build]]."
   [theme content in]
   (when (map? (get-in theme [:text (:role content)]))
     (let [dollar-math (not (false? (:dollar-math (theme/text-style theme content))))]
@@ -2251,21 +2253,49 @@
             :when problem]
         {:in in :value (:cljplot2/math run) :message problem}))))
 
-(defn- formula-errors
-  "Errors of formulas known before any stage runs: in the plot `:labels` and in text charts' literal `:text`.
+(defn- pairwise-label-contents
+  "Gives the label contents a pairwise chart draws its `:label` in.
 
-  A formula that doesn't typeset is an error at its text's path; a literal text along a path (`:along-path`) can't
-  hold formulas. Texts made from data or by formatters are checked when drawn (`{:key :text}`).
+  Parameters:
+
+  - `plot` (map): the plot map - `:labels`, `:scales`.
+  - `options` (map): the chart's options, `:label` given.
+  - `mapping` (map): the chart's merged mapping.
+
+  Returns the content in the text role `:pairwise` and, for a chart coloured by value whose colour title neither the plot's `:labels` nor the colour scale's `:title` gives, the colour bar title's in `:legend-title`."
+  [{:keys [labels scales]} {:keys [label] :as options} mapping]
+  (cond-> [{:kind :label :role :pairwise :text label}]
+    (and (cell/colored-by-value? options mapping) (nil? (:color labels)) (nil? (get-in scales [:color :title])))
+    (conj {:kind :label :role :legend-title :text label})))
+
+(defn- formula-errors
+  "Gives the errors of the formulas in the plot's literal texts, known before any stage runs.
+
+  Checked, wherever drawn or not: the plot `:labels`; the aesthetic scales' `:title` (text role `:legend-title`); text charts' literal `:text`; pairwise charts' `:label` (text role `:pairwise`, and `:legend-title` as the colour bar title of a chart coloured by value); histograms' `:invalid-label` (an x tick label). A formula that doesn't typeset is an error at its text's path; a literal text along a path (`:along-path`) can't hold formulas. Texts made from data or by formatters are checked when drawn (`{:key :text}`, no path); builders check their own literal options (see [[formula-problems]]).
 
   Parameters:
 
   - `plot` (map): the plot map, its keys valid.
   - `theme` (map): the merged theme.
 
-  Returns a sequence of errors `{:in :value :message}`, empty when every formula holds. See [[validate!]]."
-  [{:keys [labels charts]} theme]
+  Returns a sequence of errors `{:in :value :message}`, empty when every formula typesets. See [[validate!]]."
+  [{:keys [labels scales charts] :as plot} theme]
   (concat
-   (mapcat (fn [[k content]] (text-formula-errors theme content [:labels k])) (plot-grid/label-contents labels))
+   (mapcat (fn [[k content]] (formula-problems theme content [:labels k])) (plot-grid/label-contents labels))
+   (for [k aesthetic/dims
+         :let [title (get-in scales [k :title])]
+         :when (and (some? title) (not= :none title))
+         err (formula-problems theme (legend/title-label title) [:scales k :title])]
+     err)
+   (for [[^long i {:keys [kind options]} chart-mapping] (map vector (range) charts (merged-mappings plot))
+         :when (and (= :pairwise kind) (some? (:label options)))
+         :let [in [:charts i :options :label]]
+         err (or (some #(seq (formula-problems theme % in)) (pairwise-label-contents plot options chart-mapping)) [])]
+     err)
+   (for [[^long i {:keys [kind options]}] (map-indexed vector charts)
+         :when (and (= :histogram kind) (some? (:invalid-label options)))
+         err (formula-problems theme (axis/tick-label theme :x (:invalid-label options)) [:charts i :options :invalid-label])]
+     err)
    (for [[^long i {:keys [kind options]}] (map-indexed vector charts)
          :when (and (= :text kind) (some? (:text options)))
          :let [content {:kind :label :role (or (:role options) :annotation) :dollar-math (:dollar-math options)}
@@ -2274,7 +2304,7 @@
          err (if (and (:along-path options) (map? (get-in theme [:text (:role content)]))
                       (label/formulas? theme (assoc content :text t)))
                [{:in in :value t :message "a text along a path can't hold LaTeX formulas (:dollar-math false keeps dollars literal)"}]
-               (text-formula-errors theme (assoc content :text t) in))]
+               (formula-problems theme (assoc content :text t) in))]
      err)))
 
 (defn- validate!

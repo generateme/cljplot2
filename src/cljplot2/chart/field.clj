@@ -93,7 +93,7 @@
   - `groups` (map): `{panel rows}`.
   - `plot-scales` (map): the plot's `:scales` (axis transforms, explicit domains).
 
-  Returns `{:grids {panel grid} :domain d :dropped {..}}`: panels without a field left out; `:dropped` - rows without finite x / y (points and gridded sources), `:field` - panels with rows but no field (see [[cljplot2.data.field/panels-without-field]]).
+  Returns `{:grids {panel grid} :domain d :dropped {..}}`: panels without a field left out; `:dropped` - rows without a finite x, y or (gridded) `:value`, each counted once (see [[cljplot2.data.field/non-finite-counts]]), `:field` - panels with rows but no field (see [[cljplot2.data.field/panels-without-field]]).
 
   Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:x`, `:y` (or gridded `:value`), see [[cljplot2.data.field/check-mapped!]].
 
@@ -107,7 +107,7 @@
         size (field/grid-size (:n options))]
     {:grids (update-vals fields (fn [{:keys [f]}] (field/sample f domain size (field/axis-transforms plot-scales))))
      :domain domain
-     :dropped (assoc (field/dropped-positions kind mapping groups) :field (field/panels-without-field groups (set (keys fields))))}))
+     :dropped (assoc (field/non-finite-counts (field/source-dims kind) mapping groups) :field (field/panels-without-field groups (set (keys fields))))}))
 
 (defn- domain-extents
   "Gives the x / y extents of a field's domain.
@@ -142,7 +142,7 @@
      :extents (update-vals groups (fn [_] (domain-extents domain)))
      :padding data/zero-padding
      :scale-defaults {:x {:nice false} :y {:nice false}}
-     :dropped {:x 0 :y 0}}))
+     :dropped {}}))
 
 (defn compute
   "Computes the field chart's stats.

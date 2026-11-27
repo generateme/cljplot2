@@ -79,6 +79,8 @@
 
   Returns `{:data {panel computed} :extents :na :dropped}`: `computed` - `{:tree root :top-count n :style st :options o :colored b}` (`root` - see [[cljplot2.data.hierarchy]], top-level children with `:top-index`; `o` - `:layout`, `:order`, `:group-labels`, `:leaf-labels` with their defaults; `:colored` - a mapped `:color`); aesthetic extents only (no x / y); `:dropped {:value n :color n}`.
 
+  Throws `ex-info {:key :mapping}` when rows exist but none has a finite `:value` or, with a mapped `:color`, none a valid colour value (see [[cljplot2.data.hierarchy/panel-trees]]).
+
   See also [[draw]]."
   [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme] :as env}]
   (let [{:keys [trees top-count extents na dropped]} (hierarchy/panel-trees groups mapping env)

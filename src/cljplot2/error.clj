@@ -65,14 +65,16 @@
   Parameters:
 
   - `errors` (sequence of maps): entries `{:in :value :message}`.
+  - `k` (keyword, optional): the option at fault, for paths whose last keyword isn't one (e.g. a user's key in `[:variable-names :a]`).
 
-  The data is `{:key :in :value :errors}`: `:key` the last keyword of the first entry's path (`:input` without one), `:in` and `:value` the first entry's, `:errors` all entries. Returns `nil` when `errors` is empty.
+  The data is `{:key :in :value :errors}`: `:key` - `k`, else the last keyword of the first entry's path (`:input` without one); `:in` and `:value` the first entry's, `:errors` all entries. Returns `nil` when `errors` is empty.
 
   See also [[fail!]]."
-  [errors]
-  (when (seq errors)
-    (let [{:keys [in value]} (first errors)]
-      (throw (ex-info (message-of errors) {:key (key-of in) :in in :value value :errors (vec errors)})))))
+  ([errors] (throw-errors! errors nil))
+  ([errors k]
+   (when (seq errors)
+     (let [{:keys [in value]} (first errors)]
+       (throw (ex-info (message-of errors) {:key (or k (key-of in)) :in in :value value :errors (vec errors)}))))))
 
 (defn fail!
   "Throws the error of a check done by hand, shaped and worded as the errors of [[throw-errors!]].
