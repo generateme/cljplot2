@@ -40,7 +40,7 @@
   (testing "domain-color (compared on sample points)"
     (let [f (field/domain-color cx/log {})
           g (field/domain-color cx/log (explicit #'field/domain-color {}))]
-      (is (= {:wrap :log2 :colorspace :HSI} (explicit #'field/domain-color {})))
+      (is (= {:wrap :log2 :gamma 0.2 :colorspace :HSB} (explicit #'field/domain-color {})))
       (doseq [p [[0.0 0.0] [0.5 -0.3] [-2.0 1.5] [3.0 3.0]]]
         (is (= (f p) (g p)) p))))
   (testing "arrows"

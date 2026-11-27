@@ -343,7 +343,8 @@
 
 (plot/render-image
  {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/sub (cx/mult z (cx/mult z z)) cx/ONE)
-                                                                             (cx/add (cx/mult z z) cx/I))))
+                                                                             (cx/add (cx/mult z z) cx/I)))
+                                                         {:colorspace :HSI :gamma 1.0})
                          :domain {:x [-2 2] :y [-2 2]}})]
   :aspect :iso
   :labels {:title "$f(z) = \\frac{z^3 - 1}{z^2 + i}$" :x "$\\mathrm{Re}\\,z$" :y "$\\mathrm{Im}\\,z$"}}

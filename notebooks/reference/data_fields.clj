@@ -38,19 +38,19 @@
 ;; ## Domain colouring
 
 ;; `field/domain-color` returns a `:pixel-color` function for `chart/field` that colours a complex function by domain
-;; colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1], in a hue-first
-;; colour space. Use it to see the zeros, poles and phase of a complex function.
+;; colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1] and raised to
+;; `:gamma`, in a hue-first colour space. Use it to see the zeros, poles and phase of a complex function.
 
 (nu/argument-list #'field/domain-color)
 
-;; These options set how the magnitude wraps and the colour space. The panels below draw log(z) / sin(z) with the
-;; defaults, then with every other `:wrap`:
+;; These options set how the magnitude wraps, how strongly the wrapped magnitude is brightened (`:gamma`) and the
+;; colour space. The panels below draw log(z) / sin(z) with the defaults, then with every other `:wrap`:
 
 (nu/option-cards '(field/domain-color f) (describe/options #'field/domain-color))
 
 (plot/render-image (plot/arrange [{:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z))))
                                                           :domain {:x [-6 6] :y [-6 6]}})]
-                                   :labels {:title "defaults (:log2, :HSI)"}}
+                                   :labels {:title "defaults (:log2, :gamma 0.2, :HSB)"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
                                                                                            {:wrap :log10})
                                                           :domain {:x [-6 6] :y [-6 6]}})]
@@ -73,6 +73,17 @@
                                    :labels {:title ":wrap :sin"}}]
                                  {:columns 3})
                    {:width 1000 :height 680})
+
+;; The panels below draw z³ - 1 with `:gamma` 0.2 (the default), 1 and 3. Below 1 the bands brighten and above 1
+;; they darken; at 1 the brightness is the wrapped magnitude:
+
+(plot/render-image (plot/arrange (for [gamma [0.2 1.0 3.0]]
+                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))
+                                                                                            {:gamma gamma})
+                                                           :domain {:x [-2 2] :y [-2 2]}})]
+                                    :labels {:title (str ":gamma " gamma)}})
+                                 {:columns 3})
+                   {:width 1000 :height 360})
 
 ;; The panels below draw z³ - 1 in each colour space; all hues meet at its three zeros:
 

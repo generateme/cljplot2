@@ -391,21 +391,26 @@
         dc (field/domain-color identity)]
     (testing "4.2 arg 0 and arg pi - opposite hues (|z| 0.5: not on a band edge)"
       (is (< (m/abs (- 127.5 (m/abs (- (double (hue (dc [0.5 0.0]))) (double (hue (dc [-0.5 0.0]))))))) 1.0)))
-    (testing "4.2 :log2 bands: the brightness wraps where |f| + 1 doubles"
-      (let [bright (fn [col] (nth (c/to-HSB* col) 2))]
-        (is (> (double (bright (dc [0.99 0.0]))) 240.0) "just below |f| = 1")
-        (is (< (double (bright (dc [1.01 0.0]))) 10.0) "just above")
-        (is (< (double (bright (dc [3.0 0.0]))) 1.0) "|f| = 3: log2 4")))
+    (testing "4.2 :log2 bands: the brightness wraps where |f| + 1 doubles (gamma 1 - the wrapped magnitude itself)"
+      (let [bright (fn [col] (nth (c/to-HSB* col) 2))
+            linear (field/domain-color identity {:gamma 1.0})]
+        (is (m/> (bright (linear [0.99 0.0])) 240.0) "just below |f| = 1")
+        (is (m/< (bright (linear [1.01 0.0])) 10.0) "just above")
+        (is (m/< (bright (linear [3.0 0.0])) 1.0) "|f| = 3: log2 4")
+        (testing "the default gamma 0.2 keeps the wrap (a smaller drop) and the black band end"
+          (is (m/> (bright (dc [0.99 0.0])) 240.0) "just below |f| = 1")
+          (is (m/< (bright (dc [1.01 0.0])) 130.0) "just above")
+          (is (m/< (bright (dc [3.0 0.0])) 1.0) "|f| = 3: 0 to any power is 0"))))
     (testing "4.2 zeros and poles give a colour; unknown wrap throws"
       (is (some? (dc [0.0 0.0])))
       (is (some? ((field/domain-color cx/log) [0.0 0.0])))
       (is (some? ((field/domain-color (fn [z] (cx/div cx/ONE z))) [0.0 0.0])))
       (is (= :wrap (:key (error #(field/domain-color identity {:wrap :log3})))))
       (is (every? #(some? ((field/domain-color identity {:wrap %}) [0.3 0.4])) field/wrap-methods)))
-    (testing "U2 :colorspace - hue-first spaces, default HSI (brighter than HSB)"
+    (testing "U2 :colorspace - hue-first spaces, default HSB (HSI brighter)"
       (let [luma (fn [col] (c/luma col))]
-        (is (= (dc [0.5 0.3]) ((field/domain-color identity {:colorspace :HSI}) [0.5 0.3])))
-        (is (> (double (luma (dc [0.5 0.3]))) (double (luma ((field/domain-color identity {:colorspace :HSB}) [0.5 0.3]))))))
+        (is (= (dc [0.5 0.3]) ((field/domain-color identity {:colorspace :HSB}) [0.5 0.3])))
+        (is (m/> (luma ((field/domain-color identity {:colorspace :HSI}) [0.5 0.3])) (luma (dc [0.5 0.3])))))
       (is (every? #(some? ((field/domain-color identity {:colorspace %}) [0.3 0.4])) field/hue-colorspaces))
       (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :LAB})))))
       (is (= :colorspace (:key (error #(field/domain-color identity {:colorspace :hsi}))))))

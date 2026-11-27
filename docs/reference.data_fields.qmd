@@ -124,8 +124,8 @@ The points below form a grid of seeds over [-2 2]²; the trace and mapped point 
 ## Domain colouring
 
 `field/domain-color` returns a `:pixel-color` function for `chart/field` that colours a complex function by domain
-colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1], in a hue-first
-colour space. Use it to see the zeros, poles and phase of a complex function.
+colouring: the hue is the argument of f(x + iy), the brightness its magnitude wrapped into [0 1] and raised to
+`:gamma`, in a hue-first colour space. Use it to see the zeros, poles and phase of a complex function.
 
 
 ```{=html}
@@ -133,12 +133,12 @@ colour space. Use it to see the zeros, poles and phase of a complex function.
 ```
 
 
-These options set how the magnitude wraps and the colour space. The panels below draw log(z) / sin(z) with the
-defaults, then with every other `:wrap`:
+These options set how the magnitude wraps, how strongly the wrapped magnitude is brightened (`:gamma`) and the
+colour space. The panels below draw log(z) / sin(z) with the defaults, then with every other `:wrap`:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:wrap</code><span class="option-default">Default: <code>:log2</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:wrap :exp})</code></div><div class="option-text">How the function wraps the magnitude of <code>f</code> into [0 1] for the brightness.<ul><li><code>:log2</code> – The fractional part of <code>log2(v + 1)</code>: bands where the magnitude plus 1 doubles.</li><li><code>:exp</code> – <code>1 - e^-v</code>: dark at zeros, bright towards poles.</li><li><code>:frac</code> – The fractional part of <code>v</code>: a band per unit of magnitude.</li><li><code>:log10</code> – The fractional part of <code>log10(v + 1)</code>: bands where the magnitude plus 1 grows tenfold.</li><li><code>:sigmoid</code> – The logistic function of <code>v</code>.</li><li><code>:sin</code> – <code>sin v</code> scaled to [0 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:colorspace</code><span class="option-default">Default: <code>:HSI</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:colorspace :HCL})</code></div><div class="option-text">The hue-first colour space the function builds the colours in; <code>:HSI</code> matches the old cljplot.<ul><li><code>:HSI</code> – Hue, saturation, intensity.</li><li><code>:HCL</code> – Hue, chroma, luminance.</li><li><code>:HSB</code> – Hue, saturation, brightness.</li><li><code>:HSL</code> – Hue, saturation, lightness.</li><li><code>:HSV</code> – Hue, saturation, value.</li><li><code>:HWB</code> – Hue, whiteness, blackness.</li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:wrap</code><span class="option-default">Default: <code>:log2</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:wrap :exp})</code></div><div class="option-text">How the function wraps the magnitude of <code>f</code> into [0 1] for the brightness.<ul><li><code>:log2</code> – The fractional part of <code>log2(v + 1)</code>: bands where the magnitude plus 1 doubles.</li><li><code>:exp</code> – <code>1 - e^-v</code>: dark at zeros, bright towards poles.</li><li><code>:frac</code> – The fractional part of <code>v</code>: a band per unit of magnitude.</li><li><code>:log10</code> – The fractional part of <code>log10(v + 1)</code>: bands where the magnitude plus 1 grows tenfold.</li><li><code>:sigmoid</code> – The logistic function of <code>v</code>.</li><li><code>:sin</code> – <code>sin v</code> scaled to [0 1].</li></ul></div></dd></div><div class="option-card"><dt><code>:gamma</code><span class="option-default">Default: <code>0.2</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:gamma 1.0})</code></div><div class="option-text">The exponent the function raises the wrapped magnitude to before it sets the third channel. Below 1 it brightens each band and above 1 it darkens it, while <code>1</code> keeps the wrapped magnitude; in <code>:HWB</code> the third channel is blackness, so the effect reverses.<ul><li><a href="reference.types.html#positive-finite-number">positive finite number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:colorspace</code><span class="option-default">Default: <code>:HSB</code></span></dt><dd><div class="option-example"><code>(field/domain-color f {:colorspace :HCL})</code></div><div class="option-text">The hue-first colour space the function builds the colours in. With <code>:gamma 1</code>, <code>:HSB</code> matches old cljplot's default and <code>:HSI</code> its example.<ul><li><code>:HSB</code> – Hue, saturation, brightness.</li><li><code>:HCL</code> – Hue, chroma, luminance.</li><li><code>:HSI</code> – Hue, saturation, intensity.</li><li><code>:HSL</code> – Hue, saturation, lightness.</li><li><code>:HSV</code> – Hue, saturation, value.</li><li><code>:HWB</code> – Hue, whiteness, blackness.</li></ul></div></dd></div></dl>
 ```
 
 
@@ -147,7 +147,7 @@ defaults, then with every other `:wrap`:
 ```clojure
 (plot/render-image (plot/arrange [{:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z))))
                                                           :domain {:x [-6 6] :y [-6 6]}})]
-                                   :labels {:title "defaults (:log2, :HSI)"}}
+                                   :labels {:title "defaults (:log2, :gamma 0.2, :HSB)"}}
                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/div (cx/log z) (cx/sin z)))
                                                                                            {:wrap :log10})
                                                           :domain {:x [-6 6] :y [-6 6]}})]
@@ -176,6 +176,28 @@ defaults, then with every other `:wrap`:
 
 ::: {.clay-image}
 ![](reference.data_fields_files/image0.png)
+:::
+
+
+The panels below draw z³ - 1 with `:gamma` 0.2 (the default), 1 and 3. Below 1 the bands brighten and above 1
+they darken; at 1 the brightness is the wrapped magnitude:
+
+
+::: {.sourceClojure}
+```clojure
+(plot/render-image (plot/arrange (for [gamma [0.2 1.0 3.0]]
+                                   {:charts [(chart/field {:pixel-color (field/domain-color (fn [z] (cx/sub (cx/mult z (cx/mult z z)) cx/ONE))
+                                                                                            {:gamma gamma})
+                                                           :domain {:x [-2 2] :y [-2 2]}})]
+                                    :labels {:title (str ":gamma " gamma)}})
+                                 {:columns 3})
+                   {:width 1000 :height 360})
+```
+:::
+
+
+::: {.clay-image}
+![](reference.data_fields_files/image1.png)
 :::
 
 
@@ -215,7 +237,7 @@ The panels below draw z³ - 1 in each colour space; all hues meet at its three z
 
 
 ::: {.clay-image}
-![](reference.data_fields_files/image1.png)
+![](reference.data_fields_files/image2.png)
 :::
 
 
@@ -269,7 +291,7 @@ repeats its first point at its end:
 
 
 ::: {.clay-image}
-![](reference.data_fields_files/image2.png)
+![](reference.data_fields_files/image3.png)
 :::
 
 
@@ -338,7 +360,7 @@ arrows. The right one draws a fastmath field (`fastmath.fields`) and colours the
 
 
 ::: {.clay-image}
-![](reference.data_fields_files/image3.png)
+![](reference.data_fields_files/image4.png)
 :::
 
 
@@ -413,7 +435,7 @@ leave it:
 
 
 ::: {.clay-image}
-![](reference.data_fields_files/image4.png)
+![](reference.data_fields_files/image5.png)
 :::
 
 
@@ -474,7 +496,7 @@ by the seed's x:
 
 
 ::: {.clay-image}
-![](reference.data_fields_files/image5.png)
+![](reference.data_fields_files/image6.png)
 :::
 
 

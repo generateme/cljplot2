@@ -509,13 +509,14 @@
   - `from-space` (function): a clojure2d `from-*` converter of a hue-first colour space.
   - `method` (keyword): the magnitude wrap, see [[wrap]].
   - `z` (`Vec2`): the complex number.
+  - `gamma` (double): a positive exponent the wrapped magnitude is raised to; below 1 it raises the third channel, above 1 it lowers it, 1 keeps it.
 
-  Returns the colour: hue - arg z, the third channel - the wrapped |z|, the second - 3/4 to full along it; a non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
-  [from-space method ^Vec2 z]
+  Returns the colour: hue - arg z, the third channel - the wrapped |z| raised to `gamma`, the second - 3/4 to full along it; a non-finite argument counts as 0, a non-finite wrapped magnitude (a pole) as 1."
+  [from-space method ^Vec2 z ^double gamma]
   (let [raw-angle (cx/arg z)
         angle (if (m/valid-double? raw-angle) raw-angle 0.0)
         wrapped (wrap method (cx/abs z))
-        bright (if (m/valid-double? wrapped) wrapped 1.0)
+        bright (m/pow (if (m/valid-double? wrapped) wrapped 1.0) gamma)
         b (m/* 255.0 bright)]
     (from-space (c/color (m/norm angle m/-PI m/PI 0.0 255.0) (m/- 255.0 (m// (m/- 255.0 b) 4.0)) b))))
 
@@ -531,8 +532,12 @@
                                                      :sigmoid "The logistic function of `v`."
                                                      :frac "The fractional part of `v`: a band per unit of magnitude."}}
                     (into [:enum] (sort wrap-methods)))
-   (schema/optional :colorspace {:description "The hue-first colour space the function builds the colours in; `:HSI` matches the old cljplot."
-                                 :default :HSI
+   (schema/optional :gamma {:description "The exponent the function raises the wrapped magnitude to before it sets the third channel. Below 1 it brightens each band and above 1 it darkens it, while `1` keeps the wrapped magnitude; in `:HWB` the third channel is blackness, so the effect reverses."
+                            :default 0.2
+                            :cljplot2/example 1.0}
+                    schema/finite-pos)
+   (schema/optional :colorspace {:description "The hue-first colour space the function builds the colours in. With `:gamma 1`, `:HSB` matches old cljplot's default and `:HSI` its example."
+                                 :default :HSB
                                  :cljplot2/value-meanings {:HSI "Hue, saturation, intensity." :HSB "Hue, saturation, brightness."
                                                            :HSV "Hue, saturation, value." :HSL "Hue, saturation, lightness."
                                                            :HCL "Hue, chroma, luminance." :HWB "Hue, whiteness, blackness."}}
@@ -544,9 +549,9 @@
   Parameters:
 
   - `f` (function): a complex function `Vec2` -> `Vec2` of `fastmath.complex`, e.g. `cx/log`.
-  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:colorspace` - one of [[hue-colorspaces]] (default `:HSI` - old cljplot's example).
+  - `options` (map): `:wrap` - how the magnitude is wrapped for the brightness (default `:log2`, see [[wrap]]); `:gamma` - a positive finite exponent the wrapped magnitude is raised to (default `0.2`; `1` keeps it); `:colorspace` - one of [[hue-colorspaces]] (default `:HSB`; with `:gamma 1`, `:HSB` gives old cljplot's default and `:HSI` its example).
 
-  Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, brightness - its wrapped magnitude. Zeros and poles get a colour.
+  Returns a function of a point `[x y]` giving the colour of `f(x + iy)`: hue - its argument, the third channel (brightness, or blackness in `:HWB`) - its wrapped magnitude raised to `:gamma`. Zeros and poles get a colour.
 
   Throws `ex-info` for bad options ([[domain-color-options]])."
   {:cljplot2/api true
@@ -554,10 +559,10 @@
    :cljplot2/returns "A `:pixel-color` function of a point `[x y]` that returns the colour of f(x + iy)."
    :cljplot2/options domain-color-options}
   ([f] (domain-color f {}))
-  ([f {wrap-method :wrap colorspace :colorspace :or {wrap-method :log2 colorspace :HSI} :as options}]
+  ([f {^double gamma :gamma wrap-method :wrap colorspace :colorspace :or {gamma 0.2 wrap-method :log2 colorspace :HSB} :as options}]
    (schema/check-options! domain-color-options options)
    (let [from-space (second (c/colorspaces* colorspace))]
-     (fn [[x y]] (complex-color from-space wrap-method (f (cx/complex x y)))))))
+     (fn [[x y]] (complex-color from-space wrap-method (f (cx/complex x y)) gamma)))))
 
 (defn value-title
   "Gives the legend title of a field's computed value.
