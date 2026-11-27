@@ -12,10 +12,14 @@
 
   Filled shapes use the fill color and an optional outline; outlined shapes and strokes use the line color.
 
+  A string is short for `{:text s}` and always draws as text: a one-letter string draws the letter, unlike the character
+  shape of that letter (`A` - a triangle); a file takes `{:svg source}`.
+
   A shape may also be a map (see [[shape-problem]]), fitted into the size square (aspect kept, centred):
 
   * `{:path d}` - SVG path data (e.g. `M0 0 L10 0 L5 8 Z`), filled with the color, outlined like a filled shape
-  * `{:text t}` - a text outline (e.g. an emoji) filled with the color; `:font` (default [[*text-font*]] - the plot
+  * `{:text t}` - a text outline (e.g. an emoji) filled with the color, `$...$` kept literal (shapes draw no
+    formulas); `:font` (default [[*text-font*]] - the plot
     theme's annotation font while a plot draws), characters it lacks from the bundled monochrome Noto Emoji (see
     [[cljplot2.graphics.font]])
   * `{:svg source}` - an SVG file path, classpath resource or URL (string, `java.io.File`, `java.net.URL`), in its own
@@ -168,21 +172,35 @@
   [v]
   (or (instance? BufferedImage v) (satisfies? pr/ImageProto v)))
 
+(defn- expanded-shape
+  "Gives the text shape map a string stands for; any other shape as it is.
+
+  Parameters:
+
+  - `v`: a shape (see [[shape-problem]]).
+
+  Returns `{:text v}` for a string, else `v`."
+  [v]
+  (if (string? v) {:text v} v))
+
 (defn shape-problem
   "Gives the reason a value isn't a shape.
 
-  A shape is a built-in character of [[shapes]], or a map with exactly one of [[shape-kinds]] - `:path` (non-empty SVG path data that parses), `:text` (a non-empty string, optional `:font` - a bundled, installed or logical font name or `java.awt.Font`), `:svg` (a file, resource or URL that exists), `:image` (an image).
+  A shape is a built-in character of [[shapes]], a non-empty string (short for `{:text s}`), or a map with exactly one of [[shape-kinds]] - `:path` (non-empty SVG path data that parses), `:text` (a non-empty string, optional `:font` - a bundled, installed or logical font name or `java.awt.Font`), `:svg` (a file, resource or URL that exists), `:image` (an image).
 
   Parameters:
 
   - `v`: any value.
 
-  Returns the reason (a string); `nil` for a shape."
+  Returns the reason (a string); `nil` for a shape. A string of spaces is a shape; it draws nothing."
   [v]
-  (if-not (map? v)
+  (cond
+    (string? v) (when (empty? v) "a string shape should be non-empty")
+    (not (map? v))
     (when-not (contains? shapes v)
       (str "should be a shape: one of " (apply str (sort shapes))
-           ", or a map {:path svg-path-data}, {:text string}, {:svg source} or {:image image}"))
+           ", a non-empty string, or a map {:path svg-path-data}, {:text string}, {:svg source} or {:image image}"))
+    :else
     (let [kinds (filter shape-kinds (keys v))
           extra (remove (conj shape-kinds :font) (keys v))]
       (cond
@@ -414,23 +432,24 @@
   Parameters:
 
   - `canvas`: the canvas in graphics context.
-  - `shape`: a built-in shape character or a shape map (see [[shape-problem]]).
+  - `shape`: a built-in shape character, a string (short for `{:text s}`) or a shape map (see [[shape-problem]]).
   - `center` (`Vec2`): the centre in pixels.
   - `style` (map): `:size` - the bounding box side in pixels; `:color` - fills filled shapes and strokes the others (`:none` - nothing); `:stroke-color` and `:stroke-width` - the outline of filled shapes (`:none` or width 0 - none).
 
   Returns `nil`. A shape map is fitted into the size square: `:path` filled and outlined as a filled shape, `:text` filled, `:svg` / `:image` in their own colours."
   [canvas shape ^Vec2 center {:keys [^double size color stroke-color stroke-width] :as style}]
-  (if (map? shape)
-    (draw-map! canvas shape center style)
-    (let [centre-size (v/vec3 (.x center) (.y center) (m/* 0.5 size))
-          ink? (not (none? color))]
-      (if (filled-shapes shape)
-        (do (when ink?
-              (c2d/set-color canvas color)
-              (fill! canvas shape centre-size))
-            (when (and (not (none? stroke-color)) (m/pos? (double stroke-width)))
-              (c2d/set-color canvas stroke-color)
-              (outline! canvas shape centre-size)))
-        (when ink?
-          (c2d/set-color canvas color)
-          (outline! canvas shape centre-size))))))
+  (let [expanded (expanded-shape shape)]
+    (if (map? expanded)
+      (draw-map! canvas expanded center style)
+      (let [centre-size (v/vec3 (.x center) (.y center) (m/* 0.5 size))
+            ink? (not (none? color))]
+        (if (filled-shapes shape)
+          (do (when ink?
+                (c2d/set-color canvas color)
+                (fill! canvas shape centre-size))
+              (when (and (not (none? stroke-color)) (m/pos? (double stroke-width)))
+                (c2d/set-color canvas stroke-color)
+                (outline! canvas shape centre-size)))
+          (when ink?
+            (c2d/set-color canvas color)
+            (outline! canvas shape centre-size)))))))

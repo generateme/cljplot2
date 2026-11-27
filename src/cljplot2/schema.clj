@@ -395,8 +395,8 @@
   [format-spec]
   (if (string? format-spec) #(format format-spec %) format-spec))
 (def shape
-  "Schema of a point shape: a built-in character or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
-  (named-type ::shape shape/shape? shape/shape-problem {:cljplot2/type-name "point shape" :cljplot2/type-meaning "A built-in shape character such as `\\o`, or a map `{:path svg-path}`, `{:text string}`, `{:svg source}` or `{:image image}`." :cljplot2/type-doc "a shape character or shape map"}))
+  "Schema of a point shape: a built-in character, a string (short for a text shape map) or a shape map (see [[cljplot2.graphics.shape/shape-problem]], whose message is the error)."
+  (named-type ::shape shape/shape? shape/shape-problem {:cljplot2/type-name "point shape" :cljplot2/type-meaning "A built-in shape character such as `\\o`, a string - always drawn as text (`\"E\"`, short for `{:text \"E\"}`; a file takes `{:svg source}`), or a map `{:path svg-path}`, `{:text string}`, `{:svg source}` or `{:image image}`." :cljplot2/type-doc "a shape character, string or shape map"}))
 (def font
   "Schema of a font: a bundled, installed or logical font name, or a `java.awt.Font`."
   (named-type ::font font/known-font? "should be a bundled, installed or logical font name, or a java.awt.Font"

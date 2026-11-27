@@ -810,7 +810,7 @@
           [(:kind c) v])))
 
 (def attribute-values
-  "The built-in values of attribute options, sorted: `:shape` - point shape characters (shape maps are open), `:dash` - dash style names (dash arrays are open), `:pattern` - fill pattern names (pattern maps are open), `:cell` - grid cell types."
+  "The built-in values of attribute options, sorted: `:shape` - point shape characters (strings and shape maps are open), `:dash` - dash style names (dash arrays are open), `:pattern` - fill pattern names (pattern maps are open), `:cell` - grid cell types."
   {:shape (vec (sort-by str shape/shapes))
    :dash (vec (sort (keys schema/dash-styles)))
    :pattern (vec (sort (keys schema/pattern-styles)))

@@ -267,8 +267,8 @@
 
 ;; ## Shape
 
-;; This option sets the point shapes: characters - filled and outlined circles, squares, triangles, strokes, plus and
-;; cross - or shape maps (an SVG path, a text, an SVG file, an image).
+;; This option sets the point shapes: characters (filled and outlined circles, squares, triangles, strokes, plus and
+;; cross), strings drawn as text, or shape maps (an SVG path, a text, an SVG file, an image).
 
 (nu/option-cards [:scales :shape] (describe/options (aesthetic/scale-spec-schema :shape)) :range)
 
@@ -286,12 +286,12 @@
                     :scales {:shape {:kind :identity :legend false} :y {:domain [0 1.5] :axis false}}}
                    {:width 800 :height 200})
 
-;; The plot below takes a shape range of characters and shape maps:
+;; The plot below takes a shape range of a character, a shape map and a string (short for `{:text "★"}`):
 
 (plot/render-image {:data groups
                     :mapping {:x :x :y :y :shape :g}
                     :charts [(chart/scatter {:size 14})]
-                    :scales {:shape {:range [\s {:path "M0 0 L10 0 L5 9 Z"} {:text "★"}]}}}
+                    :scales {:shape {:range [\s {:path "M0 0 L10 0 L5 9 Z"} "★"]}}}
                    {:width 500 :height 280})
 
 ;; ## Size

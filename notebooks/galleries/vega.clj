@@ -897,14 +897,15 @@
 
 ;; ### Scatter Plot with Text Marks
 
-;; Each car written as the initial of its origin.
+;; Each car is drawn as the initial of its origin. The shape scale maps each origin to a one-letter string, so the
+;; legend shows the letters too.
 
 (nu/source-note {:source "Vega-Lite - Scatter Plot with Text Marks" :url (vl-url "text_scatterplot_colored") :dataset :cars})
 
 (plot/render-image
- {:data cars :mapping {:x :horsepower :y :miles-per-gallon}
-  :charts [(chart/text {:data (map #(assoc % :initial (subs (:origin %) 0 1)) cars)
-                        :mapping {:x :horsepower :y :miles-per-gallon :label :initial :color :origin} :size 13})]
+ {:data cars :mapping {:x :horsepower :y :miles-per-gallon :shape :origin :color :origin}
+  :charts [(chart/scatter {:size 10})]
+  :scales {:shape {:range {"Europe" "E" "Japan" "J" "USA" "U"}}}
   :labels {:x "Horsepower" :y "Miles_per_Gallon"}}
  {:width 600 :height 400})
 
