@@ -353,11 +353,13 @@
 
   - `options` (map, optional): the chart's options - its own options (see [[cljplot2.chart.surface]]), `:data` and `:mapping` (taken by every chart), and the style keys over the theme style `[:chart :surface]`, and `:theme-style` - a named theme style merged over it (see [[cljplot2.theme/chart-style]]).
 
-  Returns a chart value of kind `:surface` - a 3D chart, drawn only with other 3D charts; it computes its own colour aesthetic (a colour scale without a mapping). Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
+  Returns a chart value of kind `:surface` - a 3D chart, drawn only with other 3D charts; it computes its own colour aesthetic (a colour scale without a mapping) unless `:color` is fixed or mapped on gridded data. Options are validated by `build` (see [[cljplot2.pipeline/build]]), not here.
 
   See also [[cljplot2.chart.surface]]."
   ([] (surface {}))
-  ([options] (assoc (chart-value :surface surface/compute space-draw/draw-3d-chart nil surface/schemas options)
+  ;; a fixed colour draws no key: an inherited :color mapping it leaves unused must not add glyphs to another chart's legend
+  ([options] (assoc (chart-value :surface surface/compute space-draw/draw-3d-chart (when-not (:color options) surface/legend)
+                                 surface/schemas options)
                     :coords #{:three-d} :primitives surface/chart-primitives
                     :computed-aesthetics surface/computed-aesthetics)))
 

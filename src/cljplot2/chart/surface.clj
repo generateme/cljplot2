@@ -6,25 +6,38 @@
   Sources (one per chart):
 
   * gridded (default) - mapped `:x`, `:y`, `:z` on a full lattice (every distinct x with every distinct y, once; see
-    [[cljplot2.data.field/lattice-values]], errors keyed `:z`): a node per row
+    [[cljplot2.data.field/lattice-values]], errors keyed `:z`): a node per row, with its colour value when `:color` is
+    mapped
   * `:f` - a function of a point `[x y]` (a `fastmath.vector.Vec2`, see Points in [[cljplot2.data.field]]) returning
     its height `z`, or `[z c]` (any sequential value or array) (height and color value `c`), sampled on a
     regular grid of `:n` (default 30, or `[nx ny]`) points per axis over `:domain` `:x` / `:y` (required)
   * `:density true` - the 2D kernel density of mapped `:x`, `:y` (see [[cljplot2.data.field/density]], default
     bandwidths) over the points' range widened by `:cut` bandwidths (default 3; 0 - the range), sampled as `:f` over
     the panels' density domains (or the explicit x / y domain)
-  * `:fu` - a parametric surface: a function of `[u v]` (a `Vec2`) returning `[x y z]` (any sequential value or array), sampled on `:n` points over the ranges
+  * `:fu` - a parametric surface: a function of `[u v]` (a `Vec2`) returning `[x y z]` or `[x y z c]` (any sequential value or array; `c` the colour value), sampled on `:n` points over the ranges
     `:u [lo hi]`, `:v [lo hi]` (both required with `:fu`, refused without it)
 
   Nodes with a non-finite coordinate, or outside an explicit `:domain`, are left out with every quad they touch.
   Domains: explicit or the nodes' over all panels, made nice ([[cljplot2.data.space3d/nice-domain]]). Facets: a mesh per panel (gridded / density - the panel's rows; a
   function - the same in every panel), domains shared.
 
-  Colors: by default each quad's mean height (or `c` of `[z c]`) through the plot's color scale - a computed color
-  with a color bar titled by the `:z` accessor's name (Density for a density, none for a function); option
-  `:color` - one color for all quads (no color scale). A quad whose value is outside an explicit color domain isn't
-  drawn. The computed color is the plot's color scale: another chart of the plot (e.g. a cloud over the surface)
-  can't map `:color` then - give the surface a fixed `:color`.
+  Colors, first that applies:
+
+  * option `:color` - one color for all quads (no color scale; a `:color` mapping inherited from the plot is unused)
+  * a mapped `:color` (gridded data only) - through the plot's color scale: a quad takes its corners' mean value on
+    a linear or binned scale (dates too), else their most common value (a tie - the first corner, in [[quad-corners]]
+    order); a quad with a `nil` corner is NA (with `:na-level false` such a node is left out, as below); a node whose
+    value the scale doesn't keep (invalid, or outside its domain - see the scale's `:out-of-domain`) is left out with
+    its quads, counted in `:dropped :color`; under `:out-of-domain :as-na` a quad with a corner outside the domain is
+    NA, under `:clamp` its corners are clamped to the domain before the mean; the legend is titled by the accessor's
+    name; a column without a valid value is an error
+  * computed - each quad's mean height (or `c` of `[z c]` / `[x y z c]`) through the plot's color scale, with a color
+    bar titled by the `:z` accessor's name (Density for a density, none for a function); a quad whose value is
+    outside an explicit color domain isn't drawn. The computed color is the plot's color scale: another chart of the
+    plot (e.g. a cloud over the surface) can't map `:color` then - map it on a gridded surface too, or give the surface
+    a fixed `:color`.
+
+  A mapped `:color` with `:f`, `:fu` or `:density` is an error, unless a fixed `:color` makes an inherited one unused.
 
   Options (style defaults from theme `[:chart :surface]`: `:stroke-color`, `:stroke-width`):
 
@@ -36,13 +49,15 @@
   Quads are drawn far to near by their centroid depth, with the other 3D charts of the panel (a cloud over a surface:
   both with every `:domain` explicit).
 
-  Functions: [[compute]], [[chart-primitives]] and [[computed-aesthetics]] - the chart contract; [[source-kind]] - the source of a chart; meshes - [[mesh]], [[function-mesh]], [[parametric-mesh]], [[gridded-mesh]], [[panel-meshes]], [[clip-mesh]]; [[quad-corners]] - the nodes of a quad; [[schemas]], [[default-n]], [[seam-width]]."
+  Functions: [[compute]], [[chart-primitives]], [[legend]] and [[computed-aesthetics]] - the chart contract; [[source-kind]] - the source of a chart, [[mapped-color?]] - whether a mapped `:color` colours it; meshes - [[mesh]], [[function-mesh]], [[parametric-mesh]], [[gridded-mesh]], [[panel-meshes]], [[clip-mesh]]; [[quad-corners]] - the nodes of a quad; [[schemas]], [[default-n]], [[seam-width]]."
   (:require [clojure2d.color :as c]
             [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.field :as field]
+            [cljplot2.data.group :as group]
             [cljplot2.data.rows :as data]
             [cljplot2.data.space3d :as space]
+            [cljplot2.graphics.draw :as draw]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
             [cljplot2.schema :as schema]
@@ -84,8 +99,8 @@
                                                 :cljplot2/value-meanings {:surface "Filled quads." :wireframe "Quad outlines, each in its quad's colour; nearer quads hide the lines behind them."
                                                                           :both "Filled quads outlined by `:stroke-color`."}}
                                         [:enum :surface :wireframe :both])
-                       (schema/optional :color {:description "One colour for every quad, instead of the colour scale."
-                                                :cljplot2/default-doc "Each quad's mean height, or the `c` of `[z c]`, through the plot's colour scale."
+                       (schema/optional :color {:description "One colour for every quad, instead of the colour scale; a `:color` mapping inherited from the plot is then unused."
+                                                :cljplot2/default-doc "Gridded data with a mapped `:color` takes it through the colour scale; otherwise each quad takes its mean height, or the `c` of `[z c]` or `[x y z c]`, through the plot's colour scale."
                                                 :cljplot2/example :steelblue}
                                         schema/solid-color)
                        (schema/nilable :shade {:description "Whether the chart shades filled quads by their angle to the light."
@@ -100,7 +115,7 @@
                                                  :default false
                                                  :cljplot2/value-meanings {true "The density of the points." false "Another source gives the surface."}}
                                        schema/bool)
-                       (schema/optional :fu {:description "A parametric surface: a function of `[u v]` that returns `[x y z]`, over `:u` and `:v`."
+                       (schema/optional :fu {:description "A parametric surface: a function of `[u v]` that returns `[x y z]`, or `[x y z c]` with `c` the colour value, over `:u` and `:v`."
                                              :cljplot2/default-doc "None: another source gives the surface."
                                              :cljplot2/example '(fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u])
                                              :cljplot2/example-context {:u [0 1] :v [0 6.28]}}
@@ -123,11 +138,16 @@
              [#(when (and (:fu %) (not (and (:u %) (:v %)))) "a parametric surface needs :u and :v ranges") [:fu]]
              [#(when (and (or (:u %) (:v %)) (not (:fu %))) ":u and :v are the ranges of a parametric :fu") [:u]]
              [#(when (and (some? (:cut %)) (not (:density %))) ":cut widens a :density surface") [:cut]]
+             [#(when (and (some? (get-in % [:mapping :color])) (some? (:color %)))
+                 "a surface takes a fixed :color or a mapped :color, not both") [:mapping :color]]
+             [#(when (and (some? (get-in % [:mapping :color])) (some % [:f :fu :density]))
+                 "a mapped :color colours gridded data; :f, :fu and :density surfaces compute their colour - drop the mapped :color or use gridded data") [:mapping :color]]
              space/distance-rule)
    :mapping [:maybe [:map
                      (schema/nilable :x {:description "The x of the gridded heights, or of the points whose density the chart estimates with `:density`."} schema/accessor)
                      (schema/nilable :y {:description "The y of the gridded heights, or of the points whose density the chart estimates with `:density`."} schema/accessor)
-                     (schema/nilable :z {:description "The height of a lattice node of gridded data."} schema/accessor)]]})
+                     (schema/nilable :z {:description "The height of a lattice node of gridded data."} schema/accessor)
+                     (schema/nilable :color {:description "The colour value of a lattice node of gridded data. A quad takes its corners' mean on a linear or binned scale, else their most common value; a `nil` corner makes it NA."} schema/accessor)]]})
 
 (defn- source-kind
   "Gives the source of a surface chart.
@@ -155,6 +175,18 @@
     :density "Density"
     nil))
 
+(defn mapped-color?
+  "Tests whether a mapped `:color` colours a surface's quads.
+
+  Parameters:
+
+  - `options` (map): the chart's options.
+  - `mapping` (map): the merged mapping.
+
+  Returns true for a gridded surface without a fixed `:color` option and with a mapped `:color`, else false."
+  [options mapping]
+  (and (= :gridded (source-kind options)) (nil? (:color options)) (some? (:color mapping))))
+
 (defn computed-aesthetics
   "Gives the surface's computed aesthetics.
 
@@ -163,9 +195,9 @@
   - `options` (map): the chart's options.
   - `mapping` (map): the merged mapping.
 
-  Returns `{:color title}` - the quads coloured by value, titled by the `:z` accessor's name, Density, or none (see [[value-title]]); `{}` when a fixed `:color` option colours them."
+  Returns `{:color title}` - the quads coloured by value, titled by the `:z` accessor's name, Density, or none (see [[value-title]]); `{}` when a fixed `:color` option or a mapped `:color` ([[mapped-color?]]) colours them."
   [options mapping]
-  (if (:color options) {} {:color (value-title options mapping)}))
+  (if (or (:color options) (mapped-color? options mapping)) {} {:color (value-title options mapping)}))
 
 ;; meshes
 
@@ -247,13 +279,17 @@
   Parameters:
 
   - `rows` (sequence of maps): one row per lattice node.
-  - `mapping` (map): `:x`, `:y`, `:z` accessors.
+  - `mapping` (map): `:x`, `:y`, `:z` accessors, and `:color` when `colored?`.
+  - `colored?`: truthy - read each node's mapped colour value.
 
-  Returns the mesh (see [[mesh]]) over every distinct x with every distinct y (see [[cljplot2.data.field/lattice-values]], errors keyed `:z`)."
-  [rows mapping]
-  (let [{:keys [xs ys vss]} (field/lattice-values rows (data/row-accessor :x (:x mapping)) (data/row-accessor :y (:y mapping))
-                                                  (data/row-accessor :z (:z mapping)) :z)]
-    (mesh (count xs) (count ys) (fn [i j] [(xs i) (ys j) (get-in vss [i j])]))))
+  Returns the mesh (see [[mesh]]) over every distinct x with every distinct y (see [[cljplot2.data.field/lattice-values]], errors keyed `:z`); when `colored?` also `:colors` - each node's colour value as in its row, in the order of `:nodes`."
+  [rows mapping colored?]
+  (let [{:keys [xs ys vss extras]} (field/lattice-values rows (data/row-accessor :x (:x mapping)) (data/row-accessor :y (:y mapping))
+                                                         (data/row-accessor :z (:z mapping)) :z
+                                                         (when colored? (data/row-accessor :color (:color mapping))))
+        node-mesh (mesh (count xs) (count ys) (fn [i j] [(xs i) (ys j) (get-in vss [i j])]))]
+    (cond-> node-mesh
+      colored? (assoc :colors (vec (for [j (range (count ys)) i (range (count xs))] (get-in extras [i j])))))))
 
 (defn- points-density
   "Estimates the 2D kernel density of the finite points of rows.
@@ -305,7 +341,7 @@
   - `mapping` (map): the merged mapping.
   - `groups` (map): panel -> rows.
 
-  Returns panel -> mesh: a function or a parametric surface - the same mesh in every panel; gridded and density - from the panel's rows, panels without rows (or without a density) left out; a density's domain is the union of the panels' (unless explicit).
+  Returns panel -> mesh (gridded with `:colors` under a mapped `:color`, see [[mapped-color?]]): a function or a parametric surface - the same mesh in every panel; gridded and density - from the panel's rows, panels without rows (or without a density) left out; a density's domain is the union of the panels' (unless explicit).
 
   Throws `ex-info {:key :domain}` for a function surface without `:domain` `:x` and `:y`."
   [kind options mapping groups]
@@ -317,7 +353,8 @@
                     (schema/fail! "A surface of :f needs a :domain with :x and :y." {:key :domain}))
                   (let [shared (function-mesh (:f options) [x y] size)] (update-vals groups (constantly shared))))
       :parametric (let [shared (parametric-mesh (:fu options) (:u options) (:v options) size)] (update-vals groups (constantly shared)))
-      :gridded (into {} (keep (fn [[panel rows]] (when (seq rows) [panel (gridded-mesh rows mapping)]))) groups)
+      :gridded (let [colored? (mapped-color? options mapping)]
+                 (into {} (keep (fn [[panel rows]] (when (seq rows) [panel (gridded-mesh rows mapping colored?)]))) groups))
       :density (let [fields (into {} (keep (fn [[panel rows]] (some->> (points-density rows mapping (:cut options)) (vector panel)))) groups)
                      xy (explicit-xy domain (field/union-domain (map :domain (vals fields))))]
                  (update-vals fields (fn [{:keys [f]}] (function-mesh f xy size)))))))
@@ -350,20 +387,49 @@
   (case kind :gridded [:x :y :z] :density [:x :y] []))
 
 (defn- check-mapping!
-  "Checks a surface's mapping has the positions its source reads.
+  "Checks a surface's mapping has the positions its source reads, and no `:color` it can't use.
 
   Parameters:
 
   - `kind` (keyword): the source - gridded needs `:x`, `:y`, `:z`; density `:x`, `:y`; the others none.
+  - `options` (map): the chart's options - `:color`.
   - `mapping` (map): the merged mapping.
 
   Returns `nil`.
 
-  Throws `ex-info {:key :mapping}` for a missing position."
-  [kind mapping]
+  Throws `ex-info {:key :mapping}` for a missing position, or for a mapped `:color` (inherited from the plot - the chart's own is a schema rule) on a surface that isn't gridded and has no fixed `:color`."
+  [kind options mapping]
   (doseq [k (position-keys kind)
           :when (nil? (get mapping k))]
-    (schema/fail! (str "A " (name kind) " surface needs a mapped " k ".") {:key :mapping :in [:mapping k]})))
+    (schema/fail! (str "A " (name kind) " surface needs a mapped " k ".") {:key :mapping :in [:mapping k]}))
+  (when (and (not= :gridded kind) (nil? (:color options)) (some? (:color mapping)))
+    (schema/fail! (str "A mapped :color colours gridded data; a " (name kind) " surface computes its colour - set :color nil in the chart's :mapping, or give the chart a fixed :color.")
+                  {:key :mapping :in [:mapping :color] :value (:color mapping)})))
+
+(defn- present-colors
+  "Gives the colour values of a mesh's present nodes.
+
+  Parameters:
+
+  - `node-mesh` (map): a mesh with `:colors` (see [[gridded-mesh]]).
+
+  Returns the colour values of the present nodes (those not left out), in node order; a `nil` value is NA."
+  [{:keys [nodes colors]}]
+  (map second (filter first (map vector nodes colors))))
+
+(defn- keep-colors
+  "Leaves out the nodes of a mesh whose colour value the colour scale doesn't keep.
+
+  Parameters:
+
+  - `node-mesh` (map): a mesh with `:colors` (see [[gridded-mesh]]).
+  - `kept?` (function): of a colour value, truthy when it is drawn.
+
+  Returns `{:mesh m :dropped n}` - the mesh with those nodes `nil` (their quads left out) and the number of present nodes left out."
+  [{:keys [nodes colors] :as node-mesh} kept?]
+  (let [left-out (mapv (fn [n c] (and (some? n) (not (kept? c)))) nodes colors)]
+    {:mesh (assoc node-mesh :nodes (mapv (fn [n out] (when-not out n)) nodes left-out))
+     :dropped (count (filter true? left-out))}))
 
 (defn compute
   "Computes the surface's stats: a mesh per panel in a box (the chart contract, see [[cljplot2.chart]]).
@@ -372,18 +438,22 @@
 
   - `chart` (map): the chart value - `:kind`, `:options` (see the namespace doc), `:schema` (its style keys, see [[cljplot2.theme/resolved-style]]).
   - `split` (map): `:groups` - panel -> rows; `:mapping` - the merged mapping.
-  - `env` (map): `:theme`.
+  - `env` (map): `:theme`, `:na-level` (default true - a `nil` colour value is NA, else its node is left out), `:plot-scales`.
 
-  Returns `{:data {panel computed} :extents :dropped}`; per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour only); `:dropped` - gridded or density rows without a finite x / y, `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
+  Returns `{:data {panel computed} :extents :dropped}` (with a mapped `:color` also `:na`); per panel `{:mesh m :domains {:x :y :z} :frame f :frame-overrides o :style st :shading sh}` - see [[mesh]], [[cljplot2.data.space3d/frame-settings]]; `st` - the resolved style ([[cljplot2.theme/resolved-style]]) with the `:color` option, `:surface-style` (the `:style` option) and `:shade`; `sh` - the chart's `:ambient` / `:light`. No position extents (the chart lays out its panel); colour extents - the finite tones (computed colour), the kept nodes' colour values (a mapped `:color`, see [[cljplot2.scale.aesthetic/value-extent]]); `:na` - `#{:color}` when a kept node's colour value is `nil`; `:dropped` - gridded or density rows without a finite x / y, `:color` - nodes whose colour value the scale doesn't keep (a mapped `:color`, see [[cljplot2.data.group/kept-value?]]), `:field` - panels with rows but no mesh (see [[cljplot2.data.field/panels-without-field]]).
 
-  Throws `ex-info {:key :mapping}` for a missing position ([[check-mapping!]]) or one without a finite value in non-empty rows, `{:key :domain}` for a function without a domain."
-  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme]}]
+  Throws `ex-info {:key :mapping}` for a missing position or an unusable `:color` ([[check-mapping!]]), a position without a finite value or a mapped `:color` without a valid value in non-empty rows, `{:key :domain}` for a function without a domain."
+  [{:keys [options] :as chart} {:keys [groups mapping]} {:keys [theme na-level plot-scales] :or {na-level true}}]
   (let [kind (source-kind options)
-        _ (check-mapping! kind mapping)
-        _ (data/check-mapped! (mapcat val groups) (map (fn [k] [k (data/row-accessor k (mapping k))]) (position-keys kind))
-                              (fn [_ v] (schema/finite? v)))
+        _ (check-mapping! kind options mapping)
+        colored? (mapped-color? options mapping)
+        _ (data/check-mapped! (mapcat val groups) (map (fn [k] [k (data/row-accessor k (mapping k))])
+                                                       (cond-> (position-keys kind) colored? (conj :color)))
+                              (fn [k v] (if (= k :color) (aesthetic/valid-value? k (:color plot-scales) v) (schema/finite? v))))
         explicit (:domain options)
-        meshes (update-vals (panel-meshes kind options mapping groups) #(clip-mesh % explicit))
+        clipped (update-vals (panel-meshes kind options mapping groups) #(clip-mesh % explicit))
+        color-kept (when colored? (update-vals clipped #(keep-colors % (fn [c] (group/kept-value? :color na-level plot-scales c)))))
+        meshes (if colored? (update-vals color-kept :mesh) clipped)
         nodes (mapcat #(remove nil? (:nodes %)) (vals meshes))
         domains (space/reverse-domains
                  (into {} (map-indexed (fn [i k] [k (or (get explicit k) (space/data-domain (map #(% i) nodes) 0.0))]) space/axes))
@@ -394,18 +464,24 @@
                   (select-keys options [:color])
                   {:surface-style (data/option options :style :surface)
                    :shade (not (false? (:shade options)))})
-        colored? (nil? (:color options))]
-    {:data (update-vals meshes (fn [panel-mesh] {:mesh panel-mesh :domains domains :frame frame
-                                                 :frame-overrides (space/frame-overrides options) :style st
-                                                 :shading (select-keys options [:ambient :light])}))
-     :extents (update-vals meshes (fn [{:keys [tones]}]
-                                    (let [ts (remove m/nan? tones)]
-                                      (if (and colored? (seq ts))
-                                        {:color {:kind :numeric :min (v/mn ts) :max (v/mx ts)}}
-                                        {}))))
-     :dropped (if (#{:gridded :density} kind)
-                (assoc (field/dropped-positions :gridded mapping groups) :field (field/panels-without-field groups (set (keys meshes))))
-                {})}))
+        computed? (and (nil? (:color options)) (not colored?))]
+    (cond-> {:data (update-vals meshes (fn [panel-mesh] {:mesh panel-mesh :domains domains :frame frame
+                                                         :frame-overrides (space/frame-overrides options) :style st
+                                                         :shading (select-keys options [:ambient :light])}))
+             :extents (update-vals meshes (fn [{:keys [tones] :as panel-mesh}]
+                                            (if colored?
+                                              (if-let [e (aesthetic/value-extent :color (:color plot-scales) (remove nil? (present-colors panel-mesh)))]
+                                                {:color e}
+                                                {})
+                                              (let [ts (remove m/nan? tones)]
+                                                (if (and computed? (seq ts))
+                                                  {:color {:kind :numeric :min (v/mn ts) :max (v/mx ts)}}
+                                                  {})))))
+             :dropped (cond-> (if (#{:gridded :density} kind)
+                                (assoc (field/dropped-positions :gridded mapping groups) :field (field/panels-without-field groups (set (keys meshes))))
+                                {})
+                        colored? (assoc :color (reduce m/long-add 0 (map :dropped (vals color-kept)))))}
+      colored? (assoc :na (if (some #(some nil? (present-colors %)) (vals meshes)) #{:color} #{})))))
 
 ;; drawing
 
@@ -437,6 +513,75 @@
   (cond color (constantly color)
         scale (let [f (aesthetic/attribute-fn :color scale na)] (fn [^double t] (if (m/nan? t) na (f t))))
         :else (constantly na)))
+
+(defn- most-common
+  "Gives the most common of a quad's corner values.
+
+  Parameters:
+
+  - `vs` (sequence): the corner values, in [[quad-corners]] order.
+
+  Returns the value occurring most often (levels compared by [[cljplot2.scale.aesthetic/level-key]]); a tie - the first of the tied values in `vs`."
+  [vs]
+  (let [counts (frequencies (map aesthetic/level-key vs))
+        top (long (v/mx (vals counts)))]
+    (first (filter #(m/== top (long (counts (aesthetic/level-key %)))) vs))))
+
+(defn- value-range
+  "Gives the range of values a linear or binned colour scale colours.
+
+  Parameters:
+
+  - `scale` (map): the colour scale spec.
+
+  Returns `[lo hi]`: a linear scale's domain, a binned scale's first and last break; `nil` for other kinds."
+  [scale]
+  (case (:kind scale)
+    :linear (:domain scale)
+    :binned (let [breaks (:breaks scale)] [(first breaks) (last breaks)])
+    nil))
+
+(defn- quad-value
+  "Gives a quad's colour value from its corners' mapped values.
+
+  Parameters:
+
+  - `scale` (map): the colour scale spec - `:kind`, `:out-of-domain` and the range of [[value-range]].
+  - `vs` (sequence): the four corner values, in [[quad-corners]] order.
+
+  Returns `nil` (NA) when a corner is `nil`; on a linear or binned scale with numbers or dates the mean of their numbers ([[cljplot2.data.rows/x-key]]) - under `:out-of-domain :as-na` `nil` when a corner lies outside the range, under `:clamp` the mean of the corners clamped to it; otherwise the most common value ([[most-common]])."
+  [scale vs]
+  (let [bounds (value-range scale)
+        xs (when bounds (map data/x-key vs))]
+    (cond (some nil? vs) nil
+          (and xs (every? some? xs))
+          (let [[^double lo ^double hi] bounds
+                inside? (fn [x] (m/<= lo (double x) hi))
+                mean (fn [ys] (m// (v/sum ys) 4.0))]
+            (case (:out-of-domain scale)
+              :as-na (when (every? inside? xs) (mean xs))
+              :clamp (mean (map #(m/constrain (double %) lo hi) xs))
+              (mean xs)))
+          :else (most-common vs))))
+
+(defn- quad-color-fn
+  "Gives the function that colours a quad.
+
+  Parameters:
+
+  - `panel-mesh` (map): the mesh - `:tones`, and `:colors` under a mapped `:color` (see [[gridded-mesh]]).
+  - `color`: the fixed `:color` option, `nil` - none.
+  - `scale` (map): the plot's colour scale, `nil` - none.
+  - `na`: the NA colour.
+
+  Returns a function of a quad's node indices that gives its colour, or `nil` for a quad left out: with `:colors`, the scale's attribute of [[quad-value]] (`na` without a scale); else [[tone-color]] of the corners' mean tone."
+  [{:keys [tones colors]} color scale na]
+  (cond
+    (and colors scale) (let [attribute (aesthetic/attribute-fn :color scale na)]
+                         (fn [ids] (attribute (quad-value scale (map colors ids)))))
+    colors (constantly na)
+    :else (let [tone-of (tone-color color scale na)]
+            (fn [ids] (tone-of (m// (v/sum (map tones ids)) 4.0))))))
 
 (defn- background
   "Gives the colour a wireframe's quads are filled with, covering the lines behind them.
@@ -490,14 +635,14 @@
   - `scales` (map): the plot's scales (`:color`).
   - `env` (map): the drawing environment (`:theme`).
 
-  Returns a `:polygon` per quad whose four nodes are present, at its corners' mean depth, coloured by its corners' mean tone (a quad whose colour is outside the scale is left out): `:wireframe` - outlined in its colour over the background; `:both` - filled, shaded and outlined by `:stroke-color`; `:surface` - filled and shaded, an opaque fill outlined in itself ([[seam-width]])."
+  Returns a `:polygon` per quad whose four nodes are present, at its corners' mean depth, coloured by its corners' mean tone or mapped values ([[quad-color-fn]]; a quad whose colour is outside the scale is left out): `:wireframe` - outlined in its colour over the background; `:both` - filled, shaded and outlined by `:stroke-color`; `:surface` - filled and shaded, an opaque fill outlined in itself ([[seam-width]])."
   [_chart {:keys [domains frame style shading] panel-mesh :mesh} point scales env]
-  (let [{:keys [nu nv nodes tones]} panel-mesh
+  (let [{:keys [nu nv nodes]} panel-mesh
         shade (space/shader shading)
         {:keys [view aspect]} frame
         normalize (space/normalizer domains aspect)
         rotate (space/rotation view)
-        color-of (tone-color (:color style) (:color scales) (get-in env [:theme :palette :na]))
+        color-of (quad-color-fn panel-mesh (:color style) (:color scales) (get-in env [:theme :palette :na]))
         look (:surface-style style)
         width (:stroke-width style)
         back (background env)]
@@ -505,7 +650,7 @@
           :let [ids (quad-corners nu i j)
                 ps (mapv nodes ids)]
           :when (every? some? ps)
-          :let [col (color-of (m// (v/sum (map tones ids)) 4.0))]
+          :let [col (color-of ids)]
           :when (some? col)
           :let [projected (mapv point ps)
                 depth (m// (v/sum (map second projected)) 4.0)
@@ -519,3 +664,19 @@
             ;; outline would darken every edge where it overlaps the fill and the neighbour's)
             (opaque? fill) {:kind :polygon :points pixels :depth depth :fill fill :stroke-color fill :stroke-width seam-width}
             :else {:kind :polygon :points pixels :depth depth :fill fill :stroke-color :none}))))))
+
+(defn legend
+  "Draws the surface's key glyph in a legend key box.
+
+  Parameters:
+
+  - `chart` (map): the chart value - `:kind` and `:schema` give its style (see [[cljplot2.theme/resolved-style]]).
+  - `attributes` (map): the key's mapped style attributes (`:color`).
+  - `canvas`: the clojure2d canvas.
+  - `box` (map): the key box `{:x :y :w :h}` in pixels.
+  - `env` (map): the drawing environment (`:theme`).
+
+  Returns `nil`; draws a filled square in the key's colour, without an outline (see [[cljplot2.graphics.draw/bar-key!]])."
+  [chart attributes canvas box env]
+  (let [st (theme/key-style env chart attributes [:color])]
+    (draw/bar-key! canvas box {:color (:color st) :stroke-width 0} false)))

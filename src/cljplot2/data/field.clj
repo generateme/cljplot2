@@ -174,28 +174,32 @@
   - `rows` (sequence): the data rows.
   - `x-of`, `y-of`, `value-of` (functions): row accessors of x, y and the value.
   - `value-key` (keyword): the option or mapping key errors are keyed by.
+  - `extra-of` (function, optional): a row accessor of a second value, kept as read.
 
-  Returns `{:xs [..] :ys [..] :vss [[..] ..]}`: the sorted distinct x and y values (doubles) and per x the values at every y (`##NaN` for a non-finite value).
+  Returns `{:xs [..] :ys [..] :vss [[..] ..]}`: the sorted distinct x and y values (doubles) and per x the values at every y (`##NaN` for a non-finite value); with `extra-of` also `:extras [[..] ..]` - per x the second value at every y.
 
   Throws `ex-info {:key value-key}` for fewer than 2 distinct x or y values, a repeated or a missing lattice point.
 
   See also [[lattice]]."
-  [rows x-of y-of value-of value-key]
-  (let [points (->> (map (juxt x-of y-of value-of) rows)
-                    (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y)))))
-        xs (vec (sort (distinct (map (comp double first) points))))
-        ys (vec (sort (distinct (map (comp double second) points))))
-        by-point (group-by v/vec2 points)
-        value-name (name value-key)]
-    (when (or (m/< (count xs) 2) (m/< (count ys) 2))
-      (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key value-key :xs (count xs) :ys (count ys)}))
-    (when-let [[point] (first (filter #(m/> (count (val %)) 1) by-point))]
-      (schema/fail! (str "A gridded field has one :" value-name " per (x, y); a lattice point repeats.") {:key value-key :value point}))
-    (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
-      (schema/fail! (str "A gridded field needs a :" value-name " at every (x, y) of its lattice; a point is missing.")
-                    {:key value-key :value missing}))
-    (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (schema/finite? v) (double v) ##NaN)))]
-      {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)})))
+  ([rows x-of y-of value-of value-key] (lattice-values rows x-of y-of value-of value-key nil))
+  ([rows x-of y-of value-of value-key extra-of]
+   (let [points (->> (map (juxt x-of y-of value-of (or extra-of (constantly nil))) rows)
+                     (filterv (fn [[x y]] (and (schema/finite? x) (schema/finite? y)))))
+         xs (vec (sort (distinct (map (comp double first) points))))
+         ys (vec (sort (distinct (map (comp double second) points))))
+         by-point (group-by v/vec2 points)
+         value-name (name value-key)]
+     (when (or (m/< (count xs) 2) (m/< (count ys) 2))
+       (schema/fail! "A gridded field needs at least 2 distinct x and 2 distinct y values." {:key value-key :xs (count xs) :ys (count ys)}))
+     (when-let [[point] (first (filter #(m/> (count (val %)) 1) by-point))]
+       (schema/fail! (str "A gridded field has one :" value-name " per (x, y); a lattice point repeats.") {:key value-key :value point}))
+     (when-let [missing (first (for [x xs y ys :when (not (contains? by-point [x y]))] [x y]))]
+       (schema/fail! (str "A gridded field needs a :" value-name " at every (x, y) of its lattice; a point is missing.")
+                     {:key value-key :value missing}))
+     (let [value (fn [x y] (let [v (nth (first (by-point [x y])) 2)] (if (schema/finite? v) (double v) ##NaN)))
+           extra (fn [x y] (nth (first (by-point [x y])) 3))]
+       (cond-> {:xs xs :ys ys :vss (mapv (fn [x] (mapv (fn [y] (value x y)) ys)) xs)}
+         extra-of (assoc :extras (mapv (fn [x] (mapv (fn [y] (extra x y)) ys)) xs)))))))
 
 (defn lattice
   "Gives the interpolated field of gridded rows.

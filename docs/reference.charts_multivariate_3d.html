@@ -2017,10 +2017,12 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </table>
 </div>
 </div>
-<p>The lattice below holds a function’s values, x, y and z per node; the surfaces use it:</p>
+<p>The lattice below holds x, y and a function’s value z per node, with the node’s distance from the centre and its quadrant; the surfaces use it:</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> lattice </span>(<span class="kw">for</span> [x (<span class="kw">range</span> -<span class="dv">2</span> <span class="fl">2.01</span> <span class="fl">0.25</span>) y (<span class="kw">range</span> -<span class="dv">2</span> <span class="fl">2.01</span> <span class="fl">0.25</span>)]</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> x (m/exp (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y)))))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>               {<span class="at">:x</span> x <span class="at">:y</span> y <span class="at">:z</span> (<span class="kw">*</span> x (m/exp (<span class="kw">-</span> (<span class="kw">+</span> (<span class="kw">*</span> x x) (<span class="kw">*</span> y y)))))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">:distance</span> (m/hypot x y)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">:quadrant</span> (<span class="kw">str</span> (<span class="kw">if</span> (<span class="kw">neg?</span> y) <span class="st">"S"</span> <span class="st">"N"</span>) (<span class="kw">if</span> (<span class="kw">neg?</span> x) <span class="st">"W"</span> <span class="st">"E"</span>))}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="data-table">
 <div class="table-responsive">
@@ -2030,6 +2032,8 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <th data-quarto-table-cell-role="th">x</th>
 <th data-quarto-table-cell-role="th">y</th>
 <th data-quarto-table-cell-role="th">z</th>
+<th data-quarto-table-cell-role="th">distance</th>
+<th data-quarto-table-cell-role="th">quadrant</th>
 </tr>
 </thead>
 <tbody>
@@ -2037,503 +2041,705 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <td>-2</td>
 <td>-2</td>
 <td>-6.709252558050237E-4</td>
+<td>2.8284271247461903</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>-1.75</td>
 <td>-0.0017132676603718812</td>
+<td>2.6575364531836625</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>-1.5</td>
 <td>-0.0038609082724554186</td>
+<td>2.5</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>-1.25</td>
 <td>-0.007678332948052326</td>
+<td>2.358495283014151</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>-1.0</td>
 <td>-0.013475893998170934</td>
+<td>2.23606797749979</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>-0.75</td>
 <td>-0.02087187292554901</td>
+<td>2.1360009363293826</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>-0.5</td>
 <td>-0.028528467817998508</td>
+<td>2.0615528128088303</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>-0.25</td>
 <td>-0.03441190085170276</td>
+<td>2.0155644370746373</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>0.0</td>
 <td>-0.03663127777746836</td>
+<td>2.0</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>0.25</td>
 <td>-0.03441190085170276</td>
+<td>2.0155644370746373</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>0.5</td>
 <td>-0.028528467817998508</td>
+<td>2.0615528128088303</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>0.75</td>
 <td>-0.02087187292554901</td>
+<td>2.1360009363293826</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>1.0</td>
 <td>-0.013475893998170934</td>
+<td>2.23606797749979</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>1.25</td>
 <td>-0.007678332948052326</td>
+<td>2.358495283014151</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>1.5</td>
 <td>-0.0038609082724554186</td>
+<td>2.5</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-2</td>
 <td>1.75</td>
 <td>-0.0017132676603718812</td>
+<td>2.6575364531836625</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-2</td>
 <td>2.0</td>
 <td>-6.709252558050237E-4</td>
+<td>2.8284271247461903</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>-2</td>
 <td>-0.001499109202825396</td>
+<td>2.6575364531836625</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-1.75</td>
 <td>-0.0038281094568200498</td>
+<td>2.4748737341529163</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>-1.5</td>
 <td>-0.00862677783020384</td>
+<td>2.3048861143232218</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-1.25</td>
 <td>-0.0171563963126882</td>
+<td>2.1505813167606567</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>-1.0</td>
 <td>-0.030110413245239914</td>
+<td>2.0155644370746373</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-0.75</td>
 <td>-0.04663592033862211</td>
+<td>1.9039432764659772</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>-0.5</td>
 <td>-0.0637437453403874</td>
+<td>1.8200274723201295</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>-0.25</td>
 <td>-0.07688963384096298</td>
+<td>1.7677669529663689</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>0.0</td>
 <td>-0.08184858917192822</td>
+<td>1.75</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>0.25</td>
 <td>-0.07688963384096298</td>
+<td>1.7677669529663689</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>0.5</td>
 <td>-0.0637437453403874</td>
+<td>1.8200274723201295</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>0.75</td>
 <td>-0.04663592033862211</td>
+<td>1.9039432764659772</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>1.0</td>
 <td>-0.030110413245239914</td>
+<td>2.0155644370746373</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>1.25</td>
 <td>-0.0171563963126882</td>
+<td>2.1505813167606567</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>1.5</td>
 <td>-0.00862677783020384</td>
+<td>2.3048861143232218</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.75</td>
 <td>1.75</td>
 <td>-0.0038281094568200498</td>
+<td>2.4748737341529163</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.75</td>
 <td>2.0</td>
 <td>-0.001499109202825396</td>
+<td>2.6575364531836625</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>-2</td>
 <td>-0.002895681204341564</td>
+<td>2.5</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>-1.75</td>
 <td>-0.007394380997317578</td>
+<td>2.3048861143232218</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>-1.5</td>
 <td>-0.016663494807363458</td>
+<td>2.1213203435596424</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>-1.25</td>
 <td>-0.03313931649759367</td>
+<td>1.9525624189766635</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>-1.0</td>
 <td>-0.05816131174758302</td>
+<td>1.8027756377319946</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>-0.75</td>
 <td>-0.09008200184296192</td>
+<td>1.6770509831248424</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>-0.5</td>
 <td>-0.1231274979358482</td>
+<td>1.5811388300841898</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>-0.25</td>
 <td>-0.14852011254573946</td>
+<td>1.5206906325745548</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>0.0</td>
 <td>-0.15809883684279652</td>
+<td>1.5</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>0.25</td>
 <td>-0.14852011254573946</td>
+<td>1.5206906325745548</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>0.5</td>
 <td>-0.1231274979358482</td>
+<td>1.5811388300841898</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>0.75</td>
 <td>-0.09008200184296192</td>
+<td>1.6770509831248424</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>1.0</td>
 <td>-0.05816131174758302</td>
+<td>1.8027756377319946</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>1.25</td>
 <td>-0.03313931649759367</td>
+<td>1.9525624189766635</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>1.5</td>
 <td>-0.016663494807363458</td>
+<td>2.1213203435596424</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.5</td>
 <td>1.75</td>
 <td>-0.007394380997317578</td>
+<td>2.3048861143232218</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.5</td>
 <td>2.0</td>
 <td>-0.002895681204341564</td>
+<td>2.5</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>-2</td>
 <td>-0.004798958092532704</td>
+<td>2.358495283014151</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>-1.75</td>
 <td>-0.012254568794777284</td>
+<td>2.1505813167606567</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>-1.5</td>
 <td>-0.027616097081328058</td>
+<td>1.9525624189766635</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>-1.25</td>
 <td>-0.054921167029259275</td>
+<td>1.7677669529663689</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>-1.0</td>
 <td>-0.0963896499603959</td>
+<td>1.6007810593582121</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>-0.75</td>
 <td>-0.14929121033339954</td>
+<td>1.4577379737113252</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>-0.5</td>
 <td>-0.20405689056744802</td>
+<td>1.346291201783626</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>-0.25</td>
 <td>-0.24613959400524257</td>
+<td>1.2747548783981961</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>0.0</td>
 <td>-0.2620142339388723</td>
+<td>1.25</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>0.25</td>
 <td>-0.24613959400524257</td>
+<td>1.2747548783981961</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>0.5</td>
 <td>-0.20405689056744802</td>
+<td>1.346291201783626</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>0.75</td>
 <td>-0.14929121033339954</td>
+<td>1.4577379737113252</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>1.0</td>
 <td>-0.0963896499603959</td>
+<td>1.6007810593582121</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>1.25</td>
 <td>-0.054921167029259275</td>
+<td>1.7677669529663689</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>1.5</td>
 <td>-0.027616097081328058</td>
+<td>1.9525624189766635</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.25</td>
 <td>1.75</td>
 <td>-0.012254568794777284</td>
+<td>2.1505813167606567</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.25</td>
 <td>2.0</td>
 <td>-0.004798958092532704</td>
+<td>2.358495283014151</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>-2</td>
 <td>-0.006737946999085467</td>
+<td>2.23606797749979</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>-1.75</td>
 <td>-0.01720595042585138</td>
+<td>2.0155644370746373</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>-1.5</td>
 <td>-0.03877420783172201</td>
+<td>1.8027756377319946</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>-1.25</td>
 <td>-0.07711171996831671</td>
+<td>1.6007810593582121</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>-1.0</td>
 <td>-0.1353352832366127</td>
+<td>1.4142135623730951</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>-0.75</td>
 <td>-0.20961138715109784</td>
+<td>1.25</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>-0.5</td>
 <td>-0.2865047968601901</td>
+<td>1.118033988749895</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>-0.25</td>
 <td>-0.3455907525769745</td>
+<td>1.0307764064044151</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>0.0</td>
 <td>-0.36787944117144233</td>
+<td>1.0</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>0.25</td>
 <td>-0.3455907525769745</td>
+<td>1.0307764064044151</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>0.5</td>
 <td>-0.2865047968601901</td>
+<td>1.118033988749895</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>0.75</td>
 <td>-0.20961138715109784</td>
+<td>1.25</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>1.0</td>
 <td>-0.1353352832366127</td>
+<td>1.4142135623730951</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>1.25</td>
 <td>-0.07711171996831671</td>
+<td>1.6007810593582121</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>1.5</td>
 <td>-0.03877420783172201</td>
+<td>1.8027756377319946</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-1.0</td>
 <td>1.75</td>
 <td>-0.01720595042585138</td>
+<td>2.0155644370746373</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-1.0</td>
 <td>2.0</td>
 <td>-0.006737946999085467</td>
+<td>2.23606797749979</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>-2</td>
 <td>-0.007826952347080878</td>
+<td>2.1360009363293826</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>-1.75</td>
 <td>-0.019986823002266618</td>
+<td>1.9039432764659772</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>-1.5</td>
 <td>-0.04504100092148096</td>
+<td>1.6770509831248424</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>-1.25</td>
 <td>-0.08957472620003973</td>
+<td>1.4577379737113252</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>-1.0</td>
 <td>-0.15720854036332338</td>
+<td>1.25</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>-0.75</td>
 <td>-0.2434893505187623</td>
+<td>1.0606601717798212</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>-0.5</td>
 <td>-0.3328104825608099</td>
+<td>0.9013878188659973</td>
+<td>SW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>-0.25</td>
 <td>-0.4014460713892427</td>
+<td>0.7905694150420949</td>
+<td>SW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>0.0</td>
 <td>-0.42733711854819223</td>
+<td>0.75</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>0.25</td>
 <td>-0.4014460713892427</td>
+<td>0.7905694150420949</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>0.5</td>
 <td>-0.3328104825608099</td>
+<td>0.9013878188659973</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>0.75</td>
 <td>-0.2434893505187623</td>
+<td>1.0606601717798212</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>1.0</td>
 <td>-0.15720854036332338</td>
+<td>1.25</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
 <td>-0.75</td>
 <td>1.25</td>
 <td>-0.08957472620003973</td>
+<td>1.4577379737113252</td>
+<td>NW</td>
 </tr>
 <tr class="even">
 <td>-0.75</td>
 <td>1.5</td>
 <td>-0.04504100092148096</td>
+<td>1.6770509831248424</td>
+<td>NW</td>
 </tr>
 <tr class="odd">
+<td>…</td>
+<td>…</td>
 <td>…</td>
 <td>…</td>
 <td>…</td>
@@ -4514,9 +4720,9 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </section>
 <section id="d-surfaces" class="level2" data-number="23.3">
 <h2 data-number="23.3" class="anchored" data-anchor-id="d-surfaces"><span class="header-section-number">23.3</span> 3D surfaces</h2>
-<p><code>chart/surface</code> draws a mesh of quads from gridded data, a function of <code>[x y]</code> over a domain, a parametric surface or the 2D density of mapped points, its heights coloured through the colour scale. Use it to see the shape of a function or density of two variables.</p>
+<p><code>chart/surface</code> draws a mesh of quads from gridded data, a function of <code>[x y]</code> over a domain, a parametric surface or the 2D density of mapped points, coloured by height, by a function’s colour value or by a mapped column. Use it to see the shape of a function or density of two variables.</p>
 <div class="shared"><div class="shared-title">Shared options<span class="shared-hint"> – groups of options other charts take too</span></div><ul><li><a href="reference.shared_options.html#common-options">Common options</a> – <code>:data</code> <code>:mapping</code> <code>:legend</code></li><li><a href="reference.shared_options.html#named-theme-styles">Named theme styles</a> – <code>:theme-style</code></li><li><a href="reference.shared_options.html#d-frame">3D frame</a> – <code>:view</code> <code>:aspect</code> <code>:box</code> <code>:axes</code> <code>:axis-titles</code> <code>:domain</code> <code>:reverse</code></li><li><a href="reference.shared_options.html#d-shading">3D shading</a> – <code>:ambient</code> <code>:light</code></li></ul></div>
-<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:y</code> – The y of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:z</code> – The height of a lattice node of gridded data.</li></ul></div>
+<div class="mapping"><div class="mapping-title">Mapping<span class="mapping-hint"> – the row values the chart reads, under <code>:mapping</code></span></div><ul><li><code>:x</code> – The x of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:y</code> – The y of the gridded heights, or of the points whose density the chart estimates with <code>:density</code>.</li><li><code>:z</code> – The height of a lattice node of gridded data.</li><li><code>:color</code> – The colour value of a lattice node of gridded data. A quad takes its corners' mean on a linear or binned scale, else their most common value; a <code>nil</code> corner makes it NA.</li></ul></div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image {<span class="at">:data</span> lattice</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:z</span> <span class="at">:z</span>}</span>
@@ -4527,7 +4733,7 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 <p><img src="reference.charts_multivariate_3d_files/image13.png" class="img-fluid"></p>
 </div>
 <p>These options set the source (<code>:f</code> over the 3D frame’s <code>:domain</code>, <code>:fu</code> over <code>:u</code> and <code>:v</code>, or <code>:density</code>), the grid size and the drawing: filled quads, a wireframe or both, shading and one colour. The panels below draw a function as outlined quads, a one-colour torus and a density wireframe:</p>
-<dl class="options"><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>[60 60 60]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :both, :stroke-color :white})</code></div><div class="option-text">The outline colour of the quads with <code>:style :both</code>.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>0.5</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe, :stroke-width 3})</code></div><div class="option-text">The outline width of the quads in pixels, with <code>:style :both</code> or <code>:wireframe</code>.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:style</code><span class="option-default">Default: <code>:surface</code></span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe})</code></div><div class="option-text">How the chart draws the mesh.<ul><li><code>:surface</code> – Filled quads.</li><li><code>:wireframe</code> – Quad outlines, each in its quad's colour; nearer quads hide the lines behind them.</li><li><code>:both</code> – Filled quads outlined by <code>:stroke-color</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: Each quad's mean height, or the <code>c</code> of <code>[z c]</code>, through the plot's colour scale.</span></dt><dd><div class="option-example"><code>(chart/surface {:color :steelblue})</code></div><div class="option-text">One colour for every quad, instead of the colour scale.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shade</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/surface {:shade false})</code></div><div class="option-text">Whether the chart shades filled quads by their angle to the light.<ul><li><code>true</code> – Lambert shading.</li><li><code>false</code> – The colour itself, as <code>:ambient 1</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:f</code><span class="option-default">Default: None: a gridded <code>:z</code> mapping, <code>:fu</code> or <code>:density</code> gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:domain {:x [-1 1], :y [-1 1]}, :f (fn [[x y]] (m/* x y))})</code></div><div class="option-text">The surface as a function of <code>[x y]</code> that returns z, or <code>[z c]</code> with <code>c</code> the colour value, sampled over <code>:domain :x</code> and <code>:y</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:density</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/surface {:density true})</code></div><div class="option-text">Whether the surface is the 2D kernel density of the mapped <code>:x</code> and <code>:y</code>.<ul><li><code>false</code> – Another source gives the surface.</li><li><code>true</code> – The density of the points.</li></ul></div></dd></div><div class="option-card"><dt><code>:fu</code><span class="option-default">Default: None: another source gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:u [0 1], :v [0 6.28], :fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u])})</code></div><div class="option-text">A parametric surface: a function of <code>[u v]</code> that returns <code>[x y z]</code>, over <code>:u</code> and <code>:v</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:u</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :v [0 6.28], :u [0 0.5]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s u parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:v</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :u [0 1], :v [0 3.14]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s v parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>30</code></span></dt><dd><div class="option-example"><code>(chart/surface {:f (fn [[x y]] (m/* x y)), :domain {:x [-1 1], :y [-1 1]}, :n 6})</code></div><div class="option-text">The number of grid points per axis at which the chart samples <code>:f</code>, <code>:fu</code> or <code>:density</code>.<ul><li><span>integer at least 2 and at most 2000</span> – The same count on both axes.</li><li><span>pair of (integer at least 2 and at most 2000)</span> – <code>[nx ny]</code>, a count per axis.</li></ul></div></dd></div><div class="option-card"><dt><code>:cut</code><span class="option-default">Default: <code>3</code>.</span></dt><dd><div class="option-example"><code>(chart/surface {:density true, :cut 0})</code></div><div class="option-text">How far the density reaches past the points' range on each side, in bandwidths; <code>0</code> stops at the range. It needs <code>:density true</code>.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:stroke-color</code><span class="option-default">Default: <code>[60 60 60]</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :both, :stroke-color :white})</code></div><div class="option-text">The outline colour of the quads with <code>:style :both</code>.<ul><li><code>:none</code> – No outline.</li><li><a href="reference.types.html#solid-colour">solid colour</a> – Any other colour, e.g. <code>:black</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:stroke-width</code><span class="option-default">Default: <code>0.5</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe, :stroke-width 3})</code></div><div class="option-text">The outline width of the quads in pixels, with <code>:style :both</code> or <code>:wireframe</code>.<ul><li><a href="reference.types.html#non-negative-number">non-negative number</a></li></ul></div></dd></div><div class="option-card"><dt><code>:style</code><span class="option-default">Default: <code>:surface</code></span></dt><dd><div class="option-example"><code>(chart/surface {:style :wireframe})</code></div><div class="option-text">How the chart draws the mesh.<ul><li><code>:surface</code> – Filled quads.</li><li><code>:wireframe</code> – Quad outlines, each in its quad's colour; nearer quads hide the lines behind them.</li><li><code>:both</code> – Filled quads outlined by <code>:stroke-color</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:color</code><span class="option-default">Default: Gridded data with a mapped <code>:color</code> takes it through the colour scale; otherwise each quad takes its mean height, or the <code>c</code> of <code>[z c]</code> or <code>[x y z c]</code>, through the plot's colour scale.</span></dt><dd><div class="option-example"><code>(chart/surface {:color :steelblue})</code></div><div class="option-text">One colour for every quad, instead of the colour scale; a <code>:color</code> mapping inherited from the plot is then unused.<ul><li><a href="reference.types.html#solid-colour">solid colour</a></li></ul></div></dd></div><div class="option-card"><dt><code>:shade</code><span class="option-default">Default: <code>true</code></span></dt><dd><div class="option-example"><code>(chart/surface {:shade false})</code></div><div class="option-text">Whether the chart shades filled quads by their angle to the light.<ul><li><code>true</code> – Lambert shading.</li><li><code>false</code> – The colour itself, as <code>:ambient 1</code>.</li></ul></div></dd></div><div class="option-card"><dt><code>:f</code><span class="option-default">Default: None: a gridded <code>:z</code> mapping, <code>:fu</code> or <code>:density</code> gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:domain {:x [-1 1], :y [-1 1]}, :f (fn [[x y]] (m/* x y))})</code></div><div class="option-text">The surface as a function of <code>[x y]</code> that returns z, or <code>[z c]</code> with <code>c</code> the colour value, sampled over <code>:domain :x</code> and <code>:y</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:density</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/surface {:density true})</code></div><div class="option-text">Whether the surface is the 2D kernel density of the mapped <code>:x</code> and <code>:y</code>.<ul><li><code>false</code> – Another source gives the surface.</li><li><code>true</code> – The density of the points.</li></ul></div></dd></div><div class="option-card"><dt><code>:fu</code><span class="option-default">Default: None: another source gives the surface.</span></dt><dd><div class="option-example"><code>(chart/surface {:u [0 1], :v [0 6.28], :fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u])})</code></div><div class="option-text">A parametric surface: a function of <code>[u v]</code> that returns <code>[x y z]</code>, or <code>[x y z c]</code> with <code>c</code> the colour value, over <code>:u</code> and <code>:v</code>.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:u</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :v [0 6.28], :u [0 0.5]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s u parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:v</code><span class="option-default">Default: None; <code>:fu</code> needs it.</span></dt><dd><div class="option-example"><code>(chart/surface {:fu (fn [[u v]] [(m/* u (m/cos v)) (m/* u (m/sin v)) u]), :u [0 1], :v [0 3.14]})</code></div><div class="option-text">The range <code>[lo hi]</code> of <code>:fu</code>'s v parameter.<ul><li><span>pair of finite numbers</span></li></ul></div></dd></div><div class="option-card"><dt><code>:n</code><span class="option-default">Default: <code>30</code></span></dt><dd><div class="option-example"><code>(chart/surface {:f (fn [[x y]] (m/* x y)), :domain {:x [-1 1], :y [-1 1]}, :n 6})</code></div><div class="option-text">The number of grid points per axis at which the chart samples <code>:f</code>, <code>:fu</code> or <code>:density</code>.<ul><li><span>integer at least 2 and at most 2000</span> – The same count on both axes.</li><li><span>pair of (integer at least 2 and at most 2000)</span> – <code>[nx ny]</code>, a count per axis.</li></ul></div></dd></div><div class="option-card"><dt><code>:cut</code><span class="option-default">Default: <code>3</code>.</span></dt><dd><div class="option-example"><code>(chart/surface {:density true, :cut 0})</code></div><div class="option-text">How far the density reaches past the points' range on each side, in bandwidths; <code>0</code> stops at the range. It needs <code>:density true</code>.<ul><li><a href="reference.types.html#non-negative-finite-number">non-negative finite number</a></li></ul></div></dd></div></dl>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:charts</span> [(chart/surface {<span class="at">:f</span> (<span class="kw">fn</span> [[x y]] (m/sin (m/hypot x y)))</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                                                            <span class="at">:domain</span> {<span class="at">:x</span> [-<span class="dv">6</span> <span class="dv">6</span>] <span class="at">:y</span> [-<span class="dv">6</span> <span class="dv">6</span>]} <span class="at">:n</span> <span class="dv">25</span> <span class="at">:style</span> <span class="at">:both</span>})]</span>
@@ -4589,6 +4795,20 @@ p code, li code { white-space: pre-wrap; overflow-wrap: anywhere; }
 </div>
 <div class="clay-image">
 <p><img src="reference.charts_multivariate_3d_files/image16.png" class="img-fluid"></p>
+</div>
+<p>A mapped <code>:color</code> colours gridded data by another column instead of the height. On a numeric column a quad takes the mean of its corners’ values; on a categorical column it takes the most common one. The left panel colours the lattice by distance from the centre, the right one by quadrant:</p>
+<div class="sourceClojure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>(plot/render-image (plot/arrange [{<span class="at">:data</span> lattice</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:z</span> <span class="at">:z</span> <span class="at">:color</span> <span class="at">:distance</span>}</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface)]}</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                                  {<span class="at">:data</span> lattice</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:mapping</span> {<span class="at">:x</span> <span class="at">:x</span> <span class="at">:y</span> <span class="at">:y</span> <span class="at">:z</span> <span class="at">:z</span> <span class="at">:color</span> <span class="at">:quadrant</span>}</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">:charts</span> [(chart/surface)]}]</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>                                 {<span class="at">:columns</span> <span class="dv">2</span>})</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>                   {<span class="at">:width</span> <span class="dv">1000</span> <span class="at">:height</span> <span class="dv">400</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="clay-image">
+<p><img src="reference.charts_multivariate_3d_files/image17.png" class="img-fluid"></p>
 </div>
 <div style="background-color:grey;height:2px;width:100%;"></div>
 <div><pre><small><small>source: notebooks/reference/charts_multivariate_3d.clj</small></small></pre></div>

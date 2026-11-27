@@ -24,10 +24,13 @@
 
 (nu/data-table quakes)
 
-;; The lattice below holds a function's values, x, y and z per node; the surfaces use it:
+;; The lattice below holds x, y and a function's value z per node, with the node's distance from the centre and its
+;; quadrant; the surfaces use it:
 
 (def lattice (for [x (range -2 2.01 0.25) y (range -2 2.01 0.25)]
-               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))}))
+               {:x x :y y :z (* x (m/exp (- (+ (* x x) (* y y)))))
+                :distance (m/hypot x y)
+                :quadrant (str (if (neg? y) "S" "N") (if (neg? x) "W" "E"))}))
 
 (nu/data-table lattice)
 
@@ -291,8 +294,8 @@
 ;; ## 3D surfaces
 
 ;; `chart/surface` draws a mesh of quads from gridded data, a function of `[x y]` over a domain, a parametric surface
-;; or the 2D density of mapped points, its heights coloured through the colour scale. Use it to see the shape of a
-;; function or density of two variables.
+;; or the 2D density of mapped points, coloured by height, by a function's colour value or by a mapped column. Use it
+;; to see the shape of a function or density of two variables.
 
 (nu/shared-groups (describe/options (chart/surface)))
 
@@ -362,3 +365,16 @@
                                    :legend false}]
                                  {:columns 2})
                    {:width 900 :height 380})
+
+;; A mapped `:color` colours gridded data by another column instead of the height. On a numeric column a quad takes
+;; the mean of its corners' values; on a categorical column it takes the most common one. The left panel colours the
+;; lattice by distance from the centre, the right one by quadrant:
+
+(plot/render-image (plot/arrange [{:data lattice
+                                   :mapping {:x :x :y :y :z :z :color :distance}
+                                   :charts [(chart/surface)]}
+                                  {:data lattice
+                                   :mapping {:x :x :y :y :z :z :color :quadrant}
+                                   :charts [(chart/surface)]}]
+                                 {:columns 2})
+                   {:width 1000 :height 400})
