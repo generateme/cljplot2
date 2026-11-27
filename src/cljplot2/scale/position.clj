@@ -264,7 +264,7 @@
                                                 :cljplot2/example :keep :cljplot2/example-context {:ticks 30}
                                                 :cljplot2/value-meanings {:drop "It skips the label." :keep "It draws every label, e.g. on axes naming data items."}}
                            [:enum :drop :keep])
-          (schema/optional :axis {:cljplot2/section :axis :description "What the scale draws: its axis, its grid lines, both or neither."
+          (schema/optional :axis {:cljplot2/section :axis :description "What the scale draws: its axis, its grid lines, both or neither. An axis not drawn takes no title from the mapping."
                                   :default true
                                   :cljplot2/value-meanings {true "The axis and the grid lines." false "Neither." :grid "The grid lines only." :no-grid "The axis only."}}
                            [:or :boolean [:enum :grid :no-grid]])

@@ -264,7 +264,7 @@
     [(chart/histogram)] {:y nil} "Percent of Total"
     [(chart/histogram)] {:y :none} nil
     [(chart/histogram)] {:title "T"} "Percent of Total")
-  (is (nil? (y-title (build {:data rows :mapping {:x :v :y :v} :charts [(chart/line)]})))))
+  (is (= "v" (y-title (build {:data rows :mapping {:x :v :y :v} :charts [(chart/line)]}))) "no suggestion: the mapped column's name"))
 
 (deftest legend-glyph-test
   (let [render-key (fn [chart-value]

@@ -41,8 +41,8 @@
   (testing "label contents leave out nil and :none, and have no item for :z or legend titles"
     (is (= [:title] (map first (plot-grid/label-contents {:title "T" :x :none :y nil}))))
     (is (= #{:panel :x-axis :x-axis-start :x-axis-end :y-axis :y-axis-start :y-axis-end :title :legends}
-           (item-ids (built (assoc scatter-plot :labels {:title "T" :color "C" :z nil :x :none :shape nil})))
-           (disj (item-ids (built (assoc scatter-plot :labels {:title "T" :y "Y"}))) :y-title)))
+           (item-ids (built (assoc scatter-plot :labels {:title "T" :color "C" :z nil :x :none :y :none :shape nil})))
+           (disj (item-ids (built (assoc scatter-plot :labels {:title "T" :x :none :y "Y"}))) :y-title)))
     (is (contains? (item-ids (built (assoc scatter-plot :labels {:y "Y"}))) :y-title)))
   (testing "an empty :labels map changes nothing"
     (is (= (image scatter-plot) (image (assoc scatter-plot :labels {}))))))

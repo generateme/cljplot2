@@ -227,7 +227,7 @@
     (is (= [0.5 0.123457] (curve/drawn-point [0.5 0.1234567]))))
   (testing "K1 a thick monotone line's flat run draws as a straight line (no dots at the joins)"
     (let [rows [{:x 0 :y 5} {:x 1 :y 3} {:x 2 :y 3} {:x 3 :y 3} {:x 4 :y 1}]
-          img (fn [opts] (plot/render-image {:data rows :mapping {:x :x :y :y} :theme white
+          img (fn [opts] (plot/render-image {:data rows :mapping {:x :x :y :y} :theme white :labels {:x :none :y :none}
                                              :scales {:x {:domain [0 4]} :y {:domain [0 6]}}
                                              :charts [(chart/line (merge {:line-width 3 :color [0 0 255]} opts))]} size))
           curved (img {:interpolator :monotone})

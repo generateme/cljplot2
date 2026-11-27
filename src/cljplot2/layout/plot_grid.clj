@@ -67,7 +67,7 @@
   (measured) after `:x-overhang`, and an item `:legends` spanning the panel rows (from the top strip) with
   `{:kind :legends}` content: the legends stacked top-down, wrapping into further columns when too tall.
 
-  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]; plot labels [[label-keys]], [[shown-label]], [[label-contents]]."
+  Functions: [[plot-grid]] (with [[panel-layout]], [[facet-panels]], [[estimated-panel-size]], [[invalid-bands]]), grids [[iso-grid]], [[titled-custom-grid]], [[legend-only-grid]], arrangements [[arrange-grid]], [[arrange-cells]], [[legend-cell?]], [[arrange-entries]]; schemas [[arrange-schema]], [[labels-schema]]; plot labels [[label-keys]], [[shown-label]], [[filled-label]], [[label-contents]]."
   (:require [fastmath.core :as m]
             [fastmath.vector :as v]
             [cljplot2.data.facet :as facet]
@@ -105,10 +105,10 @@
             :description "The plot title above the panels, in the text role `:title`." :default-doc "None." :example "Walks"}]
    [:x {:id :x-title :defaults {:role :axis-title :fit true} :column :panel :row :x-title
         :description "The x axis title, in the text role `:axis-title`; a title too long for its axis is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none; on a 3D plot the name of the first 3D chart's keyword accessor." :example "time"}]
+        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis; none for a function accessor, a polar plot or an axis not drawn. A 3D plot takes its first 3D chart's keyword accessor." :example "time"}]
    [:y {:id :y-title :defaults {:role :axis-title :rotation 270 :fit true} :column :y-title :row :panel
         :description "The y axis title, in the text role `:axis-title` turned 270 degrees; a title too long for the panels' height is wrapped, shrunk, then cut. A 3D plot draws it on its frame instead."
-        :default-doc "The title the first chart suggesting one gives (histogram, density, ecdf, qq, bar ...), else none; on a 3D plot the name of the first 3D chart's keyword accessor." :example "value"}]
+        :default-doc "The title the first chart suggesting one gives (histogram, density, bar ...), else the name of the first keyword accessor a chart other than rule, text or rect maps to the axis; none for a function accessor, a polar plot or an axis not drawn. A 3D plot takes its first 3D chart's keyword accessor." :example "value"}]
    [:z {:defaults {:role :axis-title}
         :description "The z axis title of a 3D plot, drawn on its frame in the text role `:axis-title`."
         :default-doc "The first 3D chart's title: `Count` for a binned cloud, `Density` for a density surface, else the name of its keyword accessor." :example "height"}]
@@ -132,6 +132,21 @@
   Returns `label`; `nil` for `:none` or `nil`."
   [label]
   (when-not (= :none label) label))
+
+(defn filled-label
+  "Gives a plot label over the title under it, a label map without `:text` taking that title's text.
+
+  Parameters:
+
+  - `under`: the title the label replaces - a chart's suggestion or a default (a text, `nil` or `:none`).
+  - `label`: a `:labels` value.
+
+  Returns `label`; a label map without `:text` gets `under` as its `:text` when `under` is a text (so it restyles the title it replaces)."
+  [under label]
+  (if (and (label/label-options? label) (not (contains? label :text))
+           (some? (shown-label under)) (not (label/label-options? under)))
+    (assoc label :text under)
+    label))
 
 (def labels-schema
   "Plot `:labels`: `{:title :x :y :z :color :shape :size :dash :pattern}`, each a text or a map of [[cljplot2.content.label/label-options]]; `:none` - no title, `nil` - the default."

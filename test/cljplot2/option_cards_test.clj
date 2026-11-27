@@ -658,8 +658,8 @@
                :options {:value :n}}
    'acf {:args [(mapv (fn [i] (m/+ (m/sin (m/* 0.5 i)) (m/* 0.3 (m/cos (m/* 2.3 i))))) (range 60))]}
    'horizon {:args [(for [s ["a" "b"] t (range 30)] {:t t :v (m/* (if (= s "a") 1.0 -0.6) (m/sin (m/* 0.3 t))) :series s})]}
-   'arrange {:args [[{:data [{:x 1 :y 12000} {:x 2 :y 18000}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}
-                     {:data [{:x 1 :y 2 :g "p"} {:x 2 :y 3 :g "q"}] :mapping {:x :x :y :y :color :g} :charts [(chart/line)]}]]}
+   'arrange {:args [[{:data [{:x 1 :y 12000} {:x 2 :y 18000}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:x :none :y :none}}
+                     {:data [{:x 1 :y 2 :g "p"} {:x 2 :y 3 :g "q"}] :mapping {:x :x :y :y :color :g} :charts [(chart/line)] :labels {:x :none :y :none}}]]}
    'pairs {:args [(for [i (range 20)] {:a (m/sin (m/* 0.7 i)) :b (m/* 0.1 i) :c (m/cos (m/* 0.3 i)) :g (if (even? i) "p" "q")})]}})
 
 ;; data function fixtures (placeholders of the pages' card calls: rows, edges, g, root, laid, values, f, seeds)
@@ -786,8 +786,8 @@
   symbol of `cljplot2.core` (its fixture call `:args`), `:per-option` - option path -> fixture overrides; the group's
   rows act on it."
   {:annotation {:via :rule :data [{:x 1 :y 1} {:x 3 :y 2}] :mapping {:x :x :y :y} :scales nil :before [(chart/scatter)] :options {:y [5]}}
-   :arrange {:via 'arrange :args [[{:data [{:x 1 :y 12000} {:x 2 :y 18000}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}
-                                   {:data [{:x 1 :y 2 :g "p"} {:x 2 :y 3 :g "q"}] :mapping {:x :x :y :y :color :g} :charts [(chart/line)]}]]}
+   :arrange {:via 'arrange :args [[{:data [{:x 1 :y 12000} {:x 2 :y 18000}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:x :none :y :none}}
+                                   {:data [{:x 1 :y 2 :g "p"} {:x 2 :y 3 :g "q"}] :mapping {:x :x :y :y :color :g} :charts [(chart/line)] :labels {:x :none :y :none}}]]}
    :builder {:via 'network :args [edges] :options {:rng (r/rng :mersenne 1)}}
    :cell {:via :tile}
    :common {:via :line}
@@ -896,7 +896,7 @@
                                                         :mapping {:x :x :y :y :facet :band} :charts [(chart/scatter)]})}}
    :facet {:draw (themed theme-facets)}
    :multiplot {:draw (fn [t] (plot/arrange [theme-scatter (assoc theme-scatter :charts [(chart/line)])] {:columns 2 :theme t}))}
-   :legend {:draw (themed (assoc theme-scatter :mapping {:x :x :y :y :shape :g :color :z}))
+   :legend {:draw (themed (assoc theme-scatter :mapping {:x :x :y :y :shape :g :color :z} :labels {:x :none :y :none}))
             :per-option {[:legend :min-key-line-width] (themed (assoc theme-scatter :charts [(chart/line)]))}}
    :frame-3d {:draw (themed-kind :surface nil)}
    :palette {:draw (themed theme-scatter)

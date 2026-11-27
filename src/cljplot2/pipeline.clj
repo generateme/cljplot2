@@ -10,7 +10,7 @@
   - `:scales` - `{:x spec :y spec}` position scales, see [[cljplot2.scale.position/data-scale-spec]]; facet scales, see [[cljplot2.data.facet]]; aesthetic scales `:color` `:shape` `:size` `:dash` `:pattern`, see [[cljplot2.scale.aesthetic]].
   - `:facets` - `{:columns :rows :order :na-panel :scales :strips :widths :heights}` facet layout options, see [[cljplot2.data.facet]]: `:scales {:x r :y r}` - `:same` (default), `:free` (each panel's own data domain) or `:sliced` (each panel's own centre, the widest panel's span; numeric data) - panels sharing an axis share the scale (wrap: every panel has its own axis; grid: per column / row), see [[panel-scale-specs]]; `:strips false`; `:widths` / `:heights` - relative panel column / row sizes. Such plots finalize their position scales per panel (`:panel-scales`, see [[panel-scales]]); not with `:aspect :iso`, polar coordinates or explicit `:domain`s of free / sliced scales.
   - `:groups` - `{:na bool}`: `nil` aesthetic values form the NA level (default `true`) or are dropped.
-  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]: the plot title, the axis titles and the legend titles; `:none` hides a title, `nil` keeps the default. Charts may suggest axis titles (`:axis-titles` in their stats), and `:labels` win over them. A 3D plot draws its axis titles on its frame (see [[with-frame-titles]]). A legend title wins over the scale's `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]).
+  - `:labels` - plot titles, see [[cljplot2.layout.plot-grid]]: the plot title, the axis titles and the legend titles; `:none` hides a title, `nil` keeps the default. Charts may suggest axis titles (`:axis-titles` in their stats), and `:labels` win over them; without either, a drawn 2D axis takes the name of the first keyword accessor a data chart maps to it (see [[axis-title-defaults]]). A 3D plot draws its axis titles on its frame (see [[with-frame-titles]]). A legend title wins over the scale's `:title` (see [[cljplot2.scale.aesthetic/titled-spec]]).
   - `:legend` - `false` hides all legends, see [[cljplot2.content.legend]].
   - `:legend-only` - `true`: the plot draws only its legends (from its charts and scales as usual; no panel, axes or axis titles; `:labels {:title t}` above them), e.g. a legend cell of an `:arrange` (see [[cljplot2.layout.plot-grid/legend-only-grid]]); not with `:custom-grid` / `:arrange`.
   - `:alternate-panel` - `true`: a single-panel plot draws theme `[:panel :alternate-fill]` over its panel fill - the shading of odd facet panels, for checkerboards of `:arrange` cells (e.g. [[cljplot2.multiplot/pairs]]); facet panels shade by position regardless.
@@ -397,6 +397,39 @@
                                               st))
                                           charts stats)))))
 
+(defn- axis-title-defaults
+  "Gives the default 2D axis titles: the names of the keyword accessors mapped to the axes.
+
+  Parameters:
+
+  - `charts` (sequence): the chart values.
+  - `mappings` (sequence): each chart's merged mapping, in chart order.
+  - `coord` (map or `nil`): the plot's `:coord`.
+  - `scales` (map): position scale specs (the plot's `:scales` or its phase-1 specs); an axis not drawn (`:axis false` or `:grid`, see [[cljplot2.scale.position/axis-drawn?]]) gets no default.
+
+  Returns `{:x t :y t}`, each entry present when its axis is drawn and some data chart maps it by a keyword: the name of the first keyword accessor a data chart maps to it (a categorical marker unwrapped; a chart mapping it by a function passes to the next). Annotation charts (`:inherit-mapping :facets`) and charts whose mapping schema has no such key (e.g. parallel, whose axis shows its variables) never give one. `{}` on a polar or a 3D plot (3D frames title their axes, see [[with-frame-titles]]). Callers give the specs they have: the size estimate the plot's `:scales` (a chart's `:scale-defaults` hiding an axis isn't known yet - the estimate may count a title the grid leaves out), the grid the phase-1 specs. The defaults sit below every chart's suggestion: a later chart's suggestion wins over the first chart's name."
+  [charts mappings coord scales]
+  (if (or (coord/polar? coord) (some three-d? charts))
+    {}
+    (let [data-charts (remove (fn [[chart _]] (= :facets (:inherit-mapping chart))) (map vector charts mappings))
+          keyword-name (fn [k] (some (fn [[chart mapping]]
+                                       (when (contains? (schema/nested-map-keys (get-in chart [:schema :mapping])) k)
+                                         (let [a (accessor/unwrap (get mapping k))] (when (keyword? a) (name a)))))
+                                     data-charts))]
+      (into {} (keep (fn [k] (when (scale/axis-drawn? (get scales k {})) (some->> (keyword-name k) (vector k))))) [:x :y]))))
+
+(defn- with-axis-title-defaults
+  "Gives plot labels merged over the axis title defaults.
+
+  Parameters:
+
+  - `labels` (map or `nil`): the plot's labels, maybe merged over the charts' suggestions; a `nil` entry is the default, `:none` hides, a label map without `:text` restyles the default (see [[cljplot2.layout.plot-grid/filled-label]]).
+  - `defaults` (map): the defaults of [[axis-title-defaults]].
+
+  Returns `labels` without `nil` entries merged over `defaults`; `nil` when both are empty."
+  [labels defaults]
+  (not-empty (merge-with plot-grid/filled-label defaults (into {} (remove (comp nil? val)) labels))))
+
 (defn- stats-stage
   "Pipeline stage `:stats`: every chart's computed data.
 
@@ -412,7 +445,9 @@
         env {:theme theme :na-level (get groups :na true) :plot-scales scales :flip (true? flip)
              :hint (:hint options) :coord (:coord plot) :aspect aspect :panel-scale-groups (panel-scale-groups plot)
              ;; measured on demand only (text measuring): charts needing the panel's shape before the layout
-             :panel-size (delay (plot-grid/estimated-panel-size plot (legend/provisional-legends plot (:charts split))
+             :panel-size (delay (plot-grid/estimated-panel-size (update plot :labels with-axis-title-defaults
+                                                                        (axis-title-defaults charts (map :mapping (:charts split)) (:coord plot) scales))
+                                                                (legend/provisional-legends plot (:charts split))
                                                                 (plot-margins plot) (plot-grid/panel-layout (:facets split) facets)
                                                                 (and (seq facet-dims) (facet/strips? facets))
                                                                 (not= [:facet] facet-dims)))}]
@@ -756,7 +791,7 @@
 
   Parameters:
 
-  - `labels` (map or `nil`): the plot `:labels`; an entry other than `nil` wins over a suggestion (`:none` - no title).
+  - `labels` (map or `nil`): the plot `:labels`; an entry other than `nil` wins over a suggestion (`:none` - no title; a label map without `:text` restyles the suggestion, see [[cljplot2.layout.plot-grid/filled-label]]).
   - `stats` (sequence of maps): computed chart data; `:axis-titles {:x t :y t}` per chart, the first suggestion per axis wins.
 
   Returns the merged labels map (`nil` without labels and suggestions); `labels` that aren't a map are passed through (rejected by validation)."
@@ -764,7 +799,7 @@
   (let [suggested (reduce (fn [acc titles] (merge (select-keys titles [:x :y]) acc)) {} (keep :axis-titles stats))]
     (cond
       (nil? labels) (not-empty suggested)
-      (map? labels) (merge suggested (into {} (remove (comp nil? val)) labels))
+      (map? labels) (merge-with plot-grid/filled-label suggested (into {} (remove (comp nil? val)) labels))
       :else labels)))
 
 (declare build)
@@ -937,7 +972,7 @@
 (defn- grid-stage
   "Pipeline stage `:grid`: the plot's layout grid.
 
-  The grid is the `:arrange` grid (see [[cljplot2.layout.plot-grid/arrange-grid]]), the legend-only grid, the `:custom-grid` (under a title row when `:labels` has `:title`), or one generated from the plot keys (see [[cljplot2.layout.plot-grid/plot-grid]]) with `:labels` over the charts' suggested axis titles (see [[effective-labels]]); a polar plot generates no outer axes (its guides are drawn inside the panel).
+  The grid is the `:arrange` grid (see [[cljplot2.layout.plot-grid/arrange-grid]]), the legend-only grid, the `:custom-grid` (under a title row when `:labels` has `:title`), or one generated from the plot keys (see [[cljplot2.layout.plot-grid/plot-grid]]) with axis titles from `:labels`, else the charts' suggestions (see [[effective-labels]]), else the mapped keyword names (see [[axis-title-defaults]]); a polar plot generates no outer axes (its guides are drawn inside the panel).
 
   Parameters:
 
@@ -955,7 +990,9 @@
                       (:legend-only plot) (plot-grid/legend-only-grid (legend/legends plot) labels theme)
                       (and custom-grid labels) (plot-grid/titled-custom-grid custom-grid labels theme)
                       custom-grid custom-grid
-                      :else (plot-grid/plot-grid (cond-> (assoc plot :labels (cond-> (effective-labels labels stats)
+                      :else (plot-grid/plot-grid (cond-> (assoc plot :labels (cond-> (with-axis-title-defaults
+                                                                          (effective-labels labels stats)
+                                                                          (axis-title-defaults (:charts plot) (map :mapping (get-in plot [:split :charts])) (:coord plot) scale-specs))
                                                                          ;; a 3D plot's x / y titles are its frame's (see with-frame-titles)
                                                                          (some three-d? (:charts plot)) (dissoc :x :y)))
                                                    ;; polar guides are drawn inside the panel: no outer axes

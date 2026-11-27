@@ -136,7 +136,10 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
 **Scales** are two-phase: phase 1 specs from merged extents + user `:scales`; phase 2 (after layout measurement)
 finalized, panel-local position scales. Aesthetic scales (`:color :shape :size :dash :pattern`) are final at
 phase 1; legends are derived from them and each chart draws its key glyph via `:legend`; a chart with the common
-option `:legend false` draws none, and a legend no chart draws a key into is dropped. A legend's title is the plot's
+option `:legend false` draws none, and a legend no chart draws a key into is dropped. A 2D axis title is the plot's
+`:labels` entry, else the first chart's suggestion (stats `:axis-titles`), else the name of the first keyword accessor
+a data chart maps to a drawn axis (`pipeline/axis-title-defaults`; none for a function accessor, annotation charts or
+polar plots). A legend's title is the plot's
 `:labels` entry of its aesthetic, else the scale's `:title`, else a computed aesthetic's title, else a single keyword
 accessor's name (`aesthetic/titled-spec`; `:none` - no title). Key glyphs raise a positive
 line width to the theme's `[:legend :min-key-line-width]` (`theme/key-style`). A scale's `:domain` may leave one end

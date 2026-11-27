@@ -28,7 +28,7 @@
 (defn- rgb-at
   "Gives the opaque colour of plot `p` at pixel `[x y]`."
   [p x y]
-  (let [^BufferedImage img (plot/render-image p size)]
+  (let [^BufferedImage img (plot/render-image (update p :labels #(merge {:x :none :y :none} %)) size)]
     (c/set-alpha (c/to-color (.getRGB img (int x) (int y))) 255)))
 
 (deftest bar-color-domain-test

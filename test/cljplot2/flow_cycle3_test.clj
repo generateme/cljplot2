@@ -23,7 +23,7 @@
 
 (def ^:private plain {:plot {:background :white :margin 0} :panel {:fill :white :alternate-fill :none :grid {:x :none :y :none}}})
 
-(defn- image [p size] (plot/render-image (update p :theme #(merge plain %)) size))
+(defn- image [p size] (plot/render-image (-> p (update :theme #(merge plain %)) (update :labels #(merge {:x :none :y :none} %))) size))
 
 (defn- stats [p] (first (:stats (plot/build p {:width 400 :height 400}))))
 

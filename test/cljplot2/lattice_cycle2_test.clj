@@ -222,7 +222,7 @@
       (let [b (plot/build (plot/pairs iris-like {:variables [:a :b :c]}) {:width w :height h})]
         (is (= 1 (count (distinct (panel-sizes b)))) (str w "x" h)))))
   (testing "H2 an equal-panels arrange given by rows"
-    (let [cells (vec (for [i (range 4)] {:data [{:x 0 :y (* i 1000)} {:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)]}))
+    (let [cells (vec (for [i (range 4)] {:data [{:x 0 :y (* i 1000)} {:x 1 :y 1}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:x :none :y :none}}))
           b (plot/build (plot/arrange cells {:rows 2 :equal-panels true}) {:width 400 :height 300})]
       (is (= 1 (count (distinct (panel-sizes b)))))))
   (testing "H3 only drawn lines get labels"

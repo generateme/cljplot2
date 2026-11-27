@@ -16,7 +16,7 @@
   (:import [java.awt.image BufferedImage]
            [javax.imageio ImageIO]))
 
-(def ^:private small-plot {:data [{:x 1 :y 1} {:x 2 :y 3}] :mapping {:x :x :y :y} :charts [(chart/scatter)]})
+(def ^:private small-plot {:data [{:x 1 :y 1} {:x 2 :y 3}] :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:x :none :y :none}})
 
 (defn- delete-tree!
   "Delete file or directory `f` with everything under it."

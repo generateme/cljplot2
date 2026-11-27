@@ -439,7 +439,7 @@
       (let [w (fn [n] (:w (first (legend-boxes (build (plot-of {:color :g} {:data (data n)}))))))]
         (is (= (w 3) (w 5)))))
     (testing "one entry taller than the space: one row per column, still no error"
-      (is (some? (build (plot-of {:color :g} {:data (data 3)}) {:width 600 :height 60}))))
+      (is (some? (build (plot-of {:color :g} {:data (data 3) :labels {:x :none :y :none}}) {:width 600 :height 60}))))
     (testing "stacked legends overflowing start a new stack column"
       (let [built (build (plot-of {:color :g :shape :year} {:data (mapv #(assoc % :year (mod (:x %) 2)) (data 15))
                                                             :scales {:shape {:kind :ordinal}}})

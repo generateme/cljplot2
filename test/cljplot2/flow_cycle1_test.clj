@@ -132,7 +132,8 @@
 (defn- segment-image [opts]
   (image {:data [{:x 0 :y 0 :xe 1 :ye 0}] :mapping {:x :x :y :y :xend :xe :yend :ye}
           :scales {:x {:domain [0 1] :expand [0 0]} :y {:domain [-1 1]}}
-          :charts [(chart/segment (merge {:color red :line-width 2} opts))]}
+          :charts [(chart/segment (merge {:color red :line-width 2} opts))]
+          :labels {:x :none :y :none}}
          {:width 200 :height 100}))
 
 (deftest arrow-test

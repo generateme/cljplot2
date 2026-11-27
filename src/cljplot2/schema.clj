@@ -22,7 +22,7 @@
   Functions and vars:
 
   - Named types: [[named-type]], numbers ([[non-neg]], [[pos]], [[pos-int]], [[finite]], [[fraction]], [[open-fraction]], [[finite-pos]], [[finite-non-neg]], [[finite-interval]], [[padding]]), [[bool]], [[function]], [[accessor]], [[malli-schema]], colours ([[color]], [[solid-color]], [[text-color]], [[cvd-deficiency]]), [[number-format]], [[count-format]] (with [[text-formatter]]), [[dash]] with [[dash-styles]], [[pattern]] with [[pattern-styles]], [[interpolator]], [[align]], [[temporal]], [[shape]], [[font]], [[font-style]]; [[named-types]] - the schema layer's documented named types; predicates [[finite?]] (with [[finite-double]]), [[color?]], [[solid-color?]], [[dash?]], [[pattern?]].
-  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]] ([[rule?]]), [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]].
+  - Entries: [[optional]], [[nilable]], [[in-fragment]], [[in-section]], [[options-map]]; composite schemas [[with-rules]] ([[rule?]]), [[forbidden]] ([[forbidden?]]), [[keyword-or]]; entry keys of a map schema [[entry-keys]], of every map inside a composite [[nested-map-keys]].
   - Checking: [[errors]], [[explain!]], [[check-options!]], [[throw-errors!]], [[fail!]] (built by [[cljplot2.error]], which namespaces below this one - e.g. [[cljplot2.graphics.shape]] - use directly)."
   (:refer-clojure :exclude [accessor])
   (:require [clojure.string :as str]
@@ -714,6 +714,26 @@
     (nil? schema) ()
     (vector? schema) (keep #(when (vector? %) (first %)) (rest schema))
     :else (map first (malli/children (malli/schema schema)))))
+
+(defn nested-map-keys
+  "Gives the entry keys of every map schema inside a schema.
+
+  Composite schemas (`:maybe`, `:and`, `:or` ...) are searched through; a `:map` gives its entries' keys (maps nested as entry values aren't searched).
+
+  Parameters:
+
+  - `schema`: a malli schema or form; `nil` - none.
+
+  Returns a set of keys; empty for `nil` or a schema without maps.
+
+  See also [[entry-keys]]."
+  [schema]
+  (if (nil? schema)
+    #{}
+    (letfn [(map-keys [s] (if (= :map (malli/type s))
+                            (map first (malli/entries s))
+                            (mapcat (fn [c] (when (malli/schema? c) (map-keys c))) (malli/children s))))]
+      (set (map-keys (malli/schema schema))))))
 
 (defn check-options!
   "Validates the options of a builder or user-facing function before it reads its data.

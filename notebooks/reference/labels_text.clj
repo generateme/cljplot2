@@ -48,7 +48,8 @@
 ;; ## Plot labels
 
 ;; These keys of the plot's `:labels` map hold the plot title, the axis titles and the legend titles. A 3D plot draws
-;; `:x`, `:y` and `:z` on its frame. The plot below names the title and both axes:
+;; `:x`, `:y` and `:z` on its frame. An axis without a label takes the title a chart suggests, else the name of the
+;; column its mapping names by a keyword; `:none` hides it. The plot below names the title and both axes:
 
 (nu/option-cards [:labels] (describe/options plot-grid/labels-schema))
 

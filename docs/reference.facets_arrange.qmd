@@ -263,17 +263,17 @@ side in 400 pixels:
 ::: {.printedClojure}
 ```clojure
 {:message
- "Sub-plot [:plot 0] (x :hp, y :mpg) is 39x180 px; its axes, labels, legends and margins need 57 px of width. Enlarge the image or the cell, or shrink the sub-plot's fixed parts.",
+ "Sub-plot [:plot 0] (x :hp, y :mpg) is 39x180 px; its axes, labels, legends and margins need 79 px of width. Enlarge the image or the cell, or shrink the sub-plot's fixed parts.",
  :data
  {:key :width,
   :axis :columns,
   :available 39,
   :cause :track-space,
-  :required 57,
+  :required 79,
   :errors
   [{:in nil,
     :message
-    "Not enough space: the plot's fixed parts (axes, labels, legends, strips, margins, gaps) need 57 px of width, 39 px given."}],
+    "Not enough space: the plot's fixed parts (axes, labels, legends, strips, margins, gaps) need 79 px of width, 39 px given."}],
   :subplot [:plot 0],
   :subplot-path [[:plot 0]]}}
 

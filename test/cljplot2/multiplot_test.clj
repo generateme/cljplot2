@@ -11,7 +11,7 @@
 (defn- argb [canvas x y] (.getRGB ^BufferedImage (c2d/get-image canvas) (int x) (int y)))
 
 (def ^:private rows (vec (for [i (range 30)] {:x i :y (mod (* i 7) 11) :g (["a" "b"] (mod i 2))})))
-(def ^:private p1 {:data rows :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:title "one"}})
+(def ^:private p1 {:data rows :mapping {:x :x :y :y} :charts [(chart/scatter)] :labels {:title "one" :x :none :y :none}})
 (def ^:private p2 {:data rows :mapping {:x :x :y :y :color :g} :charts [(chart/line)]
                    :theme {:plot {:background [255 255 255]}}})
 
