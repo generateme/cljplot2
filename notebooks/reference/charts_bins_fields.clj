@@ -9,6 +9,7 @@
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.graphics.raster :as raster]
             [notebook-utils :as nu]))
 
 (nu/source-note {:dataset :faithful})
@@ -181,8 +182,9 @@
                                  {:columns 2 :widths [1 1.2]})
                    {:width 1000 :height 380})
 
-;; These options set the raster's opacity, or colour each pixel by a function instead of a field. The panels below draw
-;; a translucent density under the points, then a colour per point of a disc:
+;; These options set the raster's opacity, colour each pixel by a function instead of a field, or antialias the
+;; raster ([Antialiasing](reference.charts_bins_fields.html#antialiasing) explains its settings). The panels below
+;; draw a translucent density under the points, then a colour per point of a disc:
 
 (nu/option-cards 'chart/field (describe/own-rows (describe/options (chart/field))))
 
@@ -198,6 +200,34 @@
                                    :labels {:title ":pixel-color - a colour per point"}}]
                                  {:columns 2})
                    {:width 900 :height 380})
+
+;; ### Antialiasing
+
+;; With `:antialias` each pixel takes several samples, so band edges and the edges of uncoloured regions come out smooth
+;; instead of stepped. `true` takes the defaults below; a map of these settings overrides some of them:
+
+(nu/option-cards 'chart/field (mapv #(update % :path (partial into [:antialias])) (describe/schema-rows raster/antialias-settings-schema)))
+
+;; The panels below draw bands of a disc with one sample per pixel, with the default 2 x 2 samples, then with 3 x 3
+;; samples and a Gaussian filter of radius 1.5:
+
+(let [banded-disc (fn [[x y]]
+                    (let [r (m/hypot x y)]
+                      (when (< r 1)
+                        ([:steelblue :orange :seagreen :crimson] (mod (long (m/floor (* 6 (+ r (* 0.3 x))))) 4)))))]
+  (plot/render-image (plot/arrange [{:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc})]
+                                     :aspect :iso
+                                     :labels {:title "one sample per pixel"}}
+                                    {:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc
+                                                            :antialias true})]
+                                     :aspect :iso
+                                     :labels {:title ":antialias true"}}
+                                    {:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc
+                                                            :antialias {:splats 3 :filter :gaussian :radius 1.5}})]
+                                     :aspect :iso
+                                     :labels {:title "3 x 3, :gaussian"}}]
+                                   {:columns 3})
+                     {:width 900 :height 330}))
 
 ;; ### Field sources
 

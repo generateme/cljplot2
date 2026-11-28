@@ -16,7 +16,8 @@ Roadmap/Roadmap - Use Case Notebooks.md`; `04 Reference/` - the reference part o
 review rounds, their specs and implementation notes; `06 Reference Readability/` - option cards, concept headings
 and prose of the reference part; `07 Domains Titles Surface Colour/` - out-of-domain values, titles of every mapped
 dimension, the surface's colour dimension; `08 Recorded Bugs and Text Shapes/` - robustness, domains of multi-row
-marks, text shapes, layout fixes). Read them when a decision's rationale is unclear.
+marks, text shapes, layout fixes; `09 Field Antialiasing/` - the field's supersampled raster). Read them when a
+decision's rationale is unclear.
 
 ## Commands
 
@@ -81,6 +82,11 @@ Each round throws one `ex-info {:key :in :value :errors}` listing its errors.
   `:drop`); colour bars for explicit `:ticks`; 3D frames always thin (no scale spec). Every tick label of a
   position axis (axes, polar guides, parallel axes, 3D frames, the size estimate) is made by `content.axis/tick-label`:
   the `:tick-label` role with the theme's per-axis `[:axis k :tick-label]` merged over it.
+- Rasters: `chart/field` draws through `graphics.raster/raster-pixels` - one sample per pixel centre, or with
+  `:antialias` (off by default) `splats` x `splats` samples per pixel splatted into clojure2d's renderer and gathered by
+  a filter; the output alpha is coverage (clojure2d `to-pixels` `:splats? true`), so samples without a colour and
+  translucent colours (`:alpha-factor`) blend at edges. It needs the local clojure2d with the coverage channel
+  (`LogDensity` `k`, pixel centres on whole numbers).
 - Stat space: histogram, density and smooth take `:stat-space` (`:data` | `:scale` - the statistic in the position
   scale's `scale/stat-transform` space, results back in data units; values the transform can't place are dropped
   and counted); only `:log` transforms; the default is the chart's previous behaviour - `:data` for histogram and

@@ -18,18 +18,26 @@
   data point (the pixel centre): a raster without a grid, a color scale or a legend (e.g. complex domain colouring,
   see [[cljplot2.data.field/domain-color]]); the domain as for `:f` (option `:domain`, else the plot's explicit x / y
   domains); not with `:f` (`ex-info {:key :pixel-color}`); the mapping and the other field options are ignored (as
-  with `:f`). It's called w x h times per panel - keep it cheap.
+  with `:f`). It's called w x h times per panel (`:splats` squared times that with `:antialias`) - keep it cheap.
+
+  `:antialias` (off by default) supersamples the raster: `true` takes 2 x 2 samples per pixel gathered by a `:sinc`
+  filter of radius 1.1, a map overrides `:splats` (samples per pixel along each axis), `:filter`, `:radius`,
+  `:filter-params` and `:to-pixels` (see [[cljplot2.graphics.raster]]). Band edges, binned colours and the edges of
+  uncoloured regions come out smooth. Drawing calls the colour function (`:pixel-color` or the grid's colour)
+  `:splats` squared times per pixel, 4 by default. Colours average in sRGB, and a filter with negative lobes may ring
+  slightly at hard edges. Antialiasing smooths steps between pixels only: on a sampled grid (`:f`, gridded data, a
+  density) a region without a value covers whole grid cells, so its edge keeps the steps of the `:n` grid.
 
   Options (style defaults from theme `[:chart :field]`): `:alpha-factor` (multiplies the colours' alpha, a fraction).
 
   Functions: [[cljplot2.data.field/value-title]], [[computed-aesthetics]] - the computed color and its title; [[panel-grids]] - the panels' sampled grids; [[compute]], [[draw]] - the chart contract."
   (:require [clojure2d.color :as c]
             [clojure2d.core :as c2d]
-            [clojure2d.pixels :as p]
             [fastmath.core :as m]
             [cljplot2.chart.common :as common]
             [cljplot2.data.field :as field]
             [cljplot2.graphics.draw :as draw]
+            [cljplot2.graphics.raster :as raster]
             [cljplot2.data.rows :as data]
             [cljplot2.scale.aesthetic :as aesthetic]
             [cljplot2.scale.position :as scale]
@@ -44,10 +52,6 @@
   "Style entries of the field chart (theme `[:chart :field]`)."
   [(schema/optional :alpha-factor {:description "How opaque the raster is: a factor on the colours' own alpha." :cljplot2/example 0.4} schema/fraction)])
 
-(def ^:private transparent
-  "Colour of a pixel without a value."
-  (c/color 0 0 0 0))
-
 (def schemas
   "Schemas of the field chart: `:style` (theme `[:chart :field]`), `:options`, `:mapping` (merged)."
   {:style (into [:map {:closed true}] style-entries)
@@ -60,7 +64,13 @@
                                                      :cljplot2/default-doc "None: the field's value colours the raster through the colour scale."
                                                      :cljplot2/example '(fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))
                                                      :cljplot2/example-context {:domain {:x [-1 1] :y [-1 1]}}}
-                                       schema/function)))
+                                       schema/function)
+                      (schema/nilable :antialias {:description "Antialiases the raster: each pixel takes several samples, which a reconstruction filter gathers, so band edges and the edges of uncoloured regions come out smooth. The chart calls the colour function `:splats` squared times per pixel."
+                                                   :default false
+                                                   :cljplot2/value-meanings {true "2 x 2 samples per pixel, a `:sinc` filter of radius 1.1." false "One sample at each pixel's centre."}
+                                                   :cljplot2/form-meanings {"antialias settings" "Settings over the defaults: `:splats`, `:filter`, `:radius`, `:filter-params`, `:to-pixels` - each on its own card under Antialiasing on the field's page."}
+                                                   :cljplot2/example true}
+                                       raster/antialias-schema)))
    :mapping [:maybe [:map
                      (schema/nilable :x {:description "The x of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
                      (schema/nilable :y {:description "The y of the points whose density the chart estimates, or of the gridded values."} schema/accessor)
@@ -184,11 +194,11 @@
 (defn draw
   "Draws one panel's raster: a pixel image of the panel box.
 
-  Every pixel is inverse-projected to its data point (the pixel centre) and coloured there (see the namespace doc).
+  Inverse-projects every pixel centre to its data point and colours the pixel there; with `:antialias` it samples several points per pixel and a filter gathers them (see the namespace doc and [[cljplot2.graphics.raster/raster-pixels]]).
 
   Parameters:
 
-  - `_chart`: the chart value (unused).
+  - `chart` (map): the chart value - `:options` `:antialias` (see [[cljplot2.graphics.raster/antialias-settings]]).
   - `computed` (map): the panel's stats - `:grid` (or `:pixel-color`, a function of a point giving a colour), `:style` (`:alpha-factor`).
   - `canvas`: the panel's canvas.
   - `box` (map): the panel box, `:w` and `:h` in pixels (rounded to whole pixels).
@@ -196,7 +206,7 @@
   - `env` (map): the drawing environment.
 
   Draws nothing for an empty panel, or a grid without a colour scale."
-  [_chart {:keys [grid pixel-color style]} canvas {:keys [^double w ^double h]} scales env]
+  [chart {:keys [grid pixel-color style]} canvas {:keys [^double w ^double h]} scales env]
   (let [width (m/round w)
         height (m/round h)
         color-at (cond pixel-color pixel-color
@@ -206,12 +216,11 @@
             inverse-h (scale/inverse-fn (if flipped? (:y scales) (:x scales)))
             inverse-v (scale/inverse-fn (if flipped? (:x scales) (:y scales)))
             alpha-factor (:alpha-factor style)
-            pixel-at (fn [_ ^long x ^long y]
-                       (let [a (double (inverse-h (m/+ 0.5 x)))
-                             b (double (inverse-v (m/+ 0.5 y)))]
-                         (if-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
-                           (let [rgba (c/to-color col)]
-                             (if alpha-factor (draw/faded rgba alpha-factor) rgba))
-                           transparent)))
-            pixels (p/filter-colors-xy pixel-at (p/pixels width height))]
+            point-color (fn [^Vec2 p]
+                          (let [a (double (inverse-h (.x p)))
+                                b (double (inverse-v (.y p)))]
+                            (when-let [col (color-at (if flipped? (Vec2. b a) (Vec2. a b)))]
+                              (let [rgba (c/to-color col)]
+                                (if alpha-factor (draw/faded rgba alpha-factor) rgba)))))
+            pixels (raster/raster-pixels width height point-color (get-in chart [:options :antialias]))]
         (c2d/image canvas pixels 0 0 width height)))))

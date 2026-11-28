@@ -65,6 +65,7 @@ variables.
             [cljplot2.chart :as chart]
             [cljplot2.core :as plot]
             [cljplot2.describe :as describe]
+            [cljplot2.graphics.raster :as raster]
             [notebook-utils :as nu]))
 ```
 :::
@@ -407,12 +408,13 @@ a plane, coloured through the colour scale.
 :::
 
 
-These options set the raster's opacity, or colour each pixel by a function instead of a field. The panels below draw
-a translucent density under the points, then a colour per point of a disc:
+These options set the raster's opacity, colour each pixel by a function instead of a field, or antialias the
+raster ([Antialiasing](reference.charts_bins_fields.html#antialiasing) explains its settings). The panels below
+draw a translucent density under the points, then a colour per point of a disc:
 
 
 ```{=html}
-<dl class="options"><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/field {:alpha-factor 0.4})</code></div><div class="option-text">How opaque the raster is: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:pixel-color</code><span class="option-default">Default: None: the field's value colours the raster through the colour scale.</span></dt><dd><div class="option-example"><code>(chart/field {:domain {:x [-1 1], :y [-1 1]}, :pixel-color (fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))})</code></div><div class="option-text">Colours each pixel by a function of its point <code>[x y]</code> instead of a field, <code>nil</code> leaving it transparent: a raster over <code>:domain</code> (else the plot's x and y domains) with no colour scale or legend. A chart with <code>:f</code> rejects it.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div></dl>
+<dl class="options"><div class="option-card"><dt><code>:alpha-factor</code><span class="option-default">Default: <code>1.0</code> (theme)</span></dt><dd><div class="option-example"><code>(chart/field {:alpha-factor 0.4})</code></div><div class="option-text">How opaque the raster is: a factor on the colours' own alpha.<ul><li><a href="reference.types.html#fraction">fraction</a></li></ul></div></dd></div><div class="option-card"><dt><code>:pixel-color</code><span class="option-default">Default: None: the field's value colours the raster through the colour scale.</span></dt><dd><div class="option-example"><code>(chart/field {:domain {:x [-1 1], :y [-1 1]}, :pixel-color (fn [[x y]] (if (m/pos? (m/* x y)) :steelblue :orange))})</code></div><div class="option-text">Colours each pixel by a function of its point <code>[x y]</code> instead of a field, <code>nil</code> leaving it transparent: a raster over <code>:domain</code> (else the plot's x and y domains) with no colour scale or legend. A chart with <code>:f</code> rejects it.<ul><li><a href="reference.types.html#function">function</a></li></ul></div></dd></div><div class="option-card"><dt><code>:antialias</code><span class="option-default">Default: <code>false</code></span></dt><dd><div class="option-example"><code>(chart/field {:antialias true})</code></div><div class="option-text">Antialiases the raster: each pixel takes several samples, which a reconstruction filter gathers, so band edges and the edges of uncoloured regions come out smooth. The chart calls the colour function <code>:splats</code> squared times per pixel.<ul><li><code>false</code> – One sample at each pixel's centre.</li><li><code>true</code> – 2 x 2 samples per pixel, a <code>:sinc</code> filter of radius 1.1.</li><li><span>antialias settings</span> – Settings over the defaults: <code>:splats</code>, <code>:filter</code>, <code>:radius</code>, <code>:filter-params</code>, <code>:to-pixels</code> - each on its own card under Antialiasing on the field's page.</li></ul></div></dd></div></dl>
 ```
 
 
@@ -441,6 +443,50 @@ a translucent density under the points, then a colour per point of a disc:
 
 
 
+### Antialiasing
+
+With `:antialias` each pixel takes several samples, so band edges and the edges of uncoloured regions come out smooth
+instead of stepped. `true` takes the defaults below; a map of these settings overrides some of them:
+
+
+```{=html}
+<dl class="options"><div class="option-card"><dt><code>:antialias :splats</code><span class="option-default">Default: <code>2</code></span></dt><dd><div class="option-example"><code>(chart/field {:antialias {:splats 3}})</code></div><div class="option-text">How many samples the raster takes along each axis of a pixel: <code>2</code> takes 4 per pixel, on a regular grid.<ul><li><a href="reference.types.html#positive-integer">positive integer</a></li></ul></div></dd></div><div class="option-card"><dt><code>:antialias :filter</code><span class="option-default">Default: <code>:sinc</code></span></dt><dd><div class="option-example"><code>(chart/field {:antialias {:filter :gaussian}})</code></div><div class="option-text">The reconstruction filter that gathers the samples into pixels.<ul><li><code>:sinc</code> – A windowed sinc (Lanczos): sharp, with slight ringing at hard edges over a radius of 1.</li><li><code>:box</code> – A box: every sample within the radius counts equally.</li><li><code>:gaussian</code> – A Gaussian: soft, no ringing.</li><li><code>:triangle</code> – A tent: weights fall linearly with distance.</li><li class="option-other">Other clojure2d filters: <code>:mitchell</code>, <code>:cubic</code>, <code>:catmull-rom</code>, <code>:cosinebell</code>, <code>:blackmann-harris</code>, <code>:hann</code>. <code>:blackmann-harris</code>, <code>:catmull-rom</code>, <code>:cosinebell</code>, <code>:cubic</code>, <code>:hann</code>, <code>:mitchell</code></li></ul></div></dd></div><div class="option-card"><dt><code>:antialias :radius</code><span class="option-default">Default: <code>1.1</code></span></dt><dd><div class="option-example"><code>(chart/field {:antialias {:radius 1.5}})</code></div><div class="option-text">How far, in pixels, the filter spreads a sample; at least half a pixel, so every sample reaches a pixel centre.<ul><li><span>finite number at least 0.5</span></li></ul></div></dd></div><div class="option-card"><dt><code>:antialias :filter-params</code><span class="option-default">Default: Each filter's own defaults.</span></dt><dd><div class="option-example"><code>(chart/field {:antialias {:filter-params [2.0]}})</code></div><div class="option-text">The filter's further parameters in clojure2d's order: its spread (positive), then <code>B</code> and <code>C</code> of <code>:mitchell</code>; other filters ignore the parameters they don't take.<ul><li><span>[a positive finite number, optional a finite number, optional a finite number]</span></li></ul></div></dd></div><div class="option-card"><dt><code>:antialias :to-pixels</code><span class="option-default">Default: None: coverage alpha over a transparent background.</span></dt><dd><div class="option-example"><code>(chart/field {:antialias {:to-pixels {:saturation 1.5}}})</code></div><div class="option-text">Options of clojure2d's <code>to-pixels</code>, merged over a transparent <code>:background</code>. <code>:background</code> lies under the raster's uncovered and partly covered pixels, and <code>:gamma-color</code> (with <code>:vibrancy</code>), <code>:brightness</code>, <code>:contrast</code> and <code>:saturation</code> adjust the colours.<ul><li><span>map of keyword to any value</span></li></ul></div></dd></div></dl>
+```
+
+
+The panels below draw bands of a disc with one sample per pixel, with the default 2 x 2 samples, then with 3 x 3
+samples and a Gaussian filter of radius 1.5:
+
+
+::: {.sourceClojure}
+```clojure
+(let [banded-disc (fn [[x y]]
+                    (let [r (m/hypot x y)]
+                      (when (< r 1)
+                        ([:steelblue :orange :seagreen :crimson] (mod (long (m/floor (* 6 (+ r (* 0.3 x))))) 4)))))]
+  (plot/render-image (plot/arrange [{:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc})]
+                                     :aspect :iso
+                                     :labels {:title "one sample per pixel"}}
+                                    {:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc
+                                                            :antialias true})]
+                                     :aspect :iso
+                                     :labels {:title ":antialias true"}}
+                                    {:charts [(chart/field {:domain {:x [-1.1 1.1] :y [-1.1 1.1]} :pixel-color banded-disc
+                                                            :antialias {:splats 3 :filter :gaussian :radius 1.5}})]
+                                     :aspect :iso
+                                     :labels {:title "3 x 3, :gaussian"}}]
+                                   {:columns 3})
+                     {:width 900 :height 330}))
+```
+:::
+
+
+::: {.clay-image}
+![](reference.charts_bins_fields_files/image9.png)
+:::
+
+
+
 ### Field sources
 
 The [Fields](reference.shared_options.html#fields) group gives the field. The panels below sample a function of a
@@ -463,7 +509,7 @@ point `[x y]` over a `:domain`, then on a coarse grid of 12 points per axis, whi
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image9.png)
+![](reference.charts_bins_fields_files/image10.png)
 :::
 
 
@@ -507,7 +553,7 @@ The chart interpolates gridded values between the lattice points, here of a 5 x 
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image10.png)
+![](reference.charts_bins_fields_files/image11.png)
 :::
 
 
@@ -539,7 +585,7 @@ points), and how far the domain reaches past the points (`:cut`, in bandwidths):
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image11.png)
+![](reference.charts_bins_fields_files/image12.png)
 :::
 
 
@@ -580,7 +626,7 @@ categorical groups give a field each. Use it to read heights off a field, or to 
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image12.png)
+![](reference.charts_bins_fields_files/image13.png)
 :::
 
 
@@ -612,7 +658,7 @@ The panels below label lines at given heights, then fill 8 bands:
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image13.png)
+![](reference.charts_bins_fields_files/image14.png)
 :::
 
 
@@ -650,7 +696,7 @@ interpolated gridded values and a density with its own bandwidth:
 
 
 ::: {.clay-image}
-![](reference.charts_bins_fields_files/image14.png)
+![](reference.charts_bins_fields_files/image15.png)
 :::
 
 
